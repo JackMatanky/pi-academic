@@ -173,6 +173,8 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ──────────
 >    Type:  MCP server (zotero-mcp)
 >    What:  Local/cloud reference library
+>    Config: standard MCP config (.mcp.json or ~/.config/mcp/mcp.json)
+>    Needs: settings.toolPrefix="none" + directTools=true
 >    ```
 > 2. **NotebookLM** — ✓ Detected / ✗ Not found
 >    ```
@@ -188,6 +190,24 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
 
 Pre-check tools that were detected. MongoDB Agent Skills is silently included always.
+
+If Zotero is selected but not detected:
+- First check whether the binary exists: `command -v zotero-mcp >/dev/null 2>&1 && echo "INSTALLED" || echo "NOT_FOUND"`.
+- If the binary is missing, show: `pip install zotero-mcp-server`, then continue after the researcher confirms installation.
+- If the binary exists but `zotero_get_recent(limit=1)` is unavailable/failing because MCP is not configured, explain that Academic Writer uses standard MCP config instead of package-owned environment variables. Offer to scaffold this safe local-mode project `.mcp.json` only if the researcher approves and no `.mcp.json` exists:
+  ```json
+  {
+    "settings": { "toolPrefix": "none" },
+    "mcpServers": {
+      "zotero": {
+        "command": "zotero-mcp",
+        "env": { "ZOTERO_LOCAL": "true" },
+        "directTools": true
+      }
+    }
+  }
+  ```
+- If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `zotero` block unless the JSON is simple enough to update safely. Do not write API keys into a project file; Zotero web/API credentials belong in user-global MCP config or command interpolation.
 
 ---
 

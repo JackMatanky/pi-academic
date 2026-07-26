@@ -139,29 +139,29 @@ class TestExtensions(unittest.TestCase):
                 self.assertIn("export default function", content, f"Missing export default function in {idx_path}")
 
 class TestMcpWiring(unittest.TestCase):
-    def test_no_dead_mcp_json(self):
-        # `zotero` is registered programmatically in extensions/lifecycle/mcp.ts
-        # because a programmatic `config` is an isolated snapshot never merged
-        # with file-based config (per pi-mcp-adapter's own README). A root
-        # .mcp.json would be silently unread — its presence would mislead a
-        # maintainer into thinking it does something.
-        self.assertFalse(os.path.isfile(".mcp.json"), ".mcp.json is never read by the programmatic adapter in extensions/lifecycle/mcp.ts — remove it or wire it up")
+    def test_no_bundled_mcp_json(self):
+        # MCP credentials/config live in the researcher's standard MCP config
+        # layers, not in the published package repository. The package may
+        # scaffold a user project .mcp.json during init/setup, but it must not
+        # ship one from this repo.
+        self.assertFalse(os.path.isfile(".mcp.json"), ".mcp.json should be user/project config, not a package source file")
 
-    def test_mcp_servers_expose_direct_tools_by_bare_name(self):
+    def test_mcp_adapter_uses_file_based_config(self):
         mcp_path = "extensions/lifecycle/mcp.ts"
         self.assertTrue(os.path.isfile(mcp_path))
         content = _read(mcp_path)
-        self.assertIn('toolPrefix: "none"', content, "toolPrefix must be \"none\" or every direct tool gets double-prefixed (e.g. zotero_zotero_get_recent) since MCP tool names already start with the server name")
-        self.assertIn("zotero", content)
-        # No bundled second-provider server (e.g. gemini-api) — model choice
-        # for any agent is a pi setting (subagents.agentOverrides.<name>.model),
-        # not something this package brokers via a second MCP server.
-        self.assertNotIn("gemini-api", content, "model choice belongs in pi settings (agentOverrides.<name>.model), not a bundled second MCP server")
-        # directTools: true is required, else tools are only reachable through
-        # the generic `mcp` proxy tool, not by bare name the way every
-        # skill/agent in this package calls them.
-        self.assertIn("directTools: true", content, f"expected directTools: true on the zotero server in {mcp_path}")
+        self.assertIn('import mcpAdapter from "pi-mcp-adapter"', content)
+        self.assertIn("export const mcpExtension = mcpAdapter", content)
+        self.assertNotIn("createMcpAdapter({", content, "programmatic config is isolated and would ignore .mcp.json/global MCP config")
+        self.assertNotIn("ZOTERO_API_KEY", content, "MCP credentials belong in standard MCP config, not package source")
+        self.assertNotIn("ZOTERO_LIBRARY_ID", content, "MCP credentials belong in standard MCP config, not package source")
 
+    def test_docs_require_direct_zotero_tools_in_mcp_config(self):
+        docs = "\n".join(_read(path) for path in ["AGENTS.md", "README.md", "skills/academic-writer-init/references/integration-setup.md"])
+        self.assertIn('toolPrefix', docs)
+        self.assertIn('directTools', docs)
+        self.assertIn('zotero_get_recent', docs)
+        self.assertIn(".mcp.json", docs)
     def test_no_bundled_mcp_server_dir(self):
         # A bundled second-model-provider MCP server (the original design's
         # `mcp/gemini-server/`) is architecturally redundant on pi: any agent

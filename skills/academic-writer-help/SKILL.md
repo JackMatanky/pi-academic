@@ -61,6 +61,7 @@ This walks you through:
 | `/skill:academic-writer-ideate` | **Brainstorm ideas** — 5W1H framework, gap analysis, research question formulation |
 | `/skill:academic-writer-setup` | **Quick setup** — creates profile, detects integrations |
 | `/skill:academic-writer-voice` | **Deep voice profile** — Stage 2 adversarial interview (7 sessions) |
+| `/skill:academic-writer-export` | **Export to other formats** — convert an article to PDF, HTML, ODT, LaTeX, or EPUB |
 | `/skill:academic-writer-help` | **This help page** |
 
 ### Internal skills (invoked from other skills)
@@ -94,7 +95,7 @@ When you run `/skill:academic-writer-write`, you go through a conversational pip
    - **Repetition Check** — No repeated words, phrases, or arguments
    - **Citation Audit** — Every footnote verified against sources (hard gate)
 8. **Synthesis** — Final coherence review + full-article style compliance
-9. **Output** — Clean .docx with footnotes and bibliography
+9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + your citation style's CSL file against `.academic-helper/bibliography.bib` (Chicago/MLA/APA) — run `/skill:academic-writer-export` afterward for PDF/HTML/ODT/LaTeX/EPUB
 
 ---
 
@@ -166,6 +167,7 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 | Path | Purpose |
 |------|---------|
 | `.academic-helper/profile.md` | Your researcher profile (field, style, tools, sources) |
+| `.academic-helper/bibliography.bib` | BibTeX export of your Zotero sources (Chicago/MLA/APA articles) |
 | `past-articles/` | Your published papers for style analysis (never uploaded) |
 | `.claude/agents/` | AI agent prompts (deep-reader, architect, section-writer, auditor, synthesizer) |
 | `references/` | API documentation for integrations |

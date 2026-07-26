@@ -28,10 +28,11 @@ Without mise, the equivalent raw commands:
 | `agents/<name>.md` | Agent definition (markdown + YAML frontmatter, `pi-subagents` format) |
 | `extensions/env-inject/index.ts` | Injects `$ACADEMIC_WRITER_ROOT` into every `bash` tool call |
 | `extensions/lifecycle/index.ts` | Session lifecycle handlers (dashboard, stop notification, session log) + mounts `mcp.ts` |
-| `extensions/lifecycle/mcp.ts` | Registers the `zotero` MCP server via `pi-mcp-adapter` |
+| `extensions/lifecycle/mcp.ts` | Mounts `pi-mcp-adapter` in file-based mode, so standard MCP configs (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json`) own Zotero/NotebookLM/Sefaria server credentials |
 | `thresholds.json` | Single source of truth for all numeric quality gates |
 | `package.json` | pi manifest — `dependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
 | `pyproject.toml` / `uv.lock` | Python dev/build tooling deps (`python-docx`, `lxml`, `pdfplumber`; dev: `pytest`, `pyyaml`) — managed by `uv`, not published |
+| `scripts/lib/csl/*.csl` | Vendored CSL style files for citeproc-mode export (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`), from [citation-style-language/styles](https://github.com/citation-style-language/styles) |
 
 ## Conventions
 
@@ -41,6 +42,9 @@ Without mise, the equivalent raw commands:
 - **Skill frontmatter**: `name`, `description`, optional `allowed-tools` (space-delimited), optional `metadata: {author, version}`. No `user-invocable` — every pi skill is both model- and `/skill:name`-invocable.
 - **Agent frontmatter**: `name`, `description`, `tools` (**comma**-delimited — `pi-subagents`' frontmatter parser splits only on commas, never whitespace). MCP grants use `mcp:<server>` (whole server) or `mcp:<server>/<tool>` (single tool) — never the Claude Code `mcp__server__tool` form. No `model:` — omitting it inherits the current Pi default model. To pin an agent to a specific model/provider (e.g. run `section-writer` on Gemini), set `subagents.agentOverrides.<name>.model` in pi settings — this package never hardcodes a provider.
 - **No global pollution**: never write to `$HOME` or paths outside the project directory.
+- **Citation authoring has two modes, keyed off `citationStyle`**: `inline-parenthetical` (Hebrew default) writes literal styled citation text, unchanged end to end. `chicago`/`mla`/`apa` write pandoc-markdown citation markers (`[@citeKey, p. N]`, or `[@key1; @key2, p. N]` for co-located citations) resolved at export time by Pandoc's `--citeproc` against `.academic-helper/bibliography.bib` and the matching CSL file in `scripts/lib/csl/`. Never invent a `citeKey` — it must come from a `sources.json` record populated by `deep-reader`. Don't reintroduce literal citation text for these three styles, and don't apply citeproc markers to `inline-parenthetical` — the two modes are mutually exclusive per article.
+- **MCP config belongs to MCP**: never put Zotero API keys, library IDs, NotebookLM tokens, or other MCP server credentials in `.academic-helper/profile.md` or package source. Academic Writer records only tool intent (`tools.zotero.enabled`, `tools.notebooklm.enabled`, etc.). Runtime MCP server wiring must live in standard MCP config. If a skill scaffolds project-local `.mcp.json`, it must use safe local defaults (`ZOTERO_LOCAL=true`) and warn that secrets belong in user-global MCP config or command interpolation, not a git-tracked project file.
+- **Bare Zotero tools require direct MCP config**: because agents call `zotero_get_recent`, `zotero_get_item_fulltext`, etc. by bare name, any configured `zotero` server must use `settings.toolPrefix: "none"` and `mcpServers.zotero.directTools: true`. Do not reintroduce programmatic `createMcpAdapter({ config: ... })`; that isolated snapshot ignores `.mcp.json` and global MCP config.
 
 ## Slash commands
 
@@ -59,6 +63,7 @@ Skills are model-invoked by default; natural-language triggering is primary. `/s
 | `/skill:academic-writer-review` | Score an article before submission |
 | `/skill:academic-writer-health` | Check integration health |
 | `/skill:academic-writer-help` | List available commands |
+| `/skill:academic-writer-export` | Convert an article to PDF/HTML/ODT/LaTeX/EPUB via Pandoc |
 | `/skill:academic-writer-voice` | Stage 2 deep voice profile (7-session adversarial interview) |
 | `/skill:academic-writer-feedback` | Apply free-form feedback to an article or profile |
 | `/skill:academic-writer-learn` | Analyze past articles to refresh the style fingerprint |
@@ -89,7 +94,9 @@ The `write` and `edit` skills use a chained-with-gates pattern:
 3. Per-paragraph 8-skill pipeline (draft → 6 checks → citation audit hard gate).
 4. Synthesis pass + self-review scorecard.
 
-Auditor is the only mandatory hard gate — it must reject paragraphs whose citations don't match `sources.json` or fail external verification.
+Auditor is the only mandatory hard gate — it must reject paragraphs whose citations don't match `sources.json` or fail external verification. For `chicago`/`mla`/`apa` articles, "match" means the `[@citeKey]` marker resolves to a real entry in `.academic-helper/bibliography.bib`; a missing key is rejected with the same severity as a literal-mode metadata mismatch.
+
+DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-parenthetical` still goes through the JSON-schema + `scripts/generate-docx.py` path (RTL/footnote handling); `chicago`/`mla`/`apa` go through `pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"` directly, relying on `bibliography:`/`csl:` YAML frontmatter written into the markdown by Step 9a. The latter path does not apply Hebrew RTL post-processing — not a regression, these three styles were never RTL-formatted.
 
 ## Anti-patterns
 

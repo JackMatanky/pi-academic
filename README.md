@@ -1,6 +1,6 @@
 # Academic Writer — Pi Package
 
-AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` files.
+AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` — plus PDF, HTML, ODT, LaTeX, and EPUB via Pandoc, with citation-style switching (APA/MLA/Chicago) for a real Zotero-sourced `bibliography.bib`.
 
 ---
 
@@ -49,6 +49,14 @@ Your profile is saved to `.academic-helper/profile.md` and loaded automatically.
 /skill:academic-writer-write
 ```
 
+### 4. Export to Other Formats (optional)
+
+```
+/skill:academic-writer-export
+```
+
+Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc.
+
 ---
 
 ## Writing Workflow
@@ -91,6 +99,7 @@ Skills are model-invoked by default — natural-language triggering is primary. 
 | `/skill:academic-writer-feedback` | Apply free-form feedback to an article or your profile |
 | `/skill:academic-writer-update-field` | Change your field of study |
 | `/skill:academic-writer-update-tools` | Add or remove integrations |
+| `/skill:academic-writer-export` | Convert an article to PDF/HTML/ODT/LaTeX/EPUB |
 | `/skill:academic-writer-health` | Check all integrations and profile status |
 | `/skill:academic-writer-help` | Show package info |
 
@@ -102,10 +111,30 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 
 | Tool | What it does | Setup |
 |------|-------------|-------|
-| **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — `pip install zotero-mcp-server && zotero-mcp setup` |
+| **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
 | **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) |
+| **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for Chicago/MLA/APA | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a XeTeX engine too, e.g. `brew install --cask basictex && sudo tlmgr install collection-xetex` |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
+
+**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Chicago/MLA/APA are authored as `[@citeKey]` references resolved at export time by Pandoc + a CSL style file (vendored in `scripts/lib/csl/`) against `.academic-helper/bibliography.bib` — the same source article can be re-rendered in any of these three styles without rewriting prose.
+
+**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-helper/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. A local Zotero setup can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
+
+```json
+{
+  "settings": { "toolPrefix": "none" },
+  "mcpServers": {
+    "zotero": {
+      "command": "zotero-mcp",
+      "env": { "ZOTERO_LOCAL": "true" },
+      "directTools": true
+    }
+  }
+}
+```
+
+For Zotero web/API mode, keep secrets in user-global MCP config (`~/.config/mcp/mcp.json`) or use command interpolation (for example macOS Keychain via `!security ...`) instead of writing API keys into a git-tracked project file. If you prefer shell env vars, MCP config still supports `${ZOTERO_API_KEY}` / `${ZOTERO_LIBRARY_ID}` interpolation.
 
 ---
 
@@ -119,7 +148,8 @@ your-research-folder/
 ├── .voice/                     ← Voice-subsystem working state (fingerprint, interview transcripts, audit)
 └── .academic-helper/
     ├── profile.md               ← Your profile (auto-created)
-    ├── sources.json             ← Indexed source registry
+    ├── sources.json             ← Indexed source registry (includes citeKey for Zotero-backed sources)
+    ├── bibliography.bib         ← BibTeX export of your Zotero sources for the current article (Chicago/MLA/APA)
     ├── research-brief.md        ← Output from /skill:academic-writer-ideate
     ├── agent-memory/            ← Per-agent persistent notes
     └── logs/                    ← Session logs
@@ -131,17 +161,23 @@ your-research-folder/
 
 **"No profile found"** — run `/skill:academic-writer-init` first.
 
-**"Zotero not detected"** — install and start the MCP server:
+**"Zotero not detected"** — install the server and make sure a `zotero` MCP server is configured:
 ```bash
 pip install zotero-mcp-server
-zotero-mcp setup
 ```
-Zotero desktop must be running with the local API enabled (Settings → Advanced) for local-mode detection to succeed.
+For local Zotero, add the `.mcp.json` snippet from the Integrations section. Zotero desktop must be running with the local API enabled (Settings → Advanced). The `zotero` server must expose direct bare tools (`settings.toolPrefix: "none"` plus `directTools: true`) because the package calls tools like `zotero_get_recent` directly.
 
 **Articles won't export to .docx** — install the Python dependency:
 ```bash
 pip install python-docx
 ```
+
+**PDF export fails / "xelatex not found"** — install a XeTeX-capable LaTeX distribution:
+```bash
+brew install --cask basictex
+sudo tlmgr install collection-xetex
+```
+HTML/ODT/LaTeX/EPUB export via `/skill:academic-writer-export` don't need this — only PDF does (Hebrew-safe rendering requires XeTeX; the default `pdflatex` engine cannot render Hebrew script).
 
 **Package behaves strangely after an update** — reinstall it:
 ```bash
@@ -186,6 +222,8 @@ The pi conversion depends on three community pi packages by [Nico Bailon](https:
 - [pi-web-access](https://github.com/nicobailon/pi-web-access) — the `web_search` tool used by the citation auditor's external-verification check.
 
 Source-library access is provided by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) (54yyyu), replacing the original Candlekeep integration.
+
+Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files vendored from the [citation-style-language/styles](https://github.com/citation-style-language/styles) repository (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`).
 
 ---
 

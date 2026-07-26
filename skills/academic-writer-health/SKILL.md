@@ -1,8 +1,8 @@
 ---
 name: academic-writer-health
-description: "Check the health of all Academic Writer integrations — profile, Zotero, RAG, past articles, and source index. Use when something stops working, after install, or before a long write session."
+description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
 allowed-tools: bash read
-metadata: {author: "Yotam Fromm", version: "0.2.23"}
+metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
 # Academic Writer — Health Check
@@ -47,16 +47,47 @@ Report:
 
 ---
 
-## 3. Zotero
+## 3. Zotero / MCP Config
 
 **Skip if `tools.zotero.enabled` is false.** Report as "Disabled (enable with `/skill:academic-writer-update-tools`)".
 
-Call `zotero_get_recent(limit=20)` to probe connectivity.
+Check the server binary and project-local MCP config helper information:
+
+```bash
+command -v zotero-mcp >/dev/null 2>&1 && echo "ZOTERO_MCP_BINARY: INSTALLED" || echo "ZOTERO_MCP_BINARY: NOT_FOUND"
+if [ -f .mcp.json ]; then
+  python3 -c "import json; p='.mcp.json'; d=json.load(open(p)); s=d.get('settings',{}); z=d.get('mcpServers',{}).get('zotero',{}); print('PROJECT_MCP_JSON: FOUND'); print('TOOL_PREFIX:', s.get('toolPrefix')); print('ZOTERO_DIRECT_TOOLS:', z.get('directTools')); print('ZOTERO_COMMAND:', z.get('command'))" 2>&1
+else
+  echo "PROJECT_MCP_JSON: NOT_FOUND (global MCP config may still provide zotero)"
+fi
+```
+
+Then call `zotero_get_recent(limit=20)` to probe live MCP connectivity.
 
 Report:
+- `zotero-mcp` binary installed? ✓/✗
+- Project `.mcp.json` present? ✓/✗/not required if global config works
+- If project `.mcp.json` has a `zotero` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers.zotero.directTools` is `true`? ✓/✗
 - MCP server connected? ✓/✗
 - Number of items in library
 - If error: show the error message
+
+If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend configuring the standard MCP `zotero` server. For local Zotero, the safe project-local `.mcp.json` block is:
+
+```json
+{
+  "settings": { "toolPrefix": "none" },
+  "mcpServers": {
+    "zotero": {
+      "command": "zotero-mcp",
+      "env": { "ZOTERO_LOCAL": "true" },
+      "directTools": true
+    }
+  }
+}
+```
+
+Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global MCP config or command interpolation for Zotero web/API credentials.
 
 ---
 
@@ -98,7 +129,37 @@ Report:
 
 ---
 
-## 7. Agent Files
+## 7. Pandoc / Export Tools
+
+**Skip this check's PDF sub-line reporting only if pandoc itself is missing — still report pandoc's own status either way.**
+
+```bash
+command -v pandoc >/dev/null 2>&1 && echo "PANDOC: INSTALLED" || echo "PANDOC: NOT_FOUND"
+command -v xelatex >/dev/null 2>&1 && echo "XELATEX: INSTALLED" || echo "XELATEX: NOT_FOUND"
+```
+
+Report:
+- pandoc installed? ✓/✗ (powers `/skill:academic-writer-export` and citeproc-mode `chicago`/`mla`/`apa` docx generation)
+- xelatex installed? ✓/✗ (needed only for PDF export — Hebrew-safe LaTeX engine; other export formats work without it)
+
+**If pandoc is not installed**, show this setup guide:
+
+> **How to set up pandoc:**
+>
+> 1. Install pandoc: see https://pandoc.org/installing.html
+> 2. Re-run `/skill:academic-writer-health` to verify.
+
+**If xelatex is not installed** (pandoc may still be fine — this only blocks PDF export), show this setup guide:
+
+> **How to enable PDF export:**
+>
+> - **macOS**: `brew install --cask basictex && sudo tlmgr install collection-xetex`
+> - **other platforms**: install any TeX distribution from https://pandoc.org/installing.html, then ensure `xelatex` is on your `PATH`.
+> - Re-run `/skill:academic-writer-health` to verify.
+
+---
+
+## 8. Agent Files
 
 ```bash
 ls "$ACADEMIC_WRITER_ROOT"/agents/*.md 2>/dev/null
@@ -126,6 +187,7 @@ Show a clean summary table:
 > | Past Articles | ✓ [N] files / ✗ Empty | PDF: [n], DOCX: [n] |
 > | Zotero | ✓ Connected / ✗ Error / — Disabled | [N] items |
 > | NotebookLM | ✓ Connected / ✗ Not found / — Disabled | [N] notebooks |
+> | Pandoc / Export | ✓ Ready / ⚠ PDF unavailable / ✗ Not found | Pandoc: [status], XeTeX: [status] |
 > | Agent Files | ✓ All present / ✗ Missing [list] | 5/5 |
 >
 > **Overall: [N]/[total] checks passed**

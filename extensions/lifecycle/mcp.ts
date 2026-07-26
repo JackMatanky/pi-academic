@@ -1,37 +1,24 @@
-import { createMcpAdapter } from "pi-mcp-adapter";
+import mcpAdapter from "pi-mcp-adapter";
 
-// Registers the `zotero` MCP server — the researcher's reference library.
+// Academic Writer uses the normal MCP configuration stack instead of owning
+// server credentials inside the package:
 //
-// Registered programmatically (not via `.mcp.json`) because a programmatic
-// `config` is an isolated snapshot — it is never merged with file-based
-// config — so this is the one place the server is ever declared. See
-// pi-mcp-adapter README "Use createMcpAdapter when an SDK or server
-// integration already owns its MCP configuration".
+// - ~/.config/mcp/mcp.json / ~/.agents/mcp.json / ~/.agents/mcp/mcp.json
+// - .mcp.json
+// - .pi/mcp.json
 //
-// `directTools: true` makes its tools first-class (callable by bare name,
-// e.g. `zotero_get_item_fulltext`) instead of hidden behind the generic
-// `mcp` proxy tool — every skill/agent in this package calls tools by bare
-// name. `toolPrefix: "none"` is required alongside it: the default "server"
-// prefix mode double-prefixes tool names that already start with the server
-// name (e.g. `zotero_zotero_get_recent`).
+// This matters because pi-mcp-adapter's programmatic `config` option is an
+// isolated snapshot: it is never merged with file-based MCP config. Using the
+// default adapter lets researchers reuse an existing Zotero/NotebookLM/Sefaria
+// MCP setup, store secrets in their preferred MCP layer, and keep Academic
+// Writer's own `.academic-helper/profile.md` free of credentials.
+//
+// Skills and agents call Zotero tools by their bare names
+// (`zotero_get_item_fulltext`, `zotero_get_recent`, ...), so setup/health docs
+// require any project/global MCP config that declares a `zotero` server to set:
+//   settings.toolPrefix = "none"
+//   mcpServers.zotero.directTools = true
 //
 // Model choice (including running any agent on Gemini or another provider)
 // is a pi setting, not something this package brokers — see AGENTS.md.
-export const mcpExtension = createMcpAdapter({
-  config: {
-    settings: {
-      toolPrefix: "none",
-    },
-    mcpServers: {
-      zotero: {
-        command: "zotero-mcp",
-        env: {
-          ZOTERO_LOCAL: "true",
-          ZOTERO_API_KEY: "${ZOTERO_API_KEY}",
-          ZOTERO_LIBRARY_ID: "${ZOTERO_LIBRARY_ID}",
-        },
-        directTools: true,
-      },
-    },
-  },
-});
+export const mcpExtension = mcpAdapter;

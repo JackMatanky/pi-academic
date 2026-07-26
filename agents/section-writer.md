@@ -59,7 +59,7 @@ You will receive:
 - `totalSections`: Total number of sections in the article
 - `thesis`: The article's thesis statement
 - `articleStructure`: The researcher's article structure conventions (intro/conclusion patterns, paragraph parts)
-- `citationStyle`: chicago / mla / apa / inline-parenthetical
+- `citationStyle`: `chicago` / `mla` / `apa` (**citeproc mode** — pandoc-markdown `[@citeKey]` markers, see Skill 1 step 3 below) or `inline-parenthetical` (**literal mode** — styled citation text, unchanged)
 - `targetLanguage`: The article's writing language — **ALL text must be in this language**
 - `tools`: The enabled tools from the profile
 - `priorSectionTexts`: Text of all previously completed sections (for cross-section repetition awareness)
@@ -128,7 +128,7 @@ print(m.group(1) if m else '[]')
 Store all five in context:
 - `styleFingerprint` — used throughout drafting and by the auditor handoff
 - `linkingWords` — used in Skill 4
-- `sourcesRegistry` — the ONLY trusted source for citation metadata (year, journal, publisher, title spelling). NEVER infer these from prior knowledge.
+- `sourcesRegistry` — the ONLY trusted source for citation metadata (year, journal, publisher, title spelling, and — for citeproc-mode styles — `citeKey`). NEVER infer these from prior knowledge.
 - `evidenceOwnership` — tells you which sections own the full description of each evidence anchor. If this section is NOT the owner of an evidence anchor, back-reference rather than re-describe.
 - `bannedTerms` — swept in Skill 2.
 
@@ -176,18 +176,21 @@ Source text retrieved via `zotero_read_pdf_pages` (and any source passage passed
 
    **Paragraph word ceiling:** `min(fingerprint.paragraphStructure.length.mean + fingerprint.paragraphStructure.length.stdev, thresholds.json > paragraph.wordCeiling (default 220 words))` (intro/conclusion: ceiling + `thresholds.json > paragraph.wordCeilingIntroConclusionBonus` (default 30)).
 
-3. **Every factual claim must be cited.** Citation metadata rule: every author/title/year/journal/publisher/volume/issue/page field MUST come from either (a) the `sourcesRegistry` entry for that source, OR (b) an explicit substring of the Zotero page content. **NEVER infer a year, journal, or publisher from prior knowledge.** If a registry field is `null` or `extractionConfidence: "low"`, emit the citation with `[?]` (e.g., `(Cohen, Title, [?], p. 45)`).
+3. **Every factual claim must be cited.** Citation metadata rule: every author/title/year/journal/publisher/volume/issue/page field MUST come from either (a) the `sourcesRegistry` entry for that source, OR (b) an explicit substring of the Zotero page content. **NEVER infer a year, journal, or publisher from prior knowledge.** If a registry field is `null` or `extractionConfidence: "low"`, emit the citation with `[?]` (e.g., `(Cohen, Title, [?], p. 45)`) — **this inline `[?]` marker is literal-mode only**; the citeproc-mode branch below handles the equivalent case differently (it cannot embed an inline marker).
 
    **`inline-parenthetical` (Hebrew academic default):**
    - `(Author, Title, Page)` inline. Hebrew page notation `עמ'`. Translated works: `(קאנט, ביקורת התבונה המעשית [תרגום יעקב הנס], עמ' 45)`. Hebrew names and titles only.
    - **Zotero source title rule:** title field must be `workTitle` from `sources.json` — not the collection name.
    - **Biblical reference format:** `(ספר, פרק, פסוק)` with commas, no colon — e.g., `(אסתר, ד, יד)`.
 
-   **`chicago`:** `[^N]` inline, with `[^N]: Author, *Work* (Publisher, Year), Page.` at end.
+   **`chicago` / `mla` / `apa` — citeproc mode:** do not write literal styled citation text for these three styles. Emit a pandoc-markdown citation marker inline at the point of the claim instead:
+   - One source: `[@citeKey, p. N]` — e.g., `[@smith2020, p. 42]`.
+   - Multiple co-located sources for the same claim: `[@key1; @key2, p. N]` — e.g., `[@smith2020; @cohen2019, p. 4]`.
+   - `citeKey` MUST be that source's `citeKey` field from `sources.json` (populated by deep-reader from the Zotero-derived BibTeX entry) — **never invented**, same hard rule as literal mode. A source whose `citeKey` is `null` (no Zotero backing) cannot be cited in citeproc mode.
+   - All three styles share this one marker syntax — whether it renders as a footnote (chicago) or an inline parenthetical (mla/apa) is decided later by the CSL style file at pandoc-render time, not by you.
+   - **No `[?]` marker here** — citeproc syntax can't embed one without corrupting the `[@key]` parse. When a field the claim relies on has `extractionConfidence: "low"` or is `null` in `sources.json`, leave the marker as plain `[@citeKey, p. N]` and instead flag the paragraph for the audit report as `[NEEDS REVIEW: <citeKey> — <field> unverified]` — Skill 8's auditor detects this from `sources.json` and adds the report line; you do not (and cannot) embed it in the marker.
 
-   **`mla` / `apa`:** Standard author-page inline; year from registry only.
-
-   Only cite sources found in search results — never make up citations.
+   Only cite sources found in search results — never make up citations. This rule holds in both modes.
 
 4. **Analytical claim evidence binding:** Every interpretive claim must be anchored to a specific textual feature — exact phrase, word choice, syntactic structure, rhetorical pattern. Test: for each analytical sentence, ask "Which specific word or phrase in the source justifies this claim?"
 
@@ -245,6 +248,7 @@ Word-level (3+ same lemma), phrase-level (4+ word phrases vs prior paragraphs), 
 - The paragraph text
 - `sectionIndex`, `paragraphIndex`, `paragraphId`
 - `tools` from the profile
+- `citationStyle` — the auditor needs this to select the correct citation-verification branch (Check D/E literal vs. citeproc mode)
 
 If rejected: re-run Skills 1-7 on the paragraph with the auditor's feedback, re-spawn the auditor (fresh — see decision matrix above), and re-audit. Max rewrite cycles from `thresholds.json > rewriteCycles.max` (default 3). If still failing after the max, include the paragraph with a `[NEEDS REVIEW]` marker.
 
@@ -290,8 +294,7 @@ PY
 
 Return all approved paragraphs for the section, with citations and a skills summary. Citation format matches `citationStyle`:
 - `inline-parenthetical`: `(קאנט, ביקורת התבונה המעשית, עמ' 120)` inline — NO footnotes. Biblical references use `(ספר, פרק, פסוק)` with commas, no colon — e.g., `(אסתר, ד, יד)`.
-- `chicago`: `[^N]` inline with `[^N]: Author, *Work*, Page.` at end
-- `mla` / `apa`: standard author-page inline; year from the registry only (never inferred)
+- `chicago` / `mla` / `apa` (**citeproc mode**): pandoc-markdown markers — `[@citeKey, p. N]` for one source, `[@key1; @key2, p. N]` for co-located multiple sources. `citeKey` comes from `sources.json` only, never invented. No literal author/year text and no inline `[?]`; the auditor reports low-confidence fields separately as `[NEEDS REVIEW: <citeKey> — <field> unverified]`.
 
 ```
 SECTION: [title — in target language only]

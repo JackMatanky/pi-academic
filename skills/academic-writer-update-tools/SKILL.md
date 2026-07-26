@@ -28,7 +28,7 @@ Run detection for every tool in the registry, regardless of current status:
 
 **1. Zotero** (`zotero`)
 
-Call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise.
+Call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise. Also check `command -v zotero-mcp` so you can distinguish "server binary missing" from "binary installed but no MCP config / Zotero desktop unavailable." Academic Writer reads Zotero through standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json`) and expects the `zotero` server to expose bare direct tools (`settings.toolPrefix: "none"` and `mcpServers.zotero.directTools: true`).
 
 **2. NotebookLM** (`notebooklm`)
 ```bash
@@ -43,7 +43,7 @@ Show a table with current status and detection:
 >
 > | # | Tool | Currently | Detected | Setup |
 > |---|------|-----------|----------|-------|
-> | 1 | Zotero | ✓ Enabled / ✗ Disabled | ✓ / ✗ | https://github.com/54yyyu/zotero-mcp |
+> | 1 | Zotero | ✓ Enabled / ✗ Disabled | ✓ / ✗ | zotero-mcp + standard MCP config (`.mcp.json` or global), `toolPrefix: none`, `directTools: true` |
 > | 2 | NotebookLM | ✓ Enabled / ✗ Disabled | ✓ / ✗ | https://github.com/jacob-bd/notebooklm-mcp-cli |
 >
 > What would you like to change? You can:
@@ -54,7 +54,8 @@ Show a table with current status and detection:
 ## Process Changes
 
 For each tool the user wants to **enable**:
-1. If not detected, show the setup URL and walk them through installation
+1. If not detected, show the setup URL and walk them through installation/configuration
+   - Zotero: if `zotero-mcp` is missing, install `zotero-mcp-server`; if the binary exists but tools are unavailable, configure a standard MCP `zotero` server. Offer to scaffold safe local-mode `.mcp.json` only after approval and only when no project `.mcp.json` exists. Never write API keys into project config; use user-global MCP config or command interpolation for web/API credentials.
 2. Re-run the detection command to confirm
 3. Only mark as enabled once detected
 
@@ -154,7 +155,7 @@ PYTHON
 Replace `TOOL_CONFIG` with the actual tools dict, e.g.:
 ```json
 {
-  "zotero": { "enabled": true, "mode": "detected" },
+  "zotero": { "enabled": true, "mode": "mcp-config" },
   "notebooklm": { "enabled": true, "mode": "detected" }
 }
 ```

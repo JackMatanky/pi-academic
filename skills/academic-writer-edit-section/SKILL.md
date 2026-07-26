@@ -136,5 +136,7 @@ Show the revised section with a change summary:
 >
 > Would you like me to export the full updated article as .docx?
 
+**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): JSON schema → `generate-docx.py` for `inline-parenthetical` (unchanged), or `pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"` for `chicago`/`mla`/`apa` (citeproc mode). This skill does not define its own export procedure — see those two skills for the CSL mapping table and exact commands.
+
 ---
 

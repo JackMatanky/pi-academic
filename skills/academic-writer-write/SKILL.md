@@ -382,6 +382,10 @@ DOCX_PATH="articles/${FILEBASE}.docx"
 
 #### Step 9a: Markdown Output
 
+Branch by `citationStyle` (from the profile). Both branches below share the `$MD_PATH` / `$DOCX_PATH` variables set above.
+
+##### `inline-parenthetical` (unchanged)
+
 Use the `Write` tool to write the article as markdown to `$MD_PATH`. Structure:
 
 ```markdown
@@ -413,7 +417,61 @@ Paragraph 2 text...
 - Keep all inline citations exactly as they appear (e.g., `(Author, Title, p. N)`)
 - No extra formatting beyond what the article text already contains
 
+##### `chicago` / `mla` / `apa` (citeproc mode)
+
+These three styles no longer carry literal citation text in the body — section-writer emits pandoc-markdown citation markers instead: `[@citeKeyA, p. N]` for a single citation, `[@citeKeyA; @citeKeyB, p. N]` for co-located citations, where each `citeKey` matches a `citeKey` value in `.academic-helper/sources.json` (never invented). Step 9a must prepend YAML frontmatter before the `# ARTICLE_TITLE` heading so pandoc's citeproc can resolve them in Step 9b.
+
+First, resolve the package root literally — the `Write` tool writes static text and does **not** expand shell variables, so this must run before the frontmatter is written:
+
+```bash
+echo "$ACADEMIC_WRITER_ROOT"
+```
+
+Map the active `citationStyle` to its vendored CSL file:
+
+| `citationStyle` | CSL file (under `scripts/lib/csl/`) |
+|---|---|
+| `chicago` | `chicago-notes-bibliography.csl` |
+| `mla` | `modern-language-association.csl` |
+| `apa` | `apa.csl` |
+
+Use the `Write` tool to write `$MD_PATH` with this frontmatter, followed by the same body structure as the `inline-parenthetical` branch above (title, thesis, abstract, sections, paragraphs):
+
+```markdown
+---
+title: "ARTICLE_TITLE"
+lang: "he"  # or "en", from targetLanguage
+bibliography: .academic-helper/bibliography.bib
+csl: "RESOLVED_ROOT/scripts/lib/csl/CSL_FILE"
+---
+
+# ARTICLE_TITLE
+
+*ARTICLE_THESIS*
+
+## תקציר
+
+[Abstract text from Step 8.5]
+
+## Section Title (only if totalWords > 1500)
+
+Paragraph 1 text with [@citeKeyA, p. N] markers inline...
+```
+
+**Rules:**
+- `lang` — the ISO code for `targetLanguage`: `"he"` for Hebrew, `"en"` for English (same source value that drives `isRtl` in the `inline-parenthetical` branch's JSON schema below)
+- `bibliography` is always the literal path `.academic-helper/bibliography.bib` — the Phase-1 deep-reader output (Step 3)
+- `csl` — replace `RESOLVED_ROOT` with the literal output of `echo "$ACADEMIC_WRITER_ROOT"` above (an absolute path — never leave the unexpanded string `$ACADEMIC_WRITER_ROOT` in the file) and `CSL_FILE` with the filename from the table above for the active `citationStyle`
+- `bibliography:` and `csl:` are the only pandoc-citeproc frontmatter keys needed — pandoc reads them automatically at export time, no extra `--bibliography`/`--csl` CLI flags required
+- Title as `# H1`, thesis as italic line below it, section headings only if `totalWords > 1500` — otherwise identical to the `inline-parenthetical` structure above
+- Citations in the body are the raw `[@citeKeyA, p. N]` markers exactly as section-writer produced them — do NOT strip, reformat, or convert them to plain parenthetical or footnote text; pandoc's citeproc renders them at export time (Step 9b)
+- `inline-parenthetical` articles get no frontmatter at all — this block is exclusive to `chicago`/`mla`/`apa`
+
 #### Step 9b: DOCX Output
+
+Branch by `citationStyle` — same branch as Step 9a.
+
+##### `inline-parenthetical` (unchanged)
 
 Write the article data to a JSON file, then run the standalone DOCX generator script:
 
@@ -470,6 +528,16 @@ python3 "$ACADEMIC_WRITER_ROOT"/scripts/generate-docx.py --input /tmp/aw-article
 
 The script handles all RTL formatting, directional marks, citation parentheses splitting, and conditional section titles deterministically.
 
+##### `chicago` / `mla` / `apa` (citeproc mode)
+
+Skip the JSON-schema + `generate-docx.py` path entirely. Pandoc reads the frontmatter-bearing markdown Step 9a just wrote — `bibliography:` and `csl:` are already declared there, so no extra flags are needed beyond `--citeproc` itself:
+
+```bash
+pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"
+```
+
+**Current limitation:** this path does not run `generate-docx.py`, so it skips the Hebrew RTL post-processing (directional marks, RTL paragraph formatting) that script applies. In practice this mirrors today's usage — `chicago`/`mla`/`apa` are Western citation conventions the profile's Hebrew default (`inline-parenthetical`) doesn't use — but if a researcher pairs `targetLanguage: Hebrew` with one of these three styles, the exported `.docx` will render left-to-right rather than RTL. This is not a new regression introduced by citeproc mode; call it out plainly in the completion report below rather than leaving it silent.
+
 Log output completion:
 
 
@@ -482,6 +550,7 @@ Report to researcher:
 > Citations: [N] ([citationStyle] format)
 > Sections: [N]
 > Language: [targetLanguage]
+> [If citeproc mode (`chicago`/`mla`/`apa`): Bibliography — `.academic-helper/bibliography.bib` via pandoc `--citeproc` (CSL: [CSL file])]
 >
 > Quality checks applied per paragraph:
 > - Style fingerprint compliance: avg [N]/5 score, [N] adjustments

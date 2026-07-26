@@ -40,11 +40,12 @@ At least one citation per paragraph must survive this adversarial probe before A
 ## Input
 
 You will receive:
-- A drafted paragraph with inline footnotes (already passed Hebrew grammar and repetition checks)
+- A drafted paragraph with inline citations — footnotes/inline text in literal mode, or pandoc-markdown `[@citeKey]` markers in citeproc mode (already passed Hebrew grammar and repetition checks)
 - `sectionIndex`: Section number
 - `paragraphIndex`: Paragraph number within the section
 - `paragraphId`: Identifier for this paragraph (format: `section_N_p_M`)
 - `tools`: Enabled tools from the profile
+- `citationStyle`: `chicago` / `mla` / `apa` (citeproc mode) or `inline-parenthetical` (literal mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.academic-helper/profile.md` (see Check D, Step D0).
 
 ## Process
 
@@ -117,6 +118,16 @@ If neither RAG nor Zotero are enabled, verify citations against any available co
 
 **Check D — Metadata Integrity** (mandatory):
 
+**Step D0 — Determine citation mode.** Metadata verification branches on the article's citation style. Read `citationStyle` from this agent's input; if the caller did not provide it, derive it directly:
+```bash
+CITATION_STYLE=$(grep '^citationStyle:' .academic-helper/profile.md 2>/dev/null | sed -E 's/^citationStyle:[[:space:]]*"?([a-zA-Z-]+)"?.*/\1/')
+echo "${CITATION_STYLE:-inline-parenthetical}"
+```
+- `citationStyle` is `inline-parenthetical` → **literal mode**.
+- `citationStyle` is `chicago`, `mla`, or `apa` → **citeproc mode**.
+
+**Literal mode (`inline-parenthetical`):**
+
 Load the bibliographic source registry:
 ```bash
 cat .academic-helper/sources.json 2>/dev/null || echo "[]"
@@ -132,9 +143,32 @@ Three outcomes per field:
 
 Check D is mandatory. If `.academic-helper/sources.json` does not exist, log a warning and treat every metadata field as "unverified" — all fields get tagged `[NEEDS REVIEW]` so the researcher can verify manually.
 
+**Citeproc mode (`chicago` / `mla` / `apa`):**
+
+Citations in this mode are pandoc-markdown markers, not literal author/title text — extraction and verification both key off `citeKey`, never off text matching.
+
+1. **Extract every marker.** Scan the paragraph text for every `[@...]` span (regex: `\[@[^\]]+\]`). Each span holds one or more co-located citations — `[@smith2020, p. 42]` (single) or `[@smith2020; @cohen2019, p. 4]` (multiple). To pull the bare key(s) out of a span:
+   - Strip the leading `[@` and trailing `]` from the whole span.
+   - Split what remains on `;` — one segment per citation. Every segment except the first still starts with a stray `@` (e.g. ` @cohen2019, p. 4`) — after trimming whitespace, strip that leading `@` from each segment before continuing.
+   - For each segment, split on the first `,` and keep only the part before it (the locator, e.g. `p. 42`, is discarded here). Trim whitespace — the result is the bare `citeKey`.
+2. **Confirm the key resolves in the bibliography.** Load `.academic-helper/bibliography.bib` and check whether the extracted key appears as an entry:
+   ```bash
+   python3 -c "import re; bib=open('.academic-helper/bibliography.bib').read(); print('FOUND' if re.search(r'^@\w+\{KEY_HERE,', bib, re.MULTILINE) else 'MISSING')"
+   ```
+   Substitute the real extracted key for `KEY_HERE` (escape any regex-special characters in it first). **`MISSING` → the citation is fabricated or broken** — a key that is not in the bibliography cannot be a real source. REJECT the paragraph with `fabricated_citation: <citeKey> not found in bibliography.bib`, the same severity as a literal-mode `metadata_mismatch`.
+3. **Cross-check confidence against `sources.json`.** Load the registry (same command and "file missing" fallback as literal mode above) and find the record whose `citeKey` field equals the extracted key. For every field the surrounding claim relies on:
+   - `extractionConfidence.<field>` is `"low"` OR the field is `null` → do **not** reject. A citeproc marker cannot carry an inline `[?]` — embedding one would break the `[@key]` syntax pandoc parses — so instead add a line to the audit report: `[NEEDS REVIEW: <citeKey> — <field> unverified]`. This is the exact citeproc-mode counterpart of literal mode's inline `[NEEDS REVIEW: <field>]` tag: same trigger, reported instead of embedded.
+   - No `sources.json` record has that `citeKey` at all (should not happen — `bibliography.bib` and `sources.json` are written together by deep-reader — but handle it defensively): treat every field as unverified, exactly as the literal-mode "registry missing" fallback, and add `[NEEDS REVIEW: <citeKey> — record not found in sources.json]` to the report.
+
+Check D is mandatory in both modes.
+
 ### Check E — Unsourced Factual Assertions (Section G hard rule)
 
 In addition to verifying that cited claims are accurate, scan every paragraph for **uncited factual claims** that should have a citation. The pattern reference (`anti-ai-patterns-${language}.md` Section G) declares this a per-article cap=0 rule.
+
+**Citation-presence check (branches by mode — reuses the mode + marker extraction from Check D above):**
+- **Literal mode (`inline-parenthetical`):** a sentence is "cited" if a footnote/inline-parenthetical citation immediately follows it, exactly as Check D already resolves.
+- **Citeproc mode (`chicago` / `mla` / `apa`):** a sentence is "cited" if it contains, or is immediately followed by, one of the `[@...]` markers Check D's citeproc branch already extracted from this paragraph. A factual-claim sentence covered by none of those markers is uncited — identically to a literal-mode sentence with no footnote.
 
 **Detection cues — flag any sentence that:**
 1. Asserts a **dating** ("בתקופה X", "במאה הY", "in the Nth century") without a citation.
@@ -186,17 +220,18 @@ For each citation in the paragraph, cross-check: does the cited title string mat
 Your default verification is `zotero_read_pdf_pages` (Check A) plus web_search (Check B) plus the registry checks (Check D/G). A RAG retrieval tool is an OPTIONAL extra path used **only when such a tool is actually available** in your toolset — if no RAG tool is present (the common case), ignore the RAG-specific clauses below and rely on Zotero + web_search + registry.
 
 **APPROVED** if ALL of:
-- Every factual claim has a footnote
+- Every factual claim has a footnote (literal mode) or is covered by a `[@...]` citation marker (citeproc mode)
 - Zotero confirms the author/work/page combination exists, and the cited passage actually supports the claim (not just nearby text)
 - (RAG path, only if a RAG tool is available) the retrieved passage supports each claim
-- Check D: every citation field that the registry marks `"high"` confidence matches the citation. Low-confidence or absent fields pass APPROVAL with `[NEEDS REVIEW: <field>]` tags inline rather than failing the paragraph.
+- Check D, literal mode: every citation field the registry marks `"high"` confidence matches the citation; low-confidence or absent fields pass APPROVAL with `[NEEDS REVIEW: <field>]` tags inline. Check D, citeproc mode: every `[@key]` marker resolves in `bibliography.bib`; low-confidence or absent `sources.json` fields pass APPROVAL with a `[NEEDS REVIEW: <citeKey> — <field> unverified]` line added to the audit report instead. Neither mode fails the paragraph for a low-confidence field alone.
 
 **REJECTED** if ANY of:
-- A factual claim has no footnote
+- A factual claim has no footnote (literal mode) or no covering `[@...]` marker (citeproc mode)
 - Zotero page does not contain what was claimed
 - The cited passage contradicts or is irrelevant to the claim
 - (RAG path, only if a RAG tool is available) the retrieved passage contains no matching passage, or the RAG response has `"error"` in it (service issue — retry once, then reject)
 - Check D: a high-confidence registry field contradicts a citation field (`metadata_mismatch`) — this catches the "right author, wrong year" class of error
+- Check D, citeproc mode: a `[@key]` marker's key does not exist in `.academic-helper/bibliography.bib` (`fabricated_citation`) — the same severity as a literal-mode `metadata_mismatch`
 
 ## Output
 
@@ -205,10 +240,10 @@ On APPROVED:
 AUDIT: APPROVED
 Paragraph: [paragraphId]
 Claims verified: [N]
-Needs-review tags applied: [N]  (list fields if any, e.g., "year in Cohen citation")
-Final paragraph text with [NEEDS REVIEW: <field>] tags inline (emit it inside the fenced block below so the writer can commit the tagged version):
+Needs-review tags applied: [N]  (list them — literal mode: inline field tags, e.g. "year in Cohen citation"; citeproc mode: report lines, e.g. "[NEEDS REVIEW: smith2020 — year unverified]")
+Final paragraph text (emit it inside the fenced block below so the writer can commit the approved version):
 ```text
-[the reviewed paragraph here with inline tags]
+[the reviewed paragraph here — literal mode: with [NEEDS REVIEW: <field>] tags inline; citeproc mode: `[@key]` markers left exactly as written, untouched]
 ```
 ````
 
@@ -220,21 +255,22 @@ AUDIT: REJECTED
 Paragraph: [paragraphId]
 
 Issues found:
-1. [Exact claim text] — [reason: no footnote / no source-passage match / page mismatch / passage doesn't support claim / metadata_mismatch: <field> cited=X registry=Y]
+1. [Exact claim text] — [reason: no footnote or covering marker / no source-passage match / page mismatch / passage doesn't support claim / metadata_mismatch: <field> cited=X registry=Y / fabricated_citation: <citeKey> not found in bibliography.bib]
 2. ...
 
 Rewrite instructions:
 - [specific guidance for the writer on how to fix each issue]
 - If a citation was close but wrong page, suggest the correct page from the Zotero/source-passage results (or RAG results if a RAG tool was used)
 - For metadata_mismatch: use the registry value, or mark the field `[?]` if the writer cannot confirm the correct value
+- For fabricated_citation (citeproc mode): the writer must replace the marker with a real `citeKey` from `sources.json`, or remove/rephrase the claim if no matching source exists — never invent a key just to make the marker resolve
 ```
 
 ## Non-Negotiable Rules
 
 - NEVER approve a paragraph with an unverified factual claim
 - NEVER approve a page number that wasn't confirmed via `zotero_read_pdf_pages`
-- NEVER approve a paragraph where a citation field contradicts a high-confidence registry entry (Check D metadata_mismatch)
-- NEVER silently approve a citation field you could not verify — always emit `[NEEDS REVIEW: <field>]` inline so the researcher can verify it manually
+- NEVER approve a paragraph where a citation field contradicts a high-confidence registry entry (Check D metadata_mismatch), or where a citeproc `[@key]` marker's key is absent from `bibliography.bib` (Check D fabricated_citation)
+- NEVER silently approve a citation field you could not verify — always emit `[NEEDS REVIEW: <field>]` inline (literal mode) or add a `[NEEDS REVIEW: <citeKey> — <field> unverified]` line to the audit report (citeproc mode) so the researcher can verify it manually
 - If a claim is accurate but untraceable to a specific page, it must be removed or rephrased as the author's own analysis
 - Default to `zotero_read_pdf_pages` + web_search + the registry checks for citation verification. Only when a RAG retrieval tool is actually available, use it (with `bypass` mode and `include_context: true` for exact source passages) as an optional additional check — never assume a RAG tool exists.
 - NEVER predict what the verification will find before running it — run the tool, read the actual output
