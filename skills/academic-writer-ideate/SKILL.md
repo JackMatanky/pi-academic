@@ -99,37 +99,45 @@ Log:
 
 Present Humanities-appropriate research approaches:
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nTextual Analysis\n────────────────\nFocus: One or more primary texts\nMethod: Close reading, literary/philological analysis\nOutput: New interpretation or reading\nBest for: Discovering meaning in texts\n```"
-    },
-    {
-      "label": "Comparative Study",
-      "description": "Comparing two or more texts, figures, or traditions",
-      "markdown": "```\nComparative Study\n─────────────────\nFocus: Two+ texts, thinkers, or traditions\nMethod: Systematic comparison on defined axes\nOutput: Reveals connections or tensions\nBest for: Cross-cultural or cross-period analysis\n```"
-    },
-    {
-      "label": "Historical Survey",
-      "description": "Tracing the development of an idea, practice, or text over time",
-      "markdown": "```\nHistorical Survey\n─────────────────\nFocus: An idea or practice across time\nMethod: Chronological analysis with sources\nOutput: Developmental narrative\nBest for: Showing change over time\n```"
-    },
-    {
-      "label": "Conceptual Analysis",
-      "description": "Analyzing a philosophical, theological, or cultural concept",
-      "markdown": "```\nConceptual Analysis\n───────────────────\nFocus: A concept or term\nMethod: Definition, usage mapping, critical analysis\nOutput: Clarified or redefined concept\nBest for: Philosophical and theological work\n```"
-    },
-    {
-      "label": "Reception History",
-      "description": "How a text or idea was received, interpreted, and transformed",
-      "markdown": "```\nReception History\n─────────────────\nFocus: How a text was read across generations\nMethod: Track interpretive traditions\nOutput: Map of readings and their contexts\nBest for: Exegetical and hermeneutical studies\n```"
-    },
-    {
-      "label": "Other",
-      "description": "Describe your own approach",
-      "markdown": "```\nCustom Approach\n───────────────\n→ Describe your methodology\n→ I'll help frame it\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "What kind of study fits your topic best?"
+> 1. **Textual Analysis** — Close reading of a specific text or corpus
+>    ```
+>    Focus: One or more primary texts
+>    Method: Close reading, literary/philological analysis
+>    Output: New interpretation or reading
+>    Best for: Discovering meaning in texts
+>    ```
+> 2. **Comparative Study** — Comparing two or more texts, figures, or traditions
+>    ```
+>    Focus: Two+ texts, thinkers, or traditions
+>    Method: Systematic comparison on defined axes
+>    Output: Reveals connections or tensions
+>    Best for: Cross-cultural or cross-period analysis
+>    ```
+> 3. **Historical Survey** — Tracing the development of an idea, practice, or text over time
+>    ```
+>    Focus: An idea or practice across time
+>    Method: Chronological analysis with sources
+>    Output: Developmental narrative
+>    Best for: Showing change over time
+>    ```
+> 4. **Conceptual Analysis** — Analyzing a philosophical, theological, or cultural concept
+>    ```
+>    Focus: A concept or term
+>    Method: Definition, usage mapping, critical analysis
+>    Output: Clarified or redefined concept
+>    Best for: Philosophical and theological work
+>    ```
+> 5. **Reception History** — How a text or idea was received, interpreted, and transformed
+>    ```
+>    Focus: How a text was read across generations
+>    Method: Track interpretive traditions
+>    Output: Map of readings and their contexts
+>    Best for: Exegetical and hermeneutical studies
+>    ```
+> 6. **Other** — Describe your own approach
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 ---
 

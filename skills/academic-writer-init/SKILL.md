@@ -39,19 +39,27 @@ Check for existing profile:
 cat .academic-helper/profile.md 2>/dev/null && echo "EXISTS" || echo "NOT_FOUND"
 ```
 
-**If EXISTS**: Use `a conversational ask`:
-
-Ask the researcher directly in chat (present as a numbered/lettered list):\nUpdate Mode\n───────────\n✓ Field of study preserved\n✓ Style fingerprint preserved\n✓ Sources preserved\n→ Re-run only the steps you choose\n```"
-    },
-    {
-      "label": "Start fresh",
-      "description": "Delete the current profile and rebuild from scratch.",
-      "markdown": "```\nFresh Start\n───────────\n⚠ Existing profile will be replaced\n⚠ Style fingerprint will be cleared\n⚠ Sources will be cleared\n→ Walk through all 4 phases again\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+**If EXISTS**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "You already have an Academic Writer profile. What would you like to do?"
+> 1. **Update my profile** — Keep existing data, modify selected fields only.
+>    ```
+>    Update Mode
+>    ───────────
+>    ✓ Field of study preserved
+>    ✓ Style fingerprint preserved
+>    ✓ Sources preserved
+>    → Re-run only the steps you choose
+>    ```
+> 2. **Start fresh** — Delete the current profile and rebuild from scratch.
+>    ```
+>    Fresh Start
+>    ───────────
+>    ⚠ Existing profile will be replaced
+>    ⚠ Style fingerprint will be cleared
+>    ⚠ Sources will be cleared
+>    → Walk through all 4 phases again
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If **Update**, ask which phases to re-run (multiSelect: true) with options: "Integrations", "Profile (field/language/citation)", "Style Analysis", "Sources". Run only selected phases, then save.
 
@@ -68,7 +76,7 @@ Then greet the user:
 
 ## Phase 1: Integration Detection
 
-Per-tool detection commands, a conversational ask blocks, and port-fallback logic: see `references/integration-setup.md`.
+Per-tool detection commands, AskUserQuestion-equivalent asks, and port-fallback logic: see `references/integration-setup.md`.
 
 After running detection (parallel batch), store the tool selection as the `tools` object for Phase 4.
 
@@ -95,50 +103,89 @@ Record the free-text answer as `fieldOfStudy`.
 
 ### Step 2 of 4 — Article Language
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nHebrew Mode\n───────────\nDirection:  RTL\nFont:       David 11pt\nCitations:  (מחבר, כותרת, עמ' N) in running text\nPurity:     Foreign terms must be transliterated\n```"
-    },
-    {
-      "label": "English",
-      "description": "Left-to-right, Times New Roman, Chicago/MLA/APA supported.",
-      "markdown": "```\nEnglish Mode\n────────────\nDirection:  LTR\nFont:       Times New Roman 12pt\nCitations:  Chicago, MLA, or APA\n```"
-    },
-    {
-      "label": "Other",
-      "description": "You'll specify the language name.",
-      "markdown": "```\nOther Language\n──────────────\n→ You'll type the language name\n→ RTL/LTR detected from language\n→ Citation style: your choice\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "What language will you write your articles in?"
+> 1. **Hebrew** — Right-to-left, David font, inline-parenthetical citations recommended.
+>    ```
+>    Hebrew Mode
+>    ───────────
+>    Direction:  RTL
+>    Font:       David 11pt
+>    Citations:  (מחבר, כותרת, עמ' N) in running text
+>    Purity:     Foreign terms must be transliterated
+>    ```
+> 2. **English** — Left-to-right, Times New Roman, Chicago/MLA/APA supported.
+>    ```
+>    English Mode
+>    ────────────
+>    Direction:  LTR
+>    Font:       Times New Roman 12pt
+>    Citations:  Chicago, MLA, or APA
+>    ```
+> 3. **Other** — You'll specify the language name.
+>    ```
+>    Other Language
+>    ──────────────
+>    → You'll type the language name
+>    → RTL/LTR detected from language
+>    → Citation style: your choice
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
-Store as `targetLanguage`. If "Other", ask for the language name with a follow-up `a conversational ask`.
+Store as `targetLanguage`. If "Other", ask for the language name with a follow-up question.
 
 ---
 
 ### Step 3 of 4 — Citation Style
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nInline Parenthetical\n────────────────────\nExample:\n  כפי שטוען לוי (לוי, משנת הנפש, עמ' 42), הרעיון\n  המרכזי הוא...\n\nWhen to use:\n  ✓ Hebrew articles\n  ✓ Short citation format\n  ✓ Dense citation density\n```"
-    },
-    {
-      "label": "Chicago / Turabian",
-      "description": "Footnotes with full bibliography — most common in English Humanities.",
-      "markdown": "```\nChicago / Turabian\n──────────────────\nExample footnote:\n  ¹ Levy, The Soul's Teaching, 42.\n\nWhen to use:\n  ✓ English Humanities articles\n  ✓ History, Philosophy, Literature\n  ✓ Requires bibliography section\n```"
-    },
-    {
-      "label": "MLA",
-      "description": "Parenthetical with Works Cited page.",
-      "markdown": "```\nMLA\n───\nExample: (Levy 42)\n\nWhen to use:\n  ✓ Literature and language studies\n  ✓ Humanities with Works Cited\n```"
-    },
-    {
-      "label": "APA",
-      "description": "(Author, Year) style — more common in social sciences.",
-      "markdown": "```\nAPA\n───\nExample: (Levy, 2019, p. 42)\n\nWhen to use:\n  ✓ Social sciences\n  ✓ Psychology, Education, Linguistics\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Which citation style do you use in your academic work?"
+> 1. **Inline Parenthetical (Recommended for Hebrew)** — (Author, Title, Page) in running text — no footnotes required.
+>    ```
+>    Inline Parenthetical
+>    ────────────────────
+>    Example:
+>      כפי שטוען לוי (לוי, משנת הנפש, עמ' 42), הרעיון
+>      המרכזי הוא...
+>
+>    When to use:
+>      ✓ Hebrew articles
+>      ✓ Short citation format
+>      ✓ Dense citation density
+>    ```
+> 2. **Chicago / Turabian** — Footnotes with full bibliography — most common in English Humanities.
+>    ```
+>    Chicago / Turabian
+>    ──────────────────
+>    Example footnote:
+>      ¹ Levy, The Soul's Teaching, 42.
+>
+>    When to use:
+>      ✓ English Humanities articles
+>      ✓ History, Philosophy, Literature
+>      ✓ Requires bibliography section
+>    ```
+> 3. **MLA** — Parenthetical with Works Cited page.
+>    ```
+>    MLA
+>    ───
+>    Example: (Levy 42)
+>
+>    When to use:
+>      ✓ Literature and language studies
+>      ✓ Humanities with Works Cited
+>    ```
+> 4. **APA** — (Author, Year) style — more common in social sciences.
+>    ```
+>    APA
+>    ───
+>    Example: (Levy, 2019, p. 42)
+>
+>    When to use:
+>      ✓ Social sciences
+>      ✓ Psychology, Education, Linguistics
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Map selection: Inline → `inline-parenthetical`, Chicago → `chicago`, MLA → `mla`, APA → `apa`.
 
@@ -146,22 +193,32 @@ Map selection: Inline → `inline-parenthetical`, Chicago → `chicago`, MLA →
 
 ### Step 3b of 4 — Abstract Languages
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nSingle Abstract\n───────────────\nAbstract in: [targetLanguage]\nCommon for: Most journals\n```"
-    },
-    {
-      "label": "Hebrew + English",
-      "description": "Dual-language abstracts — common for Israeli journals.",
-      "markdown": "```\nDual Abstract\n─────────────\nAbstracts in: Hebrew + English\nCommon for: Israeli journals,\n            academic theses\n```"
-    },
-    {
-      "label": "No abstract needed",
-      "description": "Skip abstract generation.",
-      "markdown": "```\nNo Abstract\n───────────\nAbstracts will not be generated.\nYou can enable later with\n/skill:academic-writer-init (Update)\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Do your articles need abstracts? Some journals require dual-language abstracts."
+> 1. **Primary language only** — Abstract in the article's language only.
+>    ```
+>    Single Abstract
+>    ───────────────
+>    Abstract in: [targetLanguage]
+>    Common for: Most journals
+>    ```
+> 2. **Hebrew + English** — Dual-language abstracts — common for Israeli journals.
+>    ```
+>    Dual Abstract
+>    ─────────────
+>    Abstracts in: Hebrew + English
+>    Common for: Israeli journals,
+>                academic theses
+>    ```
+> 3. **No abstract needed** — Skip abstract generation.
+>    ```
+>    No Abstract
+>    ───────────
+>    Abstracts will not be generated.
+>    You can enable later with
+>    /skill:academic-writer-init (Update)
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Store as `abstractLanguages` array:
 - Primary only → `["Hebrew"]` (or whatever `targetLanguage` is)
@@ -172,17 +229,30 @@ Store as `abstractLanguages` array:
 
 ### Step 4 of 4 — Writing Style
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nStyle Analysis\n──────────────\n→ Reads PDF and DOCX files in past-articles/\n→ Analyzes 25 style dimensions:\n   sentence length, structure, vocabulary,\n   paragraph patterns, transitions, citations,\n   rhetorical moves, tone, intro/conclusion style\n→ Shows you the fingerprint before saving\n→ You can correct anything before it's stored\n```"
-    },
-    {
-      "label": "Skip for now",
-      "description": "Profile will be saved without a style fingerprint. Articles will use generic academic style.",
-      "markdown": "```\nSkip Style Analysis\n───────────────────\n⚠ Articles won't match your voice yet\n→ Add papers to past-articles/ anytime\n→ Re-run: /skill:academic-writer-init\n   (choose 'Update' → 'Style Analysis')\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "To write articles that sound like you, I need to analyze your past work. Have you added papers to the past-articles/ folder?"
+> 1. **Yes, my papers are ready** — Analyze them now to extract your writing fingerprint.
+>    ```
+>    Style Analysis
+>    ──────────────
+>    → Reads PDF and DOCX files in past-articles/
+>    → Analyzes 25 style dimensions:
+>       sentence length, structure, vocabulary,
+>       paragraph patterns, transitions, citations,
+>       rhetorical moves, tone, intro/conclusion style
+>    → Shows you the fingerprint before saving
+>    → You can correct anything before it's stored
+>    ```
+> 2. **Skip for now** — Profile will be saved without a style fingerprint. Articles will use generic academic style.
+>    ```
+>    Skip Style Analysis
+>    ───────────────────
+>    ⚠ Articles won't match your voice yet
+>    → Add papers to past-articles/ anytime
+>    → Re-run: /skill:academic-writer-init
+>       (choose 'Update' → 'Style Analysis')
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 **If "Yes, my papers are ready"**, run:
 
@@ -257,17 +327,27 @@ The user is not required to run Stage 2. They can start writing immediately with
 
 **If Zotero is enabled:**
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nSource Indexing\n───────────────\n→ Lists all items in your library\n→ Runs zotero_get_item_metadata(format="json") on each\n   (extracts title, author, TOC)\n→ Saves minimal metadata to profile\n   (id, title, type only)\n```"
-    },
-    {
-      "label": "Skip — I'll add sources later",
-      "description": "Run /skill:academic-writer-init again (choose Update → Sources) after adding items.",
-      "markdown": "```\nSkip Sources\n────────────\n⚠ Articles won't have source metadata yet\n→ Add sources with: Zotero tools add file.pdf\n→ Then re-run this step\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Let's index your research library. Have you added sources to Zotero yet?"
+> 1. **Yes, index my sources now** — I'll enrich and index everything in your Zotero library.
+>    ```
+>    Source Indexing
+>    ───────────────
+>    → Lists all items in your library
+>    → Runs zotero_get_item_metadata(format="json") on each
+>       (extracts title, author, TOC)
+>    → Saves minimal metadata to profile
+>       (id, title, type only)
+>    ```
+> 2. **Skip — I'll add sources later** — Run /skill:academic-writer-init again (choose Update → Sources) after adding items.
+>    ```
+>    Skip Sources
+>    ────────────
+>    ⚠ Articles won't have source metadata yet
+>    → Add sources with: Zotero tools add file.pdf
+>    → Then re-run this step
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If **"Yes"**: list and enrich all items:
 
@@ -346,21 +426,29 @@ updatedAt: ISO_TIMESTAMP
 
 ## Completion
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nWrite Article\n─────────────\n→ /skill:academic-writer-write\n→ Conversational pipeline:\n   subject → sources → thesis\n   → outline → write → .docx\n```"
-    },
-    {
-      "label": "Check system health",
-      "description": "Run /skill:academic-writer-health to verify everything is working.",
-    },
-    {
-      "label": "I'm done for now",
-      "description": "Profile saved. Run /skill:academic-writer-write anytime to start writing.",
-      "markdown": "```\nProfile saved to:\n  .academic-helper/profile.md\n\nKey commands:\n  /skill:academic-writer-write         ← write an article\n  /skill:academic-writer-health  ← check everything\n  /skill:academic-writer-update-tools ← change integrations\n```"
-    }
-  ],
-  "multiSelect": false
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Setup is complete. What would you like to do next?"
+> 1. **Write my first article** — Launch /skill:academic-writer-write to start writing.
+>    ```
+>    Write Article
+>    ─────────────
+>    → /skill:academic-writer-write
+>    → Conversational pipeline:
+>       subject → sources → thesis
+>       → outline → write → .docx
+>    ```
+> 2. **Check system health** — Run /skill:academic-writer-health to verify everything is working.
+> 3. **I'm done for now** — Profile saved. Run /skill:academic-writer-write anytime to start writing.
+>    ```
+>    Profile saved to:
+>      .academic-helper/profile.md
+>
+>    Key commands:
+>      /skill:academic-writer-write         ← write an article
+>      /skill:academic-writer-health  ← check everything
+>      /skill:academic-writer-update-tools ← change integrations
+>    ```
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Show a summary table:
 

@@ -32,36 +32,42 @@ Read the selected article with the `Read` tool. Extract its thesis, section stru
 
 ## Select Deliverable
 
-Ask the researcher directly in chat (present as a numbered/lettered list):\nConference Presentation\n───────────────────────\nOutput: Structured outline for oral delivery\nLength: 20-30 min talk (~2500 words spoken)\nFocus:  Argument flow, not full text\nFormat: Markdown with speaker notes\n```"
-    },
-    {
-      "label": "Journal Submission Abstract",
-      "description": "Structured abstract for journal submission",
-      "markdown": "```\nJournal Abstract\n────────────────\nOutput: 150-300 word abstract\nParts:  Topic, method, findings, contribution\nFormat: Ready to paste into submission form\n```"
-    },
-    {
-      "label": "Book Chapter Proposal",
-      "description": "Proposal to develop this article into a book chapter",
-      "markdown": "```\nBook Chapter Proposal\n─────────────────────\nOutput: 1-2 page proposal\nParts:  Chapter summary, fit with volume,\n        expanded scope, bibliography\nFormat: Markdown\n```"
-    },
-    {
-      "label": "Audio Overview (NotebookLM)",
-      "description": "AI-generated audio summary / podcast of the article",
-      "markdown": "```\nAudio Overview\n──────────────\nOutput: Audio podcast discussing the article\nFormat: AI-generated conversational audio\nNeeds:  NotebookLM enabled in profile\n```"
-    },
-    {
-      "label": "Study Guide (NotebookLM)",
-      "description": "Structured study guide from article content",
-      "markdown": "```\nStudy Guide\n───────────\nOutput: Key concepts, questions, summaries\nFormat: Markdown study guide\nNeeds:  NotebookLM enabled in profile\n```"
-    },
-    {
-      "label": "All of the above",
-      "description": "Generate all deliverables (NotebookLM items only if enabled)"
-    }
-  ],
-  "multiSelect": true
-}])
-```
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "What would you like to generate from this article?"
+> 1. **Conference Presentation Outline** — 20-30 minute talk outline with argument flow
+>    ```
+>    Output: Structured outline for oral delivery
+>    Length: 20-30 min talk (~2500 words spoken)
+>    Focus:  Argument flow, not full text
+>    Format: Markdown with speaker notes
+>    ```
+> 2. **Journal Submission Abstract** — Structured abstract for journal submission
+>    ```
+>    Output: 150-300 word abstract
+>    Parts:  Topic, method, findings, contribution
+>    Format: Ready to paste into submission form
+>    ```
+> 3. **Book Chapter Proposal** — Proposal to develop this article into a book chapter
+>    ```
+>    Output: 1-2 page proposal
+>    Parts:  Chapter summary, fit with volume,
+>            expanded scope, bibliography
+>    Format: Markdown
+>    ```
+> 4. **Audio Overview (NotebookLM)** — AI-generated audio summary / podcast of the article
+>    ```
+>    Output: Audio podcast discussing the article
+>    Format: AI-generated conversational audio
+>    Needs:  NotebookLM enabled in profile
+>    ```
+> 5. **Study Guide (NotebookLM)** — Structured study guide from article content
+>    ```
+>    Output: Key concepts, questions, summaries
+>    Format: Markdown study guide
+>    Needs:  NotebookLM enabled in profile
+>    ```
+> 6. **All of the above** — Generate all deliverables (NotebookLM items only if enabled)
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
 
 ## Conference Presentation Outline
 
