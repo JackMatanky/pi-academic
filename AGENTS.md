@@ -5,9 +5,9 @@ a single researcher on a local machine; the package should never assume team wor
 
 ## Commands
 
-With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / Python 3.12, manages `.venv`):
+With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / Python 3.12 / uv, manages the uv-synced `.venv`):
 
-- `mise install` — provisions Node/Python and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`, plus `pip install -r requirements.txt` into `.venv`
+- `mise install` — provisions Node/uv/Python and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`, plus `uv sync` (installs `pyproject.toml`/`uv.lock` deps into `.venv`)
 - `mise run test` (alias `t`) — full pytest suite
 - `mise run typecheck` — strict TS check on `extensions/`
 - `mise run ci` — typecheck + test
@@ -16,9 +16,9 @@ With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / Python 3.12, m
 Without mise, the equivalent raw commands:
 
 - `npm install && npm --prefix extensions install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`, plus the `extensions/` typecheck sandbox
-- `pip install -r requirements.txt` — `python-docx`, `lxml`, `pdfplumber`, `pytest`, `PyYAML`
+- `uv sync` — `python-docx`, `lxml`, `pdfplumber` (`project.dependencies`) plus `pytest`, `pyyaml` (`dependency-groups.dev`)
 - `npm run typecheck` — strict TS check on `extensions/`
-- `python3 -m pytest tests/` — run the full test suite (also runs via the installed pre-push hook, `bash scripts/install-hooks.sh`)
+- `uv run pytest tests/` — run the full test suite (also runs via the installed pre-push hook, `bash scripts/install-hooks.sh`)
 
 ## Source layout
 
@@ -31,6 +31,7 @@ Without mise, the equivalent raw commands:
 | `extensions/lifecycle/mcp.ts` | Registers the `zotero` MCP server via `pi-mcp-adapter` |
 | `thresholds.json` | Single source of truth for all numeric quality gates |
 | `package.json` | pi manifest — `dependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
+| `pyproject.toml` / `uv.lock` | Python dev/build tooling deps (`python-docx`, `lxml`, `pdfplumber`; dev: `pytest`, `pyyaml`) — managed by `uv`, not published |
 
 ## Conventions
 

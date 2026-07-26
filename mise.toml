@@ -1,9 +1,9 @@
 # academic-writer — dev toolchain, managed by mise (https://mise.jdx.dev)
 #
-# `mise install` provisions the pinned Node/Python versions; the postinstall
-# hook then bootstraps both npm trees (root + extensions/) and the Python
-# venv's pip dependencies, so a fresh clone is ready for `mise run test` /
-# `mise run typecheck` with one command.
+# `mise install` provisions Node/uv/Python; the postinstall hook then
+# bootstraps both npm trees (root + extensions/) and syncs the uv-managed
+# Python environment (pyproject.toml + uv.lock), so a fresh clone is ready
+# for `mise run test` / `mise run typecheck` with one command.
 #
 # Note: this does NOT manage zotero-mcp (`pip install zotero-mcp-server`) —
 # that's an end-user runtime dependency of the *installed* pi package
@@ -12,27 +12,31 @@
 [tools]
 node = "26"    # matches package.json engines (>=20) and extensions/@types/node ^26
 python = "3.12"
+uv = "latest"
+
+[settings]
+# Sources the .venv that `uv sync`/`uv run` manage via pyproject.toml +
+# uv.lock (mise locates the project by walking up for uv.lock). "create|source"
+# creates the venv if missing, then activates it on mise activate/exec.
+python.uv_venv_auto = "create|source"
 
 [env]
-# Creates/activates .venv on `mise activate`/`mise exec`/`mise run`, using the
-# pinned Python above. If `uv` is present on the machine, mise uses it to
-# create the venv — `uv venv` does NOT seed pip by default, so `uv_create_args
-# = ["--seed"]` requests it explicitly (a no-op when the stdlib `python -m
-# venv` fallback is used instead, since `--upgrade-deps` covers pip there).
-_.python.venv = { path = ".venv", create = true, python_create_args = ["--upgrade-deps"], uv_create_args = ["--seed"] }
+# Point uv at mise's pinned Python interpreter instead of letting it
+# download its own copy of the same version.
+UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
 
 [tasks.setup]
-description = "Install npm deps (root + extensions/) and pip requirements"
+description = "Install npm deps (root + extensions/) and sync Python deps via uv"
 run = [
   "npm install",
   "npm --prefix extensions install",
-  "{{config_root}}/.venv/bin/pip install -r requirements.txt",
+  "uv sync",
 ]
 
 [tasks.test]
 description = "Run the Python test suite"
 alias = "t"
-run = "{{config_root}}/.venv/bin/python3 -m pytest tests/"
+run = "uv run pytest tests/"
 
 [tasks.typecheck]
 description = "Strict TypeScript check on extensions/"
@@ -47,7 +51,6 @@ description = "Install the git pre-push hook that runs the test suite (run once 
 run = "bash scripts/install-hooks.sh"
 
 [hooks]
-# Runs after `mise install` provisions node/python (including on a no-op
+# Runs after `mise install` provisions node/uv/python (including on a no-op
 # install), so dependencies stay in sync whenever the pinned versions change.
 postinstall = { task = "setup" }
-

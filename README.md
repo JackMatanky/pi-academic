@@ -155,10 +155,10 @@ pi install git:github.com/JackMatanky/academic-writer
 
 Skills (`skills/`), agents (`agents/`), and extensions (`extensions/`) are the package source — there is no separate build step that generates them; pi loads them directly via convention directories.
 
-With [mise](https://mise.jdx.dev) (recommended — pins the toolchain and manages `.venv` for you):
+With [mise](https://mise.jdx.dev) (recommended — pins the toolchain, manages the `uv`-synced `.venv` for you):
 
 ```bash
-mise install       # provisions Node/Python, npm-installs both trees, pip-installs requirements.txt
+mise install       # provisions Node/uv/Python, npm-installs both trees, uv-syncs pyproject.toml
 mise run typecheck # strict TS check on extensions/
 mise run test      # full test suite
 ```
@@ -167,9 +167,9 @@ Without mise:
 
 ```bash
 npm install && npm --prefix extensions install  # installs pi-subagents, pi-mcp-adapter, pi-web-access
-pip install -r requirements.txt                 # python-docx, lxml, pdfplumber, pytest, PyYAML
+uv sync                                          # python-docx, lxml, pdfplumber, pytest, pyyaml
 npm run typecheck                                # strict TS check on extensions/
-python3 -m pytest tests/                         # full test suite
+uv run pytest tests/                             # full test suite
 ```
 
 **Versioning is automatic.** Every push to `main` triggers CI that bumps the patch version in `package.json`, tags the release, and creates a GitHub Release. Do not bump versions manually.
