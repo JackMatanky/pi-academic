@@ -172,7 +172,7 @@ For every biblical verse mentioned in the assignment or retrieved from Zotero:
 
 1. **Fetch surrounding context** — retrieve at minimum ±3 verses before and after the target verse. If the chapter is short (≤20 verses), retrieve the entire chapter:
 
-If a Sefaria MCP server is configured, its tools register by bare name (same `directTools`/`toolPrefix: "none"` convention as `zotero`/`gemini-api`), so call it directly — no `mcp:`/`mcp__` prefix:
+If a Sefaria MCP server is configured, its tools register by bare name (same `directTools`/`toolPrefix: "none"` convention as `zotero`), so call it directly — no `mcp:`/`mcp__` prefix:
 ```
 # Example: target verse is Esther 4:14
 # Fetch the full immediate context: Esther 4:11-17 (3 before, 3 after)

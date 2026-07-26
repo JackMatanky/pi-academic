@@ -105,7 +105,7 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 | **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — `pip install zotero-mcp-server && zotero-mcp setup` |
 | **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) |
 
-The bundled Gemini prose-drafting engine (`gemini-api` MCP server) is separate from these — see `mcp/gemini-server/README.md`. Set `GOOGLE_API_KEY` to enable it; without it, drafting falls back to the in-context pipeline.
+This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
 ---
 
@@ -158,7 +158,6 @@ Skills (`skills/`), agents (`agents/`), and extensions (`extensions/`) are the p
 ```bash
 npm install               # installs pi-subagents, pi-mcp-adapter, pi-web-access
 npm run typecheck         # strict TS check on extensions/
-npm run build             # builds the bundled Gemini MCP server only (scripts/build-mcp.sh)
 python3 -m pytest tests/  # full test suite
 ```
 

@@ -4,9 +4,7 @@
   "description": "AI-first academic writing assistant for Humanities researchers — pi package",
   "type": "module",
   "scripts": {
-    "build": "bash scripts/build-mcp.sh",
-    "typecheck": "cd extensions && npx tsc --noEmit",
-    "clean": "rm -rf mcp/gemini-server/dist/ mcp/gemini-server/node_modules/"
+    "typecheck": "cd extensions && npx tsc --noEmit"
   },
   "repository": {
     "type": "git",

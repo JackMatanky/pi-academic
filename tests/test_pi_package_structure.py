@@ -140,12 +140,11 @@ class TestExtensions(unittest.TestCase):
 
 class TestMcpWiring(unittest.TestCase):
     def test_no_dead_mcp_json(self):
-        # Both MCP servers (zotero, gemini-api) are registered programmatically
-        # in extensions/lifecycle/mcp.ts because a programmatic `config` is an
-        # isolated snapshot never merged with file-based config (per
-        # pi-mcp-adapter's own README). A root .mcp.json would be silently
-        # unread — its presence would mislead a maintainer into thinking it
-        # does something.
+        # `zotero` is registered programmatically in extensions/lifecycle/mcp.ts
+        # because a programmatic `config` is an isolated snapshot never merged
+        # with file-based config (per pi-mcp-adapter's own README). A root
+        # .mcp.json would be silently unread — its presence would mislead a
+        # maintainer into thinking it does something.
         self.assertFalse(os.path.isfile(".mcp.json"), ".mcp.json is never read by the programmatic adapter in extensions/lifecycle/mcp.ts — remove it or wire it up")
 
     def test_mcp_servers_expose_direct_tools_by_bare_name(self):
@@ -154,13 +153,37 @@ class TestMcpWiring(unittest.TestCase):
         content = _read(mcp_path)
         self.assertIn('toolPrefix: "none"', content, "toolPrefix must be \"none\" or every direct tool gets double-prefixed (e.g. zotero_zotero_get_recent) since MCP tool names already start with the server name")
         self.assertIn("zotero", content)
-        self.assertIn("gemini-api", content)
-        # Every server block needs directTools: true, else tools are only
-        # reachable through the generic `mcp` proxy tool, not by bare name
-        # the way every skill/agent in this package calls them. Split on the
-        # `directTools: true,` line itself (nested `env: {...}` braces make a
-        # brace-balanced per-block regex needlessly fragile here).
-        self.assertGreaterEqual(content.count("directTools: true"), 2, f"expected directTools: true on both servers in {mcp_path}")
+        # No bundled second-provider server (e.g. gemini-api) — model choice
+        # for any agent is a pi setting (subagents.agentOverrides.<name>.model),
+        # not something this package brokers via a second MCP server.
+        self.assertNotIn("gemini-api", content, "model choice belongs in pi settings (agentOverrides.<name>.model), not a bundled second MCP server")
+        # directTools: true is required, else tools are only reachable through
+        # the generic `mcp` proxy tool, not by bare name the way every
+        # skill/agent in this package calls them.
+        self.assertIn("directTools: true", content, f"expected directTools: true on the zotero server in {mcp_path}")
+
+    def test_no_bundled_mcp_server_dir(self):
+        # A bundled second-model-provider MCP server (the original design's
+        # `mcp/gemini-server/`) is architecturally redundant on pi: any agent
+        # can be pinned to any provider via subagents.agentOverrides.<name>.model
+        # without a package-maintained server, build step, or API-key-through-env
+        # plumbing. If `mcp/` reappears, something regressed this decision.
+        self.assertFalse(os.path.isdir("mcp"), "mcp/ should not exist — model choice is a pi setting, not a bundled MCP server (see AGENTS.md)")
+
+    def test_no_engine_choice_plumbing(self):
+        # geminiFallback/geminiMode/compare-models were session-state fields
+        # for brokering which of two hardcoded models drafted prose. Pi's own
+        # per-agent model selection replaces this entirely — no skill/agent
+        # should reintroduce a runtime engine-choice branch.
+        pattern = re.compile(r'geminiFallback|geminiMode|compare-models|gemini_write_section|gemini_synthesize|gemini_edit|gemini_calibrate_sample|gemini_raw', re.IGNORECASE)
+        for d in ["skills", "agents", "extensions"]:
+            if not os.path.isdir(d): continue
+            for root, _, files in os.walk(d):
+                for file in files:
+                    if file.endswith(".md") or file.endswith(".ts"):
+                        path = os.path.join(root, file)
+                        matches = pattern.findall(_read(path))
+                        self.assertEqual(matches, [], f"Found engine-choice/bundled-Gemini-tool reference in {path}: {matches}")
 
 class TestReadmeAndAgentsMd(unittest.TestCase):
     def test_slash_commands(self):

@@ -3,16 +3,12 @@ fieldOfStudy: "פילוסופיה של ימי הביניים"
 citationStyle: "inline-parenthetical"
 targetLanguage: "Hebrew"
 analyzedArticles: []
-gemini:
-  approvedLanguages:
-    - Hebrew
 ---
 
 # Researcher Profile — E2E Fixture
 
-This is a deterministic test profile used by the dual-path (Gemini / fallback) end-to-end
-demonstration. It is NOT a real researcher profile. Both the Gemini run and the fallback run
-use this same profile so their outputs are comparable.
+This is a deterministic test profile used by the write-pipeline end-to-end smoke test. It is NOT
+a real researcher profile.
 
 ## Tools
 

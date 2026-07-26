@@ -5,10 +5,9 @@ a single researcher on a local machine; the package should never assume team wor
 
 ## Commands
 
-- `npm run build` — build the bundled Gemini MCP server (`bash scripts/build-mcp.sh`)
+- `npm install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`
 - `npm run typecheck` — strict TS check on `extensions/`
 - `python3 -m pytest tests/` — run the full test suite (also runs via the installed pre-push hook, `bash scripts/install-hooks.sh`)
-- `npm run clean` — wipe `mcp/gemini-server/{dist,node_modules}/`
 
 ## Source layout
 
@@ -18,9 +17,8 @@ a single researcher on a local machine; the package should never assume team wor
 | `agents/<name>.md` | Agent definition (markdown + YAML frontmatter, `pi-subagents` format) |
 | `extensions/env-inject/index.ts` | Injects `$ACADEMIC_WRITER_ROOT` into every `bash` tool call |
 | `extensions/lifecycle/index.ts` | Session lifecycle handlers (dashboard, stop notification, session log) + mounts `mcp.ts` |
-| `extensions/lifecycle/mcp.ts` | Registers the `zotero` and `gemini-api` MCP servers via `pi-mcp-adapter` |
+| `extensions/lifecycle/mcp.ts` | Registers the `zotero` MCP server via `pi-mcp-adapter` |
 | `thresholds.json` | Single source of truth for all numeric quality gates |
-| `mcp/gemini-server/` | Bundled Gemini MCP server (prose-drafting engine) |
 | `package.json` | pi manifest — `dependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
 
 ## Conventions
@@ -29,7 +27,7 @@ a single researcher on a local machine; the package should never assume team wor
 - **Thresholds**: edit `thresholds.json` at repo root, never inline numbers in skills or agents.
 - **Strict TypeScript**: `extensions/` must compile under `tsc --noEmit`; never use `any` (use `unknown` and narrow).
 - **Skill frontmatter**: `name`, `description`, optional `allowed-tools` (space-delimited), optional `metadata: {author, version}`. No `user-invocable` — every pi skill is both model- and `/skill:name`-invocable.
-- **Agent frontmatter**: `name`, `description`, `tools` (**comma**-delimited — `pi-subagents`' frontmatter parser splits only on commas, never whitespace). MCP grants use `mcp:<server>` (whole server) or `mcp:<server>/<tool>` (single tool) — never the Claude Code `mcp__server__tool` form. No `model:` — omitting it inherits the current Pi default model.
+- **Agent frontmatter**: `name`, `description`, `tools` (**comma**-delimited — `pi-subagents`' frontmatter parser splits only on commas, never whitespace). MCP grants use `mcp:<server>` (whole server) or `mcp:<server>/<tool>` (single tool) — never the Claude Code `mcp__server__tool` form. No `model:` — omitting it inherits the current Pi default model. To pin an agent to a specific model/provider (e.g. run `section-writer` on Gemini), set `subagents.agentOverrides.<name>.model` in pi settings — this package never hardcodes a provider.
 - **No global pollution**: never write to `$HOME` or paths outside the project directory.
 
 ## Slash commands

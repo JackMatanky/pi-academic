@@ -1,9 +1,8 @@
-# Dual-Path E2E Run Brief
+# E2E Run Brief
 
-Both runs use the SAME pinned inputs below so the only variable is the engine. Outputs go to
-`tests/e2e/fixture-project/out/gemini/` and `.../out/fallback/`.
+Pinned inputs for a deterministic smoke test of the write pipeline.
 
-## Pinned inputs (identical for both runs)
+## Pinned inputs
 
 - **Subject:** תפיסת הזמן אצל אוגוסטינוס וההד שלה אצל ריקר
 - **Target language:** Hebrew
@@ -15,20 +14,13 @@ Both runs use the SAME pinned inputs below so the only variable is the engine. O
   2. הזמן כחוויה נפשית אצל אוגוסטינוס (develops `aug-confessions-bk11`)
   3. סיכום — ההד אצל ריקר והרחבת ההשלכות (owner of `ricoeur-time-narrative`)
 
-## Path A — WITH Gemini
+## Run
 
-Prereq: reload extensions (`/reload` in pi) so `gemini_write_section`/`gemini_synthesize` are connected. Run `/skill:academic-writer-write` with `geminiFallback=false`.
-The `section-writer` routes Skills 1–7 through `gemini_write_section`; the auditor (Claude) gates each
-paragraph; `synthesizer` routes prose through `gemini_synthesize`.
+`/skill:academic-writer-write` — `section-writer` runs the 8-skill pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit) per paragraph; the auditor gates each paragraph; `synthesizer` does the cross-section pass.
 
-## Path B — WITHOUT Gemini (fallback)
-
-Run `/skill:academic-writer-write` with `geminiFallback=true` (or with the Gemini tool unavailable). The `section-writer`
-runs the in-context Skills 1–7 pipeline; the auditor gate is identical.
+Model choice (which provider drafts prose) is a pi setting (`subagents.agentOverrides.<agent>.model`), not a run-time branch — this brief covers the pipeline, not a specific model.
 
 ## Pass criteria
 
-- Both produce a 3-section Hebrew article, all paragraphs auditor-PASS.
+- Produces a 3-section Hebrew article, all paragraphs auditor-PASS.
 - Citations resolve only to `sources.json` entries; metadata never invented.
-- Diff the two: confirm both are valid Hebrew; note stylistic differences (expected) but equivalent
-  structure and citation integrity (required).

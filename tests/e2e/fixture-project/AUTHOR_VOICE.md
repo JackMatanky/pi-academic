@@ -1,8 +1,6 @@
 # AUTHOR_VOICE — E2E Fixture
 
-Deterministic voice profile for the dual-path end-to-end demonstration. Both the Gemini run and
-the fallback run read this same file, so any difference in output is attributable to the engine,
-not the voice profile.
+Deterministic voice profile for E2E smoke testing the write pipeline.
 
 ## Core voice
 
