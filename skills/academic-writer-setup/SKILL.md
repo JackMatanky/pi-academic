@@ -125,12 +125,13 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Font:       David 11pt
 >    Citations:  (מחבר, כותרת, עמ' N)
 >    ```
-> 2. **English** — LTR, Times New Roman, Chicago/MLA/APA.
+> 2. **English** — LTR, Times New Roman, citeproc/CSL citations.
 >    ```
 >    English Mode
 >    ────────────
 >    Direction:  LTR
 >    Font:       Times New Roman 12pt
+>    Citations:  Any CSL style (bundled APA/MLA/Chicago, CSL repository id, or custom .csl)
 >    ```
 > 3. **Other** — You'll type the language name in the next prompt.
 >    ```
@@ -149,19 +150,28 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 >    Example: (לוי, משנת הנפש, עמ' 42)
 >    ```
-> 2. **Chicago / Turabian** — Footnotes with full bibliography.
+> 2. **Bundled citeproc style** — packaged CSL defaults: Chicago, MLA, or APA.
 >    ```
->    Example footnote: ¹ Levy, Soul's Teaching, 42.
+>    Examples:
+>      chicago → Chicago notes + bibliography
+>      mla     → Modern Language Association
+>      apa     → American Psychological Association
 >    ```
-> 3. **MLA** — Parenthetical with Works Cited.
+> 3. **CSL repository style** — style id from https://github.com/citation-style-language/styles.
 >    ```
->    Example: (Levy 42)
+>    Examples: nature, chicago-author-date, modern-humanities-research-association
 >    ```
-> 4. **APA** — (Author, Year) — more common in social sciences.
+> 4. **Custom CSL file** — path to a `.csl` file you provide.
 >    ```
->    Example: (Levy, 2019, p. 42)
+>    Example: .academic-helper/csl/my-journal.csl
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+Map selection the same way as `/skill:academic-writer-init`: `inline-parenthetical` stays literal mode; bundled aliases (`chicago`, `mla`, `apa`), CSL repository ids, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving:
+
+```bash
+python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "STYLE_OR_PATH" --download
+```
 
 ### Tool Selection
 
@@ -201,6 +211,7 @@ If Zotero is selected but not detected:
     "mcpServers": {
       "zotero": {
         "command": "zotero-mcp",
+        "args": ["serve"],
         "env": { "ZOTERO_LOCAL": "true" },
         "directTools": true
       }
@@ -256,7 +267,7 @@ Use the Write tool to create `.academic-helper/profile.md`:
 
 ---
 fieldOfStudy: FIELD
-citationStyle: inline-parenthetical
+citationStyle: SELECTED_CITATION_STYLE
 targetLanguage: Hebrew
 abstractLanguages:
   - Hebrew
@@ -277,6 +288,7 @@ updatedAt: ISO_TIMESTAMP
 ## Output Format Preferences
 
 ```json
+{ "csl": "optional CSL repository id or bundled alias", "cslPath": "optional custom .csl path" }
 ` ` `
 
 ## Style Fingerprint

@@ -7,7 +7,7 @@ metadata: {author: "Yotam Fromm", version: "0.2.24"}
 
 # Academic Writer — Export
 
-Convert an already-written `articles/<slug>.md` into additional formats using [pandoc](https://pandoc.org). This skill never produces `.docx` — that format is owned by the write/edit pipeline's own Step 9b (`generate-docx.py` for `inline-parenthetical` articles, or a direct `pandoc --citeproc` docx run for `chicago`/`mla`/`apa` citeproc-mode articles). This skill is for every *other* format the researcher wants to share or archive the piece in.
+Convert an already-written `articles/<slug>.md` into additional formats using [pandoc](https://pandoc.org). This skill never produces `.docx` — that format is owned by the write/edit pipeline's own Step 9b (`generate-docx.py` for `inline-parenthetical` articles, or a direct `pandoc --citeproc` docx run for citeproc-mode articles). This skill is for every *other* format the researcher wants to share or archive the piece in.
 
 ---
 
@@ -88,7 +88,7 @@ pandoc "$MD_PATH" --citeproc --pdf-engine=xelatex -o "articles/${SLUG}.pdf"
 
 Only run the lines for formats the researcher actually selected.
 
-`--citeproc` is unconditional and safe to pass for every article, including `inline-parenthetical` (Hebrew literal-citation) articles that carry no `[@citekey]` markers and no `bibliography:`/`csl:` frontmatter — it's a harmless no-op there. For `chicago`/`mla`/`apa` citeproc-mode articles, the markdown's own YAML frontmatter (`bibliography:`, `csl:`) drives citation rendering automatically; no extra flags are needed.
+`--citeproc` is unconditional and safe to pass for every article, including `inline-parenthetical` (Hebrew literal-citation) articles that carry no `[@citekey]` markers and no `bibliography:`/`csl:` frontmatter — it's a harmless no-op there. For citeproc-mode articles, the markdown's own YAML frontmatter (`bibliography:`, `csl:`) drives citation rendering automatically; no extra flags are needed.
 
 If any single `pandoc` invocation fails (non-zero exit), report that specific format's error to the researcher and continue attempting the remaining requested formats — one failure must not abort the whole batch.
 
@@ -104,5 +104,3 @@ List exactly which files were written:
 > - `articles/<slug>.epub`
 >
 > PDF was skipped — `xelatex` not found. See install instructions above.
-</content>
-<parameter name="i">Create academic-writer-export skill

@@ -1,6 +1,6 @@
 # Academic Writer — Pi Package
 
-AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` — plus PDF, HTML, ODT, LaTeX, and EPUB via Pandoc, with citation-style switching (APA/MLA/Chicago) for a real Zotero-sourced `bibliography.bib`.
+AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` — plus PDF, HTML, ODT, LaTeX, and EPUB via Pandoc, with CSL-based citation rendering from a real Zotero-sourced `bibliography.bib` (bundled APA/MLA/Chicago defaults, CSL repository styles, or custom `.csl` files).
 
 ---
 
@@ -37,7 +37,7 @@ Pi prompts you to trust the project on first run — see [Project Trust](https:/
 
 One-time setup. You'll be asked for:
 - Your field of study
-- Citation style (Inline Parenthetical / Chicago / MLA / APA)
+- Citation style (Inline Parenthetical, bundled APA/MLA/Chicago, a CSL repository style id, or a custom `.csl` file)
 - 5–10 past articles for style analysis (place them in `past-articles/`)
 - Which integrations to enable
 
@@ -113,11 +113,11 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 |------|-------------|-------|
 | **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
 | **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) |
-| **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for Chicago/MLA/APA | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a XeTeX engine too, e.g. `brew install --cask basictex && sudo tlmgr install collection-xetex` |
+| **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for bundled or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a XeTeX engine too, e.g. `brew install --cask basictex && sudo tlmgr install collection-xetex` |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
-**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Chicago/MLA/APA are authored as `[@citeKey]` references resolved at export time by Pandoc + a CSL style file (vendored in `scripts/lib/csl/`) against `.academic-helper/bibliography.bib` — the same source article can be re-rendered in any of these three styles without rewriting prose.
+**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and `.academic-helper/bibliography.bib` supplies the Zotero metadata. The package bundles APA/MLA/Chicago defaults, but you can also use any style id from [citation-style-language/styles](https://github.com/citation-style-language/styles) or a custom `.csl` file.
 
 **MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-helper/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. A local Zotero setup can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
@@ -127,6 +127,7 @@ This package doesn't hardcode a specific model provider for prose drafting — p
   "mcpServers": {
     "zotero": {
       "command": "zotero-mcp",
+      "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
       "directTools": true
     }
@@ -149,7 +150,8 @@ your-research-folder/
 └── .academic-helper/
     ├── profile.md               ← Your profile (auto-created)
     ├── sources.json             ← Indexed source registry (includes citeKey for Zotero-backed sources)
-    ├── bibliography.bib         ← BibTeX export of your Zotero sources for the current article (Chicago/MLA/APA)
+    ├── bibliography.bib         ← BibTeX export of your Zotero sources for citeproc articles
+    ├── csl/                     ← Cached/downloaded or custom CSL files for citeproc export
     ├── research-brief.md        ← Output from /skill:academic-writer-ideate
     ├── agent-memory/            ← Per-agent persistent notes
     └── logs/                    ← Session logs
@@ -223,7 +225,7 @@ The pi conversion depends on three community pi packages by [Nico Bailon](https:
 
 Source-library access is provided by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) (54yyyu), replacing the original Candlekeep integration.
 
-Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files vendored from the [citation-style-language/styles](https://github.com/citation-style-language/styles) repository (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`).
+Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files. The package vendors three offline defaults from the [citation-style-language/styles](https://github.com/citation-style-language/styles) repository (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`), and `scripts/resolve-csl.py` can resolve custom `.csl` paths or download/cache additional repository style ids into `.academic-helper/csl/`.
 
 ---
 

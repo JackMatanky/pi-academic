@@ -59,7 +59,7 @@ You will receive:
 - `totalSections`: Total number of sections in the article
 - `thesis`: The article's thesis statement
 - `articleStructure`: The researcher's article structure conventions (intro/conclusion patterns, paragraph parts)
-- `citationStyle`: `chicago` / `mla` / `apa` (**citeproc mode** — pandoc-markdown `[@citeKey]` markers, see Skill 1 step 3 below) or `inline-parenthetical` (**literal mode** — styled citation text, unchanged)
+- `citationStyle`: `inline-parenthetical` (**literal mode** — styled citation text, unchanged) OR any other value (**citeproc mode** — pandoc-markdown `[@citeKey]` markers rendered later by the selected CSL file)
 - `targetLanguage`: The article's writing language — **ALL text must be in this language**
 - `tools`: The enabled tools from the profile
 - `priorSectionTexts`: Text of all previously completed sections (for cross-section repetition awareness)
@@ -183,11 +183,11 @@ Source text retrieved via `zotero_read_pdf_pages` (and any source passage passed
    - **Zotero source title rule:** title field must be `workTitle` from `sources.json` — not the collection name.
    - **Biblical reference format:** `(ספר, פרק, פסוק)` with commas, no colon — e.g., `(אסתר, ד, יד)`.
 
-   **`chicago` / `mla` / `apa` — citeproc mode:** do not write literal styled citation text for these three styles. Emit a pandoc-markdown citation marker inline at the point of the claim instead:
+   **Citeproc mode (any `citationStyle` except `inline-parenthetical`):** do not write literal styled citation text. Emit a pandoc-markdown citation marker inline at the point of the claim instead:
    - One source: `[@citeKey, p. N]` — e.g., `[@smith2020, p. 42]`.
    - Multiple co-located sources for the same claim: `[@key1; @key2, p. N]` — e.g., `[@smith2020; @cohen2019, p. 4]`.
    - `citeKey` MUST be that source's `citeKey` field from `sources.json` (populated by deep-reader from the Zotero-derived BibTeX entry) — **never invented**, same hard rule as literal mode. A source whose `citeKey` is `null` (no Zotero backing) cannot be cited in citeproc mode.
-   - All three styles share this one marker syntax — whether it renders as a footnote (chicago) or an inline parenthetical (mla/apa) is decided later by the CSL style file at pandoc-render time, not by you.
+   - All citeproc styles share this one marker syntax — whether it renders as a footnote, author-date parenthetical, numeric bracket, journal-specific format, or bibliography layout is decided later by the CSL file at pandoc-render time, not by you.
    - **No `[?]` marker here** — citeproc syntax can't embed one without corrupting the `[@key]` parse. When a field the claim relies on has `extractionConfidence: "low"` or is `null` in `sources.json`, leave the marker as plain `[@citeKey, p. N]` and instead flag the paragraph for the audit report as `[NEEDS REVIEW: <citeKey> — <field> unverified]` — Skill 8's auditor detects this from `sources.json` and adds the report line; you do not (and cannot) embed it in the marker.
 
    Only cite sources found in search results — never make up citations. This rule holds in both modes.
@@ -294,7 +294,7 @@ PY
 
 Return all approved paragraphs for the section, with citations and a skills summary. Citation format matches `citationStyle`:
 - `inline-parenthetical`: `(קאנט, ביקורת התבונה המעשית, עמ' 120)` inline — NO footnotes. Biblical references use `(ספר, פרק, פסוק)` with commas, no colon — e.g., `(אסתר, ד, יד)`.
-- `chicago` / `mla` / `apa` (**citeproc mode**): pandoc-markdown markers — `[@citeKey, p. N]` for one source, `[@key1; @key2, p. N]` for co-located multiple sources. `citeKey` comes from `sources.json` only, never invented. No literal author/year text and no inline `[?]`; the auditor reports low-confidence fields separately as `[NEEDS REVIEW: <citeKey> — <field> unverified]`.
+- Citeproc mode (any `citationStyle` except `inline-parenthetical`): pandoc-markdown markers — `[@citeKey, p. N]` for one source, `[@key1; @key2, p. N]` for co-located multiple sources. `citeKey` comes from `sources.json` only, never invented. No literal author/year text and no inline `[?]`; the auditor reports low-confidence fields separately as `[NEEDS REVIEW: <citeKey> — <field> unverified]`.
 
 ```
 SECTION: [title — in target language only]

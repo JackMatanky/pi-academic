@@ -36,7 +36,7 @@ What makes it different:
 
 This walks you through:
 - Setting your **field of study** (e.g., History, Literature, Philosophy)
-- Choosing your **citation style** (Chicago, MLA, APA)
+- Choosing your **citation style** (Inline Parenthetical, bundled APA/MLA/Chicago, a CSL repository style id, or a custom `.csl` file)
 - Analyzing your **writing style** from past articles (place 5–10 PDFs or DOCX files in `past-articles/`)
 - Connecting your **data tools** (all optional):
 
@@ -95,7 +95,7 @@ When you run `/skill:academic-writer-write`, you go through a conversational pip
    - **Repetition Check** — No repeated words, phrases, or arguments
    - **Citation Audit** — Every footnote verified against sources (hard gate)
 8. **Synthesis** — Final coherence review + full-article style compliance
-9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + your citation style's CSL file against `.academic-helper/bibliography.bib` (Chicago/MLA/APA) — run `/skill:academic-writer-export` afterward for PDF/HTML/ODT/LaTeX/EPUB
+9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.academic-helper/bibliography.bib` (bundled APA/MLA/Chicago, CSL repository id, or custom `.csl`) — run `/skill:academic-writer-export` afterward for PDF/HTML/ODT/LaTeX/EPUB
 
 ---
 
@@ -167,7 +167,7 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 | Path | Purpose |
 |------|---------|
 | `.academic-helper/profile.md` | Your researcher profile (field, style, tools, sources) |
-| `.academic-helper/bibliography.bib` | BibTeX export of your Zotero sources (Chicago/MLA/APA articles) |
+| `.academic-helper/bibliography.bib` | BibTeX export of your Zotero sources for citeproc articles |
 | `past-articles/` | Your published papers for style analysis (never uploaded) |
 | `.claude/agents/` | AI agent prompts (deep-reader, architect, section-writer, auditor, synthesizer) |
 | `references/` | API documentation for integrations |

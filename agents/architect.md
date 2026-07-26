@@ -148,7 +148,7 @@ ARTICLE OUTLINE
 ===============
 Thesis: [exact thesis statement]
 Total word count: [N]
-Citation style: [chicago/mla/apa/inline-parenthetical]
+Citation style: [inline-parenthetical or citeproc CSL style id/path/alias]
 
 I. Introduction (~N words, N paragraphs)
    Role: States problem, thesis, and article roadmap

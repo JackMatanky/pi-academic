@@ -79,7 +79,10 @@ updatedAt: ISO_TIMESTAMP
 ## Output Format Preferences
 
 ```json
-{}
+{
+  "csl": "optional citeproc style id or bundled alias, e.g. nature/chicago-author-date/apa",
+  "cslPath": "optional local .csl path, e.g. .academic-helper/csl/my-journal.csl"
+}
 ```
 
 ## Style Fingerprint

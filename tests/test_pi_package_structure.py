@@ -146,15 +146,13 @@ class TestMcpWiring(unittest.TestCase):
         # ship one from this repo.
         self.assertFalse(os.path.isfile(".mcp.json"), ".mcp.json should be user/project config, not a package source file")
 
-    def test_mcp_adapter_uses_file_based_config(self):
-        mcp_path = "extensions/lifecycle/mcp.ts"
-        self.assertTrue(os.path.isfile(mcp_path))
-        content = _read(mcp_path)
-        self.assertIn('import mcpAdapter from "pi-mcp-adapter"', content)
-        self.assertIn("export const mcpExtension = mcpAdapter", content)
+    def test_lifecycle_does_not_mount_mcp_adapter(self):
+        lifecycle_path = "extensions/lifecycle/index.ts"
+        self.assertTrue(os.path.isfile(lifecycle_path))
+        content = _read(lifecycle_path)
+        self.assertNotIn("pi-mcp-adapter", content, "lifecycle must not mount pi-mcp-adapter; Pi loads the package dependency directly")
+        self.assertNotIn("mcpExtension(", content, "lifecycle must not register MCP tools/flags that conflict with pi-mcp-adapter")
         self.assertNotIn("createMcpAdapter({", content, "programmatic config is isolated and would ignore .mcp.json/global MCP config")
-        self.assertNotIn("ZOTERO_API_KEY", content, "MCP credentials belong in standard MCP config, not package source")
-        self.assertNotIn("ZOTERO_LIBRARY_ID", content, "MCP credentials belong in standard MCP config, not package source")
 
     def test_docs_require_direct_zotero_tools_in_mcp_config(self):
         docs = "\n".join(_read(path) for path in ["AGENTS.md", "README.md", "skills/academic-writer-init/references/integration-setup.md"])

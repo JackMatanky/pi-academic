@@ -1,12 +1,10 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { mcpExtension } from "./mcp.js";
 import { loadProfile, getProfilePath } from "../lib/profile.js";
 import { existsSync, readdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 
 export default function (pi: ExtensionAPI) {
-  mcpExtension(pi);
 
   pi.on("session_start", async (event, ctx) => {
     if (event.reason !== "startup" && event.reason !== "new" && event.reason !== "resume") {

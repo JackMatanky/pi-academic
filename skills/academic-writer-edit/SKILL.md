@@ -176,28 +176,35 @@ After edits are applied:
 
 3. If exporting to .docx, branch by `citationStyle` first:
 
-**Detect citeproc mode:** the profile's `citationStyle` is `chicago`/`mla`/`apa` — or, if the profile is unavailable/stale, the article's markdown already opens with a `bibliography:` frontmatter key (`head -5 "$MD_PATH" | grep -q '^bibliography:'`).
+**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode — or, if the profile is unavailable/stale, the article's markdown already opens with a `bibliography:` frontmatter key (`head -10 "$MD_PATH" | grep -q '^bibliography:'`).
 
 **`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `"$ACADEMIC_WRITER_ROOT"/scripts/generate-docx.py`.
 
-**`chicago` / `mla` / `apa` (citeproc mode):** rewrite `$MD_PATH` the same way as write-article Step 9a's citeproc branch — YAML frontmatter prepended before the title heading, edited body content keeps its `[@citeKey, p. N]` markers verbatim:
+**Citeproc mode:** rewrite `$MD_PATH` the same way as write-article Step 9a's citeproc branch — YAML frontmatter prepended before the title heading, edited body content keeps its `[@citeKey, p. N]` markers verbatim:
 
 ```yaml
 ---
 title: "ARTICLE_TITLE"
 lang: "he"  # or "en", from targetLanguage
 bibliography: .academic-helper/bibliography.bib
-csl: "RESOLVED_ROOT/scripts/lib/csl/CSL_FILE"
+csl: "RESOLVED_CSL_PATH"
 ---
 ```
 
-Resolve `RESOLVED_ROOT` via `echo "$ACADEMIC_WRITER_ROOT"` first — the `Write` tool does not expand shell variables. Map `CSL_FILE` from the active `citationStyle`: `chicago` → `chicago-notes-bibliography.csl`, `mla` → `modern-language-association.csl`, `apa` → `apa.csl`. Then regenerate the DOCX directly — skip `generate-docx.py` entirely:
+Resolve `RESOLVED_CSL_PATH` first:
+
+```bash
+CSL_PATH=$(python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "$CITATION_STYLE_OR_CUSTOM_CSL" --download)
+echo "$CSL_PATH"
+```
+
+Use a custom CSL reference from the profile (`outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or `citation.csl`) when present; otherwise pass `citationStyle`. Backward-compatible aliases (`apa`, `mla`, `chicago`) still resolve to bundled CSL files. Then regenerate the DOCX directly — skip `generate-docx.py` entirely:
 
 ```bash
 pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"
 ```
 
-Same current limitation as write-article Step 9b: this path does not apply `generate-docx.py`'s Hebrew RTL post-processing (not a new regression — these three styles aren't RTL-formatted today either way).
+Same current limitation as write-article Step 9b: this path does not apply `generate-docx.py`'s Hebrew RTL post-processing. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 
 ---
 

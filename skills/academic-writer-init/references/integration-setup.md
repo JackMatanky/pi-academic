@@ -35,6 +35,7 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
      "mcpServers": {
        "zotero": {
          "command": "zotero-mcp",
+         "args": ["serve"],
          "env": { "ZOTERO_LOCAL": "true" },
          "directTools": true
        }

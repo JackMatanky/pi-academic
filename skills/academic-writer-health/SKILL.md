@@ -80,6 +80,7 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
   "mcpServers": {
     "zotero": {
       "command": "zotero-mcp",
+      "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
       "directTools": true
     }
@@ -136,11 +137,20 @@ Report:
 ```bash
 command -v pandoc >/dev/null 2>&1 && echo "PANDOC: INSTALLED" || echo "PANDOC: NOT_FOUND"
 command -v xelatex >/dev/null 2>&1 && echo "XELATEX: INSTALLED" || echo "XELATEX: NOT_FOUND"
+test -x "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py && echo "CSL_RESOLVER: INSTALLED" || echo "CSL_RESOLVER: NOT_FOUND"
+```
+
+If the profile uses citeproc mode (`citationStyle` is anything except `inline-parenthetical`), resolve the configured CSL reference. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`:
+
+```bash
+python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "STYLE_OR_PATH" --download
 ```
 
 Report:
-- pandoc installed? ✓/✗ (powers `/skill:academic-writer-export` and citeproc-mode `chicago`/`mla`/`apa` docx generation)
+- pandoc installed? ✓/✗ (powers `/skill:academic-writer-export` and citeproc-mode docx generation)
 - xelatex installed? ✓/✗ (needed only for PDF export — Hebrew-safe LaTeX engine; other export formats work without it)
+- CSL resolver installed? ✓/✗
+- configured CSL resolves? ✓/✗/— literal mode (show resolved path, or the resolver error)
 
 **If pandoc is not installed**, show this setup guide:
 
@@ -187,7 +197,7 @@ Show a clean summary table:
 > | Past Articles | ✓ [N] files / ✗ Empty | PDF: [n], DOCX: [n] |
 > | Zotero | ✓ Connected / ✗ Error / — Disabled | [N] items |
 > | NotebookLM | ✓ Connected / ✗ Not found / — Disabled | [N] notebooks |
-> | Pandoc / Export | ✓ Ready / ⚠ PDF unavailable / ✗ Not found | Pandoc: [status], XeTeX: [status] |
+> | Pandoc / Export | ✓ Ready / ⚠ PDF unavailable / ✗ Not found | Pandoc: [status], XeTeX: [status], CSL: [resolved/missing/literal] |
 > | Agent Files | ✓ All present / ✗ Missing [list] | 5/5 |
 >
 > **Overall: [N]/[total] checks passed**

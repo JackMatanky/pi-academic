@@ -45,7 +45,7 @@ You will receive:
 - `paragraphIndex`: Paragraph number within the section
 - `paragraphId`: Identifier for this paragraph (format: `section_N_p_M`)
 - `tools`: Enabled tools from the profile
-- `citationStyle`: `chicago` / `mla` / `apa` (citeproc mode) or `inline-parenthetical` (literal mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.academic-helper/profile.md` (see Check D, Step D0).
+- `citationStyle`: `inline-parenthetical` (literal mode) or any other CSL/citeproc style value (citeproc mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.academic-helper/profile.md` (see Check D, Step D0).
 
 ## Process
 
@@ -124,7 +124,7 @@ CITATION_STYLE=$(grep '^citationStyle:' .academic-helper/profile.md 2>/dev/null 
 echo "${CITATION_STYLE:-inline-parenthetical}"
 ```
 - `citationStyle` is `inline-parenthetical` → **literal mode**.
-- `citationStyle` is `chicago`, `mla`, or `apa` → **citeproc mode**.
+- Any other `citationStyle` value → **citeproc mode** (the exact CSL file affects rendering only, not audit logic).
 
 **Literal mode (`inline-parenthetical`):**
 
@@ -143,7 +143,7 @@ Three outcomes per field:
 
 Check D is mandatory. If `.academic-helper/sources.json` does not exist, log a warning and treat every metadata field as "unverified" — all fields get tagged `[NEEDS REVIEW]` so the researcher can verify manually.
 
-**Citeproc mode (`chicago` / `mla` / `apa`):**
+**Citeproc mode (any `citationStyle` except `inline-parenthetical`):**
 
 Citations in this mode are pandoc-markdown markers, not literal author/title text — extraction and verification both key off `citeKey`, never off text matching.
 
@@ -168,7 +168,7 @@ In addition to verifying that cited claims are accurate, scan every paragraph fo
 
 **Citation-presence check (branches by mode — reuses the mode + marker extraction from Check D above):**
 - **Literal mode (`inline-parenthetical`):** a sentence is "cited" if a footnote/inline-parenthetical citation immediately follows it, exactly as Check D already resolves.
-- **Citeproc mode (`chicago` / `mla` / `apa`):** a sentence is "cited" if it contains, or is immediately followed by, one of the `[@...]` markers Check D's citeproc branch already extracted from this paragraph. A factual-claim sentence covered by none of those markers is uncited — identically to a literal-mode sentence with no footnote.
+- **Citeproc mode:** a sentence is "cited" if it contains, or is immediately followed by, one of the `[@...]` markers Check D's citeproc branch already extracted from this paragraph. A factual-claim sentence covered by none of those markers is uncited — identically to a literal-mode sentence with no footnote.
 
 **Detection cues — flag any sentence that:**
 1. Asserts a **dating** ("בתקופה X", "במאה הY", "in the Nth century") without a citation.

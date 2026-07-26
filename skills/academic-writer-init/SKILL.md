@@ -113,13 +113,13 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Citations:  (מחבר, כותרת, עמ' N) in running text
 >    Purity:     Foreign terms must be transliterated
 >    ```
-> 2. **English** — Left-to-right, Times New Roman, Chicago/MLA/APA supported.
+> 2. **English** — Left-to-right, Times New Roman, citeproc/CSL citations supported.
 >    ```
 >    English Mode
 >    ────────────
 >    Direction:  LTR
 >    Font:       Times New Roman 12pt
->    Citations:  Chicago, MLA, or APA
+>    Citations:  Any CSL style (bundled APA/MLA/Chicago, CSL repository id, or custom .csl)
 >    ```
 > 3. **Other** — You'll specify the language name.
 >    ```
@@ -152,41 +152,55 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      ✓ Short citation format
 >      ✓ Dense citation density
 >    ```
-> 2. **Chicago / Turabian** — Footnotes with full bibliography — most common in English Humanities.
+> 2. **Bundled citeproc style** — Use one of the packaged CSL defaults.
 >    ```
->    Chicago / Turabian
->    ──────────────────
->    Example footnote:
->      ¹ Levy, The Soul's Teaching, 42.
+>    Bundled CSL
+>    ───────────
+>    Choices:
+>      chicago  → Chicago notes + bibliography
+>      mla      → Modern Language Association
+>      apa      → American Psychological Association
 >
 >    When to use:
->      ✓ English Humanities articles
->      ✓ History, Philosophy, Literature
->      ✓ Requires bibliography section
+>      ✓ You want standard English citation rendering
+>      ✓ You want offline deterministic export
 >    ```
-> 3. **MLA** — Parenthetical with Works Cited page.
+> 3. **CSL repository style** — Use a style id from https://github.com/citation-style-language/styles.
 >    ```
->    MLA
->    ───
->    Example: (Levy 42)
+>    CSL Repository
+>    ──────────────
+>    Example ids:
+>      chicago-author-date
+>      nature
+>      modern-humanities-research-association
 >
->    When to use:
->      ✓ Literature and language studies
->      ✓ Humanities with Works Cited
+>    Academic Writer downloads/caches the .csl file to .academic-helper/csl/
 >    ```
-> 4. **APA** — (Author, Year) style — more common in social sciences.
+> 4. **Custom CSL file** — Use a `.csl` file you provide.
 >    ```
->    APA
->    ───
->    Example: (Levy, 2019, p. 42)
+>    Custom CSL
+>    ──────────
+>    Example paths:
+>      .academic-helper/csl/my-journal.csl
+>      /Users/me/styles/my-journal.csl
 >
->    When to use:
->      ✓ Social sciences
->      ✓ Psychology, Education, Linguistics
+>    Best for: journal-specific or edited CSL files.
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
-Map selection: Inline → `inline-parenthetical`, Chicago → `chicago`, MLA → `mla`, APA → `apa`.
+Map selection:
+- Inline → `citationStyle: inline-parenthetical`
+- Bundled Chicago/MLA/APA → `citationStyle: chicago` / `mla` / `apa` (backward-compatible aliases)
+- CSL repository style → `citationStyle: STYLE_ID` (e.g. `nature`) and store the same value under `outputFormatPreferences.csl`
+- Custom CSL file → `citationStyle: custom-csl` and store the path under `outputFormatPreferences.cslPath`
+
+For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving:
+
+```bash
+python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "STYLE_OR_PATH" --download
+```
+
+If validation fails, show the error and ask for a different bundled alias, style id, or `.csl` path. Do not continue with an unresolved CSL style.
 
 ---
 
@@ -371,7 +385,7 @@ Use the Write tool to save `.academic-helper/profile.md`:
 
 ---
 fieldOfStudy: FIELD_HERE
-citationStyle: inline-parenthetical
+citationStyle: SELECTED_CITATION_STYLE
 targetLanguage: Hebrew
 abstractLanguages:
   - Hebrew
@@ -392,6 +406,7 @@ updatedAt: ISO_TIMESTAMP
 ## Output Format Preferences
 
 ```json
+{ "csl": "optional CSL repository id or bundled alias", "cslPath": "optional custom .csl path" }
 ` ` `
 
 ## Style Fingerprint
