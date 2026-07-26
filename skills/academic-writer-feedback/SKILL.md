@@ -45,7 +45,7 @@ Capture `targetLanguage` — you'll need it when editing the pattern reference.
 Ask:
 > "Which article would you like to give feedback on?"
 
-Use `a conversational ask` with options listed from the `articles/` directory:
+Present options listed from the `articles/` directory (numbered list, most recent first):
 
 ```bash
 ls articles/*.md 2>/dev/null | head -20
@@ -67,7 +67,7 @@ cat .academic-helper/evidence-ownership.json 2>/dev/null || echo "{}"
 
 ## Phase 2 — Structured Interview
 
-Walk the researcher through four topic blocks, one at a time. For each block, use `a conversational ask` to prompt — then use free-text follow-up to capture the specifics. **Do not** ask all four blocks at once.
+Walk the researcher through four topic blocks, one at a time. For each block, present the question with its numbered options below. **Do not** ask all four blocks at once.
 
 ### Block 1: Structure
 
@@ -118,7 +118,7 @@ For every feedback item gathered, draft a table showing:
 | 3 | "Paragraph 4 of Section II is way too long" | A — Article edit | Split the paragraph at the second sentence break |
 | 4 | "I never want em-dashes" | E — Memory / profile | Add to profile preferences + feedback log |
 
-Show this table to the researcher and ask (a conversational ask, multiSelect=true):
+Show this table to the researcher and ask, allowing multiple selections:
 
 > "Which of these would you like me to apply now?"
 
@@ -193,7 +193,7 @@ Feedback log path:
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
-For session memory (the auto-memory system at `~/.claude/projects/-Users-yotamfromm-dev-Academic-Helper/memory/`), write a `feedback_*.md` file only for items that represent **persistent preferences** worth carrying across sessions — not one-off fixes. Examples worth a memory entry:
+For session memory (persistent preferences, project-local — never `$HOME`), write a `feedback_*.md` file to `.academic-helper/memory/` only for items that represent **persistent preferences** worth carrying across sessions — not one-off fixes. Examples worth a memory entry:
 - "Never use em-dashes anywhere"
 - "Abstracts should always be both Hebrew and English"
 - "For Bible articles, always cite the Hebrew chapter/verse first, then the English translation"
@@ -228,7 +228,7 @@ Then show a summary to the researcher:
 > - Deferred: N items (logged to `.academic-helper/feedback/<file>.md`)
 > - Memory entries added: N
 >
-> Next runs of `/academic-writer` will pick up all profile and pattern changes automatically. For the article itself, the edits have been written to `articles/<slug>.md` — you may want to regenerate the .docx by running the last step of `/academic-writer` or edit and re-export manually."
+> Next runs of `/skill:academic-writer-write` will pick up all profile and pattern changes automatically. For the article itself, the edits have been written to `articles/<slug>.md` — you may want to regenerate the .docx by running the last step of `/skill:academic-writer-write` or edit and re-export manually."
 
 
 (No dedicated workflow is required — this is a freestyle event.)

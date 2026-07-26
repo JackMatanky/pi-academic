@@ -42,7 +42,7 @@ This walks you through:
 
 | Tool | What it does |
 |------|-------------|
-| **Zotero** | Reference manager — your source PDFs and research materials — your source PDFs and research materials |
+| **Zotero** | Reference manager — your source PDFs and research materials |
 
 ---
 
@@ -67,10 +67,10 @@ This walks you through:
 
 These don't have their own slash command; they run as sub-workflows:
 
-- `learn` — run after dropping new files in `past-articles/` (auto-invoked by the dashboard hint)
-- `update-tools` / `update-field` — invoked from within `init` or `setup`
-- `present` — invoked from `edit` or `write` after a final article ships
-- `feedback` — invoked from `edit` after researcher review
+- `academic-writer-learn` — run after dropping new files in `past-articles/` (auto-invoked by the dashboard hint)
+- `academic-writer-update-tools` / `academic-writer-update-field` — invoked from within `init` or `setup`
+- `academic-writer-present` — invoked from `edit` or `write` after a final article ships
+- `academic-writer-feedback` — invoked from `edit` after researcher review
 
 ---
 
@@ -187,12 +187,3 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 2. **No invented page numbers** — Exact quotes confirmed via RAG bypass + Zotero
 3. **Your voice** — Every paragraph checked against your style fingerprint
 5. **Your data stays local** — Past articles are never uploaded anywhere
-- **/skill:academic-writer-feedback** — Provide feedback on an article
-
-- **/skill:academic-writer-edit-section** — Edit a section
-- **/skill:academic-writer-proofread** — Proofread
-- **/skill:academic-writer-learn** — Learn
-- **/skill:academic-writer-update-field** — Update field
-- **/skill:academic-writer-health** — Health check
-
-- **academic-writer-present**

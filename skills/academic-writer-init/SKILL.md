@@ -86,9 +86,8 @@ After running detection (parallel batch), store the tool selection as the `tools
 
 ### Step 1 of 4 — Field of Study
 
-Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+Ask the researcher, as a free-text prompt (no fixed options — record whatever they say):
 > "What is your field of study and area of specialization?"
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Show examples below the question:
 > "The more specific, the better. Examples:
@@ -266,8 +265,9 @@ First fetch the **shared Hebrew baseline** from Zotero (book *Hebrew Linguistic 
 
 ```bash
 mkdir -p .ctx
-Zotero tools get cmomjonvy0fdmk30zwef79c48 > .ctx/hebrew-linguistic-reference.md
 ```
+
+Call `zotero_get_item_fulltext(item_key="cmomjonvy0fdmk30zwef79c48")` and use the Write tool to save the returned text to `.ctx/hebrew-linguistic-reference.md`.
 
 Then run the extractor:
 
@@ -344,21 +344,15 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Skip Sources
 >    ────────────
 >    ⚠ Articles won't have source metadata yet
->    → Add sources with: Zotero tools add file.pdf
->    → Then re-run this step
+>    → Add items via the Zotero desktop app, then re-run this step
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If **"Yes"**: list and enrich all items:
 
-```bash
-zotero_get_collections() then zotero_get_collection_items() or zotero_get_recent()
-```
+Call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items (or `zotero_get_recent()` for a flat recent-items view).
 
-For each item ID:
-```bash
-zotero_get_item_metadata(format="json") ITEM_ID
-```
+For each item ID, call `zotero_get_item_metadata(format="json")`.
 
 Tell the researcher: "Enriching your sources — extracting titles, authors, and table of contents from each document. This may take a moment..."
 
@@ -390,7 +384,7 @@ updatedAt: ISO_TIMESTAMP
 
 ```json
 {
-  "Zotero": { "enabled": true },
+  "zotero": { "enabled": true, "mode": "local" },
   "notebooklm": { "enabled": false }
 }
 ` ` `

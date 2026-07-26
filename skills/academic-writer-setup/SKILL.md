@@ -108,9 +108,8 @@ MongoDB Agent Skills is auto-configured silently — do not show it to the user.
 
 ### Field of Study
 
-Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+Ask the researcher, as a free-text prompt (no fixed options — record whatever they say):
 > "What is your field of study and area of specialization?"
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 > "The more specific, the better. Examples: *Early Modern Jewish Philosophy*, *Talmudic Literature*, *Biblical Studies — Pentateuch*"
 
@@ -276,14 +275,6 @@ null
 (Replace backtick triplets with actual ` ``` ` when writing the file.)
 
 
-```bash
-# Resolve plugin directory from Claude plugin cache
-AW_PLUGIN_DIR=$(find ~/.claude/plugins/cache -name "wf_write_article.json" -path "*/workflows/*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-if [ -z "$AW_PLUGIN_DIR" ]; then
-  echo "Warning: Could not find academic-writer workflows in plugin cache. Skipping workflow registration."
-else
-fi
-```
 
 ---
 

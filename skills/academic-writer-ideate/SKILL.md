@@ -21,11 +21,8 @@ Extract `fieldOfStudy`, `targetLanguage`, and `tools` configuration.
 
 ## Step 1: Topic Exploration
 
-Ask the researcher:
-
-Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+Ask the researcher, as a free-text prompt (no fixed options — record whatever they say):
 > "What topic or area are you thinking about exploring? This can be vague — we'll sharpen it together."
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Show examples relevant to their `fieldOfStudy`:
 > "Examples:
@@ -66,11 +63,7 @@ Present the brainstorm:
 
 ## Step 3: Gap Analysis
 
-If Zotero is enabled, scan the researcher's library:
-
-```bash
-zotero_get_recent(limit=100)
-```
+If Zotero is enabled, scan the researcher's library by calling `zotero_get_recent(limit=100)`.
 
 For each source, check its metadata against the topic:
 - What has been written about this topic in the researcher's sources?
