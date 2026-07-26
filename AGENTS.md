@@ -5,7 +5,18 @@ a single researcher on a local machine; the package should never assume team wor
 
 ## Commands
 
-- `npm install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`
+With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / Python 3.12, manages `.venv`):
+
+- `mise install` — provisions Node/Python and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`, plus `pip install -r requirements.txt` into `.venv`
+- `mise run test` (alias `t`) — full pytest suite
+- `mise run typecheck` — strict TS check on `extensions/`
+- `mise run ci` — typecheck + test
+- `mise run install-hooks` — installs the git pre-push hook (run once after cloning)
+
+Without mise, the equivalent raw commands:
+
+- `npm install && npm --prefix extensions install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`, plus the `extensions/` typecheck sandbox
+- `pip install -r requirements.txt` — `python-docx`, `lxml`, `pdfplumber`, `pytest`, `PyYAML`
 - `npm run typecheck` — strict TS check on `extensions/`
 - `python3 -m pytest tests/` — run the full test suite (also runs via the installed pre-push hook, `bash scripts/install-hooks.sh`)
 

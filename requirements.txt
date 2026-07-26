@@ -1,0 +1,16 @@
+# Python dependencies for academic-writer's dev/build tooling and test suite.
+# Installed automatically by `mise install` (see mise.toml [hooks.postinstall]).
+#
+# pytest, PyYAML — tests/*.py (frontmatter parsing, test collection)
+# python-docx    — scripts/generate-docx.py, scripts/lib/create_template.py,
+#                  scripts/lib/footnote_adder.py, and the init/setup skills'
+#                  DOCX text-extraction step
+# lxml           — scripts/lib/footnote_adder.py (raw OOXML manipulation)
+# pdfplumber     — skills/academic-writer-init's past-articles/ PDF text
+#                  extraction step (falls back to `strings` if absent, but
+#                  is the documented primary path)
+pytest>=8.0
+PyYAML>=6.0
+python-docx>=1.1
+lxml>=5.0
+pdfplumber>=0.11
