@@ -40,9 +40,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt
 
-sys.path.insert(
-    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib")
-)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 from footnote_adder import FootnoteAdder  # noqa: E402
 
 TEMPLATE_PATH = os.path.join(
@@ -297,11 +295,7 @@ def generate_docx(data: dict, output_path: str):
                 heading_size,
                 is_rtl=is_rtl,
                 bold=True,
-                align=(
-                    WD_ALIGN_PARAGRAPH.RIGHT
-                    if is_rtl
-                    else WD_ALIGN_PARAGRAPH.LEFT
-                ),
+                align=(WD_ALIGN_PARAGRAPH.RIGHT if is_rtl else WD_ALIGN_PARAGRAPH.LEFT),
                 space_before=12,
                 space_after=6,
                 line_spacing=line_spacing,
@@ -401,12 +395,8 @@ def generate_docx(data: dict, output_path: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate academic article DOCX"
-    )
-    parser.add_argument(
-        "--input", required=True, help="Path to article JSON file"
-    )
+    parser = argparse.ArgumentParser(description="Generate academic article DOCX")
+    parser.add_argument("--input", required=True, help="Path to article JSON file")
     parser.add_argument("--output", required=True, help="Output .docx path")
     args = parser.parse_args()
 

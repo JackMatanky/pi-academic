@@ -30,14 +30,14 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
 
     # Extract the docx
     extract_dir = temp_path + "_extracted"
-    with zipfile.ZipFile(temp_path, 'r') as zip_ref:
+    with zipfile.ZipFile(temp_path, "r") as zip_ref:
         zip_ref.extractall(extract_dir)
 
     word_dir = os.path.join(extract_dir, "word")
     w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
     # Create footnotes.xml - CRITICAL: declare all namespaces referenced in mc:Ignorable
-    footnotes_xml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    footnotes_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:footnotes xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -59,12 +59,12 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
         <w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>
             <w:r><w:continuationSeparator/></w:r></w:p>
     </w:footnote>
-</w:footnotes>'''
+</w:footnotes>"""
     with open(os.path.join(word_dir, "footnotes.xml"), "w", encoding="utf-8") as f:
         f.write(footnotes_xml)
 
     # Create endnotes.xml (Word expects this when footnotes exist)
-    endnotes_xml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    endnotes_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:endnotes xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -86,7 +86,7 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
         <w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>
             <w:r><w:continuationSeparator/></w:r></w:p>
     </w:endnote>
-</w:endnotes>'''
+</w:endnotes>"""
     with open(os.path.join(word_dir, "endnotes.xml"), "w", encoding="utf-8") as f:
         f.write(endnotes_xml)
 
@@ -98,13 +98,21 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
 
     # Add footnotes and endnotes overrides
     for part, content_type in [
-        ("/word/footnotes.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"),
-        ("/word/endnotes.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml")
+        (
+            "/word/footnotes.xml",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml",
+        ),
+        (
+            "/word/endnotes.xml",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml",
+        ),
     ]:
         override = etree.SubElement(root, "{%s}Override" % ct_ns)
         override.set("PartName", part)
         override.set("ContentType", content_type)
-    tree.write(content_types_path, xml_declaration=True, encoding="UTF-8", standalone="yes")
+    tree.write(
+        content_types_path, xml_declaration=True, encoding="UTF-8", standalone="yes"
+    )
 
     # Update styles.xml - add FootnoteReference and FootnoteText styles
     styles_path = os.path.join(word_dir, "styles.xml")
@@ -115,17 +123,27 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
     fn_ref_style = etree.SubElement(styles_root, "{%s}style" % w_ns)
     fn_ref_style.set("{%s}type" % w_ns, "character")
     fn_ref_style.set("{%s}styleId" % w_ns, "FootnoteReference")
-    etree.SubElement(fn_ref_style, "{%s}name" % w_ns).set("{%s}val" % w_ns, "footnote reference")
-    etree.SubElement(fn_ref_style, "{%s}basedOn" % w_ns).set("{%s}val" % w_ns, "DefaultParagraphFont")
+    etree.SubElement(fn_ref_style, "{%s}name" % w_ns).set(
+        "{%s}val" % w_ns, "footnote reference"
+    )
+    etree.SubElement(fn_ref_style, "{%s}basedOn" % w_ns).set(
+        "{%s}val" % w_ns, "DefaultParagraphFont"
+    )
     fn_ref_rPr = etree.SubElement(fn_ref_style, "{%s}rPr" % w_ns)
-    etree.SubElement(fn_ref_rPr, "{%s}vertAlign" % w_ns).set("{%s}val" % w_ns, "superscript")
+    etree.SubElement(fn_ref_rPr, "{%s}vertAlign" % w_ns).set(
+        "{%s}val" % w_ns, "superscript"
+    )
 
     # Add FootnoteText style — with RTL/Hebrew support
     fn_text_style = etree.SubElement(styles_root, "{%s}style" % w_ns)
     fn_text_style.set("{%s}type" % w_ns, "paragraph")
     fn_text_style.set("{%s}styleId" % w_ns, "FootnoteText")
-    etree.SubElement(fn_text_style, "{%s}name" % w_ns).set("{%s}val" % w_ns, "footnote text")
-    etree.SubElement(fn_text_style, "{%s}basedOn" % w_ns).set("{%s}val" % w_ns, "Normal")
+    etree.SubElement(fn_text_style, "{%s}name" % w_ns).set(
+        "{%s}val" % w_ns, "footnote text"
+    )
+    etree.SubElement(fn_text_style, "{%s}basedOn" % w_ns).set(
+        "{%s}val" % w_ns, "Normal"
+    )
     fn_text_pPr = etree.SubElement(fn_text_style, "{%s}pPr" % w_ns)
     spacing = etree.SubElement(fn_text_pPr, "{%s}spacing" % w_ns)
     spacing.set("{%s}after" % w_ns, "0")
@@ -140,7 +158,9 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
     # RTL run direction for Hebrew footnote text
     etree.SubElement(fn_text_rPr, "{%s}rtl" % w_ns)
 
-    styles_tree.write(styles_path, xml_declaration=True, encoding="UTF-8", standalone="yes")
+    styles_tree.write(
+        styles_path, xml_declaration=True, encoding="UTF-8", standalone="yes"
+    )
 
     # Update document.xml.rels - add footnotes and endnotes relationships
     rels_path = os.path.join(word_dir, "_rels", "document.xml.rels")
@@ -148,12 +168,20 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
     rels_root = rels_tree.getroot()
     rel_ns = "http://schemas.openxmlformats.org/package/2006/relationships"
 
-    existing_ids = [int(el.get("Id")[3:]) for el in rels_root if el.get("Id", "").startswith("rId")]
+    existing_ids = [
+        int(el.get("Id")[3:]) for el in rels_root if el.get("Id", "").startswith("rId")
+    ]
     next_id = max(existing_ids) + 1 if existing_ids else 1
 
     for target, rel_type in [
-        ("footnotes.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes"),
-        ("endnotes.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes")
+        (
+            "footnotes.xml",
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
+        ),
+        (
+            "endnotes.xml",
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes",
+        ),
     ]:
         rel = etree.SubElement(rels_root, "{%s}Relationship" % rel_ns)
         rel.set("Id", f"rId{next_id}")
@@ -179,16 +207,18 @@ def create_template_with_footnotes(template_path="footnote_template.docx"):
     # Insert after characterSpacingControl or at beginning
     insert_idx = 0
     for i, elem in enumerate(settings_root):
-        if 'characterSpacingControl' in elem.tag:
+        if "characterSpacingControl" in elem.tag:
             insert_idx = i + 1
             break
     settings_root.insert(insert_idx, footnotePr)
     settings_root.insert(insert_idx + 1, endnotePr)
 
-    settings_tree.write(settings_path, xml_declaration=True, encoding="UTF-8", standalone="yes")
+    settings_tree.write(
+        settings_path, xml_declaration=True, encoding="UTF-8", standalone="yes"
+    )
 
     # Repack the docx
-    with zipfile.ZipFile(template_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    with zipfile.ZipFile(template_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root_dir, dirs, files in os.walk(extract_dir):
             for file in files:
                 file_path = os.path.join(root_dir, file)

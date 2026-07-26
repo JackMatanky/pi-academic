@@ -28,9 +28,7 @@ ALIASES = {
     "chicago-notes-bibliography": "chicago-notes-bibliography.csl",
 }
 
-RAW_CSL_BASE = (
-    "https://raw.githubusercontent.com/citation-style-language/styles/master"
-)
+RAW_CSL_BASE = "https://raw.githubusercontent.com/citation-style-language/styles/master"
 
 
 def _looks_like_csl(path: Path) -> bool:
@@ -104,11 +102,13 @@ def resolve_style(
         if p.is_absolute():
             candidates.append(p)
         else:
-            candidates.extend([
-                project_root / p,
-                cache_dir / p.name,
-                bundled_dir / p.name,
-            ])
+            candidates.extend(
+                [
+                    project_root / p,
+                    cache_dir / p.name,
+                    bundled_dir / p.name,
+                ]
+            )
         for candidate in candidates:
             if candidate.exists():
                 return _validate_csl(candidate)

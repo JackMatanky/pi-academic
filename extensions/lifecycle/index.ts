@@ -5,9 +5,12 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 
 export default function (pi: ExtensionAPI) {
-
   pi.on("session_start", async (event, ctx) => {
-    if (event.reason !== "startup" && event.reason !== "new" && event.reason !== "resume") {
+    if (
+      event.reason !== "startup" &&
+      event.reason !== "new" &&
+      event.reason !== "resume"
+    ) {
       return;
     }
 
@@ -19,24 +22,30 @@ export default function (pi: ExtensionAPI) {
     }
 
     const lines: string[] = [];
-    lines.push('');
-    lines.push('╔══════════════════════════════════════════════════╗');
-    lines.push('║         ACADEMIC WRITER — SESSION START          ║');
-    lines.push('╠══════════════════════════════════════════════════╣');
+    lines.push("");
+    lines.push("╔══════════════════════════════════════════════════╗");
+    lines.push("║         ACADEMIC WRITER — SESSION START          ║");
+    lines.push("╠══════════════════════════════════════════════════╣");
 
     // Profile status
-    lines.push(`║  Field: ${(profile.fieldOfStudy ?? 'Not set').padEnd(38)}║`);
-    lines.push(`║  Language: ${(profile.targetLanguage ?? 'Not set').padEnd(36)}║`);
-    lines.push(`║  Citation: ${(profile.citationStyle ?? 'Not set').padEnd(36)}║`);
-    lines.push(`║  Fingerprint: ${(profile.styleFingerprint ? 'Loaded' : 'Missing').padEnd(33)}║`);
+    lines.push(`║  Field: ${(profile.fieldOfStudy ?? "Not set").padEnd(38)}║`);
+    lines.push(
+      `║  Language: ${(profile.targetLanguage ?? "Not set").padEnd(36)}║`,
+    );
+    lines.push(
+      `║  Citation: ${(profile.citationStyle ?? "Not set").padEnd(36)}║`,
+    );
+    lines.push(
+      `║  Fingerprint: ${(profile.styleFingerprint ? "Loaded" : "Missing").padEnd(33)}║`,
+    );
 
     // Articles count
-    const articlesDir = join(projectDir, 'articles');
+    const articlesDir = join(projectDir, "articles");
     let articleCount = 0;
     if (existsSync(articlesDir)) {
       try {
         const files = readdirSync(articlesDir);
-        articleCount = files.filter(f => f.endsWith('.docx')).length;
+        articleCount = files.filter((f) => f.endsWith(".docx")).length;
       } catch {
         // ignore
       }
@@ -51,62 +60,74 @@ export default function (pi: ExtensionAPI) {
     const tools = profile.tools ?? {};
     const enabledTools: string[] = [];
     for (const [name, config] of Object.entries(tools)) {
-      if (config && typeof config === 'object' && 'enabled' in config && config.enabled) {
+      if (
+        config &&
+        typeof config === "object" &&
+        "enabled" in config &&
+        config.enabled
+      ) {
         enabledTools.push(name);
       }
     }
-    lines.push(`║  Tools: ${(enabledTools.length > 0 ? enabledTools.join(', ') : 'None').substring(0, 38).padEnd(38)}║`);
+    lines.push(
+      `║  Tools: ${(enabledTools.length > 0 ? enabledTools.join(", ") : "None").substring(0, 38).padEnd(38)}║`,
+    );
 
     // Research brief
-    const briefPath = join(projectDir, '.academic-helper', 'research-brief.md');
+    const briefPath = join(projectDir, ".academic-helper", "research-brief.md");
     if (existsSync(briefPath)) {
       lines.push(`║  Research brief: Available                       ║`);
     }
 
     // Past articles for learning
-    const pastDir = join(projectDir, 'past-articles');
+    const pastDir = join(projectDir, "past-articles");
     if (existsSync(pastDir)) {
       try {
         const pastFiles = readdirSync(pastDir);
         const analyzed = profile.analyzedArticles?.length ?? 0;
-        const total = pastFiles.filter(f => f.endsWith('.pdf') || f.endsWith('.docx')).length;
+        const total = pastFiles.filter(
+          (f) => f.endsWith(".pdf") || f.endsWith(".docx"),
+        ).length;
         const unanalyzed = total - analyzed;
         if (unanalyzed > 0) {
           lines.push(`║  New past articles: ${String(unanalyzed).padEnd(27)}║`);
-          lines.push(`║  → Run /skill:academic-writer-voice to update style    ║`);
+          lines.push(
+            `║  → Run /skill:academic-writer-voice to update style    ║`,
+          );
         }
       } catch {
         // ignore
       }
     }
 
-    lines.push('╠══════════════════════════════════════════════════╣');
-    lines.push('║  /skill:academic-writer-write    — Write new article   ║');
-    lines.push('║  /skill:academic-writer-ideate   — Brainstorm ideas    ║');
-    lines.push('║  /skill:academic-writer-research — Investigate a topic ║');
-    lines.push('║  /skill:academic-writer-health   — Check integrations  ║');
-    lines.push('╚══════════════════════════════════════════════════╝');
+    lines.push("╠══════════════════════════════════════════════════╣");
+    lines.push("║  /skill:academic-writer-write    — Write new article   ║");
+    lines.push("║  /skill:academic-writer-ideate   — Brainstorm ideas    ║");
+    lines.push("║  /skill:academic-writer-research — Investigate a topic ║");
+    lines.push("║  /skill:academic-writer-health   — Check integrations  ║");
+    lines.push("╚══════════════════════════════════════════════════╝");
 
-    ctx.ui.notify(lines.join('\n'), "info");
+    ctx.ui.notify(lines.join("\n"), "info");
   });
 
   pi.on("agent_settled", async (event, ctx) => {
     const projectDir = process.cwd();
 
     // Hard gate: only notify in academic-writer projects.
-    if (!existsSync(join(projectDir, '.academic-helper', 'profile.md'))) {
+    if (!existsSync(join(projectDir, ".academic-helper", "profile.md"))) {
       return;
     }
 
     // macOS only — silently no-op elsewhere.
-    if (process.platform !== 'darwin') {
+    if (process.platform !== "darwin") {
       return;
     }
 
     // Use execFile (not exec) — args are passed as an array to osascript,
     // never interpreted by the shell. The script string is a static literal.
-    const script = 'display notification "Task complete" with title "Academic Writer" sound name "Glass"';
-    execFile('osascript', ['-e', script], { timeout: 2000 }, () => {
+    const script =
+      'display notification "Task complete" with title "Academic Writer" sound name "Glass"';
+    execFile("osascript", ["-e", script], { timeout: 2000 }, () => {
       // Silent — never block on notification.
     });
   });
@@ -124,28 +145,28 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    const logsDir = join(projectDir, '.academic-helper', 'logs');
+    const logsDir = join(projectDir, ".academic-helper", "logs");
     if (!existsSync(logsDir)) {
       return;
     }
 
     try {
       const now = new Date();
-      const dateStr = now.toISOString().split('T')[0];
-      const timeStr = now.toISOString().split('T')[1].split('.')[0];
+      const dateStr = now.toISOString().split("T")[0];
+      const timeStr = now.toISOString().split("T")[1].split(".")[0];
       const logFile = join(logsDir, `${dateStr}.log`);
 
-      const sessionId = ctx.sessionManager.getSessionId() ?? 'unknown';
+      const sessionId = ctx.sessionManager.getSessionId() ?? "unknown";
 
       const entry = [
-        '',
+        "",
         `--- Session End: ${timeStr} (${sessionId}) ---`,
         `Timestamp: ${now.toISOString()}`,
-        '---',
-        '',
-      ].join('\n');
+        "---",
+        "",
+      ].join("\n");
 
-      appendFileSync(logFile, entry, 'utf-8');
+      appendFileSync(logFile, entry, "utf-8");
     } catch {
       // Silent failure — logging should never block the session
     }

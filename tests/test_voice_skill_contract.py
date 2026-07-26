@@ -4,8 +4,10 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "academic-writer-voice" / "SKILL.md"
 
+
 def test_skill_exists():
     assert SKILL.is_file()
+
 
 def test_skill_frontmatter_complete():
     text = SKILL.read_text()
@@ -18,6 +20,7 @@ def test_skill_frontmatter_complete():
     for k in ("description", "allowed-tools"):
         assert k in fm
 
+
 def test_skill_lists_subactions():
     text = SKILL.read_text()
     # `sync` was dropped with the Candlekeep voice-sync removal — no sub-action
@@ -25,6 +28,7 @@ def test_skill_lists_subactions():
     for sub in ("init", "continue", "recompress", "audit", "quick"):
         assert f":voice {sub}" in text or f"`{sub}`" in text
     assert ":voice sync" not in text
+
 
 def test_skill_invokes_correct_agents():
     text = SKILL.read_text()

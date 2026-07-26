@@ -65,15 +65,15 @@ class FootnoteAdder:
         r = footnote_run._r
 
         # Add run properties with FootnoteReference style
-        rPr = OxmlElement('w:rPr')
-        rStyle = OxmlElement('w:rStyle')
-        rStyle.set(qn('w:val'), 'FootnoteReference')
+        rPr = OxmlElement("w:rPr")
+        rStyle = OxmlElement("w:rStyle")
+        rStyle.set(qn("w:val"), "FootnoteReference")
         rPr.append(rStyle)
         r.insert(0, rPr)
 
         # Add the footnote reference element
-        footnote_ref = OxmlElement('w:footnoteReference')
-        footnote_ref.set(qn('w:id'), str(self.footnote_id))
+        footnote_ref = OxmlElement("w:footnoteReference")
+        footnote_ref.set(qn("w:id"), str(self.footnote_id))
         r.append(footnote_ref)
 
         self.footnotes_to_add.append((self.footnote_id, footnote_text))
@@ -91,7 +91,7 @@ class FootnoteAdder:
         extract_dir = tempfile.mkdtemp()
 
         try:
-            with zipfile.ZipFile(docx_path, 'r') as zip_ref:
+            with zipfile.ZipFile(docx_path, "r") as zip_ref:
                 zip_ref.extractall(extract_dir)
 
             # Update footnotes.xml
@@ -137,7 +137,9 @@ class FootnoteAdder:
                 t3 = etree.SubElement(r3, "{%s}t" % w_ns)
                 t3.text = fn_text
 
-            tree.write(footnotes_path, xml_declaration=True, encoding="UTF-8", standalone="yes")
+            tree.write(
+                footnotes_path, xml_declaration=True, encoding="UTF-8", standalone="yes"
+            )
 
             # Clean up Mac-specific content and fix XML
             self._cleanup_docx(extract_dir)
@@ -153,59 +155,65 @@ class FootnoteAdder:
 
         for root_dir, dirs, files in os.walk(extract_dir):
             for file in files:
-                if file.endswith('.xml') or file.endswith('.rels'):
+                if file.endswith(".xml") or file.endswith(".rels"):
                     file_path = os.path.join(root_dir, file)
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         content = f.read()
 
                     modified = False
 
                     # Remove Mac namespaces
-                    if 'xmlns:mo=' in content or 'xmlns:mv=' in content:
-                        content = re.sub(r'\s*xmlns:mo="[^"]*"', '', content)
-                        content = re.sub(r'\s*xmlns:mv="[^"]*"', '', content)
+                    if "xmlns:mo=" in content or "xmlns:mv=" in content:
+                        content = re.sub(r'\s*xmlns:mo="[^"]*"', "", content)
+                        content = re.sub(r'\s*xmlns:mv="[^"]*"', "", content)
                         modified = True
 
                     # Fix single-quote XML declarations
                     if "<?xml version='1.0'" in content:
                         content = content.replace(
                             "<?xml version='1.0' encoding='UTF-8' standalone='yes'?>",
-                            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
                         )
                         modified = True
 
                     if modified:
-                        with open(file_path, 'w', encoding='utf-8') as f:
+                        with open(file_path, "w", encoding="utf-8") as f:
                             f.write(content)
 
         # Fix webSettings.xml
         ws_path = os.path.join(extract_dir, "word", "webSettings.xml")
         if os.path.exists(ws_path):
-            with open(ws_path, 'r', encoding='utf-8') as f:
+            with open(ws_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            content = re.sub(r'\s*<w:doNotSaveAsSingleFile/>', '', content)
-            with open(ws_path, 'w', encoding='utf-8') as f:
+            content = re.sub(r"\s*<w:doNotSaveAsSingleFile/>", "", content)
+            with open(ws_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
         # Fix settings.xml
         settings_path = os.path.join(extract_dir, "word", "settings.xml")
         if os.path.exists(settings_path):
-            with open(settings_path, 'r', encoding='utf-8') as f:
+            with open(settings_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            content = re.sub(r'<w:zoom w:val="bestFit"/>', '<w:zoom w:percent="100"/>', content)
-            with open(settings_path, 'w', encoding='utf-8') as f:
+            content = re.sub(
+                r'<w:zoom w:val="bestFit"/>', '<w:zoom w:percent="100"/>', content
+            )
+            with open(settings_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
         # Fix docProps/app.xml
         app_path = os.path.join(extract_dir, "docProps", "app.xml")
         if os.path.exists(app_path):
-            with open(app_path, 'r', encoding='utf-8') as f:
+            with open(app_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            content = content.replace('Microsoft Macintosh Word', 'Microsoft Office Word')
-            content = content.replace('<Manager/>', '<Manager></Manager>')
-            content = content.replace('<Company/>', '<Company></Company>')
-            content = content.replace('<HyperlinkBase/>', '<HyperlinkBase></HyperlinkBase>')
-            with open(app_path, 'w', encoding='utf-8') as f:
+            content = content.replace(
+                "Microsoft Macintosh Word", "Microsoft Office Word"
+            )
+            content = content.replace("<Manager/>", "<Manager></Manager>")
+            content = content.replace("<Company/>", "<Company></Company>")
+            content = content.replace(
+                "<HyperlinkBase/>", "<HyperlinkBase></HyperlinkBase>"
+            )
+            with open(app_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
     def _repack_docx(self, extract_dir, docx_path):
@@ -214,17 +222,17 @@ class FootnoteAdder:
         for root_dir, dirs, files in os.walk(extract_dir):
             for file in files:
                 file_path = os.path.join(root_dir, file)
-                arcname = os.path.relpath(file_path, extract_dir).replace('\\', '/')
+                arcname = os.path.relpath(file_path, extract_dir).replace("\\", "/")
                 all_files.append((file_path, arcname))
 
         # OOXML requires specific file order
         priority_order = [
-            '[Content_Types].xml',
-            '_rels/.rels',
-            'word/_rels/document.xml.rels',
-            'word/document.xml',
-            'word/footnotes.xml',
-            'word/endnotes.xml',
+            "[Content_Types].xml",
+            "_rels/.rels",
+            "word/_rels/document.xml.rels",
+            "word/document.xml",
+            "word/footnotes.xml",
+            "word/endnotes.xml",
         ]
 
         def sort_key(item):
@@ -236,7 +244,7 @@ class FootnoteAdder:
         all_files.sort(key=sort_key)
 
         temp_docx = docx_path + ".tmp"
-        with zipfile.ZipFile(temp_docx, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(temp_docx, "w", zipfile.ZIP_DEFLATED) as zipf:
             for file_path, arcname in all_files:
                 zipf.write(file_path, arcname)
 

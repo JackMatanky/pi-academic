@@ -1,4 +1,3 @@
-import os
 import subprocess
 from pathlib import Path
 
@@ -35,8 +34,8 @@ def test_resolves_project_custom_csl(tmp_path):
     custom.write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<style xmlns="http://purl.org/net/xbiblio/csl" version="1.0" class="in-text">\n'
-        '  <info><title>Custom Journal</title><id>custom-journal</id></info>\n'
-        '</style>\n',
+        "  <info><title>Custom Journal</title><id>custom-journal</id></info>\n"
+        "</style>\n",
         encoding="utf-8",
     )
 
