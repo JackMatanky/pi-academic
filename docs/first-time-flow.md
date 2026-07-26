@@ -60,7 +60,7 @@ The CLI auto-detects which tools you have installed and lets you toggle them:
 
 | Tool | What it does | Required? |
 |------|-------------|-----------|
-| **Candlekeep** | Cloud library for your source PDFs | Recommended |
+| **Zotero** | Cloud library for your source PDFs | Recommended |
 | **Cognetivy** | Tracks every step (audit trail) | Recommended |
 
 You can change these later with `/academic-writer-update-tools`.
@@ -88,8 +88,8 @@ Claude reads your papers and builds a **Style Fingerprint** — a detailed profi
 
 **You review the fingerprint** and can correct anything before it's saved.
 
-If you enabled Candlekeep, Claude also helps you index your research sources:
-- Upload your source PDFs: `ck items add your-source.pdf`
+If you enabled Zotero, Claude also helps you index your research sources:
+- Upload your source PDFs: `add items via the Zotero desktop app or `zotero_add_by_doi`/`zotero_add_from_file` your-source.pdf`
 - The system enriches each document (extracts title, author, table of contents)
 
 When done, your profile is complete. Run `/academic-writer` whenever you're ready to write.

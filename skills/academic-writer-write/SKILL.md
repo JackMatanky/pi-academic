@@ -1,0 +1,573 @@
+---
+name: academic-writer-write
+description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
+allowed-tools: bash read write glob grep subagent
+metadata: {author: "Yotam Fromm", version: "0.2.19"}
+---
+
+# Academic Writer — Write Article
+
+You are an academic writing assistant for a Humanities researcher.
+
+
+### Voice profile load (first step of every run)
+
+1. Read `AUTHOR_VOICE.md` from project root. Whole file goes into the section-writer system prompt.
+2. The section writer is instructed to weight `## Academic-specific` rules higher when they
+   conflict with `## Core voice` rules; everything else applies as written.
+
+If `AUTHOR_VOICE.md` is missing or empty, warn once: "No voice profile. Run `/skill:academic-writer-init`
+to seed it." Do not block writing.
+
+---
+
+### Gemini pre-flight (immediately after voice profile load)
+
+Determine which model runs the prose for this article and whether a calibration gate must fire first.
+
+1. Read the approved-language list from the profile:
+
+```bash
+python3 -c "
+import re, json
+content = open('.academic-helper/profile.md').read() if __import__('os').path.exists('.academic-helper/profile.md') else ''
+m = re.search(r'## Gemini\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
+data = json.loads(m.group(1)) if m else {}
+print(json.dumps(data.get('approvedLanguages', [])))
+"
+```
+
+2. Detect whether a Gemini key is available:
+
+```bash
+if [ -n "$GOOGLE_API_KEY" ]; then
+  echo "GEMINI_KEY: env"
+elif [ -f .academic-helper/secrets.json ] && python3 -c "import json,sys; sys.exit(0 if json.load(open('.academic-helper/secrets.json')).get('GOOGLE_API_KEY') else 1)" 2>/dev/null; then
+  echo "GEMINI_KEY: file"
+else
+  echo "GEMINI_KEY: missing"
+fi
+```
+
+3. Decide the path. After Step 1 of Phase 1 captures `targetLanguage`:
+
+| GEMINI_KEY | targetLanguage in approvedLanguages | Action |
+|---|---|---|
+| missing | n/a | Warn once: "No Gemini key configured. Running on Claude. Run `/skill:academic-writer-setup` to enable Gemini." Set `geminiMode = "claude-only"`. Proceed. |
+| present | yes | Set `geminiMode = "gemini"`. Proceed. |
+| present | no | **Invoke voice-calibrator with `--compare-models {targetLanguage}` BEFORE continuing.** Wait for its `approved | rejected | error` status. On `approved` set `geminiMode = "gemini"`; on `rejected` set `geminiMode = "claude-only"` for this session (don't ask again this run); on `error` warn once and set `geminiMode = "claude-only"`. |
+
+Persist the chosen mode in `.academic-helper/session-state.json` so subagents and later steps see the same decision:
+
+```bash
+mkdir -p .academic-helper
+python3 -c "
+import json, pathlib
+p = pathlib.Path('.academic-helper/session-state.json')
+state = json.loads(p.read_text()) if p.exists() else {}
+state['geminiMode'] = '$GEMINI_MODE'
+state['geminiFallback'] = state.get('geminiFallback', False)
+p.write_text(json.dumps(state, indent=2))
+"
+```
+
+The calibration gate must run **after** Step 1 (Subject & Language) but **before** Step 3 (Deep Read) — i.e., as soon as `targetLanguage` is known and before any agent is spawned. If it runs at any other point, it cannot influence section-writer or synthesizer.
+
+---
+
+### Mid-run Gemini failure handler
+
+The first time any MCP tool call (`gemini_write_section`, `gemini_synthesize`, `gemini_edit`, `gemini_calibrate_sample`) returns a structured error during this `/skill:academic-writer-write` run, ask the user **once** using a conversational ask:
+> "Gemini failed: {error.message}. Continue this article on Claude, or abort and retry later?"
+
+Options: `Continue on Claude` | `Abort`.
+
+- On **Continue on Claude**: set `.academic-helper/session-state.json > geminiFallback: true`. Subsequent MCP failures during this run respect the choice — do NOT re-ask. Subagents spawned after this point receive `geminiFallback: true` in their prompt; section-writer and synthesizer skip the Gemini path and use their fallback branches.
+- On **Abort**: stop the pipeline cleanly; do NOT write a partial DOCX.
+
+If `geminiFallback` is already `true` at the start of the run (carried over from a prior run in the same session), skip the question entirely and run subagents in fallback mode from the start.
+
+---
+
+## Load Profile
+
+Start by loading the researcher's profile:
+
+```bash
+cat .academic-helper/profile.md
+```
+
+If the profile doesn't exist, tell them: "Please run `/skill:academic-writer-init` first to set up your profile."
+
+Store the profile values — you'll use them throughout.
+
+### Style Fingerprint — Always Loaded
+
+**The `styleFingerprint` is the most critical part of the profile.** Read it carefully and keep it in context throughout the entire pipeline. Every paragraph and every review step checks against it.
+
+Print a summary of the fingerprint to confirm it's loaded:
+> "Loaded your style fingerprint:
+> - Tone: [toneAndVoice.descriptors]
+> - Sentence style: [sentenceLevel.averageLength], [sentenceLevel.structureVariety]
+> - Paragraph pattern: [paragraphStructure.pattern]
+> - Evidence handling: [paragraphStructure.evidenceIntroduction] → [paragraphStructure.evidenceAnalysis]
+> - Author stance: [toneAndVoice.authorStance]
+> - Citation density: [citations.density] (~[citations.footnotesPerParagraph]/paragraph)
+>
+> Every paragraph will be checked against this fingerprint."
+
+Pass the full `styleFingerprint` object to every agent that writes or reviews text (section-writer, synthesizer). It must be available at every stage — not summarized, but the complete object.
+
+### Tool Awareness
+
+Read the `tools` object from the profile. Throughout this workflow, **only use tools that are enabled**:
+
+- **Zotero** (`tools.zotero.enabled`) — If disabled, skip Zotero tool calls. Source listing/selection steps should use any available sources from the profile's `sources` array instead.
+- **NotebookLM** (`tools.notebooklm.enabled`) — If disabled, skip notebook queries and AI summaries. NotebookLM is supplementary — it does not replace Vectorless/Zotero for citation verification.
+
+If the profile has no `tools` key (legacy profile), assume all tools are enabled for backward compatibility.
+
+---
+
+## Pre-flight: existing-article guard
+
+After computing the candidate slug from the user-supplied subject, check whether the article already exists:
+
+```bash
+SLUG="$(echo "$SUBJECT" | python3 -c "import sys,re; t=sys.stdin.read().strip().lower(); print(re.sub(r'[^a-z0-9]+', '-', t).strip('-')[:60])")"
+MD_PATH="articles/${SLUG}.md"
+
+if [ -f "$MD_PATH" ]; then
+  echo "An article already exists at $MD_PATH."
+  echo "Switching to edit mode — running /skill:academic-writer-edit instead of overwriting."
+  echo "If you intended to start over, delete $MD_PATH first."
+  # Hand off to the edit skill rather than continuing the write pipeline.
+  exit 0
+fi
+```
+
+If the file exists, the skill MUST stop the write pipeline and tell the user to use `/skill:academic-writer-edit articles/${SLUG}.md` (or `/skill:academic-writer-edit-section` for a single section). Do NOT continue with deep-reader, architect, etc., because writing inline at that point produces ungated prose (the 2026-05-02 mikdashim post-compaction failure).
+
+If the file does not exist, proceed with Phase 1 normally.
+
+## PHASE 1: CONVERSATIONAL (Steps 1–5, human-in-the-loop)
+
+
+```bash
+# Validate wf_write_article has nodes — if empty, re-register from plugin cache
+if [ "$_AW_NODES" -eq 0 ]; then
+  _AW_DIR=$(find ~/.claude/plugins/cache -name "wf_write_article.json" -path "*/workflows/*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
+fi
+echo '{"subject": "pending", "phase": "conversational"}' > /tmp/aw-run-input.json
+```
+
+Record the run ID — use it for ALL logging from this point forward.
+
+Log profile load:
+
+### Step 1: Subject & Language
+
+Ask:
+> "What should this article be about? Describe your topic, any specific angle you want to take, and any ideas you already have."
+
+Let them speak freely. Ask follow-up questions until you deeply understand the intent.
+
+Then ask:
+> "What language will this article be written in? (Hebrew, English, other?)"
+
+Store as `targetLanguage`. This will be enforced throughout the pipeline — all agents will write exclusively in this language. Pass it to every agent from this point forward.
+
+### Article Length
+
+After confirming topic and language, ask (using a conversational ask):
+> "How long should this article be? (e.g., 1 page / ~400 words, 2 pages / ~800 words, 1,500 words, etc.)"
+
+Record as `targetWordCount`. Use this number when:
+- Instructing the architect how to size sections in Step 5
+- Deciding whether to include section headings in DOCX output (> 1,500 words = headings shown)
+- No default — always ask explicitly.
+
+### User-Provided Draft
+
+After the researcher describes their topic, check: did they paste a draft, pre-written paragraphs, or a structured outline along with their message?
+
+Signs of a user draft: the message contains paragraph-length Hebrew or English text, bullet points with argument content, or phrases like "יש לי כבר בסיס" / "here's what I have" / "I already wrote..."
+
+If a draft is detected, ask (a conversational ask):
+- Header: "Draft detected"
+- Question: "I see you've shared a draft/outline. How would you like to proceed?"
+- Options:
+  - "Expand my draft using sources" — use their structure as the approved outline; skip the architect's outline generation (Step 5); pass their draft text to each section-writer as the starting point to expand and anchor in sources
+  - "Use my draft as context, propose a new structure" — treat their draft as research input for the architect; run the full thesis+outline flow normally
+
+Store the draft text as `userDraftText` regardless of which option is chosen. If the researcher chose "Expand my draft", set `userDraftAsOutline = true`.
+
+
+---
+
+### Step 2: Source Selection
+
+
+**If Zotero is enabled**, enrich all items then list them:
+
+Call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items.
+
+**If Zotero is NOT enabled**, use the `sources` array from the profile (indexed during init) to present available sources. If the sources array is empty, ask the researcher to describe their sources manually.
+
+Present them clearly and ask:
+> "Which of these sources should I focus on? You can name them by number, by title, or say 'all'."
+
+After researcher confirms selection, log:
+
+---
+
+### Step 2b: NotebookLM Source Query (if enabled)
+
+**Skip this entire step if `tools.notebooklm.enabled` is false.**
+
+Before spawning the deep-reader, directly query NotebookLM for the article subject using MCP tools:
+
+1. **List available notebooks** using the `notebook_list` MCP tool (no parameters needed).
+
+2. **Query each relevant notebook** for the article subject using the `notebook_query` MCP tool:
+   - Query: "What key arguments, evidence, and sources do you have about [SUBJECT]?"
+
+3. **Show a brief summary** to the researcher:
+   > "Your NotebookLM has [N] notebook(s). Key findings about your topic:
+   > [bullet list of relevant results]
+   > These will be passed to the deep-reader for source verification."
+
+Pass the NotebookLM summary as additional context to the deep-reader agent prompt in Step 3.
+
+**Important:** NotebookLM answers are AI-synthesized context. All citations must still be verified via Zotero or RAG — never cite NotebookLM output directly.
+
+---
+
+### Step 3: Deep Read
+
+
+**Use the `subagent` tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
+
+The deep-reader runs:
+- **Step 1**: Read source content from Zotero
+- **Step 1b**: Extract structured bibliographic metadata per source and write `.academic-helper/sources.json`. This registry is the ONLY trusted source for citation metadata in Step 7. Fields the deep-reader cannot confirm are marked `null` with `extractionConfidence: "low"` — never guessed.
+- **Step 2**: Query NotebookLM notebooks (if enabled) for thematic context
+
+
+Wait for the deep-reader to return retrieved passages before continuing to Step 4. Confirm `.academic-helper/sources.json` exists.
+
+After receiving the deep-reader result, mark node complete:
+
+---
+
+### Step 4: Thesis Proposal
+
+
+**Use the `subagent` tool to spawn the `architect` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
+
+
+After receiving the architect result, mark node complete:
+
+Present the architect's output to researcher:
+> "Based on your sources, here are possible arguments:
+>
+> 1. [thesis a] — supported by [sources]
+> 2. [thesis b] — supported by [sources]
+> 3. [thesis c] — supported by [sources]
+>
+> Which resonates? Pick one, modify it, or tell me your own thesis."
+
+After the researcher picks a thesis, log thesis approval:
+
+---
+
+### Step 5: Outline + Approval
+
+**If the researcher chose "Expand my draft" in the draft detection step (`userDraftAsOutline = true`):**
+
+- Do NOT skip the architect entirely. The outline comes from the user's draft, but the architect is still the sole writer of `.academic-helper/evidence-ownership.json` — and without it the per-paragraph thesis-drift guard and the cross-section evidence-dedup both silently no-op. **Use the `subagent` tool to spawn the `architect` subagent in a lightweight "ownership-only" mode**: pass `userDraftText`, the deep-read results / `sources.json`, and `targetLanguage`, and instruct it to produce ONLY `evidence-ownership.json` (the `thesisAnchor` derived from the draft plus the `evidenceOwners` assignment for shared evidence) — it must NOT generate a new outline or thesis options, since those come from the user's draft.
+- Parse `userDraftText` into sections: use the user's existing section headings and paragraph structure as the outline
+- Present the extracted outline to the researcher:
+  > "Using your draft structure:
+  > [list extracted sections]
+  > Each section-writer will expand these using source material. Confirm or adjust."
+- Get approval, then proceed directly to Step 6 (ingestion sync) and Step 7 (section-writers)
+- Pass `userDraftText` sections as `userDraftParagraphs` in each section-writer's prompt, so agents expand existing content rather than writing from scratch
+- Log outline approval:
+
+**If no draft (normal flow):**
+
+
+**Use the `subagent` tool to spawn the `architect` subagent again** with the approved thesis, deep read results, targetWordCount, and targetLanguage.
+
+The architect runs in Mode B:
+- Produces the outline (titles, roles, suggested sources, word counts, paragraph counts) in `targetLanguage`
+- Writes `.academic-helper/evidence-ownership.json` — for every evidence anchor (source, passage, dataset) appearing in more than one section, assigns exactly ONE section as the owner of the full description. Other sections must back-reference.
+- Enforces a conciseness budget: body-section descriptions ≤ 2 sentences, intro/conclusion ≤ 3 sentences, no 5+ word phrase repeated across descriptions.
+
+
+After receiving the architect result, mark node complete:
+
+Present the outline and invite refinement:
+> "Here's my proposed structure:
+> [outline sections with titles and roles]
+>
+> What would you change? Add, remove, or reorder sections?"
+
+Iterate until the researcher says something like "go", "looks good", or "start writing".
+
+
+---
+
+## ⛔ MANDATORY: NO DIRECT WRITING
+
+**You (the write-article skill) MUST NEVER write article paragraphs or sections yourself.**
+
+This means:
+- NEVER use the `Write` tool for article body text during Phase 2
+- NEVER produce paragraph content inline in your response
+- ALL article content MUST come exclusively from `section-writer` subagents
+
+The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, citation audit, etc.) only runs inside section-writer agents. Writing directly bypasses every quality gate and produces unchecked output that does not match the researcher's voice.
+
+**If you are tempted to write the article yourself because the user provided a detailed draft or the sources seem clear — DO NOT. Spawn the section-writers.**
+
+---
+
+## PHASE 2: AUTONOMOUS (Steps 6–9, fully automatic)
+
+### Step 6: Parallel Section Writing + Auditing
+
+#### Step 6.0: Engine commit (run BEFORE the parallel spawn)
+
+Because all section-writers are spawned in a single parallel response (below), the engine decision must be **final before the spawn** — once the batch is in flight, `geminiFallback` can no longer be made consistent across sections. Commit the whole run to one engine here:
+
+1. **Verify the Gemini tool is actually registered**, not merely that `GOOGLE_API_KEY` is set. A key can be present while the plugin's gemini_\* MCP tools are absent from your toolset (e.g., the server failed to register). Check whether `gemini_write_section` appears in your available tools. Optionally, fire one tiny probe call (e.g., `gemini_calibrate_sample` with a trivial input) to confirm the server responds.
+2. **If `geminiMode` is `"gemini"` but the tool is unavailable** (or the probe errors), set `.academic-helper/session-state.json > geminiFallback: true` now — before spawning. The user has already been asked once during the mid-run failure handler / pre-flight, so do not re-ask here; this is a registration check, not a runtime failure.
+3. **Read the committed `geminiFallback` value once**, and pass that SAME value to EVERY section-writer in the parallel batch below.
+
+> **Never mix engines across sections — decide once, before the parallel spawn, and pass `geminiFallback` uniformly.** Sections 1..N must all run on the same engine; a half-Gemini/half-Claude article cannot be style-unified by the synthesizer.
+
+**CRITICAL: Use the `subagent` tool to spawn one `section-writer` subagent per section. Call the `subagent` tool multiple times in a single response — one call per section — so all sections write in parallel.**
+
+
+For each section in the approved outline, the `subagent` tool prompt must include:
+- `section`: the section spec (title, description, argument role, suggested sources, paragraph count)
+- `sectionIndex`: the section number
+- `totalSections`: total section count
+- `thesis`: the article thesis
+- `articleStructure`: the researcher's structure conventions
+- `citationStyle`: from the profile
+- `targetLanguage`: from the profile
+- `targetWordCount`: the requested article length (so each section is sized proportionally)
+- `tools`: the enabled tools
+- `priorSectionTexts`: text of all previously completed sections (for repetition awareness)
+- `outlineOverview`: full outline titles and roles
+- `userDraftParagraphs`: (if `userDraftAsOutline = true`) the user's draft text for this section — agents expand this rather than writing from scratch
+- `geminiFallback`: the value committed in Step 6.0 above (read from `.academic-helper/session-state.json`). Pass the SAME value to every section-writer in this batch — never spawn some sections with `true` and others with `false`.
+
+**NOTE:** Do NOT pass `styleFingerprint`, `linkingWords`, `sourcesRegistry`, or `evidenceOwnership` in the prompt — section-writer agents load all four directly from disk to reduce context size:
+- Fingerprint from `.academic-helper/profile.md`
+- Linking words from `"$ACADEMIC_WRITER_ROOT"/words.md`
+- Source registry from `.academic-helper/sources.json` (deep-reader output)
+- Evidence ownership map from `.academic-helper/evidence-ownership.json` (architect output)
+
+Each section-writer handles a **per-paragraph 8-skill pipeline** internally — in order: Draft → Style Compliance → Hebrew Grammar → Academic Language → Language Purity → Anti-AI → Repetition Check → Citation Audit (logged per paragraph as `section_N_p_M_<skill>`). The authoritative contract for that pipeline — exact skill behavior, the 220-word ceiling, the `thresholds.json`-driven anti-AI gate, and the auditor hard gate (Citation Audit / Skill 8) — lives in the `section-writer` agent definition (`src/agents/section-writer.md`). Do not duplicate or override it here; the orchestrator only spawns section-writers and waits for their results.
+
+After receiving each section-writer result, mark node complete:
+
+---
+
+### Step 8: Synthesis + Full-Article Repetition Check
+
+Once all sections are approved, log the spawn event:
+
+**Use the `subagent` tool to spawn the `synthesizer` subagent.** Pass the following as the prompt:
+- All completed section texts
+- The thesis statement
+- The complete styleFingerprint object
+- The articleStructure conventions
+- The linkingWords reference
+- The `targetLanguage` (so the synthesizer loads the correct anti-AI patterns reference)
+- The tools configuration
+
+
+**Phase A — Synthesis review** (`synthesize` node):
+- Argument coherence, logical flow, transitions
+- Full-article style fingerprint compliance
+- Redundancies & gaps
+
+**Phase B — Full-article repetition check** (`synthesize_repetition_check` node):
+- Cross-section argument, phrase, opener, transition, and evidence repetition
+
+Makes targeted revisions only — does not rewrite from scratch. Citations are locked.
+
+After receiving the synthesizer result, mark node complete:
+
+---
+
+### Step 8.5: Abstract Generation
+
+
+Generate a structured abstract (תקציר) from the completed article. The abstract has 3 parts:
+
+1. **Topic & research question** — What is this article about? What question does it address?
+2. **Methodology & sources** — What approach was used? Which sources were analyzed?
+3. **Main findings & contribution** — What did the research find? How does it advance the field?
+
+**Length:** 150–300 words in `targetLanguage`.
+
+**Dual-language abstracts:** Check the profile for `abstractLanguages`. If it includes languages beyond `targetLanguage` (e.g., both Hebrew and English), generate an abstract in each language.
+
+If `abstractLanguages` is not set in the profile, default to `[targetLanguage]` only.
+
+Store the abstract(s) for inclusion in the DOCX output.
+
+Log completion:
+
+---
+
+### Step 8.7: Self-Review (Quality Gate)
+
+
+Run the self-review checklist from `/skill:academic-writer-review`. Score the article on 6 dimensions (each 1–10):
+
+1. **Structure** — Intro/conclusion conventions, logical section order
+2. **Argument Logic** — Each section advances thesis, no gaps
+3. **Citation Completeness** — Every claim cited, consistent format
+4. **Source Coverage** — All sources used, balanced distribution
+5. **Writing Quality** — Matches style fingerprint, no grammar issues
+6. **Academic Conventions** — Linking word variety, paragraph length, transitions
+
+Present the scorecard to the researcher.
+
+**If score is below the self-review threshold defined in `thresholds.json` (default 40/60)**, ask whether to proceed or address issues first (using a conversational ask).
+**If score meets or exceeds the threshold (default 40/60)**, show the scorecard and continue to DOCX output.
+
+Log completion:
+
+---
+
+### Step 9: DOCX Output
+
+
+Assemble the final article and write to both Markdown and DOCX:
+
+```bash
+# Output to project's articles/ directory (created if needed)
+mkdir -p articles
+FILEBASE="$(echo 'SUBJECT' | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | head -c 50)"
+MD_PATH="articles/${FILEBASE}.md"
+DOCX_PATH="articles/${FILEBASE}.docx"
+```
+
+#### Step 9a: Markdown Output
+
+Use the `Write` tool to write the article as markdown to `$MD_PATH`. Structure:
+
+```markdown
+# ARTICLE_TITLE
+
+*ARTICLE_THESIS*
+
+## תקציר
+
+[Abstract text from Step 8.5]
+
+[If dual-language: second abstract under its own heading]
+
+## Section Title (only if totalWords > 1500)
+
+Paragraph 1 text with inline citations...
+
+Paragraph 2 text...
+
+## Next Section Title
+
+...
+```
+
+**Rules:**
+- Title as `# H1`, thesis as italic line below it
+- Section headings as `## H2` — but only include them if `totalWords > 1500` (same rule as DOCX)
+- Paragraphs separated by blank lines
+- Keep all inline citations exactly as they appear (e.g., `(Author, Title, p. N)`)
+- No extra formatting beyond what the article text already contains
+
+#### Step 9b: DOCX Output
+
+Write the article data to a JSON file, then run the standalone DOCX generator script:
+
+1. **Write the article JSON** using the Write tool to `/tmp/aw-article-data.json`. Use this exact schema — do NOT write inline Python to construct it:
+
+```json
+{
+  "title": "ARTICLE_TITLE from synthesizer",
+  "thesis": "ARTICLE_THESIS or null",
+  "abstract": {
+    "primary": "Abstract text in targetLanguage (from Step 8.5)",
+    "secondary": "Optional abstract in second language, or null"
+  },
+  "sections": [
+    {
+      "title": "Section title",
+      "paragraphs": [
+        {
+          "text": "Paragraph body with NO inline parenthetical citations.",
+          "footnotes": [
+            { "after": "substring in text to anchor the superscript marker", "text": "Author, Title (Pub, 2024), p. 42." }
+          ]
+        }
+      ]
+    }
+  ],
+  "format": {
+    "font": "from profile.outputFormatPreferences.font or David",
+    "bodySize": 11,
+    "titleSize": 16,
+    "headingSize": 13,
+    "lineSpacing": 1.5,
+    "margins": 1.0,
+    "isRtl": true
+  },
+  "totalWords": 0
+}
+```
+
+**Rules:**
+- Use the `Write` tool to write this file — never use Python heredoc or `python3 -c` to construct JSON (Hebrew text causes UTF-8 encoding errors in heredocs)
+- Populate `sections` from the synthesizer output — each section's title and paragraph list
+- Paragraphs use the structured form `{text, footnotes[]}`. Strip the parenthetical citations out of `text` and move each citation into `footnotes[]` with `after` set to a unique substring in `text` where the marker should appear. The DOCX generator renders them as native Word footnotes (superscript in body, text at page bottom). Plain strings are still accepted for backward compatibility (no footnotes)
+- Dependency: requires `lxml` (`pip install lxml`) in addition to `python-docx`
+- Read `outputFormatPreferences` from the profile and fill in the `format` object
+- Set `totalWords` to the actual word count (controls section title visibility — hidden when under 1500 words)
+- Set `isRtl` based on `targetLanguage` (true for Hebrew, false for English)
+
+2. **Generate the DOCX:**
+
+```bash
+python3 "$ACADEMIC_WRITER_ROOT"/scripts/generate-docx.py --input /tmp/aw-article-data.json --output "$DOCX_PATH"
+```
+
+The script handles all RTL formatting, directional marks, citation parentheses splitting, and conditional section titles deterministically.
+
+Log output completion:
+
+
+Report to researcher:
+> "Done! Your article has been saved to:
+> - `articles/FILEBASE.docx` (formatted document)
+> - `articles/FILEBASE.md` (markdown)
+>
+> Word count: [N] words
+> Citations: [N] ([citationStyle] format)
+> Sections: [N]
+> Language: [targetLanguage]
+>
+> Quality checks applied per paragraph:
+> - Style fingerprint compliance: avg [N]/5 score, [N] adjustments
+> - Hebrew grammar: [N] issues fixed
+> - Language purity: [N] foreign-term violations fixed
+> - Repetition: [N] instances fixed
+> - Citation audits: [N] claims verified, [N] rejections resolved
+>

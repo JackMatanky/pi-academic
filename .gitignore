@@ -1,14 +1,8 @@
-# Hook build artifacts
-src/hooks/dist/
-src/hooks/node_modules/
+# Hook build artifacts (extensions/ typecheck sandbox — see extensions/package.json)
+extensions/dist/
+extensions/node_modules/
 
 # Runtime directories
-.academic-writer/
-.cognetivy/runs/
-.cognetivy/events/
-.cognetivy/collections/
-.cognetivy/node-results/
-.cognetivy/workflows/
 past-articles/
 
 # Node
@@ -20,44 +14,24 @@ node_modules/
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
+.venv/
 
 # Logs
 logs/
 
-# Local-only docs and HTML playgrounds (not part of plugin distribution)
+# Local-only docs and HTML playgrounds (not part of package distribution)
 *.html
 
-# .claude - ignore runtime/session state; commit hooks, skills, and config
-.claude/.comm-style-counter
-.claude/.satisfaction-counter
-.claude/cc10x/
-.claude/context/
-.claude/feedback/
-.claude/hooks/metrics.json
-.claude/memory/flows/
-.claude/memory/open-problems.jsonl
-.claude/memory/sessions/
-.claude/memory/tool-preferences.json
-.claude/scheduled_tasks.lock
-
-# Agent memory — runtime state per agent spawn, not part of plugin distribution
-src/agents/memory/
-plugins/academic-writer/agents/memory/
-
-
-# cognetivy - ignore runtime data; commit workflows/*/versions/
-.cognetivy/runs/
-.cognetivy/events/
-.cognetivy/collections/
-.cognetivy/node-results/
+# Runtime state, not part of package distribution
+/.academic-helper/
+# Legacy pre-migration profile dir (see skills/academic-writer-init/SKILL.md)
+/.academic-writer/
 
 # Voice profile build artifacts (only AUTHOR_VOICE.md is tracked)
 .voice/*
 !.voice/.gitkeep
 
 # Bundled Gemini MCP server build artifacts
-plugins/academic-writer/mcp/gemini-server/dist/
-plugins/academic-writer/mcp/gemini-server/node_modules/
-
-# Local API key fallback (per gemini integration spec)
-.academic-helper/secrets.json
+mcp/gemini-server/dist/
+mcp/gemini-server/node_modules/

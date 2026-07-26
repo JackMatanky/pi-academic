@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Academic Writer — Gemini MCP Server Build
-# Builds the bundled MCP server at plugins/academic-writer/mcp/gemini-server/
+# Builds the bundled MCP server at mcp/gemini-server/
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-MCP_DIR="$PROJECT_ROOT/plugins/academic-writer/mcp/gemini-server"
+MCP_DIR="$PROJECT_ROOT/mcp/gemini-server"
 
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'

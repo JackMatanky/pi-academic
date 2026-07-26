@@ -22,7 +22,15 @@ echo "================================================"
 
 cd "$(git rev-parse --show-toplevel)"
 
-if python3 -m unittest discover tests/ -v 2>&1; then
+RUNNER="python3 -m unittest discover tests/ -v"
+if python3 -m pytest --version >/dev/null 2>&1; then
+    # unittest discover only collects unittest.TestCase subclasses — this repo's
+    # majority of tests are plain pytest-style `def test_*():` functions, which
+    # unittest discover silently skips (reports success without running them).
+    RUNNER="python3 -m pytest tests/ -v"
+fi
+
+if $RUNNER 2>&1; then
     echo ""
     echo "================================================"
     echo "All tests passed. Push proceeding."

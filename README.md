@@ -24,7 +24,9 @@ AI-first academic writing assistant for Humanities researchers. Writes rigorousl
 From the folder where you do your research:
 
 ```bash
-claude plugin install academic-writer --scope project
+`pi install git:github.com/JackMatanky/academic-writer`
+
+*(Note: Pi will prompt you to trust the project on first run. See [Project Trust](https://pi.dev/docs/latest/settings#project-trust))*
 ```
 
 > If you get "marketplace not found", register it first:
@@ -35,7 +37,7 @@ claude plugin install academic-writer --scope project
 ### 2. Initialize Your Profile
 
 ```bash
-/academic-writer:init
+/skill:academic-writer-init
 ```
 
 One-time setup. You'll be asked for:
@@ -49,7 +51,7 @@ Your profile is saved to `.academic-writer/profile.json` and loaded automaticall
 ### 3. Write Your First Article
 
 ```bash
-/academic-writer:write
+/skill:academic-writer-write
 ```
 
 ---
@@ -77,29 +79,29 @@ Your profile is saved to `.academic-writer/profile.json` and loaded automaticall
 
 | Command | What it does |
 |---------|-------------|
-| `/academic-writer:write` | Write a new article |
-| `/academic-writer:init` | One-time setup: profile, citation style, style fingerprint |
-| `/academic-writer:ideate` | Brainstorm research questions with 5W1H and gap analysis |
-| `/academic-writer:learn` | Scan new past articles and update your style fingerprint |
-| `/academic-writer:review` | Score a completed article on 6 quality dimensions |
-| `/academic-writer:present` | Generate conference outlines, journal abstracts, book chapter proposals |
-| `/academic-writer:research` | Research a topic using your indexed sources |
-| `/academic-writer:edit` | Edit a previously written article |
-| `/academic-writer:edit-section` | Quick edit of a single section |
-| `/academic-writer:update-field` | Change your field of study |
-| `/academic-writer:update-tools` | Add or remove integrations |
-| `/academic-writer:health` | Check all integrations and profile status |
-| `/academic-writer:help` | Show plugin info |
+| `/skill:academic-writer-write` | Write a new article |
+| `/skill:academic-writer-init` | One-time setup: profile, citation style, style fingerprint |
+| `/skill:academic-writer-ideate` | Brainstorm research questions with 5W1H and gap analysis |
+| `/skill:academic-writer-learn` | Scan new past articles and update your style fingerprint |
+| `/skill:academic-writer-review` | Score a completed article on 6 quality dimensions |
+| `/skill:academic-writer-present` | Generate conference outlines, journal abstracts, book chapter proposals |
+| `/skill:academic-writer-research` | Research a topic using your indexed sources |
+| `/skill:academic-writer-edit` | Edit a previously written article |
+| `/skill:academic-writer-edit-section` | Quick edit of a single section |
+| `/skill:academic-writer-update-field` | Change your field of study |
+| `/skill:academic-writer-update-tools` | Add or remove integrations |
+| `/skill:academic-writer-health` | Check all integrations and profile status |
+| `/skill:academic-writer-help` | Show plugin info |
 
 ---
 
 ## Integrations
 
-All integrations are optional. Choose which to enable during `/academic-writer:init`.
+All integrations are optional. Choose which to enable during `/skill:academic-writer-init`.
 
 | Tool | What it does | Setup |
 |------|-------------|-------|
-| **Candlekeep** | Cloud document library for source PDFs | [github.com/CandleKeepAgents/candlekeep-cli](https://github.com/CandleKeepAgents/candlekeep-cli) |
+| **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) |
 | **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) |
 
 ---
@@ -111,7 +113,7 @@ your-research-folder/
 ├── past-articles/         ← Drop your published papers here (PDFs or DOCXs)
 ├── .academic-writer/
 │   ├── profile.json       ← Your profile (auto-created)
-│   ├── research-brief.md  ← Output from /academic-writer:ideate
+│   ├── research-brief.md  ← Output from /skill:academic-writer-ideate
 │   └── logs/              ← Session logs
 └── articles/              ← Output .docx files
 ```
@@ -120,7 +122,7 @@ your-research-folder/
 
 ## Troubleshooting
 
-**"No profile found"** — run `/academic-writer:init` first.
+**"No profile found"** — run `/skill:academic-writer-init` first.
 
 **"Candlekeep not detected"** — install the CLI:
 ```bash
@@ -136,7 +138,9 @@ pip install python-docx
 **Plugin behaves strangely after an update** — clear the cache and reinstall:
 ```bash
 rm -rf ~/.claude/plugins/cache/academic-writer
-claude plugin install academic-writer --scope project
+`pi install git:github.com/JackMatanky/academic-writer`
+
+*(Note: Pi will prompt you to trust the project on first run. See [Project Trust](https://pi.dev/docs/latest/settings#project-trust))*
 ```
 
 ---
@@ -162,5 +166,5 @@ MIT
 
 ## Support
 
-- Plugin issues: [github.com/yodem/academic-writer](https://github.com/yodem/academic-writer)
+- Plugin issues: [github.com/JackMatanky/academic-writer](https://github.com/JackMatanky/academic-writer)
 - Candlekeep: [github.com/CandleKeepAgents/candlekeep-cli](https://github.com/CandleKeepAgents/candlekeep-cli)

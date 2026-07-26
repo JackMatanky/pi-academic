@@ -18,7 +18,7 @@ use this same profile so their outputs are comparable.
 
 ```json
 {
-  "candlekeep": { "enabled": false },
+  "zotero": { "enabled": false, "mode": "local" },
   "notebookLM": { "enabled": false },
   "rag": { "enabled": false }
 }

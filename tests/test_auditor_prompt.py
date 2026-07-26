@@ -1,7 +1,7 @@
 """Regression tests for the 2026-05-02 mikdashim failure modes."""
 from pathlib import Path
 
-AUD = Path("src/agents/auditor.md")
+AUD = Path("agents/auditor.md")
 
 def test_auditor_checks_unsourced_factual_claims():
     text = AUD.read_text(encoding="utf-8")

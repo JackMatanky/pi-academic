@@ -1,7 +1,7 @@
 """Regression tests for the 2026-05-02 mikdashim failure modes."""
 from pathlib import Path
 
-REF = Path("plugins/academic-writer/skills/write/references/anti-ai-patterns-hebrew.md")
+REF = Path("skills/academic-writer-write/references/anti-ai-patterns-hebrew.md")
 
 def test_section_A_blocks_mibchinat_paragraph_opener():
     text = REF.read_text(encoding="utf-8")

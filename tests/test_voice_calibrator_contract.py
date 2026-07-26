@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-AGENT = ROOT / "src" / "agents" / "voice-calibrator.md"
+AGENT = ROOT / "agents" / "voice-calibrator.md"
 
 def test_calibrator_exists():
     assert AGENT.is_file()

@@ -49,10 +49,8 @@ jobs:
           echo "new=$NEW" >> "$GITHUB_OUTPUT"
 
           jq --arg v "$NEW" '.version = $v' package.json > _tmp.json && mv _tmp.json package.json
-          jq --arg v "$NEW" '.version = $v' manifests/academic-writer.json > _tmp.json && mv _tmp.json manifests/academic-writer.json
-          jq --arg v "$NEW" '.version = $v | .plugins[0].version = $v' .claude-plugin/marketplace.json > _tmp.json && mv _tmp.json .claude-plugin/marketplace.json
 
-          git add package.json manifests/academic-writer.json .claude-plugin/marketplace.json
+          git add package.json
           git commit -m "chore: bump version to v${NEW}"
           git tag "v${NEW}"
           git push origin main

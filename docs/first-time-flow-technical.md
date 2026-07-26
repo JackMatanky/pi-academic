@@ -40,8 +40,8 @@ npx academic-writer-setup       (interactive CLI — runs in terminal, no Claude
     |    Present to user → user reviews and corrects
     v
 [Step 4] If candlekeep.enabled:
-    |        User uploads sources: ck items add <file>
-    |        Enrich all: ck items enrich <id> (per item)
+    |        User uploads sources: add items via the Zotero desktop app or `zotero_add_by_doi`/`zotero_add_from_file` <file>
+    |        Enrich all: Zotero tools enrich <id> (per item)
     |        Build sources[] array (id, title, type)
     |    Else:
     |        sources = []
@@ -77,7 +77,7 @@ npx academic-writer-setup       (interactive CLI — runs in terminal, no Claude
     v
 [Step 2: Source Selection]
     |   If candlekeep.enabled:
-    |       ck items enrich (all) → ck items list --json
+    |       Zotero tools enrich (all) → Zotero tools --json
     |   Else:
     |       Use profile.sources[]
     |   Present list → user picks sources
@@ -88,7 +88,7 @@ npx academic-writer-setup       (interactive CLI — runs in terminal, no Claude
     |   SPAWN: Agent tool → deep-reader subagent
     |       Input: subject, selectedSourceIds, runId, tools
     |       deep-reader queries:
-    |           If candlekeep.enabled: ck items read "ID:pages"
+    |           If candlekeep.enabled: Zotero tools read "ID:pages"
     |       Output: retrieved passages, evidence map, gaps
     |   WAIT for deep-reader to return
     |   Log: step_completed/deep_read
@@ -126,7 +126,7 @@ npx academic-writer-setup       (interactive CLI — runs in terminal, no Claude
     |
     |   EACH section-writer runs PER PARAGRAPH:
     |       Skill 1: DRAFT
-    |           Read relevant Candlekeep passages (MANDATORY)
+    |           Read relevant Zotero passages (MANDATORY)
     |           Write paragraph using ONLY retrieved content
     |           Log: section_N_p_M_draft
     |       Skill 2: STYLE COMPLIANCE
@@ -154,7 +154,7 @@ npx academic-writer-setup       (interactive CLI — runs in terminal, no Claude
     |           SPAWN: Agent tool → auditor subagent
     |               Input: paragraph, runId, sectionIndex, paragraphIndex, tools
     |               Auditor verifies EVERY citation:
-    |                   If candlekeep.enabled: ck items read "ID:page-page"
+    |                   If candlekeep.enabled: Zotero tools read "ID:page-page"
     |               Output: PASS or REJECT (with reason)
     |           If REJECT:
     |               Rewrite paragraph → re-run skills 1-7 (max 3 attempts)
@@ -227,7 +227,7 @@ profile.json ──────────────────────�
 words.txt (linking words) ─→ section-writer (Skill 4)      |
                            ─→ synthesizer (language check)  |
                                                             |
-Candlekeep (ck CLI) ───────→ deep-reader, section-writer,  |
+Zotero (ck CLI) ───────→ deep-reader, section-writer,  |
                               auditor, source selection     |
                                                             |
 Cognetivy (cognetivy CLI) ──→ ALL steps log events ────────┘
@@ -308,7 +308,7 @@ Cognetivy (cognetivy CLI) ──→ ALL steps log events ───────�
 |-------|-------|----------|
 | No profile | Never ran setup | Run `npx academic-writer-setup` then `/academic-writer-init` |
 | Empty past-articles/ | No papers provided | Add 5-10 PDFs/DOCX, re-run init |
-| Candlekeep not authenticated | CLI installed but not logged in | `ck auth logout && ck auth login` |
+| Zotero not authenticated | CLI installed but not logged in | `ck auth logout && ck auth login` |
 | Cognetivy not initialized | CLI installed but no workspace | `timeout 5 cognetivy init --workspace-only` in project dir |
 | Citation audit fails 3x | Source doesn't contain claimed info | Paragraph flagged for researcher review |
 | Style fingerprint is flat/legacy | Old init format | Re-run `/academic-writer-init` |

@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..', '..');
-const SERVER_DIR = join(REPO, 'plugins/academic-writer/mcp/gemini-server');
+const SERVER_DIR = join(REPO, 'mcp/gemini-server');
 const SDK = join(SERVER_DIR, 'node_modules/@modelcontextprotocol/sdk/dist/esm');
 
 const { Client } = await import(pathToFileURL(join(SDK, 'client/index.js')).href);

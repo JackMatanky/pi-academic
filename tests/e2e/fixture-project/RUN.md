@@ -17,13 +17,13 @@ Both runs use the SAME pinned inputs below so the only variable is the engine. O
 
 ## Path A — WITH Gemini
 
-Prereq: `/reload-plugins` so `mcp__gemini-api__*` is connected. Run `/write` with `geminiFallback=false`.
+Prereq: reload extensions (`/reload` in pi) so `gemini_write_section`/`gemini_synthesize` are connected. Run `/skill:academic-writer-write` with `geminiFallback=false`.
 The `section-writer` routes Skills 1–7 through `gemini_write_section`; the auditor (Claude) gates each
 paragraph; `synthesizer` routes prose through `gemini_synthesize`.
 
 ## Path B — WITHOUT Gemini (fallback)
 
-Run `/write` with `geminiFallback=true` (or with the Gemini tool unavailable). The `section-writer`
+Run `/skill:academic-writer-write` with `geminiFallback=true` (or with the Gemini tool unavailable). The `section-writer`
 runs the in-context Skills 1–7 pipeline; the auditor gate is identical.
 
 ## Pass criteria

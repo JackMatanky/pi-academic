@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-AGENT = ROOT / "src" / "agents" / "voice-distiller.md"
+AGENT = ROOT / "agents" / "voice-distiller.md"
 
 def test_distiller_exists():
     assert AGENT.is_file()
