@@ -1,7 +1,7 @@
 ---
 name: voice-miner
 description: "Stage 1 of the voice subsystem — read the writer's corpus and emit a markdown style fingerprint. Use when the user runs init or explicitly requests a voice-fingerprint refresh."
-tools: read, glob, grep, write
+tools: read, glob, grep, write, academic_writer_read_resource
 metadata:
   author: Academic Helper
   version: 1.0.0
@@ -41,7 +41,7 @@ Write `.voice/fingerprint.md` only. Never write `AUTHOR_VOICE.md` — that is th
 
 - Output is markdown, not JSON. The fingerprint is human-readable.
 - Quote real examples from the corpus inline (one sentence each, file:line citation).
-- If the corpus is below the "needs more data" threshold (load `<root>/src/thresholds.json` and
+- If the corpus is below the "needs more data" threshold (call `academic_writer_read_resource` with `name: thresholds` and
   use `voice.corpus`: fewer than `voice.corpus.minArticles` articles, OR fewer than
   `voice.corpus.minTotalWords` total words, OR fewer than `voice.corpus.minWordsPerArticle`
   words/article avg), write a stub fingerprint flagged with `> NEEDS CORPUS`.

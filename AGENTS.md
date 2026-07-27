@@ -28,7 +28,7 @@ Without mise, the equivalent raw commands:
 | `agents/<name>.md` | Agent definition (markdown + YAML frontmatter, `pi-subagents` format) |
 | `extensions/pi-academic-writer/index.ts` | Registers package-aware Academic Writer tools (`academic_writer_read_resource`, `academic_writer_resolve_csl`, `academic_writer_generate_docx`, `academic_writer_list_agents`, `academic_writer_fix_typography`) so skills never need package-root environment variables. |
 | `extensions/lifecycle/index.ts` | Session lifecycle handlers (dashboard, stop notification, session log). It must not mount `pi-mcp-adapter`; Pi loads that dependency directly so MCP tools/flags are registered once. |
-| `thresholds.json` | Single source of truth for all numeric quality gates |
+| `thresholds.json` | Packaged default for all numeric quality gates. `academic_writer_read_resource(name: thresholds)` resolves `.academic-helper/thresholds.json` first (the per-project override `init`/`setup` copies on first run) and falls back to this file — never inline a threshold in skills or agents. |
 | `package.json` | pi manifest — explicit `pi.extensions`/`pi.skills`, `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`; researcher-installed, never bundled) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
 | `pyproject.toml` / `uv.lock` | Python dev/build tooling deps (`python-docx`, `lxml`, `pdfplumber`; dev: `pytest`, `pyyaml`) — managed by `uv`, not published |
 | `scripts/lib/csl/*.csl` | Vendored default CSL style files for citeproc export (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`), from [citation-style-language/styles](https://github.com/citation-style-language/styles) |
@@ -37,7 +37,7 @@ Without mise, the equivalent raw commands:
 ## Conventions
 
 - **Profile-scoped**: every skill/agent that touches `.academic-helper/` must check `.academic-helper/profile.md` exists first (or be the `init`/`setup` skill creating it).
-- **Thresholds**: edit `thresholds.json` at repo root, never inline numbers in skills or agents.
+- **Thresholds**: package contributors edit `thresholds.json` at repo root to change shipped defaults, never inline numbers in skills or agents. Researchers override per project by editing `.academic-helper/thresholds.json` (see `academic_writer_read_resource` resolution order above) — never tell a researcher to edit the package's own copy.
 - **Strict TypeScript**: `extensions/` must compile under `tsc --noEmit`; never use `any` (use `unknown` and narrow).
 - **Skill frontmatter**: `name`, `description`, optional `allowed-tools` (space-delimited), optional `metadata: {author, version}`. No `user-invocable` — every pi skill is both model- and `/skill:name`-invocable.
 - **Agent frontmatter**: `name`, `description`, `tools` (**comma**-delimited — `pi-subagents`' frontmatter parser splits only on commas, never whitespace). MCP grants use `mcp:<server>` (whole server) or `mcp:<server>/<tool>` (single tool) — never the Claude Code `mcp__server__tool` form. No `model:` — omitting it inherits the current Pi default model. To pin an agent to a specific model/provider (e.g. run `section-writer` on Gemini), set `subagents.agentOverrides.<name>.model` in pi settings — this package never hardcodes a provider.

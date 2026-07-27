@@ -21,10 +21,12 @@ function normalizeLanguage(language: unknown): "english" | "hebrew" {
   return normalized.startsWith("en") || normalized === "english" ? "english" : "hebrew";
 }
 
-function resolveResourcePath(name: string, language?: unknown): string {
+function resolveResourcePath(name: string, projectRoot: string, language?: unknown): string {
   switch (name) {
-    case "thresholds":
-      return join(PACKAGE_ROOT, "thresholds.json");
+    case "thresholds": {
+      const projectOverride = join(projectRoot, ".academic-helper", "thresholds.json");
+      return existsSync(projectOverride) ? projectOverride : join(PACKAGE_ROOT, "thresholds.json");
+    }
     case "words":
       return join(PACKAGE_ROOT, "words.md");
     case "scorecard":
@@ -64,7 +66,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_read_resource",
     label: "Academic Writer Resource",
     description:
-      "Read a packaged Academic Writer resource by stable name. Use instead of shelling out to package-root paths.",
+      "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-helper/thresholds.json first (the project override created by init/setup) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
     parameters: Type.Object({
       name: Type.String({
         description:
@@ -75,15 +77,16 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       ),
       includePath: Type.Optional(Type.Boolean({ description: "Include the package file path in the result for deliberate package edits." })),
     }),
-    execute: async (_id, params) => {
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
       const name = typeof params.name === "string" ? params.name : "";
-      const path = resolveResourcePath(name, params.language);
+      const path = resolveResourcePath(name, ctx.cwd, params.language);
       if (!existsSync(path)) {
         return textResult(`Academic Writer resource not found: ${name}`, { ok: false, name, path });
       }
       const content = readFileSync(path, "utf-8");
       const body = params.includePath ? `RESOURCE_PATH: ${path}\n---\n${content}` : content;
-      return textResult(body, { ok: true, name, path });
+      const source = name === "thresholds" && path !== join(PACKAGE_ROOT, "thresholds.json") ? "project" : "package";
+      return textResult(body, { ok: true, name, path, source });
     },
   });
 

@@ -234,6 +234,32 @@ class TestExtensions(unittest.TestCase):
                 for marker in forbidden:
                     self.assertNotIn(marker, content, path)
 
+    def test_thresholds_resource_honors_project_override(self):
+        """academic_writer_read_resource(name: thresholds) must prefer the
+        project's .academic-helper/thresholds.json (created by init/setup)
+        over the packaged default — otherwise editing the per-project copy
+        silently does nothing."""
+        tools_path = "extensions/pi-academic-writer/index.ts"
+        source = _read(tools_path)
+        self.assertIn(
+            'join(projectRoot, ".academic-helper", "thresholds.json")',
+            source,
+            "resolveResourcePath must resolve a project-local thresholds override",
+        )
+        self.assertIn(
+            "resolveResourcePath(name, ctx.cwd, params.language)",
+            source,
+            "academic_writer_read_resource must pass ctx.cwd so thresholds can resolve the project override",
+        )
+
+        voice_miner = _read("agents/voice-miner.md")
+        self.assertIn("academic_writer_read_resource", voice_miner)
+        self.assertNotIn(
+            "src/thresholds.json",
+            voice_miner,
+            "voice-miner must not reference the non-existent src/thresholds.json path",
+        )
+
 
 class TestMcpWiring(unittest.TestCase):
     def test_no_bundled_mcp_json(self):
