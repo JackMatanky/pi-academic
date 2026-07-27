@@ -145,9 +145,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--package-root",
-        default=os.environ.get(
-            "ACADEMIC_WRITER_ROOT", Path(__file__).resolve().parents[1]
-        ),
+        default=Path(__file__).resolve().parents[1],
     )
     parser.add_argument("--project-root", default=os.getcwd())
     parser.add_argument(

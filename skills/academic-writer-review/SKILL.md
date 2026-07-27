@@ -1,7 +1,7 @@
 ---
 name: academic-writer-review
 description: "Self-review quality gate — scores a completed article on 6 dimensions (structure, argument logic, citation completeness, source coverage, writing quality, academic conventions) and presents a scorecard before final output. Use after writing to score the article on quality dimensions before publication."
-allowed-tools: bash read glob grep
+allowed-tools: bash read glob grep academic_writer_read_resource
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -38,11 +38,7 @@ When invoked as a pipeline step, the article text is passed directly.
 
 ## Scorecard rubric
 
-The 6-dimension scorecard is defined in `references/scorecard.json` (machine-readable, versioned). Read that file at the start of every review:
-
-```bash
-cat "$ACADEMIC_WRITER_ROOT"/skills/academic-writer-review/references/scorecard.json
-```
+The 6-dimension scorecard is defined in `references/scorecard.json` (machine-readable, versioned). At the start of every review, call `academic_writer_read_resource` with `name: scorecard`.
 
 For each dimension:
 1. Score 0–10 against the listed `criteria`.
@@ -62,10 +58,7 @@ print(m.group(1) if m else 'null')
 "
 ```
 
-And load linking words reference for Academic Conventions (dimension 6):
-```bash
-cat "$ACADEMIC_WRITER_ROOT"/words.md
-```
+And load linking words for Academic Conventions (dimension 6) by calling `academic_writer_read_resource` with `name: words`.
 
 ## Scorecard Output
 

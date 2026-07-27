@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write glob grep subagent
+allowed-tools: bash read write glob grep subagent academic_writer_read_resource academic_writer_resolve_csl academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -287,7 +287,7 @@ For each section in the approved outline, the `subagent` tool prompt must includ
 
 **NOTE:** Do NOT pass `styleFingerprint`, `linkingWords`, `sourcesRegistry`, or `evidenceOwnership` in the prompt — section-writer agents load all four directly from disk to reduce context size:
 - Fingerprint from `.academic-helper/profile.md`
-- Linking words from `"$ACADEMIC_WRITER_ROOT"/words.md`
+- Linking words from `academic_writer_read_resource` with `name: words`
 - Source registry from `.academic-helper/sources.json` (deep-reader output)
 - Evidence ownership map from `.academic-helper/evidence-ownership.json` (architect output)
 
@@ -427,12 +427,7 @@ Resolve the active CSL style to a local file path before writing frontmatter. Th
 - a project/user `.csl` path
 - a Citation Style Language repository id such as `chicago-author-date` or `nature` (download/cache on demand)
 
-Run:
-
-```bash
-CSL_PATH=$(python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "$CITATION_STYLE" --download)
-echo "$CSL_PATH"
-```
+Call `academic_writer_resolve_csl` with `style: CITATION_STYLE` and `download: true`; use the returned path as `CSL_PATH`.
 
 If the researcher supplied a separate custom CSL reference in the profile (for example under `outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or a `citation.csl` object), pass that value instead of `citationStyle`. Backward-compatible aliases still work: `chicago` resolves to `chicago-notes-bibliography.csl`, `mla` to `modern-language-association.csl`, and `apa` to `apa.csl`.
 
@@ -521,11 +516,7 @@ Write the article data to a JSON file, then run the standalone DOCX generator sc
 - Set `totalWords` to the actual word count (controls section title visibility — hidden when under 1500 words)
 - Set `isRtl` based on `targetLanguage` (true for Hebrew, false for English)
 
-2. **Generate the DOCX:**
-
-```bash
-python3 "$ACADEMIC_WRITER_ROOT"/scripts/generate-docx.py --input /tmp/aw-article-data.json --output "$DOCX_PATH"
-```
+2. **Generate the DOCX:** call `academic_writer_generate_docx` with `input: /tmp/aw-article-data.json` and `output: DOCX_PATH`.
 
 The script handles all RTL formatting, directional marks, citation parentheses splitting, and conditional section titles deterministically.
 

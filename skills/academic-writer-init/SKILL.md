@@ -1,7 +1,7 @@
 ---
 name: academic-writer-init
 description: "First-time setup for the Academic Writer. Configures researcher profile, analyzes writing style from past articles, and indexes research sources. Use on first install or when redoing onboarding from scratch."
-allowed-tools: bash read write glob grep
+allowed-tools: bash read write glob grep academic_writer_read_resource academic_writer_resolve_csl
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -26,7 +26,8 @@ Personalized onboarding that creates your researcher profile, detects available 
 Run silently before saying anything:
 
 ```bash
-mkdir -p past-articles .academic-helper .academic-helper/logs && cp -n ""$ACADEMIC_WRITER_ROOT"/thresholds.json" .academic-helper/ 2>/dev/null || true
+mkdir -p past-articles .academic-helper .academic-helper/logs
+# If .academic-helper/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-helper/thresholds.json.
 ```
 
 If `.academic-helper/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
@@ -194,11 +195,7 @@ Map selection:
 - CSL repository style → `citationStyle: STYLE_ID` (e.g. `nature`) and store the same value under `outputFormatPreferences.csl`
 - Custom CSL file → `citationStyle: custom-csl` and store the path under `outputFormatPreferences.cslPath`
 
-For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving:
-
-```bash
-python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "STYLE_OR_PATH" --download
-```
+For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 If validation fails, show the error and ask for a different bundled alias, style id, or `.csl` path. Do not continue with an unresolved CSL style.
 
@@ -283,17 +280,7 @@ mkdir -p .ctx
 
 Call `zotero_get_item_fulltext(item_key="cmomjonvy0fdmk30zwef79c48")` and use the Write tool to save the returned text to `.ctx/hebrew-linguistic-reference.md`.
 
-Then run the extractor:
-
-```bash
-python3 "$ACADEMIC_WRITER_ROOT"/scripts/extract-style-metrics.py \
-  --input past-articles/ \
-  --aggregate \
-  --baseline .ctx/hebrew-linguistic-reference.md \
-  --contrastive \
-  --json \
-  --output /tmp/style-metrics.json
-```
+Then run the voice-miner subagent on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its output to populate `/tmp/style-metrics.json` for the confirmation step below; no package-root script path is required.
 
 The extractor reads the baseline JSON code block embedded in the `08-style-fingerprint-baseline` chapter of the cached markdown, so there is no separate JSON file in the plugin's `references/` folder.
 

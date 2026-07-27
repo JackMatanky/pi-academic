@@ -1,7 +1,7 @@
 ---
 name: academic-writer-setup
 description: "First-time setup for Academic Writer — creates researcher profile, detects integrations, analyzes writing style from past articles. Use for a quick onboarding (faster than init); does not include source indexing."
-allowed-tools: bash read write glob grep
+allowed-tools: bash read write glob grep academic_writer_read_resource academic_writer_resolve_csl
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -16,7 +16,8 @@ Quick onboarding wizard. Creates the researcher profile, detects integrations, a
 Run silently before anything else:
 
 ```bash
-mkdir -p past-articles .academic-helper .academic-helper/logs && cp -n ""$ACADEMIC_WRITER_ROOT"/thresholds.json" .academic-helper/ 2>/dev/null || true
+mkdir -p past-articles .academic-helper .academic-helper/logs
+# If .academic-helper/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-helper/thresholds.json.
 ```
 
 Migrate any legacy profile from `.academic-writer/profile.json` → `.academic-helper/profile.md`:
@@ -167,11 +168,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
-Map selection the same way as `/skill:academic-writer-init`: `inline-parenthetical` stays literal mode; bundled aliases (`chicago`, `mla`, `apa`), CSL repository ids, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving:
-
-```bash
-python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "STYLE_OR_PATH" --download
-```
+Map selection the same way as `/skill:academic-writer-init`: `inline-parenthetical` stays literal mode; bundled aliases (`chicago`, `mla`, `apa`), CSL repository ids, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 ### Tool Selection
 

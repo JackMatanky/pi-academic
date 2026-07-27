@@ -1,7 +1,7 @@
 ---
 name: section-writer
 description: "Use to write one complete article section. Runs the 8-skill pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit) per paragraph, spawning the auditor subagent (Skill 8) as the citation hard gate. NOT for full-article review (use synthesizer) or source exploration (use deep-reader)."
-tools: read, grep, glob, bash, subagent, mcp:zotero
+tools: read, grep, glob, bash, subagent, academic_writer_read_resource, academic_writer_fix_typography, mcp:zotero
 ---
 
 # Section Writer Agent
@@ -110,8 +110,6 @@ content = open('.academic-helper/profile.md').read()
 m = re.search(r'## Style Fingerprint\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
 print(m.group(1) if m else 'null')
 "
-# Load linking words reference
-cat "$ACADEMIC_WRITER_ROOT"/words.md
 # Load bibliographic source registry (written by deep-reader)
 cat .academic-helper/sources.json 2>/dev/null || echo "[]"
 # Load evidence ownership map (written by architect)
@@ -124,6 +122,8 @@ m = re.search(r'## Banned Terms\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', conten
 print(m.group(1) if m else '[]')
 "
 ```
+
+Load linking words by calling `academic_writer_read_resource` with `name: words`.
 
 Store all five in context:
 - `styleFingerprint` — used throughout drafting and by the auditor handoff
@@ -196,7 +196,7 @@ Source text retrieved via `zotero_read_pdf_pages` (and any source passage passed
 
 #### Skill 2: STYLE FINGERPRINT COMPLIANCE
 
-**Re-read the full `styleFingerprint` before every check.** Full 10-dimension rubric: see `"$ACADEMIC_WRITER_ROOT"/skills/academic-writer-write/references/style-fingerprint-rubric.md`.
+**Re-read the full `styleFingerprint` before every check.** Full 10-dimension rubric: call `academic_writer_read_resource` with `name: style_fingerprint_rubric`.
 
 **Banned-terms sweep:** parse `bannedTerms` block. For each match: replace using `replacements[0]` (or context-best); if `replacements` empty, remove the sentence. Mandatory before Skill 3.
 
@@ -216,25 +216,13 @@ Zero tolerance for embedded foreign text in running prose. Allowed: author names
 
 ##### Tier 1: Typography Gating (Auto-fix, deterministic, mandatory)
 
-```bash
-TYPO_REPORT=$(mktemp)
-echo "$PARAGRAPH_TEXT" | python3 "$ACADEMIC_WRITER_ROOT"/scripts/detect-ai-typography.py --fix-and-output --json > "$TYPO_REPORT"
-FIXED_TEXT=$(python3 -c "import json; d=json.load(open('$TYPO_REPORT')); print(d.get('fixed_text', ''))")
-if [ -n "$FIXED_TEXT" ] && [ "$FIXED_TEXT" != "$PARAGRAPH_TEXT" ]; then
-  PARAGRAPH_TEXT="$FIXED_TEXT"
-fi
-rm -f "$TYPO_REPORT"
-```
+Call `academic_writer_fix_typography` with `text: PARAGRAPH_TEXT`. If the returned text differs, replace `PARAGRAPH_TEXT` with the tool output before continuing.
 
 ##### Tier 2: Content Scoring
 
 Load the anti-AI pattern reference for the article's `targetLanguage`:
 
-```bash
-LANG_LOWER=$(echo "$TARGET_LANGUAGE" | tr '[:upper:]' '[:lower:]')
-REF_FILE=""$ACADEMIC_WRITER_ROOT"/skills/academic-writer-write/references/anti-ai-patterns-${LANG_LOWER}.md"
-if [ -f "$REF_FILE" ]; then cat "$REF_FILE"; else cat "$ACADEMIC_WRITER_ROOT"/skills/academic-writer-write/references/anti-ai-patterns-hebrew.md; fi
-```
+Call `academic_writer_read_resource` with `name: anti_ai_patterns` and `language: TARGET_LANGUAGE`.
 
 Score the cleaned paragraph on 5 dimensions (each 1-10): directness, rhythm, trust, authenticity, density. Apply the named patterns table from the reference. Threshold from `thresholds.json` (default 35/50). If below, rewrite the flagged portions.
 

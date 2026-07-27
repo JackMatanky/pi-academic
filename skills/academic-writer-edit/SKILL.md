@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit
 description: "Edit a previously written article — revise sections, fix citations, adjust tone, restructure arguments, or rewrite passages. Use when revising an article that's already drafted — multiple sections, restructuring, or major changes."
-allowed-tools: bash read write glob grep subagent
+allowed-tools: bash read write glob grep subagent academic_writer_resolve_csl academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -178,7 +178,7 @@ After edits are applied:
 
 **Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode — or, if the profile is unavailable/stale, the article's markdown already opens with a `bibliography:` frontmatter key (`head -10 "$MD_PATH" | grep -q '^bibliography:'`).
 
-**`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `"$ACADEMIC_WRITER_ROOT"/scripts/generate-docx.py`.
+**`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `academic_writer_generate_docx`.
 
 **Citeproc mode:** rewrite `$MD_PATH` the same way as write-article Step 9a's citeproc branch — YAML frontmatter prepended before the title heading, edited body content keeps its `[@citeKey, p. N]` markers verbatim:
 
@@ -191,12 +191,7 @@ csl: "RESOLVED_CSL_PATH"
 ---
 ```
 
-Resolve `RESOLVED_CSL_PATH` first:
-
-```bash
-CSL_PATH=$(python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "$CITATION_STYLE_OR_CUSTOM_CSL" --download)
-echo "$CSL_PATH"
-```
+Resolve `RESOLVED_CSL_PATH` first: call `academic_writer_resolve_csl` with `style: CITATION_STYLE_OR_CUSTOM_CSL` and `download: true`; use the returned path as `CSL_PATH`.
 
 Use a custom CSL reference from the profile (`outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or `citation.csl`) when present; otherwise pass `citationStyle`. Backward-compatible aliases (`apa`, `mla`, `chicago`) still resolve to bundled CSL files. Then regenerate the DOCX directly — skip `generate-docx.py` entirely:
 

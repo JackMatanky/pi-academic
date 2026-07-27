@@ -113,7 +113,7 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 |------|-------------|-------|
 | **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
 | **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) |
-| **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for bundled or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a XeTeX engine too, e.g. `brew install --cask basictex && sudo tlmgr install collection-xetex` |
+| **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for bundled or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
@@ -174,12 +174,14 @@ For local Zotero, add the `.mcp.json` snippet from the Integrations section. Zot
 pip install python-docx
 ```
 
-**PDF export fails / "xelatex not found"** — install a XeTeX-capable LaTeX distribution:
+**PDF export fails / "xelatex not found" or "tectonic not found"** — install one supported PDF engine:
 ```bash
+brew install tectonic
+# or:
 brew install --cask basictex
 sudo tlmgr install collection-xetex
 ```
-HTML/ODT/LaTeX/EPUB export via `/skill:academic-writer-export` don't need this — only PDF does (Hebrew-safe rendering requires XeTeX; the default `pdflatex` engine cannot render Hebrew script).
+HTML/ODT/LaTeX/EPUB export via `/skill:academic-writer-export` don't need this — only PDF does (the default `pdflatex` engine cannot render Hebrew script; use Tectonic or XeLaTeX).
 
 **Package behaves strangely after an update** — reinstall it:
 ```bash

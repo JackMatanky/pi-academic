@@ -186,6 +186,42 @@ class TestExtensions(unittest.TestCase):
                     f"Missing export default function in {idx_path}",
                 )
 
+    def test_no_academic_writer_root_env_contract(self):
+        """Package assets must be exposed through tools, not global bash env injection."""
+        root_env = "ACADEMIC_WRITER" + "_ROOT"
+        env_inject = "env" + "-inject"
+        self.assertFalse(
+            os.path.exists(f"extensions/{env_inject}/index.ts"),
+            f"{env_inject} must not reintroduce global {root_env} mutation",
+        )
+
+        tools_path = "extensions/academic-writer-tools/index.ts"
+        self.assertTrue(os.path.isfile(tools_path), "Academic Writer tools extension missing")
+        tools = _read(tools_path)
+        for name in [
+            "academic_writer_read_resource",
+            "academic_writer_resolve_csl",
+            "academic_writer_generate_docx",
+            "academic_writer_list_agents",
+            "academic_writer_fix_typography",
+        ]:
+            self.assertIn(name, tools)
+
+        forbidden = [root_env, f"extensions/{env_inject}"]
+        for d in ["AGENTS.md", "README.md", "skills", "agents", "extensions", "tests"]:
+            if not os.path.exists(d):
+                continue
+            paths = [d] if os.path.isfile(d) else [
+                os.path.join(root, file)
+                for root, _, files in os.walk(d)
+                for file in files
+                if file.endswith((".md", ".ts", ".py"))
+            ]
+            for path in paths:
+                content = _read(path)
+                for marker in forbidden:
+                    self.assertNotIn(marker, content, path)
+
 
 class TestMcpWiring(unittest.TestCase):
     def test_no_bundled_mcp_json(self):
@@ -287,6 +323,17 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
                 cmd in readme or cmd in agents_md,
                 f"Command {cmd} missing in README.md/AGENTS.md",
             )
+
+    def test_pdf_export_supports_tectonic(self):
+        export_skill = _read("skills/academic-writer-export/SKILL.md")
+        health_skill = _read("skills/academic-writer-health/SKILL.md")
+        readme = _read("README.md")
+
+        self.assertIn("command -v tectonic", export_skill)
+        self.assertIn('--pdf-engine="$PDF_ENGINE"', export_skill)
+        self.assertIn("PDF_ENGINE=tectonic", export_skill)
+        self.assertIn("command -v tectonic", health_skill)
+        self.assertIn("brew install tectonic", readme)
 
 
 class TestCrossReferences(unittest.TestCase):

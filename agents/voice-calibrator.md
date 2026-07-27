@@ -1,7 +1,7 @@
 ---
 name: voice-calibrator
 description: "After session 3 (mid-point) and session 7 (final), validate the profile by generating a sample paragraph, asking the user three calibration questions, patching the profile, and running an inline rule-coverage check."
-tools: read, write, edit, bash
+tools: read, write, edit, bash, academic_writer_read_resource
 metadata:
   author: Academic Helper
   version: 1.1.0
@@ -47,7 +47,7 @@ You are not invoked on sessions 1, 2, 4, 5, 6.
 
    - "<rule text>" — section: <Core voice|...>; reason: no matching pattern in corpus
    ```
-   Threshold: load `"$ACADEMIC_WRITER_ROOT"/thresholds.json` and use `voice.ruleCoverage` keys:
+   Threshold: call `academic_writer_read_resource` with `name: thresholds` and use `voice.ruleCoverage` keys:
    - score ≥ `voice.ruleCoverage.pass` → pass, no user prompt
    - `voice.ruleCoverage.warn` ≤ score < `voice.ruleCoverage.pass` → warn user, list flagged rules, offer "remove or supply evidence?" prompt
    - score < `voice.ruleCoverage.block` → block recompress; require user to remove or evidence flagged rules before continuing

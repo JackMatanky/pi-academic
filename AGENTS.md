@@ -26,7 +26,7 @@ Without mise, the equivalent raw commands:
 |---|---|
 | `skills/academic-writer-<name>/SKILL.md` | Skill definition (markdown + YAML frontmatter, pi Agent-Skills format) |
 | `agents/<name>.md` | Agent definition (markdown + YAML frontmatter, `pi-subagents` format) |
-| `extensions/env-inject/index.ts` | Injects `$ACADEMIC_WRITER_ROOT` into every `bash` tool call |
+| `extensions/academic-writer-tools/index.ts` | Registers package-aware Academic Writer tools (`academic_writer_read_resource`, `academic_writer_resolve_csl`, `academic_writer_generate_docx`, `academic_writer_list_agents`, `academic_writer_fix_typography`) so skills never need package-root environment variables. |
 | `extensions/lifecycle/index.ts` | Session lifecycle handlers (dashboard, stop notification, session log). It must not mount `pi-mcp-adapter`; Pi loads that dependency directly so MCP tools/flags are registered once. |
 | `thresholds.json` | Single source of truth for all numeric quality gates |
 | `package.json` | pi manifest — `dependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |

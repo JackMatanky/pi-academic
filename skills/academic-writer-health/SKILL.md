@@ -1,7 +1,7 @@
 ---
 name: academic-writer-health
 description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
-allowed-tools: bash read
+allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
@@ -137,18 +137,17 @@ Report:
 ```bash
 command -v pandoc >/dev/null 2>&1 && echo "PANDOC: INSTALLED" || echo "PANDOC: NOT_FOUND"
 command -v xelatex >/dev/null 2>&1 && echo "XELATEX: INSTALLED" || echo "XELATEX: NOT_FOUND"
-test -x "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py && echo "CSL_RESOLVER: INSTALLED" || echo "CSL_RESOLVER: NOT_FOUND"
+command -v tectonic >/dev/null 2>&1 && echo "TECTONIC: INSTALLED" || echo "TECTONIC: NOT_FOUND"
+echo "CSL_RESOLVER: PROVIDED_BY academic_writer_resolve_csl"
 ```
 
-If the profile uses citeproc mode (`citationStyle` is anything except `inline-parenthetical`), resolve the configured CSL reference. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`:
+If the profile uses citeproc mode (`citationStyle` is anything except `inline-parenthetical`), resolve the configured CSL reference. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`.
 
-```bash
-python3 "$ACADEMIC_WRITER_ROOT"/scripts/resolve-csl.py "STYLE_OR_PATH" --download
-```
+Call `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 Report:
 - pandoc installed? ✓/✗ (powers `/skill:academic-writer-export` and citeproc-mode docx generation)
-- xelatex installed? ✓/✗ (needed only for PDF export — Hebrew-safe LaTeX engine; other export formats work without it)
+- PDF engine installed? ✓/✗ (`xelatex` or `tectonic`; needed only for PDF export — other export formats work without it)
 - CSL resolver installed? ✓/✗
 - configured CSL resolves? ✓/✗/— literal mode (show resolved path, or the resolver error)
 
@@ -159,28 +158,27 @@ Report:
 > 1. Install pandoc: see https://pandoc.org/installing.html
 > 2. Re-run `/skill:academic-writer-health` to verify.
 
-**If xelatex is not installed** (pandoc may still be fine — this only blocks PDF export), show this setup guide:
+**If neither xelatex nor tectonic is installed** (pandoc may still be fine — this only blocks PDF export), show this setup guide:
 
 > **How to enable PDF export:**
 >
-> - **macOS**: `brew install --cask basictex && sudo tlmgr install collection-xetex`
-> - **other platforms**: install any TeX distribution from https://pandoc.org/installing.html, then ensure `xelatex` is on your `PATH`.
+> - **Tectonic**: install from https://tectonic-typesetting.github.io/ or your package manager (for example `brew install tectonic`)
+> - **XeLaTeX/macOS**: `brew install --cask basictex && sudo tlmgr install collection-xetex`
+> - **other platforms**: install Tectonic or any TeX distribution from https://pandoc.org/installing.html, then ensure `tectonic` or `xelatex` is on your `PATH`.
 > - Re-run `/skill:academic-writer-health` to verify.
 
 ---
 
 ## 8. Agent Files
 
-```bash
-ls "$ACADEMIC_WRITER_ROOT"/agents/*.md 2>/dev/null
-```
+Call `academic_writer_list_agents`.
 
 Verify all required agent files exist:
-- `.claude/agents/deep-reader.md` ✓/✗
-- `.claude/agents/architect.md` ✓/✗
-- `.claude/agents/section-writer.md` ✓/✗
-- `.claude/agents/auditor.md` ✓/✗
-- `.claude/agents/synthesizer.md` ✓/✗
+- `agents/deep-reader.md` ✓/✗
+- `agents/architect.md` ✓/✗
+- `agents/section-writer.md` ✓/✗
+- `agents/auditor.md` ✓/✗
+- `agents/synthesizer.md` ✓/✗
 
 ---
 

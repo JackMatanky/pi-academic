@@ -45,19 +45,26 @@ Ask (multi-select):
 
 ---
 
-## 4. Check xelatex (only needed for PDF)
+## 4. Check PDF engine (only needed for PDF)
 
-If PDF was requested:
+If PDF was requested, check both supported engines:
 
 ```bash
 command -v xelatex >/dev/null 2>&1 && echo "XELATEX: INSTALLED" || echo "XELATEX: NOT_FOUND"
+command -v tectonic >/dev/null 2>&1 && echo "TECTONIC: INSTALLED" || echo "TECTONIC: NOT_FOUND"
 ```
 
-If `NOT_FOUND`, skip the PDF conversion and tell the researcher clearly:
+Select `PDF_ENGINE`:
+- If `xelatex` is installed, use `PDF_ENGINE=xelatex` to preserve the existing Hebrew-safe default.
+- Else if `tectonic` is installed, use `PDF_ENGINE=tectonic`.
+- If both are installed and the researcher explicitly asked for Tectonic, use `PDF_ENGINE=tectonic`.
 
-> "PDF export needs a LaTeX distribution with XeTeX (`xelatex`) — the default `pdflatex` engine can't render Hebrew script. I'll export your other requested format(s) now; to enable PDF:
-> - **macOS**: `brew install --cask basictex && sudo tlmgr install collection-xetex`
-> - **other platforms**: install any TeX distribution from https://pandoc.org/installing.html, then ensure `xelatex` is on your `PATH`."
+If both engines are `NOT_FOUND`, skip the PDF conversion and tell the researcher clearly:
+
+> "PDF export needs a Unicode-capable TeX engine: either XeTeX (`xelatex`) or Tectonic (`tectonic`). The default `pdflatex` engine can't render Hebrew script. I'll export your other requested format(s) now; to enable PDF:
+> - **Tectonic**: install from https://tectonic-typesetting.github.io/ or your package manager (for example `brew install tectonic`)
+> - **XeLaTeX/macOS**: `brew install --cask basictex && sudo tlmgr install collection-xetex`
+> - **other platforms**: install Tectonic or any TeX distribution from https://pandoc.org/installing.html, then ensure `tectonic` or `xelatex` is on your `PATH`."
 
 Proceed with the other requested formats regardless (HTML/ODT/LaTeX/EPUB have no such dependency — always attempt them if requested).
 
@@ -65,7 +72,7 @@ Proceed with the other requested formats regardless (HTML/ODT/LaTeX/EPUB have no
 
 ## 5. Run the conversions
 
-For every requested format except PDF (when `xelatex` is missing):
+For every requested format except PDF (when no supported PDF engine is installed):
 
 ```bash
 MD_PATH="articles/${SLUG}.md"
@@ -82,8 +89,8 @@ pandoc "$MD_PATH" --citeproc -o "articles/${SLUG}.tex"
 # EPUB
 pandoc "$MD_PATH" --citeproc -o "articles/${SLUG}.epub"
 
-# PDF (only if xelatex is installed)
-pandoc "$MD_PATH" --citeproc --pdf-engine=xelatex -o "articles/${SLUG}.pdf"
+# PDF (only if PDF_ENGINE is xelatex or tectonic)
+pandoc "$MD_PATH" --citeproc --pdf-engine="$PDF_ENGINE" -o "articles/${SLUG}.pdf"
 ```
 
 Only run the lines for formats the researcher actually selected.
@@ -103,4 +110,4 @@ List exactly which files were written:
 > - `articles/<slug>.odt`
 > - `articles/<slug>.epub`
 >
-> PDF was skipped — `xelatex` not found. See install instructions above.
+> PDF was skipped — neither `xelatex` nor `tectonic` was found. See install instructions above.
