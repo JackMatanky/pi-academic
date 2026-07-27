@@ -59,7 +59,7 @@ function fixTypography(text: string): string {
   return fixed;
 }
 
-export default function academicWriterTools(pi: ExtensionAPI) {
+export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_read_resource",
     label: "Academic Writer Resource",

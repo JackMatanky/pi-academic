@@ -130,10 +130,22 @@ class TestPackageManifest(unittest.TestCase):
         self.assertIn("version", data)
         self.assertIn("pi-package", data.get("keywords", []))
 
-        deps = data.get("dependencies", {})
-        self.assertIn("pi-subagents", deps)
-        self.assertIn("pi-mcp-adapter", deps)
-        self.assertIn("pi-web-access", deps)
+        # pi-subagents/pi-mcp-adapter/pi-web-access register their own
+        # extensions/tools; Pi does not auto-load a dependency's manifest
+        # just because it appears in `dependencies`, so they must stay
+        # peerDependencies the researcher installs independently (README
+        # Quick Start), never bundled runtime dependencies.
+        peer_deps = data.get("peerDependencies", {})
+        self.assertIn("pi-subagents", peer_deps)
+        self.assertIn("pi-mcp-adapter", peer_deps)
+        self.assertIn("pi-web-access", peer_deps)
+        for pkg in ("pi-subagents", "pi-mcp-adapter", "pi-web-access"):
+            self.assertNotIn(pkg, data.get("dependencies", {}))
+            self.assertNotIn(pkg, data.get("bundledDependencies", []))
+
+        pi_manifest = data.get("pi", {})
+        self.assertIn("./extensions", pi_manifest.get("extensions", []))
+        self.assertIn("./skills", pi_manifest.get("skills", []))
 
         self.assertIn("pi-subagents", data)
         self.assertIn("agents", data["pi-subagents"])
@@ -195,8 +207,8 @@ class TestExtensions(unittest.TestCase):
             f"{env_inject} must not reintroduce global {root_env} mutation",
         )
 
-        tools_path = "extensions/academic-writer-tools/index.ts"
-        self.assertTrue(os.path.isfile(tools_path), "Academic Writer tools extension missing")
+        tools_path = "extensions/pi-academic-writer/index.ts"
+        self.assertTrue(os.path.isfile(tools_path), "pi-academic-writer extension missing")
         tools = _read(tools_path)
         for name in [
             "academic_writer_read_resource",

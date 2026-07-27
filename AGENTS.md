@@ -26,10 +26,10 @@ Without mise, the equivalent raw commands:
 |---|---|
 | `skills/academic-writer-<name>/SKILL.md` | Skill definition (markdown + YAML frontmatter, pi Agent-Skills format) |
 | `agents/<name>.md` | Agent definition (markdown + YAML frontmatter, `pi-subagents` format) |
-| `extensions/academic-writer-tools/index.ts` | Registers package-aware Academic Writer tools (`academic_writer_read_resource`, `academic_writer_resolve_csl`, `academic_writer_generate_docx`, `academic_writer_list_agents`, `academic_writer_fix_typography`) so skills never need package-root environment variables. |
+| `extensions/pi-academic-writer/index.ts` | Registers package-aware Academic Writer tools (`academic_writer_read_resource`, `academic_writer_resolve_csl`, `academic_writer_generate_docx`, `academic_writer_list_agents`, `academic_writer_fix_typography`) so skills never need package-root environment variables. |
 | `extensions/lifecycle/index.ts` | Session lifecycle handlers (dashboard, stop notification, session log). It must not mount `pi-mcp-adapter`; Pi loads that dependency directly so MCP tools/flags are registered once. |
 | `thresholds.json` | Single source of truth for all numeric quality gates |
-| `package.json` | pi manifest — `dependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
+| `package.json` | pi manifest — explicit `pi.extensions`/`pi.skills`, `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`; researcher-installed, never bundled) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
 | `pyproject.toml` / `uv.lock` | Python dev/build tooling deps (`python-docx`, `lxml`, `pdfplumber`; dev: `pytest`, `pyyaml`) — managed by `uv`, not published |
 | `scripts/lib/csl/*.csl` | Vendored default CSL style files for citeproc export (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`), from [citation-style-language/styles](https://github.com/citation-style-language/styles) |
 | `scripts/resolve-csl.py` | Resolves bundled CSL aliases, project/user `.csl` paths, cached `.academic-helper/csl/*.csl`, or Citation Style Language repository ids to a local style file for Pandoc |
@@ -103,3 +103,4 @@ DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-p
 - Don't create `.academic-helper/` outside the `setup` or `init` skills.
 - Don't author skill descriptions that omit "Use when…" trigger phrases.
 - Don't use Claude Code conventions (`mcp__server__tool`, `AskUserQuestion`, `WebSearch`, `/academic-writer:<name>` slash commands, `user-invocable`/`allowedTools`/`model` frontmatter) — this package targets pi, not Claude Code.
+- Don't move `pi-subagents`/`pi-mcp-adapter`/`pi-web-access` into `dependencies` or `bundledDependencies` — Pi never auto-loads a dependency's own extensions, so bundling would only duplicate-register their tools/flags against a researcher's separately installed copies (the exact `mcp`-tool conflict this package hit and fixed once already). Keep them `peerDependencies: "*"` and documented as required companion installs in README.

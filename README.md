@@ -19,7 +19,17 @@ AI-first academic writing assistant for Humanities researchers. Writes rigorousl
 
 ## Quick Start
 
-### 1. Install the Package
+### 1. Install Required Companion Packages
+
+Academic Writer delegates subagent orchestration, MCP server wiring, and web search to three community Pi packages. Pi does not auto-load a dependency's own extensions just because it's listed in `package.json` — install these once, globally; every Pi project that uses them reuses the same install:
+
+```bash
+pi install npm:pi-subagents
+pi install npm:pi-mcp-adapter
+pi install npm:pi-web-access
+```
+
+### 2. Install the Package
 
 From the folder where you do your research:
 
@@ -29,7 +39,7 @@ pi install git:github.com/JackMatanky/academic-writer
 
 Pi prompts you to trust the project on first run — see [Project Trust](https://pi.dev/docs/latest/settings#project-trust).
 
-### 2. Initialize Your Profile
+### 3. Initialize Your Profile
 
 ```
 /skill:academic-writer-init
@@ -43,13 +53,13 @@ One-time setup. You'll be asked for:
 
 Your profile is saved to `.academic-helper/profile.md` and loaded automatically.
 
-### 3. Write Your First Article
+### 4. Write Your First Article
 
 ```
 /skill:academic-writer-write
 ```
 
-### 4. Export to Other Formats (optional)
+### 5. Export to Other Formats (optional)
 
 ```
 /skill:academic-writer-export
@@ -206,7 +216,7 @@ mise run test      # full test suite
 Without mise:
 
 ```bash
-npm install && npm --prefix extensions install  # installs pi-subagents, pi-mcp-adapter, pi-web-access
+npm install && npm --prefix extensions install  # dev tooling only — peerDependencies aren't wired as active Pi extensions here
 uv sync                                          # python-docx, lxml, pdfplumber, pytest, pyyaml
 npm run typecheck                                # strict TS check on extensions/
 uv run pytest tests/                             # full test suite
