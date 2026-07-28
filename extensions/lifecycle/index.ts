@@ -4,6 +4,7 @@ import { appendFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { getProfilePath, loadProfile } from "../lib/profile.js";
 import { summarizeRuns } from "../lib/runs.js";
+import type { ProfileData } from "../lib/types.js";
 
 function runSummary(projectDir: string): { active: number; last: string | null } {
   const runs = summarizeRuns(projectDir);
@@ -13,117 +14,99 @@ function runSummary(projectDir: string): { active: number; last: string | null }
   };
 }
 
+const DASHBOARD_REASONS = new Set(["startup", "new", "resume"]);
+
+function shouldShowDashboard(reason: string): boolean {
+  return DASHBOARD_REASONS.has(reason);
+}
+
+function isDocx(file: string): boolean {
+  return file.endsWith(".docx");
+}
+
+function isPastArticle(file: string): boolean {
+  return file.endsWith(".pdf") || isDocx(file);
+}
+
+function countFiles(
+  projectDir: string,
+  relativeDir: string,
+  matches: (file: string) => boolean,
+): number {
+  const dir = join(projectDir, relativeDir);
+  if (!existsSync(dir)) return 0;
+  try {
+    return readdirSync(dir).filter(matches).length;
+  } catch {
+    return 0;
+  }
+}
+
+function enabledToolNames(profile: ProfileData): string[] {
+  return Object.entries(profile.tools ?? {})
+    .filter(([, config]) => config.enabled)
+    .map(([name]) => name);
+}
+
+function unanalyzedPastArticleCount(projectDir: string, analyzedCount: number): number {
+  const total = countFiles(projectDir, "past-articles", isPastArticle);
+  return Math.max(0, total - analyzedCount);
+}
+
+function buildDashboardLines(projectDir: string, profile: ProfileData): string[] {
+  const lines: string[] = [
+    "",
+    "╔══════════════════════════════════════════════════╗",
+    "║         ACADEMIC WRITER — SESSION START          ║",
+    "╠══════════════════════════════════════════════════╣",
+    `║  Field: ${(profile.fieldOfStudy ?? "Not set").padEnd(38)}║`,
+    `║  Language: ${(profile.targetLanguage ?? "Not set").padEnd(36)}║`,
+    `║  Citation: ${(profile.citationStyle ?? "Not set").padEnd(36)}║`,
+    `║  Fingerprint: ${(profile.styleFingerprint ? "Loaded" : "Missing").padEnd(33)}║`,
+    `║  Articles: ${String(countFiles(projectDir, "articles", isDocx)).padEnd(36)}║`,
+    `║  Sources indexed: ${String(profile.sources?.length ?? 0).padEnd(29)}║`,
+  ];
+
+  const tools = enabledToolNames(profile);
+  lines.push(
+    `║  Tools: ${(tools.length > 0 ? tools.join(", ") : "None").substring(0, 38).padEnd(38)}║`,
+  );
+
+  const runs = runSummary(projectDir);
+  lines.push(`║  Active runs: ${String(runs.active).padEnd(32)}║`);
+  if (runs.last) lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
+
+  if (existsSync(join(projectDir, ".academic-helper", "research-brief.md"))) {
+    lines.push("║  Research brief: Available                       ║");
+  }
+
+  const unanalyzed = unanalyzedPastArticleCount(
+    projectDir,
+    profile.analyzedArticles?.length ?? 0,
+  );
+  if (unanalyzed > 0) {
+    lines.push(`║  New past articles: ${String(unanalyzed).padEnd(27)}║`);
+    lines.push("║  → Run /skill:academic-writer-voice to update style    ║");
+  }
+
+  lines.push("╠══════════════════════════════════════════════════╣");
+  lines.push("║  /skill:academic-writer-write    — Write new article   ║");
+  lines.push("║  /skill:academic-writer-ideate   — Brainstorm ideas    ║");
+  lines.push("║  /skill:academic-writer-research — Investigate a topic ║");
+  lines.push("║  /skill:academic-writer-health   — Check integrations  ║");
+  lines.push("╚══════════════════════════════════════════════════╝");
+  return lines;
+}
+
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (event, ctx) => {
-    if (
-      event.reason !== "startup" &&
-      event.reason !== "new" &&
-      event.reason !== "resume"
-    ) {
-      return;
-    }
+    if (!shouldShowDashboard(event.reason)) return;
 
     const projectDir = process.cwd();
     const profile = loadProfile(projectDir);
+    if (!profile) return;
 
-    if (!profile) {
-      return;
-    }
-
-    const lines: string[] = [];
-    lines.push("");
-    lines.push("╔══════════════════════════════════════════════════╗");
-    lines.push("║         ACADEMIC WRITER — SESSION START          ║");
-    lines.push("╠══════════════════════════════════════════════════╣");
-
-    // Profile status
-    lines.push(`║  Field: ${(profile.fieldOfStudy ?? "Not set").padEnd(38)}║`);
-    lines.push(
-      `║  Language: ${(profile.targetLanguage ?? "Not set").padEnd(36)}║`,
-    );
-    lines.push(
-      `║  Citation: ${(profile.citationStyle ?? "Not set").padEnd(36)}║`,
-    );
-    lines.push(
-      `║  Fingerprint: ${(profile.styleFingerprint ? "Loaded" : "Missing").padEnd(33)}║`,
-    );
-
-    // Articles count
-    const articlesDir = join(projectDir, "articles");
-    let articleCount = 0;
-    if (existsSync(articlesDir)) {
-      try {
-        const files = readdirSync(articlesDir);
-        articleCount = files.filter((f) => f.endsWith(".docx")).length;
-      } catch {
-        // ignore
-      }
-    }
-    lines.push(`║  Articles: ${String(articleCount).padEnd(36)}║`);
-
-    // Source count
-    const sourceCount = profile.sources?.length ?? 0;
-    lines.push(`║  Sources indexed: ${String(sourceCount).padEnd(29)}║`);
-
-    // Tools status
-    const tools = profile.tools ?? {};
-    const enabledTools: string[] = [];
-    for (const [name, config] of Object.entries(tools)) {
-      if (
-        config &&
-        typeof config === "object" &&
-        "enabled" in config &&
-        config.enabled
-      ) {
-        enabledTools.push(name);
-      }
-    }
-    lines.push(
-      `║  Tools: ${(enabledTools.length > 0 ? enabledTools.join(", ") : "None").substring(0, 38).padEnd(38)}║`,
-    );
-
-    // Run state
-    const runs = runSummary(projectDir);
-    lines.push(`║  Active runs: ${String(runs.active).padEnd(32)}║`);
-    if (runs.last) {
-      lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
-    }
-
-    // Research brief
-    const briefPath = join(projectDir, ".academic-helper", "research-brief.md");
-    if (existsSync(briefPath)) {
-      lines.push(`║  Research brief: Available                       ║`);
-    }
-
-    // Past articles for learning
-    const pastDir = join(projectDir, "past-articles");
-    if (existsSync(pastDir)) {
-      try {
-        const pastFiles = readdirSync(pastDir);
-        const analyzed = profile.analyzedArticles?.length ?? 0;
-        const total = pastFiles.filter(
-          (f) => f.endsWith(".pdf") || f.endsWith(".docx"),
-        ).length;
-        const unanalyzed = total - analyzed;
-        if (unanalyzed > 0) {
-          lines.push(`║  New past articles: ${String(unanalyzed).padEnd(27)}║`);
-          lines.push(
-            `║  → Run /skill:academic-writer-voice to update style    ║`,
-          );
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    lines.push("╠══════════════════════════════════════════════════╣");
-    lines.push("║  /skill:academic-writer-write    — Write new article   ║");
-    lines.push("║  /skill:academic-writer-ideate   — Brainstorm ideas    ║");
-    lines.push("║  /skill:academic-writer-research — Investigate a topic ║");
-    lines.push("║  /skill:academic-writer-health   — Check integrations  ║");
-    lines.push("╚══════════════════════════════════════════════════╝");
-
-    ctx.ui.notify(lines.join("\n"), "info");
+    ctx.ui.notify(buildDashboardLines(projectDir, profile).join("\n"), "info");
   });
 
   pi.on("agent_settled", async (event, ctx) => {

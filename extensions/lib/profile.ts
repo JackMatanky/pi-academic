@@ -13,70 +13,74 @@ export function getProfilePath(projectDir: string): string {
   return join(projectDir, PROFILE_RELATIVE_PATH);
 }
 
+type ProfileFields = ProfileData & Record<string, unknown>;
+const JSON_SECTION_KEYS: Record<string, string> = {
+  tools: "tools",
+  stylefingerprint: "styleFingerprint",
+  sources: "sources",
+  articlestructure: "articleStructure",
+  outputformatpreferences: "outputFormatPreferences",
+};
+
+
+function parseFrontmatter(raw: string, fields: ProfileFields): void {
+  const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) return;
+
+  const fmLines = fmMatch[1].split("\n");
+  let i = 0;
+  while (i < fmLines.length) {
+    const line = fmLines[i];
+    const kvMatch = line.match(/^([\w-]+): (.+)$/);
+    if (kvMatch) {
+      const [, key, value] = kvMatch;
+      const v = value.trim();
+      if (v === "null") fields[key] = null;
+      else if (v === "[]") fields[key] = [];
+      else fields[key] = v;
+      i++;
+      continue;
+    }
+
+    if (/^[\w-]+:\s*$/.test(line)) {
+      const key = line.split(":")[0];
+      const items: string[] = [];
+      i++;
+      while (i < fmLines.length && fmLines[i].startsWith("  - ")) {
+        items.push(fmLines[i].slice(4));
+        i++;
+      }
+      fields[key] = items;
+      continue;
+    }
+
+    i++;
+  }
+}
+
+function assignJsonSection(heading: string, parsed: unknown, fields: ProfileFields): void {
+  const key = JSON_SECTION_KEYS[heading];
+  if (key) fields[key] = parsed;
+}
+
+function parseJsonSections(raw: string, fields: ProfileFields): void {
+  const sectionRe = /^## ([^\n]+)\n+```json\n([\s\S]*?)\n```/gm;
+  let m: RegExpExecArray | null;
+  while ((m = sectionRe.exec(raw)) !== null) {
+    try {
+      const heading = m[1].trim().toLowerCase().replace(/\s+/g, "");
+      assignJsonSection(heading, JSON.parse(m[2]) as unknown, fields);
+    } catch {
+      // skip malformed JSON blocks
+    }
+  }
+}
+
 function parseProfileMd(raw: string): ProfileData | null {
   try {
-    const profile: ProfileData & Record<string, unknown> = {};
-    const fields: Record<string, unknown> = profile;
-
-    // Extract YAML frontmatter between first --- and second ---
-    const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
-    if (fmMatch) {
-      const fmLines = fmMatch[1].split("\n");
-      let i = 0;
-      while (i < fmLines.length) {
-        const line = fmLines[i];
-        const kvMatch = line.match(/^([\w-]+): (.+)$/);
-        if (kvMatch) {
-          const [, key, value] = kvMatch;
-          const v = value.trim();
-          if (v === "null") profile[key] = null;
-          else if (v === "[]") profile[key] = [];
-          else profile[key] = v;
-          i++;
-        } else if (/^[\w-]+:\s*$/.test(line)) {
-          const key = line.split(":")[0];
-          const items: string[] = [];
-          i++;
-          while (i < fmLines.length && fmLines[i].startsWith("  - ")) {
-            items.push(fmLines[i].slice(4));
-            i++;
-          }
-          profile[key] = items;
-        } else {
-          i++;
-        }
-      }
-    }
-
-    // Extract JSON code blocks by section heading
-    const sectionRe = /^## ([^\n]+)\n+```json\n([\s\S]*?)\n```/gm;
-    let m: RegExpExecArray | null;
-    while ((m = sectionRe.exec(raw)) !== null) {
-      const heading = m[1].trim().toLowerCase().replace(/\s+/g, "");
-      try {
-        const parsed: unknown = JSON.parse(m[2]);
-        switch (heading) {
-          case "tools":
-            fields["tools"] = parsed;
-            break;
-          case "stylefingerprint":
-            fields["styleFingerprint"] = parsed;
-            break;
-          case "sources":
-            fields["sources"] = parsed;
-            break;
-          case "articlestructure":
-            fields["articleStructure"] = parsed;
-            break;
-          case "outputformatpreferences":
-            fields["outputFormatPreferences"] = parsed;
-            break;
-        }
-      } catch {
-        // skip malformed JSON blocks
-      }
-    }
-
+    const profile: ProfileFields = {};
+    parseFrontmatter(raw, profile);
+    parseJsonSections(raw, profile);
     return profile;
   } catch {
     return null;
