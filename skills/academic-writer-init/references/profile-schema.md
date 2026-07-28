@@ -1,57 +1,19 @@
-# Profile Schema (`.academic-helper/profile.md`)
+# Profile Schema (`.academic-writer/profile.md`)
 
 > Loaded on demand by the `init` and `setup` skills. Do not duplicate this content in SKILL.md.
 
-## Legacy Migration Script
+## JSON Profile Migration
 
-Migrates any legacy profile from `.academic-writer/profile.json` → `.academic-helper/profile.md`.
-Run this in Phase 0 before checking for an existing profile:
+JSON profiles are migrated from `.academic-writer/profile.json` to `.academic-writer/profile.md` by the package tool `academic_writer_migrate_profile`.
 
-```bash
-python3 << 'PYTHON'
-import os, json
-from datetime import datetime
-
-old_path = '.academic-writer/profile.json'
-new_path = '.academic-helper/profile.md'
-if os.path.exists(old_path) and not os.path.exists(new_path):
-    with open(old_path) as f:
-        p = json.load(f)
-    scalar_keys = ['fieldOfStudy', 'citationStyle', 'targetLanguage', 'updatedAt', 'createdAt']
-    list_keys = ['abstractLanguages', 'analyzedArticles']
-    json_sections = [
-        ('tools', 'Tools'), ('outputFormatPreferences', 'Output Format Preferences'),
-        ('styleFingerprint', 'Style Fingerprint'), ('articleStructure', 'Article Structure'),
-        ('sources', 'Sources'),
-    ]
-    lines = ['# Academic Writer Profile', '', '---']
-    for k in scalar_keys:
-        if k in p and p[k] is not None:
-            lines.append(f'{k}: {p[k]}')
-    for k in list_keys:
-        v = p.get(k) or []
-        if not v:
-            lines.append(f'{k}: []')
-        else:
-            lines.append(f'{k}:')
-            for item in v:
-                lines.append(f'  - {item}')
-    lines.append('---')
-    lines.append('')
-    for k, heading in json_sections:
-        if k in p and p[k] is not None:
-            lines.extend([f'## {heading}', '', '```json',
-                          json.dumps(p[k], indent=2, ensure_ascii=False), '```', ''])
-    os.makedirs('.academic-helper', exist_ok=True)
-    with open(new_path, 'w') as f:
-        f.write('\n'.join(lines))
-    print(f"Migrated profile to {new_path}")
-PYTHON
-```
+Run it in Phase 0 before checking for an existing profile. It is idempotent:
+- If `.academic-writer/profile.md` already exists, it skips.
+- If no JSON profile exists, it skips.
+- If a JSON profile exists and no markdown profile exists, it writes the markdown profile using the package serializer.
 
 ## Profile File Format
 
-`.academic-helper/profile.md` uses markdown with YAML frontmatter + JSON sections:
+`.academic-writer/profile.md` uses markdown with YAML frontmatter + JSON sections:
 
 ```markdown
 # Academic Writer Profile
@@ -81,7 +43,7 @@ updatedAt: ISO_TIMESTAMP
 ```json
 {
   "csl": "optional citeproc style id or bundled alias, e.g. nature/chicago-author-date/apa",
-  "cslPath": "optional local .csl path, e.g. .academic-helper/csl/my-journal.csl"
+  "cslPath": "optional local .csl path, e.g. .academic-writer/csl/my-journal.csl"
 }
 ```
 

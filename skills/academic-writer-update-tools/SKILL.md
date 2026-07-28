@@ -16,7 +16,7 @@ Call `academic_writer_get_profile`.
 If it returns `ok: false`, tell them:
 > "No profile found. Run `/skill:academic-writer-init` first."
 
-Use the returned `tools` object. If the profile has no `tools` key (legacy profile), treat all tools as not configured.
+Use the returned `tools` object. If the profile has no `tools` key (JSON profile), treat all tools as not configured.
 
 ## Tool Registry
 

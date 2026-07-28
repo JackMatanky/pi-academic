@@ -20,7 +20,7 @@ Call `academic_writer_get_profile`.
 
 If it returns `ok: false`, tell the researcher to run `/skill:academic-writer-init` first.
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this review when run standalone. Use `phase: review`; update status before stopping. When invoked inside write/edit, update the current run file instead of creating a second one.
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-writer/runs/<run-id>.json` for this review when run standalone. Use `phase: review`; update status before stopping. When invoked inside write/edit, update the current run file instead of creating a second one.
 
 ## Input
 

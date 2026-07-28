@@ -24,7 +24,7 @@ Store the returned profile values — you'll use them throughout.
 
 ### Run state (profile-scoped)
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create `.academic-helper/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-helper/` here if the profile was missing — `init`/`setup` own first creation.
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create `.academic-writer/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-writer/` here if the profile was missing — `init`/`setup` own first creation.
 
 ### Style Fingerprint — Always Loaded
 
@@ -50,7 +50,7 @@ Read the `tools` object from the profile. Throughout this workflow, **only use t
 - **Zotero** (`tools.zotero.enabled`) — If disabled, skip Zotero tool calls. Source listing/selection steps should use any available sources from the profile's `sources` array instead.
 - **NotebookLM** (`tools.notebooklm.enabled`) — If disabled, skip notebook queries and AI summaries. NotebookLM is supplementary — it does not replace Vectorless/Zotero for citation verification.
 
-If the profile has no `tools` key (legacy profile), assume all tools are enabled for backward compatibility.
+If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
 
 ---
 
@@ -156,11 +156,11 @@ Pass the NotebookLM summary as additional context to the deep-reader agent promp
 
 The deep-reader runs:
 - **Step 1**: Read source content from Zotero
-- **Step 1b**: Extract structured bibliographic metadata per source and write `.academic-helper/sources.json`. This registry is the ONLY trusted source for citation metadata in Step 7. Fields the deep-reader cannot confirm are marked `null` with `extractionConfidence: "low"` — never guessed.
+- **Step 1b**: Extract structured bibliographic metadata per source and write `.academic-writer/sources.json`. This registry is the ONLY trusted source for citation metadata in Step 7. Fields the deep-reader cannot confirm are marked `null` with `extractionConfidence: "low"` — never guessed.
 - **Step 2**: Query NotebookLM notebooks (if enabled) for thematic context
 
 
-Wait for the deep-reader to return retrieved passages before continuing to Step 4. Confirm `.academic-helper/sources.json` exists.
+Wait for the deep-reader to return retrieved passages before continuing to Step 4. Confirm `.academic-writer/sources.json` exists.
 
 After receiving the deep-reader result, mark node complete:
 
@@ -191,7 +191,7 @@ After the researcher picks a thesis, log thesis approval:
 
 **If the researcher chose "Expand my draft" in the draft detection step (`userDraftAsOutline = true`):**
 
-- Do NOT skip the architect entirely. The outline comes from the user's draft, but the architect is still the sole writer of `.academic-helper/evidence-ownership.json` — and without it the per-paragraph thesis-drift guard and the cross-section evidence-dedup both silently no-op. **Use the `subagent` tool to spawn the `architect` subagent in a lightweight "ownership-only" mode**: pass `userDraftText`, the deep-read results / `sources.json`, and `targetLanguage`, and instruct it to produce ONLY `evidence-ownership.json` (the `thesisAnchor` derived from the draft plus the `evidenceOwners` assignment for shared evidence) — it must NOT generate a new outline or thesis options, since those come from the user's draft.
+- Do NOT skip the architect entirely. The outline comes from the user's draft, but the architect is still the sole writer of `.academic-writer/evidence-ownership.json` — and without it the per-paragraph thesis-drift guard and the cross-section evidence-dedup both silently no-op. **Use the `subagent` tool to spawn the `architect` subagent in a lightweight "ownership-only" mode**: pass `userDraftText`, the deep-read results / `sources.json`, and `targetLanguage`, and instruct it to produce ONLY `evidence-ownership.json` (the `thesisAnchor` derived from the draft plus the `evidenceOwners` assignment for shared evidence) — it must NOT generate a new outline or thesis options, since those come from the user's draft.
 - Parse `userDraftText` into sections: use the user's existing section headings and paragraph structure as the outline
 - Present the extracted outline to the researcher:
   > "Using your draft structure:
@@ -208,7 +208,7 @@ After the researcher picks a thesis, log thesis approval:
 
 The architect runs in Mode B:
 - Produces the outline (titles, roles, suggested sources, word counts, paragraph counts) in `targetLanguage`
-- Writes `.academic-helper/evidence-ownership.json` — for every evidence anchor (source, passage, dataset) appearing in more than one section, assigns exactly ONE section as the owner of the full description. Other sections must back-reference.
+- Writes `.academic-writer/evidence-ownership.json` — for every evidence anchor (source, passage, dataset) appearing in more than one section, assigns exactly ONE section as the owner of the full description. Other sections must back-reference.
 - Enforces a conciseness budget: body-section descriptions ≤ 2 sentences, intro/conclusion ≤ 3 sentences, no 5+ word phrase repeated across descriptions.
 
 
@@ -262,10 +262,10 @@ For each section in the approved outline, the `subagent` tool prompt must includ
 - `userDraftParagraphs`: (if `userDraftAsOutline = true`) the user's draft text for this section — agents expand this rather than writing from scratch
 
 **NOTE:** Do NOT pass `styleFingerprint`, `linkingWords`, `sourcesRegistry`, or `evidenceOwnership` in the prompt — section-writer agents load all four directly from disk to reduce context size:
-- Fingerprint from `.academic-helper/profile.md`
+- Fingerprint from `.academic-writer/profile.md`
 - Linking words from `academic_writer_read_resource` with `name: words`
-- Source registry from `.academic-helper/sources.json` (deep-reader output)
-- Evidence ownership map from `.academic-helper/evidence-ownership.json` (architect output)
+- Source registry from `.academic-writer/sources.json` (deep-reader output)
+- Evidence ownership map from `.academic-writer/evidence-ownership.json` (architect output)
 
 Each section-writer handles a **per-paragraph 8-skill pipeline** internally — in order: Draft → Style Compliance → Hebrew Grammar → Academic Language → Language Purity → Anti-AI → Repetition Check → Citation Audit (logged per paragraph as `section_N_p_M_<skill>`). The authoritative contract for that pipeline — exact skill behavior, the 220-word ceiling, the `thresholds.json`-driven anti-AI gate, and the auditor hard gate (Citation Audit / Skill 8) — lives in the `section-writer` agent definition (`src/agents/section-writer.md`). Do not duplicate or override it here; the orchestrator only spawns section-writers and waits for their results.
 
@@ -396,7 +396,7 @@ Report to researcher:
 > Citations: [N] ([citationStyle] format)
 > Sections: [N]
 > Language: [targetLanguage]
-> [If citeproc mode: Bibliography — `.academic-helper/bibliography.bib` via pandoc `--citeproc` (CSL: [resolved CSL path])]
+> [If citeproc mode: Bibliography — `.academic-writer/bibliography.bib` via pandoc `--citeproc` (CSL: [resolved CSL path])]
 >
 > Quality checks applied per paragraph:
 > - Style fingerprint compliance: avg [N]/5 score, [N] adjustments

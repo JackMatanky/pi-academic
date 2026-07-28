@@ -10,7 +10,7 @@ permission:
   edit:
     "*": deny
     "AUTHOR_VOICE.md": allow
-    ".academic-helper/profile.md": allow
+    ".academic-writer/profile.md": allow
   bash:
     "*": ask
     "cat *": allow

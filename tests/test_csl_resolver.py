@@ -28,7 +28,7 @@ def test_resolves_bundled_aliases():
 
 
 def test_resolves_project_custom_csl(tmp_path):
-    csl_dir = tmp_path / ".academic-helper" / "csl"
+    csl_dir = tmp_path / ".academic-writer" / "csl"
     csl_dir.mkdir(parents=True)
     custom = csl_dir / "custom-journal.csl"
     custom.write_text(

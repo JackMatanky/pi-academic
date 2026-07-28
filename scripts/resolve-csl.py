@@ -5,7 +5,7 @@ Supports:
 - bundled aliases: apa, mla, chicago
 - bundled filenames under scripts/lib/csl/
 - project/user paths to existing .csl files
-- Citation Style Language repository ids, downloaded/cached to .academic-helper/csl/
+- Citation Style Language repository ids, downloaded/cached to .academic-writer/csl/
 
 The script prints the resolved absolute path on success and exits non-zero with a
 clear error on failure. It has no third-party dependencies.
@@ -90,7 +90,7 @@ def resolve_style(
         raise SystemExit("CSL style is empty")
 
     bundled_dir = package_root / "scripts" / "lib" / "csl"
-    cache_dir = project_root / ".academic-helper" / "csl"
+    cache_dir = project_root / ".academic-writer" / "csl"
 
     alias = ALIASES.get(raw.lower())
     if alias:
@@ -151,7 +151,7 @@ def main() -> None:
     parser.add_argument(
         "--download",
         action="store_true",
-        help="Download missing style ids from citation-style-language/styles into .academic-helper/csl/",
+        help="Download missing style ids from citation-style-language/styles into .academic-writer/csl/",
     )
     args = parser.parse_args()
 

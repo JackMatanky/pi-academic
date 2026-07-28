@@ -23,10 +23,10 @@ Never summarize feedback without acting on it.
 | Category | What it touches | Example |
 |----------|-----------------|---------|
 | **A. Article edit** | The finished article file in `articles/` | "Section III repeats Text 360 — consolidate" |
-| **B. Profile update** | `.academic-helper/profile.md` — fingerprint, preferences, article structure, targetLanguage, abstractLanguages, outputFormatPreferences | "My paragraphs should be shorter by default" |
+| **B. Profile update** | `.academic-writer/profile.md` — fingerprint, preferences, article structure, targetLanguage, abstractLanguages, outputFormatPreferences | "My paragraphs should be shorter by default" |
 | **C. Pattern reference update** | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps | "'I suggest that' appeared too often — lower the cap to 2" |
-| **D. Source registry fix** | `.academic-helper/sources.json` — correct a bibliographic metadata field | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
-| **E. Memory / known-issue note** | Writes to `.academic-helper/feedback/YYYY-MM-DD-<article-slug>.md` AND the session memory system. Use for observations that don't fit A–D but should carry forward. | "I don't like em-dashes in my writing, ever" |
+| **D. Source registry fix** | `.academic-writer/sources.json` — correct a bibliographic metadata field | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
+| **E. Memory / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md` AND the session memory system. Use for observations that don't fit A–D but should carry forward. | "I don't like em-dashes in my writing, ever" |
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
@@ -49,7 +49,7 @@ If multiple `.md` files exist, present the most recent ones as options plus an "
 
 Once chosen, load the artifacts:
 
-Read the chosen article with the Read tool. Also read `.academic-helper/sources.json` and `.academic-helper/evidence-ownership.json` when present; treat missing files as `[]` and `{}` respectively.
+Read the chosen article with the Read tool. Also read `.academic-writer/sources.json` and `.academic-writer/evidence-ownership.json` when present; treat missing files as `[]` and `{}` respectively.
 
 
 ## Phase 2 — Structured Interview
@@ -121,7 +121,7 @@ Use `Edit` on `articles/<slug>.md`. Prefer the narrowest surgical edit. For larg
 
 ### B. Profile update
 
-Use `Edit` on `.academic-helper/profile.md`. Common fields:
+Use `Edit` on `.academic-writer/profile.md`. Common fields:
 - `paragraphStructure.length.mean` / `.stdev` — paragraph length preferences
 - `toneAndVoice.descriptors` — voice adjustments
 - `preferences.typography` — e.g., "never use em-dashes"
@@ -153,7 +153,7 @@ If the reference file doesn't exist for this language, create it by mirroring th
 
 ### D. Source registry fix
 
-Read `.academic-helper/sources.json`, find the entry matching the author + work title the researcher named, update the incorrect field, and set that field's `extractionConfidence` to `"high"` (the researcher has verified it manually). Write back with the Write tool.
+Read `.academic-writer/sources.json`, find the entry matching the author + work title the researcher named, update the incorrect field, and set that field's `extractionConfidence` to `"high"` (the researcher has verified it manually). Write back with the Write tool.
 
 Example:
 ```json
@@ -175,12 +175,12 @@ For items that don't fit A–D (general preferences, process observations, thing
 
 Feedback log path:
 ```
-.academic-helper/feedback/YYYY-MM-DD-<article-slug>.md
+.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md
 ```
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
-For session memory (persistent preferences, project-local — never `$HOME`), write a `feedback_*.md` file to `.academic-helper/memory/` only for items that represent **persistent preferences** worth carrying across sessions — not one-off fixes. Examples worth a memory entry:
+For session memory (persistent preferences, project-local — never `$HOME`), write a `feedback_*.md` file to `.academic-writer/memory/` only for items that represent **persistent preferences** worth carrying across sessions — not one-off fixes. Examples worth a memory entry:
 - "Never use em-dashes anywhere"
 - "Abstracts should always be both Hebrew and English"
 - "For Bible articles, always cite the Hebrew chapter/verse first, then the English translation"
@@ -212,7 +212,7 @@ Then show a summary to the researcher:
 
 > "Feedback processed.
 > - Applied: N items (A: N, B: N, C: N, D: N, E: N)
-> - Deferred: N items (logged to `.academic-helper/feedback/<file>.md`)
+> - Deferred: N items (logged to `.academic-writer/feedback/<file>.md`)
 > - Memory entries added: N
 >
 > Next runs of `/skill:academic-writer-write` will pick up all profile and pattern changes automatically. For the article itself, the edits have been written to `articles/<slug>.md` — you may want to regenerate the .docx by running the last step of `/skill:academic-writer-write` or edit and re-export manually."

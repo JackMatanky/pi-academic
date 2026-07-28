@@ -96,7 +96,7 @@ function buildDashboardLines(
   if (runs.last)
     lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
 
-  if (existsSync(join(projectDir, ".academic-helper", "research-brief.md"))) {
+  if (existsSync(join(projectDir, ".academic-writer", "research-brief.md"))) {
     lines.push("║  Research brief: Available                       ║");
   }
 
@@ -134,7 +134,7 @@ export default function (pi: ExtensionAPI) {
     const projectDir = process.cwd();
 
     // Hard gate: only notify in academic-writer projects.
-    if (!existsSync(join(projectDir, ".academic-helper", "profile.md"))) {
+    if (!existsSync(join(projectDir, ".academic-writer", "profile.md"))) {
       return;
     }
 
@@ -165,7 +165,7 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    const logsDir = join(projectDir, ".academic-helper", "logs");
+    const logsDir = join(projectDir, ".academic-writer", "logs");
     if (!existsSync(logsDir)) {
       return;
     }

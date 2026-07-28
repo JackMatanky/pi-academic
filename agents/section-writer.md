@@ -29,7 +29,7 @@ Read `AUTHOR_VOICE.md` from project root at the start of every section. The whol
 Load your memory at the start of every spawn:
 
 ```bash
-cat .academic-helper/agent-memory/section-writer/MEMORY.md 2>/dev/null || echo "(no memory yet)"
+cat .academic-writer/agent-memory/section-writer/MEMORY.md 2>/dev/null || echo "(no memory yet)"
 ```
 
 Check `## Recurring Style Issues` to pre-focus compliance checks.
@@ -114,18 +114,18 @@ Before doing anything else, load these resources directly from disk:
 # Load style fingerprint from profile
 python3 -c "
 import re, json
-content = open('.academic-helper/profile.md').read()
+content = open('.academic-writer/profile.md').read()
 m = re.search(r'## Style Fingerprint\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
 print(m.group(1) if m else 'null')
 "
 # Load bibliographic source registry (written by deep-reader)
-cat .academic-helper/sources.json 2>/dev/null || echo "[]"
+cat .academic-writer/sources.json 2>/dev/null || echo "[]"
 # Load evidence ownership map (written by architect)
-cat .academic-helper/evidence-ownership.json 2>/dev/null || echo "{}"
+cat .academic-writer/evidence-ownership.json 2>/dev/null || echo "{}"
 # Load banned-terms block if present
 python3 -c "
 import re
-content = open('.academic-helper/profile.md').read()
+content = open('.academic-writer/profile.md').read()
 m = re.search(r'## Banned Terms\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
 print(m.group(1) if m else '[]')
 "
@@ -253,12 +253,12 @@ Once the auditor returns `VERDICT: PASS` for paragraph N, append to `evidenceOwn
 ```python
 python3 - <<'PY'
 import json, pathlib, fcntl
-lock_path = pathlib.Path('.academic-helper/evidence-ownership.lock')
+lock_path = pathlib.Path('.academic-writer/evidence-ownership.lock')
 lock_path.parent.mkdir(parents=True, exist_ok=True)
 with open(lock_path, 'w') as lock_fd:
     try:
         fcntl.flock(lock_fd, fcntl.LOCK_EX)
-        p = pathlib.Path('.academic-helper/evidence-ownership.json')
+        p = pathlib.Path('.academic-writer/evidence-ownership.json')
         data = json.loads(p.read_text()) if p.exists() else {"claimsRegistry": []}
         data.setdefault('claimsRegistry', []).append({
             "paragraphId": "PARAGRAPH_ID",

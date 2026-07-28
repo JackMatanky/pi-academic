@@ -160,10 +160,10 @@ Wait for their reply and match it against the options (accept the option number,
 Write a `research-brief.md` file that feeds directly into `/skill:academic-writer-write`:
 
 ```bash
-mkdir -p .academic-helper
+mkdir -p .academic-writer
 ```
 
-Use the `Write` tool to create `.academic-helper/research-brief.md`:
+Use the `Write` tool to create `.academic-writer/research-brief.md`:
 
 ```markdown
 # Research Brief
@@ -207,7 +207,7 @@ Log completion:
 
 ## Completion
 
-> "Your research brief has been saved to `.academic-helper/research-brief.md`.
+> "Your research brief has been saved to `.academic-writer/research-brief.md`.
 >
 > **Research question:** [question]
 > **Approach:** [approach]

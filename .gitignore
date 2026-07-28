@@ -25,8 +25,6 @@ logs/
 *.html
 
 # Runtime state, not part of package distribution
-/.academic-helper/
-# Legacy pre-migration profile dir (see skills/academic-writer-init/SKILL.md)
 /.academic-writer/
 
 # Voice profile build artifacts (only AUTHOR_VOICE.md is tracked)

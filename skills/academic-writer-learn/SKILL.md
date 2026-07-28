@@ -77,7 +77,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If **Save**, update the profile:
-1. Merge the updated `styleFingerprint` into `.academic-helper/profile.md`
+1. Merge the updated `styleFingerprint` into `.academic-writer/profile.md`
 2. Add the new filenames to `analyzedArticles` array
 3. Update `updatedAt` timestamp
 

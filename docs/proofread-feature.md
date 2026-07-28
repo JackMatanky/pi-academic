@@ -30,7 +30,7 @@ A `/academic-writer:proofread` command that runs a **mechanical-only** proofread
 | `CLAUDE.md` | Added rows to the **slash-command table** and the **agents table**. | Project doc convention — both tables are the registry of commands/agents. |
 | `src/skills/help/SKILL.md` | Added a `proofread` row to the slash-command list. | Enforced by `tests/test_plugin_structure.py::test_help_lists_all_slash_commands` — help must list every user-invocable command. |
 
-No new Python, no new dependency, no `thresholds.json` change (mechanical proofreading has no numeric gate). No `.academic-helper/` writes — all outputs land in `articles/`.
+No new Python, no new dependency, no `thresholds.json` change (mechanical proofreading has no numeric gate). No `.academic-writer/` writes — all outputs land in `articles/`.
 
 ## Runtime outputs (per run)
 

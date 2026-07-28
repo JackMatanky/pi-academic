@@ -311,7 +311,7 @@ Cognetivy (cognetivy CLI) ──→ ALL steps log events ───────�
 | Zotero not authenticated | CLI installed but not logged in | `ck auth logout && ck auth login` |
 | Cognetivy not initialized | CLI installed but no workspace | `timeout 5 cognetivy init --workspace-only` in project dir |
 | Citation audit fails 3x | Source doesn't contain claimed info | Paragraph flagged for researcher review |
-| Style fingerprint is flat/legacy | Old init format | Re-run `/academic-writer-init` |
+| Style fingerprint is flat/old | Old init format | Re-run `/academic-writer-init` |
 
 ---
 

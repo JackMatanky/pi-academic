@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 import { PACKAGE_ROOT } from "../lib/paths.js";
-import { loadProfile, updateProfile } from "../lib/profile.js";
+import {
+  loadProfile,
+  migrateJsonProfile,
+  updateProfile,
+} from "../lib/profile.js";
 import { resolveResourcePath } from "./resources.js";
 import {
   articlePaths,
@@ -100,7 +104,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_read_resource",
     label: "Academic Writer Resource",
     description:
-      "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-helper/thresholds.json first (the project override created by init/setup) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
+      "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-writer/thresholds.json first (the project override created by init/setup) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
     parameters: Type.Object({
       name: Type.String({
         description:
@@ -200,22 +204,43 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "academic_writer_migrate_profile",
+    label: "Academic Writer Migrate Profile",
+    description:
+      "One-time migration from .academic-writer/profile.json to .academic-writer/profile.md. Use during init/setup preflight before checking for an existing profile.",
+    parameters: Type.Object({}),
+    execute: async (_id, _params, _signal, _onUpdate, ctx) => {
+      const migration = migrateJsonProfile(ctx.cwd);
+      if (!migration.ok) {
+        return textResult(
+          `Profile migration failed: ${migration.error}`,
+          migration,
+        );
+      }
+      const text = migration.migrated
+        ? "Migrated JSON Academic Writer profile"
+        : `Profile migration skipped: ${migration.reason}`;
+      return textResult(text, migration);
+    },
+  });
+
+  pi.registerTool({
     name: "academic_writer_get_profile",
     label: "Academic Writer Get Profile",
     description:
-      "Read and parse .academic-helper/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
+      "Read and parse .academic-writer/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
     parameters: Type.Object({}),
     execute: async (_id, _params, _signal, _onUpdate, ctx) => {
       const profile = loadProfile(ctx.cwd);
       if (!profile) {
         return textResult("Academic Writer profile missing", {
           ok: false,
-          path: ".academic-helper/profile.md",
+          path: ".academic-writer/profile.md",
         });
       }
       return textResult(JSON.stringify(profile, null, 2), {
         ok: true,
-        path: ".academic-helper/profile.md",
+        path: ".academic-writer/profile.md",
         profile,
       });
     },
@@ -225,7 +250,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_update_profile",
     label: "Academic Writer Update Profile",
     description:
-      "Patch recognized .academic-helper/profile.md fields using a JSON object string. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
+      "Patch recognized .academic-writer/profile.md fields using a JSON object string. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
     parameters: Type.Object({
       fieldsJson: Type.String({
         minLength: 2,
@@ -249,13 +274,13 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           "Profile update failed: profile missing or unreadable",
           {
             ok: false,
-            path: ".academic-helper/profile.md",
+            path: ".academic-writer/profile.md",
           },
         );
       }
       return textResult("Profile updated", {
         ok: true,
-        path: ".academic-helper/profile.md",
+        path: ".academic-writer/profile.md",
         profile,
       });
     },
@@ -336,12 +361,12 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       style: Type.String({
         minLength: 1,
         description:
-          "CSL alias/id/path, e.g. apa, mla, chicago, nature, or .academic-helper/csl/custom.csl.",
+          "CSL alias/id/path, e.g. apa, mla, chicago, nature, or .academic-writer/csl/custom.csl.",
       }),
       download: Type.Optional(
         Type.Boolean({
           description:
-            "Download missing repository style ids into .academic-helper/csl/.",
+            "Download missing repository style ids into .academic-writer/csl/.",
         }),
       ),
     }),

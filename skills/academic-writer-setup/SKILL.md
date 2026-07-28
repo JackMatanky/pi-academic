@@ -1,7 +1,7 @@
 ---
 name: academic-writer-setup
 description: "First-time setup for Academic Writer — creates researcher profile, detects integrations, analyzes writing style from past articles. Use for a quick onboarding (faster than init); does not include source indexing."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_get_profile academic_writer_list_project_files
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -16,55 +16,11 @@ Quick onboarding wizard. Creates the researcher profile, detects integrations, a
 Run silently before anything else:
 
 ```bash
-mkdir -p past-articles .academic-helper .academic-helper/logs
-# If .academic-helper/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-helper/thresholds.json.
+mkdir -p past-articles .academic-writer .academic-writer/logs
+# If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
 ```
 
-Migrate any legacy profile from `.academic-writer/profile.json` → `.academic-helper/profile.md`:
-
-```bash
-python3 << 'PYTHON'
-import os, json, re
-from datetime import datetime
-
-old_path = '.academic-writer/profile.json'
-new_path = '.academic-helper/profile.md'
-if os.path.exists(old_path) and not os.path.exists(new_path):
-    with open(old_path) as f:
-        p = json.load(f)
-    scalar_keys = ['fieldOfStudy', 'citationStyle', 'targetLanguage', 'updatedAt', 'createdAt']
-    list_keys = ['abstractLanguages', 'analyzedArticles']
-    json_sections = [
-        ('tools', 'Tools'), ('outputFormatPreferences', 'Output Format Preferences'),
-        ('styleFingerprint', 'Style Fingerprint'), ('articleStructure', 'Article Structure'),
-        ('sources', 'Sources'),
-    ]
-    lines = ['# Academic Writer Profile', '', '---']
-    for k in scalar_keys:
-        if k in p and p[k] is not None:
-            lines.append(f'{k}: {p[k]}')
-    for k in list_keys:
-        v = p.get(k) or []
-        if not v:
-            lines.append(f'{k}: []')
-        else:
-            lines.append(f'{k}:')
-            for item in v:
-                lines.append(f'  - {item}')
-    lines.append('---')
-    lines.append('')
-    for k, heading in json_sections:
-        if k in p and p[k] is not None:
-            lines.extend([f'## {heading}', '', '```json',
-                          json.dumps(p[k], indent=2, ensure_ascii=False), '```', ''])
-    os.makedirs('.academic-helper', exist_ok=True)
-    with open(new_path, 'w') as f:
-        f.write('\n'.join(lines))
-    print(f"Migrated profile to {new_path}")
-PYTHON
-```
-
-Check for existing profile by calling `academic_writer_get_profile`.
+Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
 
 If it returns `ok: true`, load and show current settings, then:
 
@@ -163,7 +119,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 > 4. **Custom CSL file** — path to a `.csl` file you provide.
 >    ```
->    Example: .academic-helper/csl/my-journal.csl
+>    Example: .academic-writer/csl/my-journal.csl
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
@@ -254,7 +210,7 @@ If "Yes": analyze across all 25 dimensions (sentence level, vocabulary, paragrap
 
 ## Phase 4: Save Profile
 
-Use the Write tool to create `.academic-helper/profile.md`:
+Use the Write tool to create `.academic-writer/profile.md`:
 
 ```markdown
 # Academic Writer Profile

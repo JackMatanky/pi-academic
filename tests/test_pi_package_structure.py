@@ -293,6 +293,7 @@ class TestExtensions(unittest.TestCase):
             "academic_writer_fix_typography",
             "academic_writer_status",
             "academic_writer_audit_citations",
+            "academic_writer_migrate_profile",
         ]:
             self.assertIn(name, tools)
 
@@ -324,13 +325,13 @@ class TestExtensions(unittest.TestCase):
 
     def test_thresholds_resource_honors_project_override(self):
         """academic_writer_read_resource(name: thresholds) must prefer the
-        project's .academic-helper/thresholds.json (created by init/setup)
+        project's .academic-writer/thresholds.json (created by init/setup)
         over the packaged default — otherwise editing the per-project copy
         silently does nothing."""
         resources_source = _read("extensions/pi-academic-writer/resources.ts")
         tools_source = _read("extensions/pi-academic-writer/index.ts")
         self.assertIn("projectOverride", resources_source)
-        self.assertIn('".academic-helper"', resources_source)
+        self.assertIn('".academic-writer"', resources_source)
         self.assertIn('"thresholds.json"', resources_source)
         self.assertIn(
             "resolveResourcePath(name, ctx.cwd, params.language)",
@@ -371,6 +372,41 @@ class TestExtensions(unittest.TestCase):
             content = _read(skill)
             self.assertIn("academic_writer_audit_citations", content, skill)
             self.assertIn("run_state_contract", content, skill)
+
+    def test_profile_migration_is_tool_backed(self):
+        tools = _read("extensions/pi-academic-writer/index.ts")
+        profile = _read("extensions/lib/profile.ts")
+        schema = _read("skills/academic-writer-init/references/profile-schema.md")
+        init = _read("skills/academic-writer-init/SKILL.md")
+        setup = _read("skills/academic-writer-setup/SKILL.md")
+        self.assertIn("migrateJsonProfile", profile)
+        self.assertIn("academic_writer_migrate_profile", tools)
+        self.assertIn("academic_writer_migrate_profile", init)
+        self.assertIn("academic_writer_migrate_profile", setup)
+        self.assertNotIn("python3 << 'PYTHON'", schema)
+        self.assertNotIn("python3 << 'PYTHON'", setup)
+
+    def test_no_academic_helper_references(self):
+        for root, _, files in os.walk("."):
+            if any(
+                part in {".git", "node_modules", ".venv"}
+                or part.startswith(".aw-runtime")
+                for part in root.split(os.sep)
+            ):
+                continue
+            for file in files:
+                path = os.path.join(root, file)
+                if (
+                    file == ".prettierignore"
+                    or file == ".gitignore"
+                    or file.endswith(
+                        (".md", ".ts", ".py", ".json", ".yml", ".yaml", ".toml")
+                    )
+                ):
+                    self.assertNotIn("academic" + "-helper", _read(path), path)
+                    self.assertIsNone(
+                        re.search("leg" + "acy", _read(path), re.IGNORECASE), path
+                    )
 
 
 class TestMcpWiring(unittest.TestCase):
@@ -515,7 +551,7 @@ class TestNoCandlekeepReferences(unittest.TestCase):
             re.IGNORECASE,
         )
         # The one-time profile-schema migration (init/SKILL.md) legitimately names
-        # the legacy `candlekeep` JSON key it migrates away from — but ONLY that
+        # the old `candlekeep` JSON key it migrates away from — but ONLY that
         # exact, known-good sentence is exempt, and only up to its own known
         # occurrence count. A blanket "candlekeep somewhere in the file -> ignore
         # every candlekeep match in the file" exemption previously masked real

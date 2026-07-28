@@ -1,7 +1,7 @@
 ---
 name: academic-writer-init
 description: "First-time setup for the Academic Writer. Configures researcher profile, analyzes writing style from past articles, and indexes research sources. Use on first install or when redoing onboarding from scratch."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -26,15 +26,15 @@ Personalized onboarding that creates your researcher profile, detects available 
 Run silently before saying anything:
 
 ```bash
-mkdir -p past-articles .academic-helper .academic-helper/logs
-# If .academic-helper/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-helper/thresholds.json.
+mkdir -p past-articles .academic-writer .academic-writer/logs
+# If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
 ```
 
-If `.academic-helper/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
+If `.academic-writer/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
 
-Profile schema, file format, and legacy migration script: see `references/profile-schema.md`.
+Profile schema and file format: see `references/profile-schema.md`.
 
-Check for existing profile by calling `academic_writer_get_profile`.
+Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
 
 **If it returns `ok: true`**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "You already have an Academic Writer profile. What would you like to do?"
@@ -65,7 +65,7 @@ Then greet the user:
 >
 > Your workspace folders are ready:
 > - **`past-articles/`** — drop 5–10 of your published papers here (PDF or DOCX) so I can learn your writing style
-> - `.academic-helper/` — your profile (auto-managed)
+> - `.academic-writer/` — your profile (auto-managed)
 >
 > Let's start."
 
@@ -171,14 +171,14 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      nature
 >      modern-humanities-research-association
 >
->    Academic Writer downloads/caches the .csl file to .academic-helper/csl/
+>    Academic Writer downloads/caches the .csl file to .academic-writer/csl/
 >    ```
 > 4. **Custom CSL file** — Use a `.csl` file you provide.
 >    ```
 >    Custom CSL
 >    ──────────
 >    Example paths:
->      .academic-helper/csl/my-journal.csl
+>      .academic-writer/csl/my-journal.csl
 >      /Users/me/styles/my-journal.csl
 >
 >    Best for: journal-specific or edited CSL files.
@@ -350,7 +350,7 @@ After enrichment, re-list and build the sources array (id + title + type only �
 
 ## Phase 4: Save Profile + Register Workflows
 
-Use the Write tool to save `.academic-helper/profile.md`:
+Use the Write tool to save `.academic-writer/profile.md`:
 
 ```markdown
 # Academic Writer Profile
@@ -422,7 +422,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 > 3. **I'm done for now** — Profile saved. Run /skill:academic-writer-write anytime to start writing.
 >    ```
 >    Profile saved to:
->      .academic-helper/profile.md
+>      .academic-writer/profile.md
 >
 >    Key commands:
 >      /skill:academic-writer-write         ← write an article

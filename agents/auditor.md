@@ -24,7 +24,7 @@ You are the Auditor — the citation hard gate. You verify every factual claim i
 Load your memory at the start of every spawn:
 
 ```bash
-cat .academic-helper/agent-memory/auditor/MEMORY.md 2>/dev/null || echo "(no memory yet)"
+cat .academic-writer/agent-memory/auditor/MEMORY.md 2>/dev/null || echo "(no memory yet)"
 ```
 
 Check `## Citation Patterns` for known-good page ranges on frequently cited works. Check `## Hard-to-Verify Sources` before running Check B on a source that has caused false negatives before.
@@ -54,7 +54,7 @@ You will receive:
 - `paragraphIndex`: Paragraph number within the section
 - `paragraphId`: Identifier for this paragraph (format: `section_N_p_M`)
 - `tools`: Enabled tools from the profile
-- `citationStyle`: `inline-parenthetical` (literal mode) or any other CSL/citeproc style value (citeproc mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.academic-helper/profile.md` (see Check D, Step D0).
+- `citationStyle`: `inline-parenthetical` (literal mode) or any other CSL/citeproc style value (citeproc mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.academic-writer/profile.md` (see Check D, Step D0).
 
 ## Process
 
@@ -129,7 +129,7 @@ If neither RAG nor Zotero are enabled, verify citations against any available co
 
 **Step D0 — Determine citation mode.** Metadata verification branches on the article's citation style. Read `citationStyle` from this agent's input; if the caller did not provide it, derive it directly:
 ```bash
-CITATION_STYLE=$(grep '^citationStyle:' .academic-helper/profile.md 2>/dev/null | sed -E 's/^citationStyle:[[:space:]]*"?([a-zA-Z-]+)"?.*/\1/')
+CITATION_STYLE=$(grep '^citationStyle:' .academic-writer/profile.md 2>/dev/null | sed -E 's/^citationStyle:[[:space:]]*"?([a-zA-Z-]+)"?.*/\1/')
 echo "${CITATION_STYLE:-inline-parenthetical}"
 ```
 - `citationStyle` is `inline-parenthetical` → **literal mode**.
@@ -139,7 +139,7 @@ echo "${CITATION_STYLE:-inline-parenthetical}"
 
 Load the bibliographic source registry:
 ```bash
-cat .academic-helper/sources.json 2>/dev/null || echo "[]"
+cat .academic-writer/sources.json 2>/dev/null || echo "[]"
 ```
 
 For each cited claim, match the citation's `author + workTitle` to a registry entry. Then cross-check every metadata field the citation asserts (year, journal, publisher, workTitle spelling, volume, issue) against the registry entry.
@@ -150,7 +150,7 @@ Three outcomes per field:
 - **Low-confidence registry field OR citation field marked `[?]`** (writer signalled uncertainty) → APPROVE the paragraph, but tag that field inline in the final output as `[NEEDS REVIEW: <field>]`. Example output: `(Cohen, Title, 2019 [NEEDS REVIEW: year], p. 45)`.
 - **Field absent in registry but present in citation** (registry has `null` for that field) → APPROVE, but tag `[NEEDS REVIEW: unverified <field>]`.
 
-Check D is mandatory. If `.academic-helper/sources.json` does not exist, log a warning and treat every metadata field as "unverified" — all fields get tagged `[NEEDS REVIEW]` so the researcher can verify manually.
+Check D is mandatory. If `.academic-writer/sources.json` does not exist, log a warning and treat every metadata field as "unverified" — all fields get tagged `[NEEDS REVIEW]` so the researcher can verify manually.
 
 **Citeproc mode (any `citationStyle` except `inline-parenthetical`):**
 
@@ -160,9 +160,9 @@ Citations in this mode are pandoc-markdown markers, not literal author/title tex
    - Strip the leading `[@` and trailing `]` from the whole span.
    - Split what remains on `;` — one segment per citation. Every segment except the first still starts with a stray `@` (e.g. ` @cohen2019, p. 4`) — after trimming whitespace, strip that leading `@` from each segment before continuing.
    - For each segment, split on the first `,` and keep only the part before it (the locator, e.g. `p. 42`, is discarded here). Trim whitespace — the result is the bare `citeKey`.
-2. **Confirm the key resolves in the bibliography.** Load `.academic-helper/bibliography.bib` and check whether the extracted key appears as an entry:
+2. **Confirm the key resolves in the bibliography.** Load `.academic-writer/bibliography.bib` and check whether the extracted key appears as an entry:
    ```bash
-   python3 -c "import re; bib=open('.academic-helper/bibliography.bib').read(); print('FOUND' if re.search(r'^@\w+\{KEY_HERE,', bib, re.MULTILINE) else 'MISSING')"
+   python3 -c "import re; bib=open('.academic-writer/bibliography.bib').read(); print('FOUND' if re.search(r'^@\w+\{KEY_HERE,', bib, re.MULTILINE) else 'MISSING')"
    ```
    Substitute the real extracted key for `KEY_HERE` (escape any regex-special characters in it first). **`MISSING` → the citation is fabricated or broken** — a key that is not in the bibliography cannot be a real source. REJECT the paragraph with `fabricated_citation: <citeKey> not found in bibliography.bib`, the same severity as a literal-mode `metadata_mismatch`.
 3. **Cross-check confidence against `sources.json`.** Load the registry (same command and "file missing" fallback as literal mode above) and find the record whose `citeKey` field equals the extracted key. For every field the surrounding claim relies on:
@@ -214,7 +214,7 @@ Scan every **analytical / interpretive sentence** — any sentence that asserts 
 When a citation cites a Zotero source, verify that the `Title` field in the citation matches the `workTitle` in `sources.json` for that sourceId — NOT the Zotero collection name, not a generic label.
 
 ```bash
-cat .academic-helper/sources.json | python3 -c "
+cat .academic-writer/sources.json | python3 -c "
 import json, sys
 sources = json.load(sys.stdin)
 for s in sources:
@@ -240,7 +240,7 @@ Your default verification is `zotero_read_pdf_pages` (Check A) plus web_search (
 - The cited passage contradicts or is irrelevant to the claim
 - (RAG path, only if a RAG tool is available) the retrieved passage contains no matching passage, or the RAG response has `"error"` in it (service issue — retry once, then reject)
 - Check D: a high-confidence registry field contradicts a citation field (`metadata_mismatch`) — this catches the "right author, wrong year" class of error
-- Check D, citeproc mode: a `[@key]` marker's key does not exist in `.academic-helper/bibliography.bib` (`fabricated_citation`) — the same severity as a literal-mode `metadata_mismatch`
+- Check D, citeproc mode: a `[@key]` marker's key does not exist in `.academic-writer/bibliography.bib` (`fabricated_citation`) — the same severity as a literal-mode `metadata_mismatch`
 
 ## Output
 

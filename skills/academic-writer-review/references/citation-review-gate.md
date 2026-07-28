@@ -11,6 +11,6 @@ Interpretation:
 - `ok: true` means the mechanical citation layer is sound enough for semantic review.
 - `ok: false` is a hard gate for final output. Report the missing keys or wrong-mode markers and do not continue to DOCX/export until fixed.
 - In `inline-parenthetical` mode, any Pandoc marker (`[@key]`) is a wrong-mode failure.
-- In citeproc mode, every `[@citeKey]` marker must exist in `.academic-helper/sources.json` and `.academic-helper/bibliography.bib`.
+- In citeproc mode, every `[@citeKey]` marker must exist in `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
 
 This gate does not replace the auditor agent's semantic source/claim verification. It only catches broken syntax, invented cite keys, and bibliography drift.

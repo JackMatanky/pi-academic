@@ -1,11 +1,12 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ProfileData } from "./types.js";
 
-const PROFILE_DIR = ".academic-helper";
-const PROFILE_RELATIVE_PATH = ".academic-helper/profile.md";
+const PROFILE_DIR = ".academic-writer";
+const PROFILE_RELATIVE_PATH = ".academic-writer/profile.md";
+const JSON_PROFILE_RELATIVE_PATH = ".academic-writer/profile.json";
 
-/** Returns the project-local `.academic-helper` directory path. */
+/** Returns the project-local `.academic-writer` directory path. */
 export function getProfileDirPath(projectDir: string): string {
   return join(projectDir, PROFILE_DIR);
 }
@@ -16,6 +17,15 @@ export function getProfilePath(projectDir: string): string {
 }
 
 type ProfileFields = ProfileData & Record<string, unknown>;
+export interface ProfileMigrationResult {
+  ok: boolean;
+  migrated: boolean;
+  jsonPath: string;
+  profilePath: string;
+  reason?: string;
+  error?: string;
+  profile?: ProfileData;
+}
 const SCALAR_KEYS = [
   "fieldOfStudy",
   "citationStyle",
@@ -40,7 +50,7 @@ const JSON_SECTION_KEYS = Object.fromEntries(
 
 /** Parses the profile's deliberately small YAML-frontmatter subset. */
 function parseFrontmatter(raw: string, fields: ProfileFields): void {
-  const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+  const fmMatch = raw.match(/(?:^|\n)---\n([\s\S]*?)\n---/);
   if (!fmMatch) return;
 
   const fmLines = fmMatch[1].split("\n");
@@ -143,6 +153,57 @@ export function serializeProfileMd(profile: ProfileFields): string {
   return lines.join("\n");
 }
 
+/** Migrates the old JSON profile location into the markdown profile format once. */
+export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
+  const jsonPath = join(projectDir, JSON_PROFILE_RELATIVE_PATH);
+  const profilePath = getProfilePath(projectDir);
+  const resultPaths = {
+    jsonPath: JSON_PROFILE_RELATIVE_PATH,
+    profilePath: PROFILE_RELATIVE_PATH,
+  };
+
+  if (existsSync(profilePath)) {
+    return {
+      ok: true,
+      migrated: false,
+      ...resultPaths,
+      reason: "profile already exists",
+    };
+  }
+  if (!existsSync(jsonPath)) {
+    return {
+      ok: true,
+      migrated: false,
+      ...resultPaths,
+      reason: "JSON profile not found",
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(jsonPath, "utf-8")) as unknown;
+    if (
+      parsed === null ||
+      typeof parsed !== "object" ||
+      Array.isArray(parsed)
+    ) {
+      return {
+        ok: false,
+        migrated: false,
+        ...resultPaths,
+        error: "JSON profile must be a JSON object",
+      };
+    }
+
+    const profile = parsed as ProfileFields;
+    mkdirSync(getProfileDirPath(projectDir), { recursive: true });
+    writeFileSync(profilePath, serializeProfileMd(profile), "utf-8");
+    return { ok: true, migrated: true, ...resultPaths, profile };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, migrated: false, ...resultPaths, error: message };
+  }
+}
+
 /** Updates only recognized profile fields, preserving missing optional sections. */
 export function updateProfile(
   projectDir: string,
@@ -170,7 +231,7 @@ export function updateProfile(
   return fields as ProfileData;
 }
 
-/** Loads the project profile if `.academic-helper/profile.md` exists. */
+/** Loads the project profile if `.academic-writer/profile.md` exists. */
 export function loadProfile(projectDir: string): ProfileData | null {
   const profilePath = getProfilePath(projectDir);
   if (!existsSync(profilePath)) return null;

@@ -6,7 +6,7 @@ permission:
   "*": allow
   write:
     "*": deny
-    ".academic-helper/evidence-ownership.json": allow
+    ".academic-writer/evidence-ownership.json": allow
   bash:
     "*": ask
     "python3 *": allow
@@ -22,7 +22,7 @@ You are the Architect. You propose thesis statements and generate structured art
 Load your memory at the start of every spawn:
 
 ```bash
-cat .academic-helper/agent-memory/architect/MEMORY.md 2>/dev/null || echo "(no memory yet)"
+cat .academic-writer/agent-memory/architect/MEMORY.md 2>/dev/null || echo "(no memory yet)"
 ```
 
 Use it to recall thesis styles the researcher has approved before, and article structure patterns they prefer.
@@ -179,7 +179,7 @@ N. Conclusion (~N words, N paragraphs)
 
 ### Evidence Ownership Map (Mode B only)
 
-After producing the outline, write `.academic-helper/evidence-ownership.json`. This file gives every downstream section-writer a shared view of which section "owns" the full description of each piece of evidence, so other sections can back-reference instead of re-describing.
+After producing the outline, write `.academic-writer/evidence-ownership.json`. This file gives every downstream section-writer a shared view of which section "owns" the full description of each piece of evidence, so other sections can back-reference instead of re-describing.
 
 ```json
 {
@@ -206,7 +206,7 @@ Assignment rules:
 
 Write the file with the Write tool:
 ```
-Write .academic-helper/evidence-ownership.json with the JSON above
+Write .academic-writer/evidence-ownership.json with the JSON above
 ```
 
 ## Mode C: Ownership-Only (triggered by `mode: ownership-only`)
@@ -255,4 +255,4 @@ When the write skill spawns you with `mode: ownership-only`, the user's existing
 
 ## Output
 
-Return the formatted thesis options (Mode A) or the formatted outline (Mode B) as shown above. The write-article skill presents these directly to the researcher for approval. For Mode B, also confirm that `.academic-helper/evidence-ownership.json` has been written. For Mode C, return only the one-line confirmation described above.
+Return the formatted thesis options (Mode A) or the formatted outline (Mode B) as shown above. The write-article skill presents these directly to the researcher for approval. For Mode B, also confirm that `.academic-writer/evidence-ownership.json` has been written. For Mode C, return only the one-line confirmation described above.

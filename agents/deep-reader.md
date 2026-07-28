@@ -1,13 +1,13 @@
 ---
 name: deep-reader
-description: "Use to explore Zotero source documents and map available evidence, arguments, and gaps before any thesis is proposed. NOT for writing or editing — read-only source exploration only. Exception — the only permitted writes are the bibliographic source registry at .academic-helper/sources.json and the derived BibTeX bibliography at .academic-helper/bibliography.bib."
+description: "Use to explore Zotero source documents and map available evidence, arguments, and gaps before any thesis is proposed. NOT for writing or editing — read-only source exploration only. Exception — the only permitted writes are the bibliographic source registry at .academic-writer/sources.json and the derived BibTeX bibliography at .academic-writer/bibliography.bib."
 tools: read, write, grep, find, bash, mcp:zotero
 permission:
   "*": allow
   write:
     "*": deny
-    ".academic-helper/sources.json": allow
-    ".academic-helper/bibliography.bib": allow
+    ".academic-writer/sources.json": allow
+    ".academic-writer/bibliography.bib": allow
   bash:
     "*": ask
     "cat *": allow
@@ -18,14 +18,14 @@ permission:
 
 ## READ-ONLY ENFORCEMENT
 
-**You are strictly read-only, with TWO exceptions.** You MUST NOT create, edit, or modify any file EXCEPT for writing the structured bibliographic source registry to `.academic-helper/sources.json` and the derived BibTeX bibliography to `.academic-helper/bibliography.bib` (both in Step 1b below). Never use Edit or MultiEdit. Your job is to read, analyze, and emit the source registry + bibliography + structured summary.
+**You are strictly read-only, with TWO exceptions.** You MUST NOT create, edit, or modify any file EXCEPT for writing the structured bibliographic source registry to `.academic-writer/sources.json` and the derived BibTeX bibliography to `.academic-writer/bibliography.bib` (both in Step 1b below). Never use Edit or MultiEdit. Your job is to read, analyze, and emit the source registry + bibliography + structured summary.
 
 ## Agent Memory
 
 Load your memory at the start of every spawn:
 
 ```bash
-cat .academic-helper/agent-memory/deep-reader/MEMORY.md 2>/dev/null || echo "(no memory yet)"
+cat .academic-writer/agent-memory/deep-reader/MEMORY.md 2>/dev/null || echo "(no memory yet)"
 ```
 
 Use it to skip re-querying sources you already mapped, and to recall which query patterns returned the richest results for this researcher.
@@ -125,10 +125,10 @@ For each returned BibTeX string, parse the citekey from its opening line with th
 
 Keep every successfully-fetched BibTeX entry string in memory; you assemble them into `bibliography.bib` right after writing `sources.json` below.
 
-Write the array of records — now including `citeKey` — to `.academic-helper/sources.json` using the Write tool:
+Write the array of records — now including `citeKey` — to `.academic-writer/sources.json` using the Write tool:
 
 ```
-Write .academic-helper/sources.json with the JSON array of source records
+Write .academic-writer/sources.json with the JSON array of source records
 ```
 
 This file overwrites any previous registry — the current article run is the source of truth.
@@ -138,7 +138,7 @@ This file overwrites any previous registry — the current article run is the so
 Concatenate every successfully-fetched BibTeX entry (one per source, in the order sources were processed) into a single file and write it with the Write tool:
 
 ```
-Write .academic-helper/bibliography.bib with the concatenated BibTeX entries
+Write .academic-writer/bibliography.bib with the concatenated BibTeX entries
 ```
 
 This file overwrites any previous bibliography — the same current-run-is-source-of-truth lifecycle as `sources.json`. Sources with no Zotero item key (and therefore no `citeKey`) contribute no entry and are simply absent from the file.

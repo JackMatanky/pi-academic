@@ -1,10 +1,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const RUNS_RELATIVE_DIR = ".academic-helper/runs";
+const RUNS_RELATIVE_DIR = ".academic-writer/runs";
 const ACTIVE_STATUSES = new Set(["planned", "running", "blocked"]);
 
-/** Project run metadata stored in `.academic-helper/runs/<run-id>.json`. */
+/** Project run metadata stored in `.academic-writer/runs/<run-id>.json`. */
 export interface RunInfo {
   runId: string;
   status: string;

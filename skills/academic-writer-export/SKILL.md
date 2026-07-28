@@ -25,7 +25,7 @@ If `commands.pandoc` is false, stop immediately — do not attempt any conversio
 
 Call `academic_writer_get_profile`. If it returns `ok: false`, stop and tell the researcher to run `/skill:academic-writer-init` first.
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this export run. Use `phase: export`; update status to `complete`, `failed`, or `blocked` before stopping.
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-writer/runs/<run-id>.json` for this export run. Use `phase: export`; update status to `complete`, `failed`, or `blocked` before stopping.
 
 Call `academic_writer_read_resource` with `name: citation_export_contract`; export must follow that contract.
 

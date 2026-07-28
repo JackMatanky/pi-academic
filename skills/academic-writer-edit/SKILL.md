@@ -23,7 +23,7 @@ If it returns `ok: false`: "Run `/skill:academic-writer-init` first."
 
 **Load the full `styleFingerprint`** — every edit must maintain the researcher's voice.
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-helper/` here if the profile was missing — `init`/`setup` own first creation.
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-writer/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-writer/` here if the profile was missing — `init`/`setup` own first creation.
 
 Print fingerprint summary to confirm it's loaded.
 
@@ -45,15 +45,15 @@ Parse the article into sections and paragraphs. Identify all footnotes/citations
 
 ## Load the Source Registry (citation-verification prerequisite)
 
-The auditor's Check D verifies every citation field (year, journal, publisher, title spelling) against `.academic-helper/sources.json`. The edit pipeline depends on this registry being present and current for the article being edited.
+The auditor's Check D verifies every citation field (year, journal, publisher, title spelling) against `.academic-writer/sources.json`. The edit pipeline depends on this registry being present and current for the article being edited.
 
 ```bash
-cat .academic-helper/sources.json 2>/dev/null || echo "MISSING"
+cat .academic-writer/sources.json 2>/dev/null || echo "MISSING"
 ```
 
 - **If `sources.json` is missing**, or **if it does not represent this article's sources** (the works cited in the article's footnotes aren't in the registry — i.e., it's stale because the deep-reader overwrites it per write run), tell the researcher:
   > "I don't have a current source registry for this article, so citation verification (Check D) will be limited — I can only verify against RAG/Zotero reads, not against confirmed bibliographic metadata. Want me to re-run the deep-reader on this article's sources first so edits get full citation verification?"
-- If the researcher agrees, **use the `subagent` tool to spawn the `deep-reader` subagent** on this article's cited sources before proceeding, so it rewrites `.academic-helper/sources.json`.
+- If the researcher agrees, **use the `subagent` tool to spawn the `deep-reader` subagent** on this article's cited sources before proceeding, so it rewrites `.academic-writer/sources.json`.
 - If the researcher declines, proceed but warn that Check D will be skipped for any citation whose source isn't in the registry.
 
 ---

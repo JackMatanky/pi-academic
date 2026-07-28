@@ -51,7 +51,7 @@ One-time setup. You'll be asked for:
 - 5–10 past articles for style analysis (place them in `past-articles/`)
 - Which integrations to enable
 
-Your profile is saved to `.academic-helper/profile.md` and loaded automatically.
+Your profile is saved to `.academic-writer/profile.md` and loaded automatically.
 
 ### 4. Write Your First Article
 
@@ -127,9 +127,9 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
-**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and `.academic-helper/bibliography.bib` supplies the Zotero metadata. The package bundles APA/MLA/Chicago defaults, but you can also use any style id from [citation-style-language/styles](https://github.com/citation-style-language/styles) or a custom `.csl` file.
+**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and `.academic-writer/bibliography.bib` supplies the Zotero metadata. The package bundles APA/MLA/Chicago defaults, but you can also use any style id from [citation-style-language/styles](https://github.com/citation-style-language/styles) or a custom `.csl` file.
 
-**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-helper/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. A local Zotero setup can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
+**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. A local Zotero setup can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
 ```json
 {
@@ -157,7 +157,7 @@ your-research-folder/
 ├── articles/                   ← Output Markdown, DOCX, and exports
 ├── AUTHOR_VOICE.md             ← Distilled voice profile (git-tracked)
 ├── .voice/                     ← Voice-subsystem working state (fingerprint, interview transcripts, audit)
-└── .academic-helper/
+└── .academic-writer/
     ├── profile.md               ← Your profile (auto-created)
     ├── sources.json             ← Indexed source registry (includes citeKey for Zotero-backed sources)
     ├── bibliography.bib         ← BibTeX export of your Zotero sources for citeproc articles
@@ -243,7 +243,7 @@ The pi conversion depends on three community pi packages by [Nico Bailon](https:
 
 Source-library access is provided by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) (54yyyu), replacing the original Candlekeep integration.
 
-Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files. The package vendors three offline defaults from the [citation-style-language/styles](https://github.com/citation-style-language/styles) repository (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`), and `scripts/resolve-csl.py` can resolve custom `.csl` paths or download/cache additional repository style ids into `.academic-helper/csl/`.
+Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files. The package vendors three offline defaults from the [citation-style-language/styles](https://github.com/citation-style-language/styles) repository (`apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`), and `scripts/resolve-csl.py` can resolve custom `.csl` paths or download/cache additional repository style ids into `.academic-writer/csl/`.
 
 ---
 

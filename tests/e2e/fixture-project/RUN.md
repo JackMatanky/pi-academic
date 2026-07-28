@@ -7,7 +7,7 @@ Pinned inputs for a deterministic smoke test of the write pipeline.
 - **Subject:** תפיסת הזמן אצל אוגוסטינוס וההד שלה אצל ריקר
 - **Target language:** Hebrew
 - **Citation style:** inline-parenthetical
-- **Sources:** pre-seeded in `.academic-helper/sources.json` (skip deep-reader — sources already mapped)
+- **Sources:** pre-seeded in `.academic-writer/sources.json` (skip deep-reader — sources already mapped)
 - **Thesis:** see `evidence-ownership.json > thesisAnchor`
 - **Outline (3 sections):**
   1. מבוא — הצגת אפוריית הזמן והתזה (owner of `aug-confessions-bk11`)

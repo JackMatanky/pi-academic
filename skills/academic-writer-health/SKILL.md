@@ -144,7 +144,7 @@ Show a clean summary table:
 > | Component | Status | Details |
 > |-----------|--------|---------|
 > | Profile | ✓ OK / ✗ MISSING | Field: [field], Citation: [style], Sources: [N] |
-> | Style Fingerprint | ✓ Expanded / ⚠ Legacy / ✗ Missing | [N] dimensions |
+> | Style Fingerprint | ✓ Expanded / ⚠ Flat / ✗ Missing | [N] dimensions |
 > | Past Articles | ✓ [N] files / ✗ Empty | PDF: [n], DOCX: [n] |
 > | Zotero | ✓ Connected / ✗ Error / — Disabled | [N] items |
 > | NotebookLM | ✓ Connected / ✗ Not found / — Disabled | [N] notebooks |

@@ -29,16 +29,16 @@ class TestCitationAudit(unittest.TestCase):
     def test_citeproc_requires_sources_and_bibliography_keys(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / ".academic-helper").mkdir()
+            (root / ".academic-writer").mkdir()
             (root / "articles").mkdir()
             (root / "articles" / "ok.md").write_text(
                 "Text [@smith2020, p. 4].", encoding="utf-8"
             )
-            (root / ".academic-helper" / "sources.json").write_text(
+            (root / ".academic-writer" / "sources.json").write_text(
                 json.dumps([{"citeKey": "smith2020"}]),
                 encoding="utf-8",
             )
-            (root / ".academic-helper" / "bibliography.bib").write_text(
+            (root / ".academic-writer" / "bibliography.bib").write_text(
                 "@book{smith2020,\n  title={Book}\n}\n",
                 encoding="utf-8",
             )
@@ -51,13 +51,13 @@ class TestCitationAudit(unittest.TestCase):
     def test_citeproc_reports_missing_bib_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / ".academic-helper").mkdir()
+            (root / ".academic-writer").mkdir()
             (root / "article.md").write_text("Text [@missing2020].", encoding="utf-8")
-            (root / ".academic-helper" / "sources.json").write_text(
+            (root / ".academic-writer" / "sources.json").write_text(
                 json.dumps([{"citeKey": "missing2020"}]),
                 encoding="utf-8",
             )
-            (root / ".academic-helper" / "bibliography.bib").write_text(
+            (root / ".academic-writer" / "bibliography.bib").write_text(
                 "", encoding="utf-8"
             )
 
@@ -69,12 +69,12 @@ class TestCitationAudit(unittest.TestCase):
     def test_citeproc_reports_malformed_marker(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / ".academic-helper").mkdir()
+            (root / ".academic-writer").mkdir()
             (root / "article.md").write_text("Text [@].", encoding="utf-8")
-            (root / ".academic-helper" / "sources.json").write_text(
+            (root / ".academic-writer" / "sources.json").write_text(
                 "[]", encoding="utf-8"
             )
-            (root / ".academic-helper" / "bibliography.bib").write_text(
+            (root / ".academic-writer" / "bibliography.bib").write_text(
                 "", encoding="utf-8"
             )
 

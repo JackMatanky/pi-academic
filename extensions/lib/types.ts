@@ -1,4 +1,4 @@
-/** Parsed `.academic-helper/profile.md` data used by extensions and lifecycle hooks. */
+/** Parsed `.academic-writer/profile.md` data used by extensions and lifecycle hooks. */
 export interface ProfileData {
   fieldOfStudy?: string;
   citationStyle?: string;
@@ -29,11 +29,11 @@ export interface StyleFingerprint {
   citations?: Citations;
   rhetoricalPatterns?: RhetoricalPatterns;
   representativeExcerpts?: string[];
-  // Legacy flat format fields
+  // Flat format fields
   averageSentenceLength?: string;
   vocabularyComplexity?: string;
   passiveVoiceFrequency?: string;
-  paragraphStructure_legacy?: string;
+  paragraphStructureFlat?: string;
   citationDensity?: string;
   toneDescriptors?: string[];
   preferredTransitions?: string[];

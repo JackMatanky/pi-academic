@@ -36,7 +36,7 @@ function readJson(path: string): unknown | null {
   }
 }
 
-/** Counts sources from either the current array shape or a wrapped legacy shape. */
+/** Counts sources from either the current array shape or a wrapped object shape. */
 function countSources(value: unknown): number {
   if (Array.isArray(value)) return value.length;
   if (
@@ -69,17 +69,17 @@ function directoryState(
 
 /** Builds the project-local status object shown by the status tool. */
 export function buildStatus(projectRoot: string): AcademicWriterStatus {
-  const profile = fileState(projectRoot, ".academic-helper/profile.md");
+  const profile = fileState(projectRoot, ".academic-writer/profile.md");
   const voice = fileState(projectRoot, "AUTHOR_VOICE.md");
-  const sourcesPath = join(projectRoot, ".academic-helper", "sources.json");
+  const sourcesPath = join(projectRoot, ".academic-writer", "sources.json");
   const sources = {
     exists: existsSync(sourcesPath),
     count: countSources(readJson(sourcesPath)),
-    path: ".academic-helper/sources.json",
+    path: ".academic-writer/sources.json",
   };
   const bibliography = fileState(
     projectRoot,
-    ".academic-helper/bibliography.bib",
+    ".academic-writer/bibliography.bib",
   );
   const agentsDir = join(PACKAGE_ROOT, "agents");
   const agents = readdirSync(agentsDir)

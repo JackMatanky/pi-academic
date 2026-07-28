@@ -54,6 +54,7 @@ class TestExtensionRuntime(unittest.TestCase):
                 const signal = new AbortController().signal;
                 const call = (name, params = {{}}) => tools.get(name).execute("test", params, signal, undefined, ctx);
                 const status = await call("academic_writer_status");
+                const migration = await call("academic_writer_migrate_profile");
                 const health = await call("academic_writer_health");
                 const profile = await call("academic_writer_get_profile");
                 const updated = await call("academic_writer_update_profile", {{
@@ -70,6 +71,7 @@ class TestExtensionRuntime(unittest.TestCase):
                 console.log(JSON.stringify({{
                   names: [...tools.keys()].sort(),
                   status,
+                  migration,
                   health,
                   profile,
                   updated,
@@ -94,7 +96,7 @@ class TestExtensionRuntime(unittest.TestCase):
     def test_package_tools_run_against_project_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            helper = root / ".academic-helper"
+            helper = root / ".academic-writer"
             (helper / "runs").mkdir(parents=True)
             (root / "articles").mkdir()
             (helper / "profile.md").write_text(
@@ -125,11 +127,16 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertIn("academic_writer_status", data["names"])
         self.assertIn("academic_writer_read_resource", data["names"])
         self.assertIn("academic_writer_audit_citations", data["names"])
+        self.assertIn("academic_writer_migrate_profile", data["names"])
         self.assertTrue(data["status"]["details"]["ok"])
         self.assertEqual(data["status"]["details"]["sources"]["count"], 1)
         self.assertEqual(data["status"]["details"]["articles"]["count"], 1)
         self.assertEqual(data["status"]["details"]["runs"]["active"][0]["runId"], "r1")
         self.assertIn("auditor.md", data["status"]["details"]["agents"])
+        self.assertFalse(data["migration"]["details"]["migrated"])
+        self.assertEqual(
+            data["migration"]["details"]["reason"], "profile already exists"
+        )
         self.assertTrue(data["health"]["details"]["commands"].keys())
         self.assertEqual(
             data["profile"]["details"]["profile"]["fieldOfStudy"], "History"
@@ -148,6 +155,31 @@ class TestExtensionRuntime(unittest.TestCase):
         )
         self.assertTrue(data["audit"]["details"]["ok"])
         self.assertEqual(data["audit"]["details"]["citationKeys"], ["smith2020"])
+
+    def test_migrates_json_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / ".academic-writer"
+            profile_dir.mkdir()
+            (profile_dir / "profile.json").write_text(
+                json.dumps(
+                    {
+                        "fieldOfStudy": "Literature",
+                        "citationStyle": "apa",
+                        "abstractLanguages": ["English", "Hebrew"],
+                        "tools": {"zotero": {"enabled": True, "mode": "local"}},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            data = self.run_tools(root)
+
+        self.assertTrue(data["migration"]["details"]["ok"])
+        self.assertTrue(data["migration"]["details"]["migrated"])
+        self.assertEqual(
+            data["profile"]["details"]["profile"]["fieldOfStudy"], "Literature"
+        )
+        self.assertEqual(data["profile"]["details"]["profile"]["citationStyle"], "apa")
 
 
 if __name__ == "__main__":

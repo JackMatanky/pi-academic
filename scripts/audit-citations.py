@@ -101,8 +101,8 @@ def audit(
             )
         return details
 
-    sources_path = project_root / ".academic-helper" / "sources.json"
-    bibliography_path = project_root / ".academic-helper" / "bibliography.bib"
+    sources_path = project_root / ".academic-writer" / "sources.json"
+    bibliography_path = project_root / ".academic-writer" / "bibliography.bib"
 
     if not markers:
         details["warnings"].append("No Pandoc citeproc markers found")
@@ -119,7 +119,7 @@ def audit(
             return details
     else:
         details["ok"] = False
-        details["error"] = ".academic-helper/sources.json not found"
+        details["error"] = ".academic-writer/sources.json not found"
         return details
 
     bib_keys: set[str] = set()
@@ -129,7 +129,7 @@ def audit(
         )
     else:
         details["ok"] = False
-        details["error"] = ".academic-helper/bibliography.bib not found"
+        details["error"] = ".academic-writer/bibliography.bib not found"
         return details
 
     missing_sources = [key for key in keys if key not in source_keys]

@@ -79,7 +79,7 @@ export function articlePaths(subject: string): ArticlePaths {
     slug,
     markdown: `articles/${slug}.md`,
     docx: `articles/${slug}.docx`,
-    json: `.academic-helper/runs/${slug}.docx.json`,
+    json: `.academic-writer/runs/${slug}.docx.json`,
   };
 }
 

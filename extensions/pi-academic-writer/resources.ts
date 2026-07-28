@@ -21,7 +21,7 @@ export function resolveResourcePath(
     case "thresholds": {
       const projectOverride = join(
         projectRoot,
-        ".academic-helper",
+        ".academic-writer",
         "thresholds.json",
       );
       return existsSync(projectOverride)

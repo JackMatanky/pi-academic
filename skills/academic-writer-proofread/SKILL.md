@@ -142,4 +142,4 @@ If it was a clean pass (no applicable changes):
 - **Idea-flags are never auto-applied** — they live in the report for human decision.
 - **Citation-integrity guard is mandatory and deterministic:** any mechanical change that touches a citation/quotation/page/footnote token is **not applied** — it is downgraded to an idea-flag for human review. This guard verifies the proofreader's no-touch invariant; it does not re-audit citations and does not depend on `sources.json`.
 - **Every applied change is documented with a rationale** in the report. No silent edits — and a change that can't be localized is skipped and recorded, never forced.
-- **Don't create `.academic-helper/`** — all outputs land in `articles/`.
+- **Don't create `.academic-writer/`** — all outputs land in `articles/`.
