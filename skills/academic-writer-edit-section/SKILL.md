@@ -131,7 +131,7 @@ Show the revised section with a change summary:
 >
 > Would you like me to export the full updated article as .docx?
 
-**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): JSON schema → `academic_writer_generate_docx` for `inline-parenthetical` (unchanged), or `academic_writer_export_article` with `formats: ["docx"]` for citeproc mode using the resolved CSL file in the markdown frontmatter. This skill does not define its own export procedure — see those two skills for the resolver contract and exact commands.
+**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): JSON schema → `academic_writer_generate_docx` for `inline-parenthetical` (unchanged), or `academic_writer_export_article` with `formats: ["docx"]` and the resolved CSL path for citeproc mode. This skill does not define its own export procedure — see those two skills for the resolver contract and exact commands.
 
 ---
 

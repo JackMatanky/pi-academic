@@ -126,6 +126,23 @@ async function extractWithPython(
   return stdout.trim();
 }
 
+async function extractDocxWithPandoc(
+  path: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  if (!commandExists("pandoc")) return null;
+  try {
+    const { stdout } = await execFileAsync(
+      "pandoc",
+      ["-f", "docx+citations", "-t", "markdown", path],
+      { signal },
+    );
+    return stdout.trim();
+  } catch {
+    return null;
+  }
+}
+
 /** Extracts plain text from markdown/text/PDF/DOCX using package dev deps when needed. */
 export async function extractDocument(
   projectRoot: string,
@@ -142,6 +159,9 @@ export async function extractDocument(
       return { ok: true, path: relPath, text: readFileSync(path, "utf-8") };
     }
     if (ext === ".docx") {
+      const pandocText = await extractDocxWithPandoc(path, signal);
+      if (pandocText !== null)
+        return { ok: true, path: relPath, text: pandocText };
       const text = await extractWithPython(
         "import sys, docx; d=docx.Document(sys.argv[1]); print('\\n\\n'.join(p.text for p in d.paragraphs))",
         path,

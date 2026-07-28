@@ -166,13 +166,13 @@ After edits are applied:
 
 3. If exporting to .docx, call `academic_writer_read_resource` with `name: citation_export_contract`, then branch by `citationStyle` first:
 
-**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode. If the profile is unavailable/stale, call `academic_writer_extract_document` on the markdown and treat a leading `bibliography:` frontmatter key as citeproc mode.
+**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode. If the profile is unavailable/stale, call `academic_writer_extract_document` on the markdown and treat any `[@citeKey]` Pandoc marker as citeproc mode.
 
 **Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. If `ok` is false, stop, set the run state to `failed`, and report the exact missing/wrong-mode citation details.
 
 **`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `academic_writer_generate_docx`.
 
-**Citeproc mode:** rewrite `$MD_PATH` using the loaded `citation_export_contract`: prepend YAML frontmatter before the title heading, keep edited body `[@citeKey, p. N]` markers verbatim, resolve `RESOLVED_CSL_PATH` first with `academic_writer_resolve_csl`, then call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, and `formats: ["docx"]`.
+**Citeproc mode:** keep edited body `[@citeKey, p. N]` markers verbatim, resolve `RESOLVED_CSL_PATH` first with `academic_writer_resolve_csl`, then call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, `formats: ["docx"]`, and `csl: RESOLVED_CSL_PATH`. Do not add citeproc YAML frontmatter to `$MD_PATH`; the export tool passes bibliography and CSL directly to Pandoc.
 
 Same current limitation as write-article Step 9b: this path does not apply `generate-docx.py`'s Hebrew RTL post-processing. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 

@@ -1,7 +1,7 @@
 ---
 name: academic-writer-export
 description: "Convert a finished article to additional document formats (PDF, HTML, ODT, LaTeX, EPUB) via pandoc. Use when the researcher wants to convert a finished article to PDF, HTML, ODT, LaTeX, or EPUB — after /skill:academic-writer-write or /skill:academic-writer-edit has produced articles/<slug>.md."
-allowed-tools: bash read write find academic_writer_read_resource academic_writer_get_profile academic_writer_health academic_writer_list_project_files academic_writer_audit_citations academic_writer_export_article
+allowed-tools: bash read write find academic_writer_read_resource academic_writer_get_profile academic_writer_health academic_writer_list_project_files academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
@@ -69,11 +69,14 @@ Proceed with the other requested formats regardless (HTML/ODT/LaTeX/EPUB have no
 
 ## 4a. Deterministic citation audit and conversion
 
+If the active `citationStyle` is citeproc mode (anything except `inline-parenthetical`), resolve the CSL first with `academic_writer_resolve_csl`. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`; use `download: true`.
+
 Call `academic_writer_export_article` with:
 - `article: MD_PATH`
 - `citationStyle: citationStyle` from `academic_writer_get_profile` (`inline-parenthetical` if unavailable)
 - `formats: requested formats`, excluding PDF if no supported engine is installed
 - `pdfEngine: PDF_ENGINE` when PDF is included
+- `csl: RESOLVED_CSL_PATH` when citeproc mode is active
 
 `academic_writer_export_article` runs the deterministic citation audit first. If it returns `ok: false` because the audit failed, set the run state to `failed` and report the exact missing/wrong-mode citation details. If a single Pandoc format fails after a passing audit, report that format's error and keep any other successful outputs.
 

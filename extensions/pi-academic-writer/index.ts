@@ -462,6 +462,20 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       formats: Type.Array(Type.String({ minLength: 2 }), {
         description: "Formats: docx, html, odt, latex/tex, epub, pdf.",
       }),
+      csl: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description:
+            "Resolved CSL file path for citeproc exports. If omitted, Pandoc uses its default style.",
+        }),
+      ),
+      bibliography: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description:
+            "Bibliography file for citeproc exports. Defaults to .academic-writer/bibliography.bib.",
+        }),
+      ),
       pdfEngine: Type.Optional(
         Type.String({
           description: "Optional PDF engine: xelatex or tectonic.",
@@ -505,7 +519,14 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         for (const format of formats) {
           const output = exportOutputPath(article, format);
           const args = [article];
-          if (citeproc) args.push("--citeproc");
+          if (citeproc) {
+            args.push("--citeproc", "--fail-if-warnings");
+            args.push(
+              `--bibliography=${typeof params.bibliography === "string" ? params.bibliography : ".academic-writer/bibliography.bib"}`,
+            );
+            if (typeof params.csl === "string")
+              args.push(`--csl=${params.csl}`);
+          }
           if (format === "pdf" && typeof params.pdfEngine === "string") {
             args.push(`--pdf-engine=${params.pdfEngine}`);
           }

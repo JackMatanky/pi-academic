@@ -362,7 +362,7 @@ Write `$MD_PATH` first. The markdown must preserve the final synthesized article
 - paragraphs separated by blank lines
 - citations unchanged from the approved section-writer output
 
-For citeproc mode, resolve the CSL with `academic_writer_resolve_csl` before writing YAML frontmatter. For `inline-parenthetical`, write no YAML citeproc frontmatter.
+For citeproc mode, resolve the CSL with `academic_writer_resolve_csl` before DOCX/export. Do not write citeproc YAML frontmatter into the markdown; `academic_writer_export_article` passes bibliography and CSL directly to Pandoc.
 
 After writing `$MD_PATH`, call `academic_writer_audit_citations` with:
 - `article: MD_PATH`
@@ -380,7 +380,7 @@ Write the article data to a JSON file, then call `academic_writer_generate_docx`
 
 ##### Citeproc mode
 
-Call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, and `formats: ["docx"]`.
+Call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, `formats: ["docx"]`, and `csl: RESOLVED_CSL_PATH`.
 
 Warn Hebrew users that this path does not apply `generate-docx.py` Hebrew RTL post-processing unless their CSL/template handles it.
 

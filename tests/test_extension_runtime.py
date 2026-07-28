@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -37,7 +38,7 @@ class TestExtensionRuntime(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.build_root, ignore_errors=True)
 
-    def run_tools(self, project_root: Path):
+    def run_tools(self, project_root: Path, env=None):
         script = self.build_root / "runtime-smoke.mjs"
         extension_url = (
             self.build_root / "extensions" / "pi-academic-writer" / "index.js"
@@ -90,6 +91,43 @@ class TestExtensionRuntime(unittest.TestCase):
             check=True,
             capture_output=True,
             text=True,
+            env=env,
+        )
+        return json.loads(res.stdout)
+
+    def call_tool(self, project_root: Path, name: str, params: dict, env=None):
+        script = self.build_root / f"runtime-{name}.mjs"
+        extension_url = (
+            self.build_root / "extensions" / "pi-academic-writer" / "index.js"
+        ).as_uri()
+        script.write_text(
+            textwrap.dedent(
+                f"""
+                const mod = await import({json.dumps(extension_url)});
+                const tools = new Map();
+                mod.default({{
+                  registerTool(tool) {{ tools.set(tool.name, tool); }}
+                }});
+                const ctx = {{ cwd: process.argv[2] }};
+                const signal = new AbortController().signal;
+                const result = await tools.get({json.dumps(name)}).execute(
+                  "test",
+                  {json.dumps(params)},
+                  signal,
+                  undefined,
+                  ctx
+                );
+                console.log(JSON.stringify(result));
+                """
+            ),
+            encoding="utf-8",
+        )
+        res = subprocess.run(
+            ["node", str(script), str(project_root)],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
         )
         return json.loads(res.stdout)
 
@@ -155,6 +193,85 @@ class TestExtensionRuntime(unittest.TestCase):
         )
         self.assertTrue(data["audit"]["details"]["ok"])
         self.assertEqual(data["audit"]["details"]["citationKeys"], ["smith2020"])
+
+    def test_export_passes_citeproc_options_to_pandoc(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            helper = root / ".academic-writer"
+            helper.mkdir()
+            (root / "articles").mkdir()
+            (root / "articles" / "ok.md").write_text(
+                "Text [@smith2020].", encoding="utf-8"
+            )
+            (helper / "sources.json").write_text(
+                json.dumps([{"citeKey": "smith2020"}]), encoding="utf-8"
+            )
+            (helper / "bibliography.bib").write_text(
+                "@book{smith2020, title={Book}}\n", encoding="utf-8"
+            )
+            log = root / "pandoc.args"
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            pandoc = bin_dir / "pandoc"
+            pandoc.write_text(
+                '#!/bin/sh\nprintf \'%s\\n\' "$@" > "$PANDOC_LOG"\nexit 0\n',
+                encoding="utf-8",
+            )
+            pandoc.chmod(0o755)
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+                "PANDOC_LOG": str(log),
+            }
+
+            data = self.call_tool(
+                root,
+                "academic_writer_export_article",
+                {
+                    "article": "articles/ok.md",
+                    "citationStyle": "chicago",
+                    "formats": ["html"],
+                    "csl": "style.csl",
+                },
+                env,
+            )
+
+            args = log.read_text(encoding="utf-8").splitlines()
+            self.assertTrue(data["details"]["ok"])
+            self.assertIn("--citeproc", args)
+            self.assertIn("--fail-if-warnings", args)
+            self.assertIn("--bibliography=.academic-writer/bibliography.bib", args)
+            self.assertIn("--csl=style.csl", args)
+
+    def test_docx_extraction_prefers_pandoc_citations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "doc.docx").write_bytes(b"fake docx; pandoc stub handles it")
+            log = root / "pandoc.args"
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            pandoc = bin_dir / "pandoc"
+            pandoc.write_text(
+                "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$PANDOC_LOG\"\necho 'Text [@smith2020].'\n",
+                encoding="utf-8",
+            )
+            pandoc.chmod(0o755)
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+                "PANDOC_LOG": str(log),
+            }
+
+            data = self.call_tool(
+                root,
+                "academic_writer_extract_document",
+                {"path": "doc.docx"},
+                env,
+            )
+
+            args = log.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(data["content"][0]["text"], "Text [@smith2020].")
+            self.assertEqual(args[:4], ["-f", "docx+citations", "-t", "markdown"])
 
     def test_migrates_json_profile(self):
         with tempfile.TemporaryDirectory() as tmp:

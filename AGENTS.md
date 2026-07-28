@@ -98,7 +98,7 @@ The `write` and `edit` skills use a chained-with-gates pattern:
 3. Per-paragraph 8-skill pipeline (draft → 6 checks → citation audit hard gate).
 4. Synthesis pass + self-review scorecard.
 
-DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-parenthetical` still goes through the JSON-schema + `academic_writer_generate_docx` path (RTL/footnote handling); citeproc mode goes through `academic_writer_export_article` with `formats: ["docx"]`, relying on `bibliography:`/`csl:` YAML frontmatter written into the markdown by Step 9a. Resolve CSL paths with `academic_writer_resolve_csl`; don't hardcode a closed list beyond backward-compatible bundled aliases. The citeproc path does not apply Hebrew RTL post-processing — document that limitation when target language is Hebrew.
+DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-parenthetical` still goes through the JSON-schema + `academic_writer_generate_docx` path (RTL/footnote handling); citeproc mode goes through `academic_writer_export_article` with `formats: ["docx"]`, `bibliography: ".academic-writer/bibliography.bib"`, and a resolved `csl` path, so skills do not mutate article markdown with export-only YAML frontmatter. Resolve CSL paths with `academic_writer_resolve_csl`; don't hardcode a closed list beyond backward-compatible bundled aliases. The citeproc path does not apply Hebrew RTL post-processing — document that limitation when target language is Hebrew.
 
 
 ## Anti-patterns
