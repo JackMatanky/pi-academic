@@ -36,7 +36,7 @@ What makes it different:
 
 This walks you through:
 - Setting your **field of study** (e.g., History, Literature, Philosophy)
-- Choosing your **citation style** (Inline Parenthetical, bundled APA/MLA/Chicago, a CSL repository style id, or a custom `.csl` file)
+- Choosing your **citation style** (Inline Parenthetical, popular APA/MLA/Chicago aliases, a Zotero/CSL style id, URL, or a custom `.csl` file)
 - Analyzing your **writing style** from past articles (place 5–10 PDFs or DOCX files in `past-articles/`)
 - Connecting your **data tools** (all optional):
 
@@ -95,7 +95,7 @@ When you run `/skill:academic-writer-write`, you go through a conversational pip
    - **Repetition Check** — No repeated words, phrases, or arguments
    - **Citation Audit** — Every footnote verified against sources (hard gate)
 8. **Synthesis** — Final coherence review + full-article style compliance
-9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.academic-writer/bibliography.bib` (bundled APA/MLA/Chicago, CSL repository id, or custom `.csl`) — run `/skill:academic-writer-export` afterward for PDF/HTML/ODT/LaTeX/EPUB; PDF supports `xelatex` or `tectonic`
+9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.academic-writer/bibliography.bib` (popular alias, Zotero/CSL style id, URL, or custom `.csl`) — run `/skill:academic-writer-export` afterward for PDF/HTML/ODT/LaTeX/EPUB; PDF supports `xelatex` or `tectonic`
 
 ---
 

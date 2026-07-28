@@ -271,6 +271,15 @@ class TestExtensions(unittest.TestCase):
                     f"Missing export default function in {idx_path}",
                 )
 
+    def test_csl_styles_are_downloaded_not_bundled(self):
+        resolver = _read("scripts/resolve-csl.py")
+        self.assertIn("ZOTERO_STYLE_BASE", resolver)
+        self.assertIn("POPULAR_STYLES", resolver)
+        self.assertFalse(
+            os.path.exists("scripts/lib/csl"),
+            "CSL files should be downloaded into .academic-writer/csl/, not bundled in the package",
+        )
+
     def test_no_academic_writer_root_env_contract(self):
         """Package assets must be exposed through tools, not global bash env injection."""
         root_env = "ACADEMIC_WRITER" + "_ROOT"

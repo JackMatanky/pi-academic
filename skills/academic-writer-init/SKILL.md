@@ -116,7 +116,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ────────────
 >    Direction:  LTR
 >    Font:       Times New Roman 12pt
->    Citations:  Any CSL style (bundled APA/MLA/Chicago, CSL repository id, or custom .csl)
+>    Citations:  Any CSL style (popular alias, Zotero/CSL style id, URL, or custom .csl)
 >    ```
 > 3. **Other** — You'll specify the language name.
 >    ```
@@ -149,23 +149,31 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      ✓ Short citation format
 >      ✓ Dense citation density
 >    ```
-> 2. **Bundled citeproc style** — Use one of the packaged CSL defaults.
+> 2. **Popular citeproc style** — Pick a common style; Academic Writer downloads/caches it from Zotero/CSL on first use.
 >    ```
->    Bundled CSL
->    ───────────
->    Choices:
->      chicago  → Chicago notes + bibliography
->      mla      → Modern Language Association
->      apa      → American Psychological Association
+>    Popular CSL aliases
+>    ───────────────────
+>      apa                  → APA 7th edition
+>      mla                  → MLA 9th edition
+>      chicago              → Chicago 18 notes + bibliography
+>      chicago-author-date  → Chicago 18 author-date
+>      turabian             → Turabian notes + bibliography
+>      harvard              → Harvard Cite Them Right
+>      ieee                 → IEEE
+>      nature               → Nature
+>      vancouver            → Vancouver
+>      ama                  → American Medical Association
+>      apsa                 → American Political Science Association
+>      asa                  → American Sociological Association
+>      mhra                 → Modern Humanities Research Association
+>      elsevier-harvard     → Elsevier Harvard
 >
->    When to use:
->      ✓ You want standard English citation rendering
->      ✓ You want offline deterministic export
+>    If none match, choose option 3 or 4.
 >    ```
-> 3. **CSL repository style** — Use a style id from https://github.com/citation-style-language/styles.
+> 3. **Zotero/CSL repository style** — Use a style id from https://www.zotero.org/styles or https://github.com/citation-style-language/styles.
 >    ```
->    CSL Repository
->    ──────────────
+>    Zotero/CSL Repository
+>    ─────────────────────
 >    Example ids:
 >      chicago-author-date
 >      nature
@@ -187,13 +195,13 @@ Wait for their reply and match it against the options (accept the option number,
 
 Map selection:
 - Inline → `citationStyle: inline-parenthetical`
-- Bundled Chicago/MLA/APA → `citationStyle: chicago` / `mla` / `apa` (backward-compatible aliases)
-- CSL repository style → `citationStyle: STYLE_ID` (e.g. `nature`) and store the same value under `outputFormatPreferences.csl`
+- Popular alias → `citationStyle: STYLE_ALIAS` (e.g. `chicago`, `mla`, `apa`, `chicago-author-date`)
+- Zotero/CSL repository style → `citationStyle: STYLE_ID` (e.g. `nature`) and store the same value under `outputFormatPreferences.csl`
 - Custom CSL file → `citationStyle: custom-csl` and store the path under `outputFormatPreferences.cslPath`
 
 For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
-If validation fails, show the error and ask for a different bundled alias, style id, or `.csl` path. Do not continue with an unresolved CSL style.
+If validation fails, show the error and ask for a different alias, style id, URL, or `.csl` path. Do not continue with an unresolved CSL style.
 
 ---
 
@@ -378,7 +386,7 @@ updatedAt: ISO_TIMESTAMP
 ## Output Format Preferences
 
 ```json
-{ "csl": "optional CSL repository id or bundled alias", "cslPath": "optional custom .csl path" }
+{ "csl": "optional CSL style id or popular alias", "cslPath": "optional custom .csl path or URL" }
 ` ` `
 
 ## Style Fingerprint

@@ -82,7 +82,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ────────────
 >    Direction:  LTR
 >    Font:       Times New Roman 12pt
->    Citations:  Any CSL style (bundled APA/MLA/Chicago, CSL repository id, or custom .csl)
+>    Citations:  Any CSL style (popular alias, Zotero/CSL style id, URL, or custom .csl)
 >    ```
 > 3. **Other** — You'll type the language name in the next prompt.
 >    ```
@@ -101,24 +101,36 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 >    Example: (לוי, משנת הנפש, עמ' 42)
 >    ```
-> 2. **Bundled citeproc style** — packaged CSL defaults: Chicago, MLA, or APA.
+> 2. **Popular citeproc style** — Pick a common style; Academic Writer downloads/caches it from Zotero/CSL on first use.
 >    ```
->    Examples:
->      chicago → Chicago notes + bibliography
->      mla     → Modern Language Association
->      apa     → American Psychological Association
+>      apa                  → APA 7th edition
+>      mla                  → MLA 9th edition
+>      chicago              → Chicago 18 notes + bibliography
+>      chicago-author-date  → Chicago 18 author-date
+>      turabian             → Turabian notes + bibliography
+>      harvard              → Harvard Cite Them Right
+>      ieee                 → IEEE
+>      nature               → Nature
+>      vancouver            → Vancouver
+>      ama                  → American Medical Association
+>      apsa                 → American Political Science Association
+>      asa                  → American Sociological Association
+>      mhra                 → Modern Humanities Research Association
+>      elsevier-harvard     → Elsevier Harvard
+>
+>    If none match, choose option 3 or 4.
 >    ```
-> 3. **CSL repository style** — style id from https://github.com/citation-style-language/styles.
+> 3. **Zotero/CSL repository style** — style id from https://www.zotero.org/styles or https://github.com/citation-style-language/styles.
 >    ```
 >    Examples: nature, chicago-author-date, modern-humanities-research-association
 >    ```
-> 4. **Custom CSL file** — path to a `.csl` file you provide.
+> 4. **Custom CSL file or URL** — path/URL to a `.csl` file you provide.
 >    ```
->    Example: .academic-writer/csl/my-journal.csl
+>    Examples: .academic-writer/csl/my-journal.csl, https://www.zotero.org/styles/apa
 >    ```
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
-
-Map selection the same way as `/skill:academic-writer-init`: `inline-parenthetical` stays literal mode; bundled aliases (`chicago`, `mla`, `apa`), CSL repository ids, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
+> Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+>
+> Map selection the same way as `/skill:academic-writer-init`: `inline-parenthetical` stays literal mode; popular aliases, Zotero/CSL repository ids, `.csl` URLs, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 ### Tool Selection
 
@@ -251,7 +263,7 @@ updatedAt: ISO_TIMESTAMP
 ## Output Format Preferences
 
 ```json
-{ "csl": "optional CSL repository id or bundled alias", "cslPath": "optional custom .csl path" }
+{ "csl": "optional CSL style id or popular alias", "cslPath": "optional custom .csl path or URL" }
 ` ` `
 
 ## Style Fingerprint
