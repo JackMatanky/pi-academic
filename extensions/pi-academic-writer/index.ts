@@ -1,10 +1,12 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 import { PACKAGE_ROOT } from "../lib/paths.js";
+import { resolveResourcePath } from "./resources.js";
+import { buildStatus } from "./status.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -15,48 +17,6 @@ function textResult(text: string, details: object = {}) {
   };
 }
 
-function normalizeLanguage(language: unknown): "english" | "hebrew" {
-  if (typeof language !== "string") return "hebrew";
-  const normalized = language.trim().toLowerCase();
-  return normalized.startsWith("en") || normalized === "english" ? "english" : "hebrew";
-}
-
-function resolveResourcePath(name: string, projectRoot: string, language?: unknown): string {
-  switch (name) {
-    case "thresholds": {
-      const projectOverride = join(projectRoot, ".academic-helper", "thresholds.json");
-      return existsSync(projectOverride) ? projectOverride : join(PACKAGE_ROOT, "thresholds.json");
-    }
-    case "words":
-      return join(PACKAGE_ROOT, "words.md");
-    case "scorecard":
-      return join(PACKAGE_ROOT, "skills", "academic-writer-review", "references", "scorecard.json");
-    case "style_fingerprint_rubric":
-      return join(
-        PACKAGE_ROOT,
-        "skills",
-        "academic-writer-write",
-        "references",
-        "style-fingerprint-rubric.md",
-      );
-    case "anti_ai_patterns": {
-      const lang = normalizeLanguage(language);
-      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", `anti-ai-patterns-${lang}.md`);
-    }
-    case "voice_profile_load":
-      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", "voice-profile-load.md");
-    case "run_state_contract":
-      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", "run-state-contract.md");
-    case "citation_export_contract":
-      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", "citation-export-contract.md");
-    case "citation_review_gate":
-      return join(PACKAGE_ROOT, "skills", "academic-writer-review", "references", "citation-review-gate.md");
-    default:
-      throw new Error(
-        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, citation_review_gate.`,
-      );
-  }
-}
 
 function fixTypography(text: string): string {
   let fixed = text;
@@ -69,114 +29,6 @@ function fixTypography(text: string): string {
   return fixed;
 }
 
-interface FileState {
-  exists: boolean;
-  path: string;
-}
-
-interface RunInfo {
-  runId: string;
-  status: string;
-  title: string | null;
-  updatedAt: string | null;
-  path: string;
-}
-
-interface RunSummary {
-  dir: string;
-  active: RunInfo[];
-  last: RunInfo | null;
-}
-
-interface AcademicWriterStatus {
-  ok: boolean;
-  profile: FileState;
-  voice: FileState;
-  sources: FileState & { count: number };
-  bibliography: FileState;
-  runs: RunSummary;
-  agents: string[];
-}
-
-
-function readJson(path: string): unknown | null {
-  try {
-    return JSON.parse(readFileSync(path, "utf-8")) as unknown;
-  } catch {
-    return null;
-  }
-}
-
-function countSources(value: unknown): number {
-  if (Array.isArray(value)) return value.length;
-  if (value !== null && typeof value === "object" && !Array.isArray(value) && "sources" in value) {
-    if (Array.isArray(value.sources)) return value.sources.length;
-  }
-  return 0;
-}
-
-function fileState(projectRoot: string, relativePath: string): FileState {
-  const path = join(projectRoot, relativePath);
-  return { exists: existsSync(path), path: relativePath };
-}
-
-function summarizeRuns(projectRoot: string): RunSummary {
-  const relativeDir = ".academic-helper/runs";
-  const runsDir = join(projectRoot, relativeDir);
-  if (!existsSync(runsDir)) return { dir: relativeDir, active: [], last: null };
-  const runs = readdirSync(runsDir)
-    .filter((entry) => entry.endsWith(".json"))
-    .map((entry) => {
-      const path = join(runsDir, entry);
-      const data = readJson(path);
-      const isRun = data !== null && typeof data === "object" && !Array.isArray(data);
-      const status = isRun && "status" in data && typeof data.status === "string" ? data.status : "unknown";
-      const runId = isRun && "runId" in data && typeof data.runId === "string" ? data.runId : entry.replace(/\.json$/, "");
-      const title = isRun && "title" in data && typeof data.title === "string" ? data.title : null;
-      const updatedAt = isRun && "updatedAt" in data && typeof data.updatedAt === "string" ? data.updatedAt : null;
-      return {
-        runId,
-        status,
-        title,
-        updatedAt,
-        path: `${relativeDir}/${entry}`,
-        mtimeMs: statSync(path).mtimeMs,
-      };
-    })
-    .sort((a, b) => b.mtimeMs - a.mtimeMs);
-
-  const compact: RunInfo[] = runs.map(({ mtimeMs: _mtimeMs, ...run }) => run);
-  return {
-    dir: relativeDir,
-    active: compact.filter((run) => ["planned", "running", "blocked"].includes(run.status)),
-    last: compact[0] ?? null,
-  };
-}
-
-function buildStatus(projectRoot: string): AcademicWriterStatus {
-  const profile = fileState(projectRoot, ".academic-helper/profile.md");
-  const voice = fileState(projectRoot, "AUTHOR_VOICE.md");
-  const sourcesPath = join(projectRoot, ".academic-helper", "sources.json");
-  const sources = {
-    exists: existsSync(sourcesPath),
-    count: countSources(readJson(sourcesPath)),
-    path: ".academic-helper/sources.json",
-  };
-  const bibliography = fileState(projectRoot, ".academic-helper/bibliography.bib");
-  const agentsDir = join(PACKAGE_ROOT, "agents");
-  const agents = readdirSync(agentsDir)
-    .filter((entry) => entry.endsWith(".md"))
-    .sort();
-  return {
-    ok: Boolean(profile.exists),
-    profile,
-    voice,
-    sources,
-    bibliography,
-    runs: summarizeRuns(projectRoot),
-    agents,
-  };
-}
 
 export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({

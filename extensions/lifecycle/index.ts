@@ -1,55 +1,16 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { loadProfile, getProfilePath } from "../lib/profile.js";
-import { existsSync, readdirSync, appendFileSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
 import { execFile } from "node:child_process";
-
-interface RunData {
-  runId?: string;
-  title?: string;
-  status?: string;
-  updatedAt?: string;
-}
-
-function readRun(path: string): RunData {
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8")) as unknown;
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    return {
-      runId: "runId" in parsed && typeof parsed.runId === "string" ? parsed.runId : undefined,
-      title: "title" in parsed && typeof parsed.title === "string" ? parsed.title : undefined,
-      status: "status" in parsed && typeof parsed.status === "string" ? parsed.status : undefined,
-      updatedAt: "updatedAt" in parsed && typeof parsed.updatedAt === "string" ? parsed.updatedAt : undefined,
-    };
-  } catch {
-    return {};
-  }
-}
+import { appendFileSync, existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { getProfilePath, loadProfile } from "../lib/profile.js";
+import { summarizeRuns } from "../lib/runs.js";
 
 function runSummary(projectDir: string): { active: number; last: string | null } {
-  const runsDir = join(projectDir, ".academic-helper", "runs");
-  if (!existsSync(runsDir)) return { active: 0, last: null };
-  try {
-    const runs = readdirSync(runsDir)
-      .filter((entry) => entry.endsWith(".json"))
-      .map((entry) => {
-        const path = join(runsDir, entry);
-        const data = readRun(path);
-        const status = typeof data.status === "string" ? data.status : "unknown";
-        const runId = typeof data.runId === "string" ? data.runId : entry.replace(/\.json$/, "");
-        const title = typeof data.title === "string" ? data.title : runId;
-        return { status, title, mtimeMs: statSync(path).mtimeMs };
-      })
-      .sort((a, b) => b.mtimeMs - a.mtimeMs);
-    const active = runs.filter((run) => ["planned", "running", "blocked"].includes(run.status)).length;
-    const lastRun = runs[0];
-    return {
-      active,
-      last: lastRun ? `${lastRun.status}: ${lastRun.title}` : null,
-    };
-  } catch {
-    return { active: 0, last: null };
-  }
+  const runs = summarizeRuns(projectDir);
+  return {
+    active: runs.active.length,
+    last: runs.last ? `${runs.last.status}: ${runs.last.title ?? runs.last.runId}` : null,
+  };
 }
 
 export default function (pi: ExtensionAPI) {

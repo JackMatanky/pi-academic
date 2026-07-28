@@ -268,16 +268,16 @@ class TestExtensions(unittest.TestCase):
         project's .academic-helper/thresholds.json (created by init/setup)
         over the packaged default — otherwise editing the per-project copy
         silently does nothing."""
-        tools_path = "extensions/pi-academic-writer/index.ts"
-        source = _read(tools_path)
+        resources_source = _read("extensions/pi-academic-writer/resources.ts")
+        tools_source = _read("extensions/pi-academic-writer/index.ts")
         self.assertIn(
             'join(projectRoot, ".academic-helper", "thresholds.json")',
-            source,
+            resources_source,
             "resolveResourcePath must resolve a project-local thresholds override",
         )
         self.assertIn(
             "resolveResourcePath(name, ctx.cwd, params.language)",
-            source,
+            tools_source,
             "academic_writer_read_resource must pass ctx.cwd so thresholds can resolve the project override",
         )
 
@@ -290,15 +290,14 @@ class TestExtensions(unittest.TestCase):
         )
 
     def test_packaged_prompt_resources_exist(self):
-        tools_path = "extensions/pi-academic-writer/index.ts"
-        source = _read(tools_path)
+        resources_source = _read("extensions/pi-academic-writer/resources.ts")
         for resource, path in {
             "voice_profile_load": "skills/academic-writer-write/references/voice-profile-load.md",
             "run_state_contract": "skills/academic-writer-write/references/run-state-contract.md",
             "citation_export_contract": "skills/academic-writer-write/references/citation-export-contract.md",
             "citation_review_gate": "skills/academic-writer-review/references/citation-review-gate.md",
         }.items():
-            self.assertIn(resource, source)
+            self.assertIn(resource, resources_source)
             self.assertTrue(os.path.isfile(path), f"missing resource file for {resource}")
 
     def test_citation_audit_is_wired_into_output_paths(self):
