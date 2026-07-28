@@ -440,18 +440,22 @@ class TestMcpWiring(unittest.TestCase):
             "programmatic config is isolated and would ignore .mcp.json/global MCP config",
         )
 
-    def test_docs_require_direct_zotero_tools_in_mcp_config(self):
+    def test_docs_require_direct_mcp_tools(self):
         docs = "\n".join(
             _read(path)
             for path in [
                 "AGENTS.md",
                 "README.md",
                 "skills/academic-writer-init/references/integration-setup.md",
+                "skills/academic-writer-setup/SKILL.md",
+                "skills/academic-writer-update-tools/SKILL.md",
             ]
         )
         self.assertIn("toolPrefix", docs)
         self.assertIn("directTools", docs)
         self.assertIn("zotero_get_recent", docs)
+        self.assertIn("notebook_list", docs)
+        self.assertIn("notebooklm-mcp", docs)
         self.assertIn(".mcp.json", docs)
 
     def test_no_bundled_mcp_server_dir(self):

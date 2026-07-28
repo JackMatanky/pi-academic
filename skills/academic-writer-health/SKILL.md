@@ -69,12 +69,15 @@ Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global M
 
 **Skip if `tools.notebooklm.enabled` is false.** Report as "Disabled (enable with `/skill:academic-writer-update-tools`)".
 
-Use `academic_writer_health` for the `nlm` binary check. If installed, run `nlm login --check` and `nlm notebook list` only as live probes.
+Use `academic_writer_health` for the `nlm` and `notebooklm-mcp` binary checks. If installed, run `nlm login --check`; use `notebook_list()` as the live MCP probe.
 
 Report:
 - CLI installed? ✓/✗
+- MCP server binary installed? ✓/✗
+- Project `.mcp.json` present? ✓/✗/not required if global config works
+- If project `.mcp.json` has a `notebooklm-mcp` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers["notebooklm-mcp"].directTools` is `true`? ✓/✗
 - Authenticated? ✓/✗
-- Can list notebooks? ✓/✗ (and count)
+- MCP can list notebooks? ✓/✗ (and count)
 - If error: show the error message
 
 **If CLI not installed**, show this setup guide:
@@ -83,7 +86,7 @@ Report:
 >
 > 1. Install the CLI:
 >    ```
->    npm install -g notebooklm-mcp-cli
+>    uv tool install notebooklm-mcp-cli
 >    ```
 >
 > 2. Authenticate:
@@ -91,7 +94,9 @@ Report:
 >    nlm login
 >    ```
 >
-> 3. Re-run `/skill:academic-writer-health` to verify.
+> 3. Add `notebooklm-mcp` to `.mcp.json` or user-global MCP config with `toolPrefix: "none"` and `directTools: true`.
+>
+> 4. Re-run `/skill:academic-writer-health` to verify.
 
 ---
 

@@ -10,13 +10,8 @@ Run ALL in parallel:
 - **Zotero MCP tool availability**: call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise. An error mentioning "local API" means the `zotero` MCP server is configured but Zotero desktop isn't open or the local API is disabled in Settings → Advanced.
 - **Zotero server binary**: `command -v zotero-mcp >/dev/null 2>&1 && echo "ZOTERO_MCP_BINARY: INSTALLED" || echo "ZOTERO_MCP_BINARY: NOT_FOUND"`.
 - **Project MCP config**: `test -f .mcp.json && cat .mcp.json || echo "NO_PROJECT_MCP_JSON"`. This is only for helping the researcher see whether the project already has MCP config; do not treat absence as failure if a global MCP config provides the server.
-- **NotebookLM**:
-
-```python
-Bash(
-    command="command -v nlm >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo 'DETECTED' || echo 'NOT_DETECTED'"
-)
-```
+- **NotebookLM MCP tool availability**: call `notebook_list()`: DETECTED if it returns without an error, NOT_DETECTED otherwise.
+- **NotebookLM CLI/server binary**: `command -v nlm >/dev/null 2>&1 && command -v notebooklm-mcp >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo "NOTEBOOKLM: INSTALLED_AND_AUTHED" || echo "NOTEBOOKLM: NOT_READY"`.
 
 ## Present Results
 
@@ -51,18 +46,33 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
 2. **NotebookLM** — AI-powered source Q&A, audio overviews, study guides, research discovery.
    > "NotebookLM
    > ──────────
-   > Type:    MCP server (`nlm` CLI)
+   > Type:    MCP server (`notebooklm-mcp`) + `nlm` CLI
    > What:    AI-powered source Q&A, audio overviews,
    >          study guides, research discovery
    > Status:  ✓ Detected
    >
    > Setup (if not installed):
-   >   npm install -g notebooklm-mcp-cli
-   >   nlm login"
+   >   uv tool install notebooklm-mcp-cli
+   >   nlm login
+   >   add the `notebooklm-mcp` server to `.mcp.json` or global MCP config"
+
+   If `nlm` is installed/authenticated but `notebook_list` is unavailable, offer to add this project `.mcp.json` block after researcher approval; if `.mcp.json` exists, merge only when it is a simple JSON object, otherwise show the block for manual merge:
+
+   ```json
+   {
+     "settings": { "toolPrefix": "none" },
+     "mcpServers": {
+       "notebooklm-mcp": {
+         "command": "notebooklm-mcp",
+         "directTools": true
+       }
+     }
+   }
+   ```
 
 Wait for the researcher's reply and match it against the option number, label text, or a close paraphrase (multiple selections allowed).
 
 **Rules:**
 - Pre-check options that were detected.
-- If a tool is not detected and the researcher selects it, show the setup URL and walk them through installation/configuration. For Zotero, installation (`zotero-mcp`) and MCP registration (`.mcp.json`/global MCP config with `toolPrefix: "none"` + `directTools: true`) are separate checks; complete both before marking it detected.
+- If a tool is not detected and the researcher selects it, show the setup URL and walk them through installation/configuration. For Zotero and NotebookLM, installation/authentication and MCP registration (`.mcp.json`/global MCP config with `toolPrefix: "none"` + `directTools: true`) are separate checks; complete both before marking either detected.
 - Store final selection as the `tools` object (used in Phase 4). Store only enabled/disabled intent and mode labels — never credentials.

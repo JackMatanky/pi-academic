@@ -122,14 +122,14 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 | Tool | What it does | Setup |
 |------|-------------|-------|
 | **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
-| **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) |
+| **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config |
 | **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for bundled or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
 **Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and `.academic-writer/bibliography.bib` supplies the Zotero metadata. The package bundles APA/MLA/Chicago defaults, but you can also use any style id from [citation-style-language/styles](https://github.com/citation-style-language/styles) or a custom `.csl` file.
 
-**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. A local Zotero setup can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
+**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. Local Zotero and NotebookLM setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
 ```json
 {
@@ -139,6 +139,10 @@ This package doesn't hardcode a specific model provider for prose drafting — p
       "command": "zotero-mcp",
       "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
+      "directTools": true
+    },
+    "notebooklm-mcp": {
+      "command": "notebooklm-mcp",
       "directTools": true
     }
   }

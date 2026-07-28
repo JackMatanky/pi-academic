@@ -49,12 +49,7 @@ Wait for their reply and match it against the options (accept the option number,
 Run ALL detection commands in **one parallel batch**:
 
 - **Zotero**: call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise.
-- **NotebookLM**:
-```python
-Bash(
-    command="command -v nlm >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo 'notebooklm: DETECTED' || echo 'notebooklm: NOT_FOUND'"
-)
-```
+- **NotebookLM**: call `notebook_list()`; DETECTED if it returns without an error, NOT_DETECTED otherwise. Also check `command -v nlm`, `command -v notebooklm-mcp`, and `nlm login --check` so you can distinguish missing install/auth from missing MCP config.
 
 MongoDB Agent Skills is auto-configured silently — do not show it to the user.
 
@@ -142,12 +137,14 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 >    NotebookLM
 >    ──────────
->    Type:  MCP server (nlm CLI)
+>    Type:  MCP server (notebooklm-mcp) + nlm CLI
 >    What:  AI-powered source Q&A,
 >           audio overviews, study guides
 >
->    Install: npm install -g notebooklm-mcp-cli
+>    Install: uv tool install notebooklm-mcp-cli
 >    Auth:    nlm login
+>    Config:  standard MCP config (.mcp.json or ~/.config/mcp/mcp.json)
+>    Needs:   settings.toolPrefix="none" + directTools=true
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
 
@@ -171,6 +168,22 @@ If Zotero is selected but not detected:
   }
   ```
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `zotero` block unless the JSON is simple enough to update safely. Do not write API keys into a project file; Zotero web/API credentials belong in user-global MCP config or command interpolation.
+
+If NotebookLM is selected but `notebook_list()` is unavailable:
+- If `nlm` or `notebooklm-mcp` is missing, show: `uv tool install notebooklm-mcp-cli`, then continue after the researcher confirms installation and runs `nlm login`.
+- If the CLI is installed/authenticated but MCP is not configured, offer to scaffold this safe project `.mcp.json` block only if the researcher approves and no `.mcp.json` exists:
+  ```json
+  {
+    "settings": { "toolPrefix": "none" },
+    "mcpServers": {
+      "notebooklm-mcp": {
+        "command": "notebooklm-mcp",
+        "directTools": true
+      }
+    }
+  }
+  ```
+- If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `notebooklm-mcp` block unless the JSON is simple enough to update safely.
 
 ---
 
