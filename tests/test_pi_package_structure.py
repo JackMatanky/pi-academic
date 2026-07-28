@@ -161,6 +161,11 @@ class TestPackageManifest(unittest.TestCase):
         pi_manifest = data.get("pi", {})
         self.assertIn("./extensions", pi_manifest.get("extensions", []))
         self.assertIn("./skills", pi_manifest.get("skills", []))
+        image = pi_manifest.get("image")
+        self.assertIsInstance(image, str)
+        self.assertTrue(image.startswith("./assets/"))
+        self.assertTrue(os.path.isfile(image[2:]))
+        self.assertTrue(image.endswith((".svg", ".png", ".jpg", ".jpeg", ".webp")))
 
         self.assertIn("pi-subagents", data)
         self.assertIn("agents", data["pi-subagents"])
@@ -231,6 +236,8 @@ class TestExtensions(unittest.TestCase):
             "academic_writer_generate_docx",
             "academic_writer_list_agents",
             "academic_writer_fix_typography",
+            "academic_writer_status",
+            "academic_writer_audit_citations",
         ]:
             self.assertIn(name, tools)
 
@@ -274,6 +281,31 @@ class TestExtensions(unittest.TestCase):
             voice_miner,
             "voice-miner must not reference the non-existent src/thresholds.json path",
         )
+
+    def test_packaged_prompt_resources_exist(self):
+        tools_path = "extensions/pi-academic-writer/index.ts"
+        source = _read(tools_path)
+        for resource, path in {
+            "voice_profile_load": "skills/academic-writer-write/references/voice-profile-load.md",
+            "run_state_contract": "skills/academic-writer-write/references/run-state-contract.md",
+            "citation_export_contract": "skills/academic-writer-write/references/citation-export-contract.md",
+            "citation_review_gate": "skills/academic-writer-review/references/citation-review-gate.md",
+        }.items():
+            self.assertIn(resource, source)
+            self.assertTrue(os.path.isfile(path), f"missing resource file for {resource}")
+
+    def test_citation_audit_is_wired_into_output_paths(self):
+        tools_source = _read("extensions/pi-academic-writer/index.ts")
+        self.assertIn("scripts\", \"audit-citations.py", tools_source)
+        for skill in [
+            "skills/academic-writer-write/SKILL.md",
+            "skills/academic-writer-edit/SKILL.md",
+            "skills/academic-writer-export/SKILL.md",
+            "skills/academic-writer-review/SKILL.md",
+        ]:
+            content = _read(skill)
+            self.assertIn("academic_writer_audit_citations", content, skill)
+            self.assertIn("run_state_contract", content, skill)
 
 
 class TestMcpWiring(unittest.TestCase):

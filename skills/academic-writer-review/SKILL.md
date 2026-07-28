@@ -1,7 +1,7 @@
 ---
 name: academic-writer-review
 description: "Self-review quality gate — scores a completed article on 6 dimensions (structure, argument logic, citation completeness, source coverage, writing quality, academic conventions) and presents a scorecard before final output. Use after writing to score the article on quality dimensions before publication."
-allowed-tools: bash read find grep academic_writer_read_resource
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_audit_citations
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -22,6 +22,8 @@ cat .academic-helper/profile.md
 
 If no profile, tell the researcher to run `/skill:academic-writer-init` first.
 
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this review when run standalone. Use `phase: review`; update status before stopping. When invoked inside write/edit, update the current run file instead of creating a second one.
+
 ## Input
 
 When run standalone, ask:
@@ -35,6 +37,12 @@ ls articles/*.md 2>/dev/null
 Read the selected article with the `Read` tool.
 
 When invoked as a pipeline step, the article text is passed directly.
+
+## Deterministic Citation Gate
+
+Call `academic_writer_read_resource` with `name: citation_review_gate`, then call `academic_writer_audit_citations` with the article markdown path and the profile's `citationStyle`.
+
+If the audit returns `ok: false`, score Citation Completeness as failing, report the exact missing/wrong-mode citation details, set run state to `failed`, and do not continue to DOCX/export. This gate is mechanical only; still perform semantic source/claim review when the mechanical audit passes.
 
 ## Scorecard rubric
 

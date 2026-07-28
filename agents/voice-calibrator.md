@@ -5,10 +5,10 @@ tools: read, write, edit, bash, academic_writer_read_resource
 permission:
   "*": allow
   write:
-    "*": ask
+    "*": deny
     ".voice/audit.md": allow
   edit:
-    "*": ask
+    "*": deny
     "AUTHOR_VOICE.md": allow
     ".academic-helper/profile.md": allow
   bash:

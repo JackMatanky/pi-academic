@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
@@ -43,9 +43,17 @@ function resolveResourcePath(name: string, projectRoot: string, language?: unkno
       const lang = normalizeLanguage(language);
       return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", `anti-ai-patterns-${lang}.md`);
     }
+    case "voice_profile_load":
+      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", "voice-profile-load.md");
+    case "run_state_contract":
+      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", "run-state-contract.md");
+    case "citation_export_contract":
+      return join(PACKAGE_ROOT, "skills", "academic-writer-write", "references", "citation-export-contract.md");
+    case "citation_review_gate":
+      return join(PACKAGE_ROOT, "skills", "academic-writer-review", "references", "citation-review-gate.md");
     default:
       throw new Error(
-        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns.`,
+        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, citation_review_gate.`,
       );
   }
 }
@@ -61,6 +69,90 @@ function fixTypography(text: string): string {
   return fixed;
 }
 
+
+function readJson(path: string): unknown | null {
+  try {
+    return JSON.parse(readFileSync(path, "utf-8")) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function countSources(value: unknown): number {
+  if (Array.isArray(value)) return value.length;
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    const sources = (value as { sources?: unknown }).sources;
+    if (Array.isArray(sources)) return sources.length;
+  }
+  return 0;
+}
+
+function fileState(projectRoot: string, relativePath: string): Record<string, unknown> {
+  const path = join(projectRoot, relativePath);
+  return { exists: existsSync(path), path: relativePath };
+}
+
+function summarizeRuns(projectRoot: string): Record<string, unknown> {
+  const relativeDir = ".academic-helper/runs";
+  const runsDir = join(projectRoot, relativeDir);
+  if (!existsSync(runsDir)) return { dir: relativeDir, active: [], last: null };
+
+  const runs = readdirSync(runsDir)
+    .filter((entry) => entry.endsWith(".json"))
+    .map((entry) => {
+      const path = join(runsDir, entry);
+      const data = readJson(path);
+      const record = data !== null && typeof data === "object" && !Array.isArray(data)
+        ? (data as { status?: unknown; runId?: unknown; title?: unknown; updatedAt?: unknown })
+        : {};
+      const status = typeof record.status === "string" ? record.status : "unknown";
+      const runId = typeof record.runId === "string" ? record.runId : entry.replace(/\.json$/, "");
+      const title = typeof record.title === "string" ? record.title : null;
+      const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt : null;
+      return {
+        runId,
+        status,
+        title,
+        updatedAt,
+        path: `${relativeDir}/${entry}`,
+        mtimeMs: statSync(path).mtimeMs,
+      };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  const compact = runs.map(({ mtimeMs: _mtimeMs, ...run }) => run);
+  return {
+    dir: relativeDir,
+    active: compact.filter((run) => ["planned", "running", "blocked"].includes(run.status)),
+    last: compact[0] ?? null,
+  };
+}
+
+function buildStatus(projectRoot: string): Record<string, unknown> {
+  const profile = fileState(projectRoot, ".academic-helper/profile.md");
+  const voice = fileState(projectRoot, "AUTHOR_VOICE.md");
+  const sourcesPath = join(projectRoot, ".academic-helper", "sources.json");
+  const sources = {
+    exists: existsSync(sourcesPath),
+    count: countSources(readJson(sourcesPath)),
+    path: ".academic-helper/sources.json",
+  };
+  const bibliography = fileState(projectRoot, ".academic-helper/bibliography.bib");
+  const agentsDir = join(PACKAGE_ROOT, "agents");
+  const agents = readdirSync(agentsDir)
+    .filter((entry) => entry.endsWith(".md"))
+    .sort();
+  return {
+    ok: Boolean(profile.exists),
+    profile,
+    voice,
+    sources,
+    bibliography,
+    runs: summarizeRuns(projectRoot),
+    agents,
+  };
+}
+
 export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_read_resource",
@@ -70,7 +162,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     parameters: Type.Object({
       name: Type.String({
         description:
-          "Resource name: thresholds, words, scorecard, style_fingerprint_rubric, or anti_ai_patterns.",
+          "Resource name: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, or citation_review_gate.",
       }),
       language: Type.Optional(
         Type.String({ description: "Language for anti_ai_patterns; english selects English, anything else selects Hebrew." }),
@@ -105,6 +197,27 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "academic_writer_status",
+    label: "Academic Writer Status",
+    description: "Report project-local Academic Writer setup state, source/bibliography availability, run state, and packaged agents.",
+    parameters: Type.Object({}),
+    execute: async (_id, _params, _signal, _onUpdate, ctx) => {
+      const status = buildStatus(ctx.cwd);
+      const sources = status.sources as { count?: unknown };
+      const runs = status.runs as { active?: unknown; last?: unknown };
+      const activeRuns = Array.isArray(runs.active) ? runs.active.length : 0;
+      const sourceCount = typeof sources.count === "number" ? sources.count : 0;
+      const text = [
+        `Academic Writer status: ${status.ok ? "profile found" : "profile missing"}`,
+        `Sources: ${sourceCount}`,
+        `Active runs: ${activeRuns}`,
+        `Last run: ${runs.last ? "available" : "none"}`,
+      ].join("\n");
+      return textResult(text, status);
+    },
+  });
+
+  pi.registerTool({
     name: "academic_writer_resolve_csl",
     label: "Academic Writer Resolve CSL",
     description:
@@ -130,6 +243,52 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return textResult(`CSL resolution failed: ${message}`, { ok: false, error: message });
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_audit_citations",
+    label: "Academic Writer Citation Audit",
+    description:
+      "Deterministically verify citation syntax and citeproc keys before DOCX/export/review. Semantic claim verification still belongs to the auditor agent.",
+    parameters: Type.Object({
+      article: Type.String({
+        minLength: 1,
+        description: "Path to the article markdown file; relative paths resolve from the project root.",
+      }),
+      citationStyle: Type.String({
+        minLength: 1,
+        description: "inline-parenthetical for literal citation mode; any other value means citeproc mode.",
+      }),
+    }),
+    execute: async (_id, params, signal, _onUpdate, ctx) => {
+      const args = [
+        join(PACKAGE_ROOT, "scripts", "audit-citations.py"),
+        String(params.article),
+        "--citation-style",
+        String(params.citationStyle),
+        "--project-root",
+        ctx.cwd,
+      ];
+      try {
+        const { stdout } = await execFileAsync("python3", args, { cwd: ctx.cwd, signal });
+        const parsed = JSON.parse(stdout) as unknown;
+        const details = parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : { ok: false, error: "audit-citations.py returned a non-object result" };
+        const ok = details.ok === true;
+        const keys = Array.isArray(details.citationKeys) ? details.citationKeys.length : 0;
+        const missingSources = Array.isArray(details.missingFromSources) ? details.missingFromSources.length : 0;
+        const missingBibliography = Array.isArray(details.missingFromBibliography) ? details.missingFromBibliography.length : 0;
+        const warnings = Array.isArray(details.warnings) ? details.warnings.length : 0;
+        const summary = ok
+          ? `Citation audit passed: ${keys} cite key(s), ${warnings} warning(s).`
+          : `Citation audit failed: ${missingSources} missing source key(s), ${missingBibliography} missing bibliography key(s).`;
+        return textResult(summary, details);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return textResult(`Citation audit failed: ${message}`, { ok: false, error: message });
       }
     },
   });

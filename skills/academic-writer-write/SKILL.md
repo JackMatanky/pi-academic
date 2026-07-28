@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_resolve_csl academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_audit_citations academic_writer_resolve_csl academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -12,12 +12,7 @@ You are an academic writing assistant for a Humanities researcher.
 
 ### Voice profile load (first step of every run)
 
-1. Read `AUTHOR_VOICE.md` from project root. Whole file goes into the section-writer system prompt.
-2. The section writer is instructed to weight `## Academic-specific` rules higher when they
-   conflict with `## Core voice` rules; everything else applies as written.
-
-If `AUTHOR_VOICE.md` is missing or empty, warn once: "No voice profile. Run `/skill:academic-writer-init`
-to seed it." Do not block writing.
+Call `academic_writer_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
 
 ## Load Profile
 
@@ -30,6 +25,10 @@ cat .academic-helper/profile.md
 If the profile doesn't exist, tell them: "Please run `/skill:academic-writer-init` first to set up your profile."
 
 Store the profile values — you'll use them throughout.
+
+### Run state (profile-scoped)
+
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create `.academic-helper/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-helper/` here if the profile was missing — `init`/`setup` own first creation.
 
 ### Style Fingerprint — Always Loaded
 
@@ -382,153 +381,41 @@ DOCX_PATH="articles/${FILEBASE}.docx"
 
 #### Step 9a: Markdown Output
 
-Branch by `citationStyle` (from the profile). Both branches below share the `$MD_PATH` / `$DOCX_PATH` variables set above.
+Call `academic_writer_read_resource` with `name: citation_export_contract`, then follow that contract exactly for the active `citationStyle`.
 
-##### `inline-parenthetical` (unchanged)
+Write `$MD_PATH` first. The markdown must preserve the final synthesized article:
+- title as `# H1`
+- thesis as the italic line below it
+- abstract text from Step 8.5
+- section headings only when `totalWords > 1500`
+- paragraphs separated by blank lines
+- citations unchanged from the approved section-writer output
 
-Use the `Write` tool to write the article as markdown to `$MD_PATH`. Structure:
+For citeproc mode, resolve the CSL with `academic_writer_resolve_csl` before writing YAML frontmatter. For `inline-parenthetical`, write no YAML citeproc frontmatter.
 
-```markdown
-# ARTICLE_TITLE
+After writing `$MD_PATH`, call `academic_writer_audit_citations` with:
+- `article: MD_PATH`
+- `citationStyle: citationStyle`
 
-*ARTICLE_THESIS*
-
-## תקציר
-
-[Abstract text from Step 8.5]
-
-[If dual-language: second abstract under its own heading]
-
-## Section Title (only if totalWords > 1500)
-
-Paragraph 1 text with inline citations...
-
-Paragraph 2 text...
-
-## Next Section Title
-
-...
-```
-
-**Rules:**
-- Title as `# H1`, thesis as italic line below it
-- Section headings as `## H2` — but only include them if `totalWords > 1500` (same rule as DOCX)
-- Paragraphs separated by blank lines
-- Keep all inline citations exactly as they appear (e.g., `(Author, Title, p. N)`)
-- No extra formatting beyond what the article text already contains
-
-##### Citeproc mode (any `citationStyle` except `inline-parenthetical`)
-
-Citeproc-mode articles no longer carry literal citation text in the body — section-writer emits pandoc-markdown citation markers instead: `[@citeKeyA, p. N]` for a single citation, `[@citeKeyA; @citeKeyB, p. N]` for co-located citations, where each `citeKey` matches a `citeKey` value in `.academic-helper/sources.json` (never invented). Step 9a must prepend YAML frontmatter before the `# ARTICLE_TITLE` heading so pandoc's citeproc can resolve them in Step 9b.
-
-Resolve the active CSL style to a local file path before writing frontmatter. The profile may provide:
-- a bundled alias: `apa`, `mla`, `chicago`
-- a bundled filename: `apa.csl`, `modern-language-association.csl`, `chicago-notes-bibliography.csl`
-- a project/user `.csl` path
-- a Citation Style Language repository id such as `chicago-author-date` or `nature` (download/cache on demand)
-
-Call `academic_writer_resolve_csl` with `style: CITATION_STYLE` and `download: true`; use the returned path as `CSL_PATH`.
-
-If the researcher supplied a separate custom CSL reference in the profile (for example under `outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or a `citation.csl` object), pass that value instead of `citationStyle`. Backward-compatible aliases still work: `chicago` resolves to `chicago-notes-bibliography.csl`, `mla` to `modern-language-association.csl`, and `apa` to `apa.csl`.
-
-Use the `Write` tool to write `$MD_PATH` with this frontmatter, followed by the same body structure as the `inline-parenthetical` branch above (title, thesis, abstract, sections, paragraphs):
-
-```markdown
----
-title: "ARTICLE_TITLE"
-lang: "he"  # or "en", from targetLanguage
-bibliography: .academic-helper/bibliography.bib
-csl: "RESOLVED_CSL_PATH"
----
-
-# ARTICLE_TITLE
-
-*ARTICLE_THESIS*
-
-## תקציר
-
-[Abstract text from Step 8.5]
-
-## Section Title (only if totalWords > 1500)
-
-Paragraph 1 text with [@citeKeyA, p. N] markers inline...
-```
-
-**Rules:**
-- `lang` — the ISO code for `targetLanguage`: `"he"` for Hebrew, `"en"` for English (same source value that drives `isRtl` in the `inline-parenthetical` branch's JSON schema below)
-- `bibliography` is always the literal path `.academic-helper/bibliography.bib` — the Phase-1 deep-reader output (Step 3)
-- `csl` — replace `RESOLVED_CSL_PATH` with the literal output of `resolve-csl.py` above (an absolute path to a local `.csl` file)
-- `bibliography:` and `csl:` are the only pandoc-citeproc frontmatter keys needed — pandoc reads them automatically at export time, no extra `--bibliography`/`--csl` CLI flags required
-- Title as `# H1`, thesis as italic line below it, section headings only if `totalWords > 1500` — otherwise identical to the `inline-parenthetical` structure above
-- Citations in the body are the raw `[@citeKeyA, p. N]` markers exactly as section-writer produced them — do NOT strip, reformat, or convert them to plain parenthetical or footnote text; pandoc's citeproc renders them at export time (Step 9b)
-- `inline-parenthetical` articles get no frontmatter at all — this block is exclusive to citeproc mode
+If `ok` is false, stop DOCX generation, set the run state to `failed`, and report the exact missing/wrong-mode citation details. Do not continue to DOCX/export.
 
 #### Step 9b: DOCX Output
 
-Branch by `citationStyle` — same branch as Step 9a.
+Branch by `citationStyle` using the loaded `citation_export_contract`.
 
-##### `inline-parenthetical` (unchanged)
+##### `inline-parenthetical`
 
-Write the article data to a JSON file, then run the standalone DOCX generator script:
+Write the article data to a JSON file, then call `academic_writer_generate_docx` with that JSON and `$DOCX_PATH`. The JSON must preserve native Word footnotes via `sections[].paragraphs[].footnotes[]`, `format`, `isRtl`, and `totalWords` as before.
 
-1. **Write the article JSON** using the Write tool to `/tmp/aw-article-data.json`. Use this exact schema — do NOT write inline Python to construct it:
+##### Citeproc mode
 
-```json
-{
-  "title": "ARTICLE_TITLE from synthesizer",
-  "thesis": "ARTICLE_THESIS or null",
-  "abstract": {
-    "primary": "Abstract text in targetLanguage (from Step 8.5)",
-    "secondary": "Optional abstract in second language, or null"
-  },
-  "sections": [
-    {
-      "title": "Section title",
-      "paragraphs": [
-        {
-          "text": "Paragraph body with NO inline parenthetical citations.",
-          "footnotes": [
-            { "after": "substring in text to anchor the superscript marker", "text": "Author, Title (Pub, 2024), p. 42." }
-          ]
-        }
-      ]
-    }
-  ],
-  "format": {
-    "font": "from profile.outputFormatPreferences.font or David",
-    "bodySize": 11,
-    "titleSize": 16,
-    "headingSize": 13,
-    "lineSpacing": 1.5,
-    "margins": 1.0,
-    "isRtl": true
-  },
-  "totalWords": 0
-}
-```
-
-**Rules:**
-- Use the `Write` tool to write this file — never use Python heredoc or `python3 -c` to construct JSON (Hebrew text causes UTF-8 encoding errors in heredocs)
-- Populate `sections` from the synthesizer output — each section's title and paragraph list
-- Paragraphs use the structured form `{text, footnotes[]}`. Strip the parenthetical citations out of `text` and move each citation into `footnotes[]` with `after` set to a unique substring in `text` where the marker should appear. The DOCX generator renders them as native Word footnotes (superscript in body, text at page bottom). Plain strings are still accepted for backward compatibility (no footnotes)
-- Dependency: requires `lxml` (`pip install lxml`) in addition to `python-docx`
-- Read `outputFormatPreferences` from the profile and fill in the `format` object
-- Set `totalWords` to the actual word count (controls section title visibility — hidden when under 1500 words)
-- Set `isRtl` based on `targetLanguage` (true for Hebrew, false for English)
-
-2. **Generate the DOCX:** call `academic_writer_generate_docx` with `input: /tmp/aw-article-data.json` and `output: DOCX_PATH`.
-
-The script handles all RTL formatting, directional marks, citation parentheses splitting, and conditional section titles deterministically.
-
-##### Citeproc mode (any `citationStyle` except `inline-parenthetical`)
-
-Skip the JSON-schema + `generate-docx.py` path entirely. Pandoc reads the frontmatter-bearing markdown Step 9a just wrote — `bibliography:` and `csl:` are already declared there, so no extra flags are needed beyond `--citeproc` itself:
+Run Pandoc directly on the audited markdown:
 
 ```bash
 pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"
 ```
 
-**Current limitation:** this path does not run `generate-docx.py`, so it skips the Hebrew RTL post-processing (directional marks, RTL paragraph formatting) that script applies. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it. This is not a new regression introduced by configurable CSL; call it out plainly in the completion report below rather than leaving it silent.
+Warn Hebrew users that this path does not apply `generate-docx.py` Hebrew RTL post-processing unless their CSL/template handles it.
 
 Log output completion:
 

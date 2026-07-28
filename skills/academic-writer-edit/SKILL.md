@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit
 description: "Edit a previously written article — revise sections, fix citations, adjust tone, restructure arguments, or rewrite passages. Use when revising an article that's already drafted — multiple sections, restructuring, or major changes."
-allowed-tools: bash read write find grep subagent academic_writer_resolve_csl academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_audit_citations academic_writer_resolve_csl academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -11,12 +11,7 @@ You are an editing assistant. The researcher has a previously written article (f
 
 ### Voice profile load (first step of every run)
 
-1. Read `AUTHOR_VOICE.md` from project root. Whole file goes into the section-writer system prompt.
-2. The section writer is instructed to weight `## Academic-specific` rules higher when they
-   conflict with `## Core voice` rules; everything else applies as written.
-
-If `AUTHOR_VOICE.md` is missing or empty, warn once: "No voice profile. Run `/skill:academic-writer-init`
-to seed it." Do not block writing.
+Call `academic_writer_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
 
 ---
 
@@ -29,6 +24,8 @@ cat .academic-helper/profile.md
 If no profile: "Run `/skill:academic-writer-init` first."
 
 **Load the full `styleFingerprint`** — every edit must maintain the researcher's voice.
+
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-helper/` here if the profile was missing — `init`/`setup` own first creation.
 
 Print fingerprint summary to confirm it's loaded.
 
@@ -174,26 +171,15 @@ After edits are applied:
    > - Make additional changes?
    > - Run a full review on the revised version?"
 
-3. If exporting to .docx, branch by `citationStyle` first:
+3. If exporting to .docx, call `academic_writer_read_resource` with `name: citation_export_contract`, then branch by `citationStyle` first:
 
 **Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode — or, if the profile is unavailable/stale, the article's markdown already opens with a `bibliography:` frontmatter key (`head -10 "$MD_PATH" | grep -q '^bibliography:'`).
 
+**Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. If `ok` is false, stop, set the run state to `failed`, and report the exact missing/wrong-mode citation details.
+
 **`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `academic_writer_generate_docx`.
 
-**Citeproc mode:** rewrite `$MD_PATH` the same way as write-article Step 9a's citeproc branch — YAML frontmatter prepended before the title heading, edited body content keeps its `[@citeKey, p. N]` markers verbatim:
-
-```yaml
----
-title: "ARTICLE_TITLE"
-lang: "he"  # or "en", from targetLanguage
-bibliography: .academic-helper/bibliography.bib
-csl: "RESOLVED_CSL_PATH"
----
-```
-
-Resolve `RESOLVED_CSL_PATH` first: call `academic_writer_resolve_csl` with `style: CITATION_STYLE_OR_CUSTOM_CSL` and `download: true`; use the returned path as `CSL_PATH`.
-
-Use a custom CSL reference from the profile (`outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or `citation.csl`) when present; otherwise pass `citationStyle`. Backward-compatible aliases (`apa`, `mla`, `chicago`) still resolve to bundled CSL files. Then regenerate the DOCX directly — skip `generate-docx.py` entirely:
+**Citeproc mode:** rewrite `$MD_PATH` using the loaded `citation_export_contract`: prepend YAML frontmatter before the title heading, keep edited body `[@citeKey, p. N]` markers verbatim, resolve `RESOLVED_CSL_PATH` first with `academic_writer_resolve_csl`, then regenerate DOCX directly:
 
 ```bash
 pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"

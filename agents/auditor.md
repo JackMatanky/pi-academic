@@ -4,6 +4,8 @@ description: "Use as the citation hard gate — verifies factual claims against 
 tools: read, grep, find, bash, web_search, mcp:zotero
 permission:
   "*": allow
+  write: deny
+  edit: deny
   bash:
     "*": ask
     "python3 *": allow

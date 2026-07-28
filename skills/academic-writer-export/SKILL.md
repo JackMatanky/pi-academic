@@ -1,7 +1,7 @@
 ---
 name: academic-writer-export
 description: "Convert a finished article to additional document formats (PDF, HTML, ODT, LaTeX, EPUB) via pandoc. Use when the researcher wants to convert a finished article to PDF, HTML, ODT, LaTeX, or EPUB — after /skill:academic-writer-write or /skill:academic-writer-edit has produced articles/<slug>.md."
-allowed-tools: bash read find
+allowed-tools: bash read write find academic_writer_read_resource academic_writer_audit_citations
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
@@ -23,6 +23,14 @@ If `NOT_FOUND`, stop immediately — do not attempt any conversion. Tell the res
 
 ---
 
+## 1a. Load profile, run state, and citation contract
+
+Read `.academic-helper/profile.md`. If missing, stop and tell the researcher to run `/skill:academic-writer-init` first.
+
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this export run. Use `phase: export`; update status to `complete`, `failed`, or `blocked` before stopping.
+
+Call `academic_writer_read_resource` with `name: citation_export_contract`; export must follow that contract.
+
 ## 2. Identify the article
 
 ```bash
@@ -34,7 +42,7 @@ ls -t articles/*.md 2>/dev/null
   > "Which article do you want to export? Give me the slug or filename."
 - If none exist, tell the researcher there's nothing to export yet and point them to `/skill:academic-writer-write`.
 
-Resolve `SLUG` from the chosen file (`articles/<slug>.md` → `SLUG=<slug>`).
+Resolve `SLUG` and `MD_PATH` from the chosen file (`articles/<slug>.md` → `SLUG=<slug>`, `MD_PATH=articles/<slug>.md`).
 
 ---
 
@@ -67,6 +75,16 @@ If both engines are `NOT_FOUND`, skip the PDF conversion and tell the researcher
 > - **other platforms**: install Tectonic or any TeX distribution from https://pandoc.org/installing.html, then ensure `tectonic` or `xelatex` is on your `PATH`."
 
 Proceed with the other requested formats regardless (HTML/ODT/LaTeX/EPUB have no such dependency — always attempt them if requested).
+
+---
+
+## 4a. Deterministic citation audit
+
+Before any Pandoc conversion, call `academic_writer_audit_citations` with:
+- `article: MD_PATH`
+- `citationStyle: citationStyle` from `.academic-helper/profile.md` (`inline-parenthetical` if unavailable)
+
+If `ok` is false, do not export. Set the run state to `failed` and report the exact missing/wrong-mode citation details. The researcher must fix citations before conversion.
 
 ---
 

@@ -5,10 +5,10 @@ tools: read, write, edit
 permission:
   "*": allow
   write:
-    "*": ask
+    "*": deny
     "AUTHOR_VOICE.md": allow
   edit:
-    "*": ask
+    "*": deny
     "AUTHOR_VOICE.md": allow
 metadata:
   author: Academic Helper

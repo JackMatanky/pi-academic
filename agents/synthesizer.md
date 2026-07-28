@@ -4,6 +4,8 @@ description: "Use after all sections are written to review the complete article 
 tools: read, grep, find, bash, academic_writer_read_resource
 permission:
   "*": allow
+  write: deny
+  edit: deny
   bash:
     "*": ask
     "cat *": allow

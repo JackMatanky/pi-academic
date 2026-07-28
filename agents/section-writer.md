@@ -4,6 +4,8 @@ description: "Use to write one complete article section. Runs the 8-skill pipeli
 tools: read, grep, find, bash, subagent, academic_writer_read_resource, academic_writer_fix_typography, mcp:zotero
 permission:
   "*": allow
+  write: deny
+  edit: deny
   bash:
     "*": ask
     "python3 *": allow

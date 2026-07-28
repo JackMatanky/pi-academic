@@ -5,7 +5,7 @@ tools: read, bash, write, academic_writer_read_resource
 permission:
   "*": allow
   write:
-    "*": ask
+    "*": deny
     ".voice/fingerprint.md": allow
   bash:
     "*": ask

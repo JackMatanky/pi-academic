@@ -26,7 +26,8 @@
     ],
     "skills": [
       "./skills"
-    ]
+    ],
+    "image": "./assets/pi-academic-writer.svg"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",

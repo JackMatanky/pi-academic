@@ -5,7 +5,7 @@ tools: read, write, grep, find, bash, mcp:zotero
 permission:
   "*": allow
   write:
-    "*": ask
+    "*": deny
     ".academic-helper/sources.json": allow
     ".academic-helper/bibliography.bib": allow
   bash:

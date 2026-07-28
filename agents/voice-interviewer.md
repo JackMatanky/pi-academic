@@ -5,7 +5,7 @@ tools: read, write, find
 permission:
   "*": allow
   write:
-    "*": ask
+    "*": deny
     ".voice/interview/*.md": allow
 metadata:
   author: Academic Helper

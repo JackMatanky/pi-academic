@@ -5,7 +5,7 @@ tools: read, write, grep, find, bash
 permission:
   "*": allow
   write:
-    "*": ask
+    "*": deny
     ".academic-helper/evidence-ownership.json": allow
   bash:
     "*": ask

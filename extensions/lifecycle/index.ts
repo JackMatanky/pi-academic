@@ -1,8 +1,45 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { loadProfile, getProfilePath } from "../lib/profile.js";
-import { existsSync, readdirSync, appendFileSync } from "node:fs";
+import { existsSync, readdirSync, appendFileSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
+
+function readRun(path: string): { runId?: unknown; title?: unknown; status?: unknown; updatedAt?: unknown } {
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf-8")) as unknown;
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as { runId?: unknown; title?: unknown; status?: unknown; updatedAt?: unknown })
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function runSummary(projectDir: string): { active: number; last: string | null } {
+  const runsDir = join(projectDir, ".academic-helper", "runs");
+  if (!existsSync(runsDir)) return { active: 0, last: null };
+  try {
+    const runs = readdirSync(runsDir)
+      .filter((entry) => entry.endsWith(".json"))
+      .map((entry) => {
+        const path = join(runsDir, entry);
+        const data = readRun(path);
+        const status = typeof data.status === "string" ? data.status : "unknown";
+        const runId = typeof data.runId === "string" ? data.runId : entry.replace(/\.json$/, "");
+        const title = typeof data.title === "string" ? data.title : runId;
+        return { status, title, mtimeMs: statSync(path).mtimeMs };
+      })
+      .sort((a, b) => b.mtimeMs - a.mtimeMs);
+    const active = runs.filter((run) => ["planned", "running", "blocked"].includes(run.status)).length;
+    const lastRun = runs[0];
+    return {
+      active,
+      last: lastRun ? `${lastRun.status}: ${lastRun.title}` : null,
+    };
+  } catch {
+    return { active: 0, last: null };
+  }
+}
 
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (event, ctx) => {
@@ -72,6 +109,13 @@ export default function (pi: ExtensionAPI) {
     lines.push(
       `║  Tools: ${(enabledTools.length > 0 ? enabledTools.join(", ") : "None").substring(0, 38).padEnd(38)}║`,
     );
+
+    // Run state
+    const runs = runSummary(projectDir);
+    lines.push(`║  Active runs: ${String(runs.active).padEnd(32)}║`);
+    if (runs.last) {
+      lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
+    }
 
     // Research brief
     const briefPath = join(projectDir, ".academic-helper", "research-brief.md");
