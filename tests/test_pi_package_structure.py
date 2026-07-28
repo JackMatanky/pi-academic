@@ -208,6 +208,13 @@ class TestExtensions(unittest.TestCase):
                     f"TypeScript compilation failed in extensions: {chr(10).join(errors)}"
                 )
 
+
+        with open(os.path.join(ext_dir, "tsconfig.json"), "r", encoding="utf-8") as f:
+            tsconfig = json.load(f)
+        self.assertTrue(
+            tsconfig.get("compilerOptions", {}).get("strict"),
+            "extensions/tsconfig.json must keep strict TypeScript enabled",
+        )
         for d in os.listdir(ext_dir):
             idx_path = os.path.join(ext_dir, d, "index.ts")
             if os.path.isfile(idx_path):

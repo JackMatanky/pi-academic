@@ -4,12 +4,23 @@ import { existsSync, readdirSync, appendFileSync, readFileSync, statSync } from 
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 
-function readRun(path: string): { runId?: unknown; title?: unknown; status?: unknown; updatedAt?: unknown } {
+interface RunData {
+  runId?: string;
+  title?: string;
+  status?: string;
+  updatedAt?: string;
+}
+
+function readRun(path: string): RunData {
   try {
     const parsed = JSON.parse(readFileSync(path, "utf-8")) as unknown;
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as { runId?: unknown; title?: unknown; status?: unknown; updatedAt?: unknown })
-      : {};
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return {
+      runId: "runId" in parsed && typeof parsed.runId === "string" ? parsed.runId : undefined,
+      title: "title" in parsed && typeof parsed.title === "string" ? parsed.title : undefined,
+      status: "status" in parsed && typeof parsed.status === "string" ? parsed.status : undefined,
+      updatedAt: "updatedAt" in parsed && typeof parsed.updatedAt === "string" ? parsed.updatedAt : undefined,
+    };
   } catch {
     return {};
   }

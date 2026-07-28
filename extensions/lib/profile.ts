@@ -15,7 +15,8 @@ export function getProfilePath(projectDir: string): string {
 
 function parseProfileMd(raw: string): ProfileData | null {
   try {
-    const profile: Record<string, unknown> = {};
+    const profile: ProfileData & Record<string, unknown> = {};
+    const fields: Record<string, unknown> = profile;
 
     // Extract YAML frontmatter between first --- and second ---
     const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
@@ -56,19 +57,19 @@ function parseProfileMd(raw: string): ProfileData | null {
         const parsed: unknown = JSON.parse(m[2]);
         switch (heading) {
           case "tools":
-            profile["tools"] = parsed;
+            fields["tools"] = parsed;
             break;
           case "stylefingerprint":
-            profile["styleFingerprint"] = parsed;
+            fields["styleFingerprint"] = parsed;
             break;
           case "sources":
-            profile["sources"] = parsed;
+            fields["sources"] = parsed;
             break;
           case "articlestructure":
-            profile["articleStructure"] = parsed;
+            fields["articleStructure"] = parsed;
             break;
           case "outputformatpreferences":
-            profile["outputFormatPreferences"] = parsed;
+            fields["outputFormatPreferences"] = parsed;
             break;
         }
       } catch {
@@ -76,7 +77,7 @@ function parseProfileMd(raw: string): ProfileData | null {
       }
     }
 
-    return profile as unknown as ProfileData;
+    return profile;
   } catch {
     return null;
   }

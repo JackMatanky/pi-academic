@@ -8,7 +8,7 @@ import { PACKAGE_ROOT } from "../lib/paths.js";
 
 const execFileAsync = promisify(execFile);
 
-function textResult(text: string, details: Record<string, unknown> = {}) {
+function textResult(text: string, details: object = {}) {
   return {
     content: [{ type: "text" as const, text }],
     details,
@@ -60,13 +60,42 @@ function resolveResourcePath(name: string, projectRoot: string, language?: unkno
 
 function fixTypography(text: string): string {
   let fixed = text;
-  fixed = fixed.replace(/[—\u2014]/g, " - ");
+  fixed = fixed.replace(/[-\u2014]/g, " - ");
   fixed = fixed.replace(/"([^"]{0,200})"/g, "״$1״");
   fixed = fixed.replace(/\u200f+(?=[.,;:)\]\"])/gi, "");
   fixed = fixed.replace(/(?<=[(\[])\u200e+/gi, "");
   fixed = fixed.replace(/[\u200e\u200f]{2,}/gi, "");
   fixed = fixed.replace(/^\s*([.,;:])/, "").trim();
   return fixed;
+}
+
+interface FileState {
+  exists: boolean;
+  path: string;
+}
+
+interface RunInfo {
+  runId: string;
+  status: string;
+  title: string | null;
+  updatedAt: string | null;
+  path: string;
+}
+
+interface RunSummary {
+  dir: string;
+  active: RunInfo[];
+  last: RunInfo | null;
+}
+
+interface AcademicWriterStatus {
+  ok: boolean;
+  profile: FileState;
+  voice: FileState;
+  sources: FileState & { count: number };
+  bibliography: FileState;
+  runs: RunSummary;
+  agents: string[];
 }
 
 
@@ -80,35 +109,31 @@ function readJson(path: string): unknown | null {
 
 function countSources(value: unknown): number {
   if (Array.isArray(value)) return value.length;
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    const sources = (value as { sources?: unknown }).sources;
-    if (Array.isArray(sources)) return sources.length;
+  if (value !== null && typeof value === "object" && !Array.isArray(value) && "sources" in value) {
+    if (Array.isArray(value.sources)) return value.sources.length;
   }
   return 0;
 }
 
-function fileState(projectRoot: string, relativePath: string): Record<string, unknown> {
+function fileState(projectRoot: string, relativePath: string): FileState {
   const path = join(projectRoot, relativePath);
   return { exists: existsSync(path), path: relativePath };
 }
 
-function summarizeRuns(projectRoot: string): Record<string, unknown> {
+function summarizeRuns(projectRoot: string): RunSummary {
   const relativeDir = ".academic-helper/runs";
   const runsDir = join(projectRoot, relativeDir);
   if (!existsSync(runsDir)) return { dir: relativeDir, active: [], last: null };
-
   const runs = readdirSync(runsDir)
     .filter((entry) => entry.endsWith(".json"))
     .map((entry) => {
       const path = join(runsDir, entry);
       const data = readJson(path);
-      const record = data !== null && typeof data === "object" && !Array.isArray(data)
-        ? (data as { status?: unknown; runId?: unknown; title?: unknown; updatedAt?: unknown })
-        : {};
-      const status = typeof record.status === "string" ? record.status : "unknown";
-      const runId = typeof record.runId === "string" ? record.runId : entry.replace(/\.json$/, "");
-      const title = typeof record.title === "string" ? record.title : null;
-      const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt : null;
+      const isRun = data !== null && typeof data === "object" && !Array.isArray(data);
+      const status = isRun && "status" in data && typeof data.status === "string" ? data.status : "unknown";
+      const runId = isRun && "runId" in data && typeof data.runId === "string" ? data.runId : entry.replace(/\.json$/, "");
+      const title = isRun && "title" in data && typeof data.title === "string" ? data.title : null;
+      const updatedAt = isRun && "updatedAt" in data && typeof data.updatedAt === "string" ? data.updatedAt : null;
       return {
         runId,
         status,
@@ -120,7 +145,7 @@ function summarizeRuns(projectRoot: string): Record<string, unknown> {
     })
     .sort((a, b) => b.mtimeMs - a.mtimeMs);
 
-  const compact = runs.map(({ mtimeMs: _mtimeMs, ...run }) => run);
+  const compact: RunInfo[] = runs.map(({ mtimeMs: _mtimeMs, ...run }) => run);
   return {
     dir: relativeDir,
     active: compact.filter((run) => ["planned", "running", "blocked"].includes(run.status)),
@@ -128,7 +153,7 @@ function summarizeRuns(projectRoot: string): Record<string, unknown> {
   };
 }
 
-function buildStatus(projectRoot: string): Record<string, unknown> {
+function buildStatus(projectRoot: string): AcademicWriterStatus {
   const profile = fileState(projectRoot, ".academic-helper/profile.md");
   const voice = fileState(projectRoot, "AUTHOR_VOICE.md");
   const sourcesPath = join(projectRoot, ".academic-helper", "sources.json");
@@ -203,15 +228,16 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     parameters: Type.Object({}),
     execute: async (_id, _params, _signal, _onUpdate, ctx) => {
       const status = buildStatus(ctx.cwd);
-      const sources = status.sources as { count?: unknown };
-      const runs = status.runs as { active?: unknown; last?: unknown };
-      const activeRuns = Array.isArray(runs.active) ? runs.active.length : 0;
-      const sourceCount = typeof sources.count === "number" ? sources.count : 0;
+      const activeRuns = status.runs.active.length;
+      const sourceCount = status.sources.count;
+      const lastRun = status.runs.last
+        ? `${status.runs.last.status}: ${status.runs.last.title ?? status.runs.last.runId}`
+        : "none";
       const text = [
         `Academic Writer status: ${status.ok ? "profile found" : "profile missing"}`,
         `Sources: ${sourceCount}`,
         `Active runs: ${activeRuns}`,
-        `Last run: ${runs.last ? "available" : "none"}`,
+        `Last run: ${lastRun}`,
       ].join("\n");
       return textResult(text, status);
     },
@@ -275,13 +301,13 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         const { stdout } = await execFileAsync("python3", args, { cwd: ctx.cwd, signal });
         const parsed = JSON.parse(stdout) as unknown;
         const details = parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-          ? (parsed as Record<string, unknown>)
+          ? parsed
           : { ok: false, error: "audit-citations.py returned a non-object result" };
-        const ok = details.ok === true;
-        const keys = Array.isArray(details.citationKeys) ? details.citationKeys.length : 0;
-        const missingSources = Array.isArray(details.missingFromSources) ? details.missingFromSources.length : 0;
-        const missingBibliography = Array.isArray(details.missingFromBibliography) ? details.missingFromBibliography.length : 0;
-        const warnings = Array.isArray(details.warnings) ? details.warnings.length : 0;
+        const ok = "ok" in details && details.ok === true;
+        const keys = "citationKeys" in details && Array.isArray(details.citationKeys) ? details.citationKeys.length : 0;
+        const missingSources = "missingFromSources" in details && Array.isArray(details.missingFromSources) ? details.missingFromSources.length : 0;
+        const missingBibliography = "missingFromBibliography" in details && Array.isArray(details.missingFromBibliography) ? details.missingFromBibliography.length : 0;
+        const warnings = "warnings" in details && Array.isArray(details.warnings) ? details.warnings.length : 0;
         const summary = ok
           ? `Citation audit passed: ${keys} cite key(s), ${warnings} warning(s).`
           : `Citation audit failed: ${missingSources} missing source key(s), ${missingBibliography} missing bibliography key(s).`;

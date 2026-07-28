@@ -1,7 +1,7 @@
 export interface ProfileData {
-  fieldOfStudy: string;
-  citationStyle: string;
-  targetLanguage: string;
+  fieldOfStudy?: string;
+  citationStyle?: string;
+  targetLanguage?: string;
   styleFingerprint?: StyleFingerprint;
   tools?: Record<string, ToolConfig>;
   articleStructure?: ArticleStructure;
