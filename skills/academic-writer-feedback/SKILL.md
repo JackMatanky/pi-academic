@@ -1,7 +1,7 @@
 ---
 name: academic-writer-feedback
-description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and session memory. Use after the researcher reviews an article produced by /academic-writer."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource
+description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and session memory. Use after the researcher reviews an article produced by /skill:academic-writer-write or /skill:academic-writer-edit."
+allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -32,11 +32,9 @@ Every feedback item must land in exactly one category — if it's ambiguous, pic
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
-If the profile doesn't exist, tell the researcher: "Please run `/skill:academic-writer-init` first — there's no profile yet to update."
+If it returns `ok: false`, tell the researcher: "Please run `/skill:academic-writer-init` first — there's no profile yet to update."
 
 Capture `targetLanguage` — you'll need it when editing the pattern reference.
 
@@ -45,24 +43,13 @@ Capture `targetLanguage` — you'll need it when editing the pattern reference.
 Ask:
 > "Which article would you like to give feedback on?"
 
-Present options listed from the `articles/` directory (numbered list, most recent first):
-
-```bash
-ls articles/*.md 2>/dev/null | head -20
-```
+Present options from `academic_writer_list_project_files` with `kind: "articles"` (numbered list, most recent first).
 
 If multiple `.md` files exist, present the most recent ones as options plus an "Other path / paste a file path" option. If only one exists, confirm it's the one.
 
 Once chosen, load the artifacts:
 
-```bash
-# The article text
-cat articles/<slug>.md
-# The bibliographic registry for this run
-cat .academic-helper/sources.json 2>/dev/null || echo "[]"
-# The evidence ownership map for this run
-cat .academic-helper/evidence-ownership.json 2>/dev/null || echo "{}"
-```
+Read the chosen article with the Read tool. Also read `.academic-helper/sources.json` and `.academic-helper/evidence-ownership.json` when present; treat missing files as `[]` and `{}` respectively.
 
 
 ## Phase 2 — Structured Interview

@@ -9,6 +9,11 @@ interface FileState {
   path: string;
 }
 
+/** Directory metadata for project-local files. */
+interface DirectoryState extends FileState {
+  count: number;
+}
+
 /** Full status payload returned by `academic_writer_status`. */
 export interface AcademicWriterStatus {
   ok: boolean;
@@ -16,6 +21,8 @@ export interface AcademicWriterStatus {
   voice: FileState;
   sources: FileState & { count: number };
   bibliography: FileState;
+  articles: DirectoryState;
+  pastArticles: DirectoryState;
   runs: RunSummary;
   agents: string[];
 }
@@ -49,6 +56,17 @@ function fileState(projectRoot: string, relativePath: string): FileState {
   return { exists: existsSync(path), path: relativePath };
 }
 
+/** Counts matching files in an optional project-local directory. */
+function directoryState(
+  projectRoot: string,
+  relativePath: string,
+  matches: (entry: string) => boolean,
+): DirectoryState {
+  const path = join(projectRoot, relativePath);
+  const count = existsSync(path) ? readdirSync(path).filter(matches).length : 0;
+  return { exists: existsSync(path), path: relativePath, count };
+}
+
 /** Builds the project-local status object shown by the status tool. */
 export function buildStatus(projectRoot: string): AcademicWriterStatus {
   const profile = fileState(projectRoot, ".academic-helper/profile.md");
@@ -73,6 +91,14 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
     voice,
     sources,
     bibliography,
+    articles: directoryState(projectRoot, "articles", (entry) =>
+      entry.endsWith(".md"),
+    ),
+    pastArticles: directoryState(
+      projectRoot,
+      "past-articles",
+      (entry) => !entry.startsWith("."),
+    ),
     runs: summarizeRuns(projectRoot),
     agents,
   };

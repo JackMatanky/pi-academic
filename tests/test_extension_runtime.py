@@ -54,6 +54,14 @@ class TestExtensionRuntime(unittest.TestCase):
                 const signal = new AbortController().signal;
                 const call = (name, params = {{}}) => tools.get(name).execute("test", params, signal, undefined, ctx);
                 const status = await call("academic_writer_status");
+                const health = await call("academic_writer_health");
+                const profile = await call("academic_writer_get_profile");
+                const updated = await call("academic_writer_update_profile", {{
+                  fieldsJson: JSON.stringify({{ citationStyle: "mla" }})
+                }});
+                const paths = await call("academic_writer_article_paths", {{ subject: "Smoke Test: חיבור" }});
+                const files = await call("academic_writer_list_project_files", {{ kind: "articles" }});
+                const extracted = await call("academic_writer_extract_document", {{ path: "articles/ok.md" }});
                 const resource = await call("academic_writer_read_resource", {{ name: "thresholds" }});
                 const audit = await call("academic_writer_audit_citations", {{
                   article: "articles/ok.md",
@@ -62,6 +70,12 @@ class TestExtensionRuntime(unittest.TestCase):
                 console.log(JSON.stringify({{
                   names: [...tools.keys()].sort(),
                   status,
+                  health,
+                  profile,
+                  updated,
+                  paths,
+                  files,
+                  extracted,
                   resource,
                   audit
                 }}));
@@ -113,8 +127,21 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertIn("academic_writer_audit_citations", data["names"])
         self.assertTrue(data["status"]["details"]["ok"])
         self.assertEqual(data["status"]["details"]["sources"]["count"], 1)
+        self.assertEqual(data["status"]["details"]["articles"]["count"], 1)
         self.assertEqual(data["status"]["details"]["runs"]["active"][0]["runId"], "r1")
         self.assertIn("auditor.md", data["status"]["details"]["agents"])
+        self.assertTrue(data["health"]["details"]["commands"].keys())
+        self.assertEqual(
+            data["profile"]["details"]["profile"]["fieldOfStudy"], "History"
+        )
+        self.assertEqual(data["updated"]["details"]["profile"]["citationStyle"], "mla")
+        self.assertEqual(
+            data["paths"]["details"]["markdown"], "articles/smoke-test-חיבור.md"
+        )
+        self.assertEqual(data["files"]["details"]["files"][0]["path"], "articles/ok.md")
+        self.assertEqual(
+            data["extracted"]["content"][0]["text"], "Text [@smith2020, p. 4]."
+        )
         self.assertEqual(data["resource"]["details"]["source"], "project")
         self.assertEqual(
             json.loads(data["resource"]["content"][0]["text"]), {"sentinel": True}

@@ -474,15 +474,15 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
                 f"Command {cmd} missing in README.md/AGENTS.md",
             )
 
-    def test_pdf_export_supports_tectonic(self):
+    def test_pdf_export_uses_health_and_wrapper_tools(self):
         export_skill = _read("skills/academic-writer-export/SKILL.md")
         health_skill = _read("skills/academic-writer-health/SKILL.md")
         readme = _read("README.md")
 
-        self.assertIn("command -v tectonic", export_skill)
-        self.assertIn('--pdf-engine="$PDF_ENGINE"', export_skill)
+        self.assertIn("academic_writer_health", export_skill)
         self.assertIn("PDF_ENGINE=tectonic", export_skill)
-        self.assertIn("command -v tectonic", health_skill)
+        self.assertIn("academic_writer_export_article", export_skill)
+        self.assertIn("academic_writer_health", health_skill)
         self.assertIn("brew install tectonic", readme)
 
 

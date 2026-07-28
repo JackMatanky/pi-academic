@@ -1,7 +1,7 @@
 ---
 name: academic-writer-update-tools
 description: "Add, remove, or reconfigure integrations (Zotero, NotebookLM). Use when adding/removing integrations after initial setup."
-allowed-tools: bash read write edit find grep
+allowed-tools: bash read write edit find grep academic_writer_get_profile academic_writer_update_profile
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -11,16 +11,12 @@ Modify which integrations are enabled without re-running the full initialization
 
 ## Load Current Profile
 
-```bash
-if [ -f .academic-helper/profile.md ]; then
-  cat .academic-helper/profile.md
-else
-  echo "No profile found. Run /skill:academic-writer-init first."
-  exit 1
-fi
-```
+Call `academic_writer_get_profile`.
 
-Parse the current `tools` object from the profile. If the profile has no `tools` key (legacy profile), treat all tools as not configured.
+If it returns `ok: false`, tell them:
+> "No profile found. Run `/skill:academic-writer-init` first."
+
+Use the returned `tools` object. If the profile has no `tools` key (legacy profile), treat all tools as not configured.
 
 ## Tool Registry
 
@@ -65,94 +61,16 @@ For each tool the user wants to **disable**:
 
 ## Save Updated Profile
 
-Update ONLY the `tools` key and `updatedAt` in the profile. Preserve all other fields:
+Call `academic_writer_update_profile` with `fieldsJson`:
 
-```bash
-python3 << 'PYTHON'
-import re, json
-from datetime import datetime
-
-PROFILE_PATH = '.academic-helper/profile.md'
-
-with open(PROFILE_PATH) as f:
-    content = f.read()
-
-# Parse frontmatter scalars and lists
-profile = {}
-fm_match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
-if fm_match:
-    fm_text = fm_match.group(1)
-    i, fm_lines = 0, fm_text.split('\n')
-    while i < len(fm_lines):
-        line = fm_lines[i]
-        kv = re.match(r'^([\w-]+): (.+)$', line)
-        ko = re.match(r'^([\w-]+):\s*$', line)
-        if kv:
-            k, v = kv.group(1), kv.group(2).strip()
-            profile[k] = None if v == 'null' else ([] if v == '[]' else v)
-            i += 1
-        elif ko and i + 1 < len(fm_lines) and fm_lines[i + 1].startswith('  - '):
-            k = ko.group(1)
-            items = []
-            i += 1
-            while i < len(fm_lines) and fm_lines[i].startswith('  - '):
-                items.append(fm_lines[i][4:])
-                i += 1
-            profile[k] = items
-        else:
-            i += 1
-
-# Parse JSON sections
-for m in re.finditer(r'^## (.+?)\n+```json\n(.*?)\n```', content, re.MULTILINE | re.DOTALL):
-    heading = m.group(1).strip().lower().replace(' ', '')
-    try:
-        parsed = json.loads(m.group(2))
-        mapping = {'tools': 'tools', 'stylefingerprint': 'styleFingerprint',
-                   'sources': 'sources', 'articlestructure': 'articleStructure',
-                   'outputformatpreferences': 'outputFormatPreferences'}
-        if heading in mapping:
-            profile[mapping[heading]] = parsed
-    except Exception:
-        pass
-
-# Update tools — replace TOOL_CONFIG with actual selections
-profile['tools'] = TOOL_CONFIG
-profile['updatedAt'] = datetime.now().isoformat()
-
-# Write profile.md
-scalar_keys = ['fieldOfStudy', 'citationStyle', 'targetLanguage', 'updatedAt', 'createdAt']
-list_keys = ['abstractLanguages', 'analyzedArticles']
-json_sections = [
-    ('tools', 'Tools'), ('outputFormatPreferences', 'Output Format Preferences'),
-    ('styleFingerprint', 'Style Fingerprint'), ('articleStructure', 'Article Structure'),
-    ('sources', 'Sources'),
-]
-lines = ['# Academic Writer Profile', '', '---']
-for k in scalar_keys:
-    if k in profile and profile[k] is not None:
-        lines.append(f'{k}: {profile[k]}')
-for k in list_keys:
-    v = profile.get(k) or []
-    if not v:
-        lines.append(f'{k}: []')
-    else:
-        lines.append(f'{k}:')
-        for item in v:
-            lines.append(f'  - {item}')
-lines.extend(['---', ''])
-for k, heading in json_sections:
-    if k in profile and profile[k] is not None:
-        lines.extend([f'## {heading}', '', '```json',
-                      json.dumps(profile[k], indent=2, ensure_ascii=False), '```', ''])
-
-with open(PROFILE_PATH, 'w') as f:
-    f.write('\n'.join(lines))
-
-print("Tools updated successfully.")
-PYTHON
+```json
+{
+  "tools": TOOL_CONFIG,
+  "updatedAt": "ISO_TIMESTAMP"
+}
 ```
 
-Replace `TOOL_CONFIG` with the actual tools dict, e.g.:
+Replace `TOOL_CONFIG` with the actual selections, e.g.:
 ```json
 {
   "zotero": { "enabled": true, "mode": "mcp-config" },

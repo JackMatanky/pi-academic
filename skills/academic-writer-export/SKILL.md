@@ -1,7 +1,7 @@
 ---
 name: academic-writer-export
 description: "Convert a finished article to additional document formats (PDF, HTML, ODT, LaTeX, EPUB) via pandoc. Use when the researcher wants to convert a finished article to PDF, HTML, ODT, LaTeX, or EPUB — after /skill:academic-writer-write or /skill:academic-writer-edit has produced articles/<slug>.md."
-allowed-tools: bash read write find academic_writer_read_resource academic_writer_audit_citations
+allowed-tools: bash read write find academic_writer_read_resource academic_writer_get_profile academic_writer_health academic_writer_list_project_files academic_writer_audit_citations academic_writer_export_article
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
@@ -11,13 +11,11 @@ Convert an already-written `articles/<slug>.md` into additional formats using [p
 
 ---
 
-## 1. Check pandoc is installed
+## 1. Check export tooling
 
-```bash
-command -v pandoc >/dev/null 2>&1 && echo "PANDOC: INSTALLED" || echo "PANDOC: NOT_FOUND"
-```
+Call `academic_writer_health`.
 
-If `NOT_FOUND`, stop immediately — do not attempt any conversion. Tell the researcher:
+If `commands.pandoc` is false, stop immediately — do not attempt any conversion. Tell the researcher:
 
 > "This skill needs [pandoc](https://pandoc.org/installing.html) installed on your machine — it's not bundled with Academic Writer. Install it, then re-run `/skill:academic-writer-export`."
 
@@ -25,7 +23,7 @@ If `NOT_FOUND`, stop immediately — do not attempt any conversion. Tell the res
 
 ## 1a. Load profile, run state, and citation contract
 
-Read `.academic-helper/profile.md`. If missing, stop and tell the researcher to run `/skill:academic-writer-init` first.
+Call `academic_writer_get_profile`. If it returns `ok: false`, stop and tell the researcher to run `/skill:academic-writer-init` first.
 
 Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this export run. Use `phase: export`; update status to `complete`, `failed`, or `blocked` before stopping.
 
@@ -33,9 +31,7 @@ Call `academic_writer_read_resource` with `name: citation_export_contract`; expo
 
 ## 2. Identify the article
 
-```bash
-ls -t articles/*.md 2>/dev/null
-```
+Call `academic_writer_list_project_files` with `kind: "articles"` and use the returned newest-first `files`.
 
 - If exactly one `.md` file exists in `articles/`, default to it and confirm: "Export `articles/<slug>.md` — is that the one?"
 - If several exist, list them (most recent first) and ask:
@@ -55,19 +51,12 @@ Ask (multi-select):
 
 ## 4. Check PDF engine (only needed for PDF)
 
-If PDF was requested, check both supported engines:
-
-```bash
-command -v xelatex >/dev/null 2>&1 && echo "XELATEX: INSTALLED" || echo "XELATEX: NOT_FOUND"
-command -v tectonic >/dev/null 2>&1 && echo "TECTONIC: INSTALLED" || echo "TECTONIC: NOT_FOUND"
-```
-
-Select `PDF_ENGINE`:
-- If `xelatex` is installed, use `PDF_ENGINE=xelatex` to preserve the existing Hebrew-safe default.
-- Else if `tectonic` is installed, use `PDF_ENGINE=tectonic`.
+If PDF was requested, use `academic_writer_health` command flags to select `PDF_ENGINE`:
+- If `commands.xelatex` is true, use `PDF_ENGINE=xelatex` to preserve the existing Hebrew-safe default.
+- Else if `commands.tectonic` is true, use `PDF_ENGINE=tectonic`.
 - If both are installed and the researcher explicitly asked for Tectonic, use `PDF_ENGINE=tectonic`.
 
-If both engines are `NOT_FOUND`, skip the PDF conversion and tell the researcher clearly:
+If both engines are missing, skip the PDF conversion and tell the researcher clearly:
 
 > "PDF export needs a Unicode-capable TeX engine: either XeTeX (`xelatex`) or Tectonic (`tectonic`). The default `pdflatex` engine can't render Hebrew script. I'll export your other requested format(s) now; to enable PDF:
 > - **Tectonic**: install from https://tectonic-typesetting.github.io/ or your package manager (for example `brew install tectonic`)
@@ -78,44 +67,15 @@ Proceed with the other requested formats regardless (HTML/ODT/LaTeX/EPUB have no
 
 ---
 
-## 4a. Deterministic citation audit
+## 4a. Deterministic citation audit and conversion
 
-Before any Pandoc conversion, call `academic_writer_audit_citations` with:
+Call `academic_writer_export_article` with:
 - `article: MD_PATH`
-- `citationStyle: citationStyle` from `.academic-helper/profile.md` (`inline-parenthetical` if unavailable)
+- `citationStyle: citationStyle` from `academic_writer_get_profile` (`inline-parenthetical` if unavailable)
+- `formats: requested formats`, excluding PDF if no supported engine is installed
+- `pdfEngine: PDF_ENGINE` when PDF is included
 
-If `ok` is false, do not export. Set the run state to `failed` and report the exact missing/wrong-mode citation details. The researcher must fix citations before conversion.
-
----
-
-## 5. Run the conversions
-
-For every requested format except PDF (when no supported PDF engine is installed):
-
-```bash
-MD_PATH="articles/${SLUG}.md"
-
-# HTML
-pandoc "$MD_PATH" --citeproc -o "articles/${SLUG}.html"
-
-# ODT
-pandoc "$MD_PATH" --citeproc -o "articles/${SLUG}.odt"
-
-# LaTeX
-pandoc "$MD_PATH" --citeproc -o "articles/${SLUG}.tex"
-
-# EPUB
-pandoc "$MD_PATH" --citeproc -o "articles/${SLUG}.epub"
-
-# PDF (only if PDF_ENGINE is xelatex or tectonic)
-pandoc "$MD_PATH" --citeproc --pdf-engine="$PDF_ENGINE" -o "articles/${SLUG}.pdf"
-```
-
-Only run the lines for formats the researcher actually selected.
-
-`--citeproc` is unconditional and safe to pass for every article, including `inline-parenthetical` (Hebrew literal-citation) articles that carry no `[@citekey]` markers and no `bibliography:`/`csl:` frontmatter — it's a harmless no-op there. For citeproc-mode articles, the markdown's own YAML frontmatter (`bibliography:`, `csl:`) drives citation rendering automatically; no extra flags are needed.
-
-If any single `pandoc` invocation fails (non-zero exit), report that specific format's error to the researcher and continue attempting the remaining requested formats — one failure must not abort the whole batch.
+`academic_writer_export_article` runs the deterministic citation audit first. If it returns `ok: false` because the audit failed, set the run state to `failed` and report the exact missing/wrong-mode citation details. If a single Pandoc format fails after a passing audit, report that format's error and keep any other successful outputs.
 
 ---
 

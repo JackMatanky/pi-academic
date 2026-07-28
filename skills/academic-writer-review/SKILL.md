@@ -1,7 +1,7 @@
 ---
 name: academic-writer-review
 description: "Self-review quality gate — scores a completed article on 6 dimensions (structure, argument logic, citation completeness, source coverage, writing quality, academic conventions) and presents a scorecard before final output. Use after writing to score the article on quality dimensions before publication."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_audit_citations
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_audit_citations
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -16,11 +16,9 @@ A structured quality gate that scores a completed article on 6 dimensions and pr
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
-If no profile, tell the researcher to run `/skill:academic-writer-init` first.
+If it returns `ok: false`, tell the researcher to run `/skill:academic-writer-init` first.
 
 Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-helper/runs/<run-id>.json` for this review when run standalone. Use `phase: review`; update status before stopping. When invoked inside write/edit, update the current run file instead of creating a second one.
 
@@ -29,10 +27,7 @@ Call `academic_writer_read_resource` with `name: run_state_contract`, then creat
 When run standalone, ask:
 > "Which article would you like to review? Provide the path to a markdown (.md) file in `articles/`."
 
-List available articles:
-```bash
-ls articles/*.md 2>/dev/null
-```
+List available articles by calling `academic_writer_list_project_files` with `kind: "articles"`.
 
 Read the selected article with the `Read` tool.
 
@@ -55,18 +50,9 @@ For each dimension:
 
 The scorecard is the single source of truth — do not score on dimensions not listed there, and do not change weights inline. To adjust scoring, edit `references/scorecard.json` and bump its `version` field.
 
-Also check the researcher's style fingerprint for Writing Quality (dimension 5):
+Also check the `styleFingerprint` returned by `academic_writer_get_profile` for Writing Quality (dimension 5).
 
-```bash
-python3 -c "
-import re, json
-content = open('.academic-helper/profile.md').read()
-m = re.search(r'## Style Fingerprint\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
-print(m.group(1) if m else 'null')
-"
-```
-
-And load linking words for Academic Conventions (dimension 6) by calling `academic_writer_read_resource` with `name: words`.
+Load linking words for Academic Conventions (dimension 6) by calling `academic_writer_read_resource` with `name: words`.
 
 ## Scorecard Output
 

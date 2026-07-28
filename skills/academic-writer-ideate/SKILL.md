@@ -1,7 +1,7 @@
 ---
 name: academic-writer-ideate
 description: "Guided research ideation — brainstorm research questions using 5W1H, gap analysis, and structured framing. Outputs a research brief that feeds into /skill:academic-writer-write. Use when you have a vague topic and need help framing a research question."
-allowed-tools: bash read write find grep
+allowed-tools: bash read write find grep academic_writer_get_profile
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -11,13 +11,11 @@ Guided ideation flow that helps researchers formulate strong research questions 
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
-If no profile, tell the researcher to run `/skill:academic-writer-init` first.
+If it returns `ok: false`, tell the researcher to run `/skill:academic-writer-init` first.
 
-Extract `fieldOfStudy`, `targetLanguage`, and `tools` configuration.
+Use returned `fieldOfStudy`, `targetLanguage`, and `tools` configuration.
 
 ## Step 1: Topic Exploration
 

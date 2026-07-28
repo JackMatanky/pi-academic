@@ -1,7 +1,7 @@
 ---
 name: academic-writer-present
 description: "Post-article deliverables — generate conference presentation outlines, journal submission summaries, and book chapter proposals from a completed article. Use after publishing an article when you need conference/journal/proposal deliverables."
-allowed-tools: bash read write find grep
+allowed-tools: bash read write find grep academic_writer_get_profile academic_writer_list_project_files
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -11,17 +11,9 @@ Generate presentation materials and submission documents from a completed articl
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile` and use returned `targetLanguage` and `fieldOfStudy`.
 
-Extract `targetLanguage` and `fieldOfStudy`.
-
-## Select Article
-
-```bash
-ls articles/*.md 2>/dev/null
-```
+Call `academic_writer_list_project_files` with `kind: "articles"` and use the returned newest-first `files`.
 
 If multiple articles exist:
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):

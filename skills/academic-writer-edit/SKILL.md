@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit
 description: "Edit a previously written article — revise sections, fix citations, adjust tone, restructure arguments, or rewrite passages. Use when revising an article that's already drafted — multiple sections, restructuring, or major changes."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_audit_citations academic_writer_resolve_csl academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -17,11 +17,9 @@ Call `academic_writer_read_resource` with `name: voice_profile_load`, then follo
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
-If no profile: "Run `/skill:academic-writer-init` first."
+If it returns `ok: false`: "Run `/skill:academic-writer-init` first."
 
 **Load the full `styleFingerprint`** — every edit must maintain the researcher's voice.
 
@@ -39,12 +37,7 @@ Ask the researcher:
 > - Paste the text directly
 > - Tell me to use the most recent article from this session"
 
-For .docx files:
-```bash
-python3 -c "import docx; d=docx.Document('FILE_PATH'); [print(p.text) for p in d.paragraphs]"
-```
-
-For markdown or text files, read directly.
+For `.docx`, markdown, PDF, or text files, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction fails, stop and report the tool's error.
 
 Parse the article into sections and paragraphs. Identify all footnotes/citations.
 
@@ -173,17 +166,13 @@ After edits are applied:
 
 3. If exporting to .docx, call `academic_writer_read_resource` with `name: citation_export_contract`, then branch by `citationStyle` first:
 
-**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode — or, if the profile is unavailable/stale, the article's markdown already opens with a `bibliography:` frontmatter key (`head -10 "$MD_PATH" | grep -q '^bibliography:'`).
+**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode. If the profile is unavailable/stale, call `academic_writer_extract_document` on the markdown and treat a leading `bibliography:` frontmatter key as citeproc mode.
 
 **Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. If `ok` is false, stop, set the run state to `failed`, and report the exact missing/wrong-mode citation details.
 
 **`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `academic_writer_generate_docx`.
 
-**Citeproc mode:** rewrite `$MD_PATH` using the loaded `citation_export_contract`: prepend YAML frontmatter before the title heading, keep edited body `[@citeKey, p. N]` markers verbatim, resolve `RESOLVED_CSL_PATH` first with `academic_writer_resolve_csl`, then regenerate DOCX directly:
-
-```bash
-pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"
-```
+**Citeproc mode:** rewrite `$MD_PATH` using the loaded `citation_export_contract`: prepend YAML frontmatter before the title heading, keep edited body `[@citeKey, p. N]` markers verbatim, resolve `RESOLVED_CSL_PATH` first with `academic_writer_resolve_csl`, then call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, and `formats: ["docx"]`.
 
 Same current limitation as write-article Step 9b: this path does not apply `generate-docx.py`'s Hebrew RTL post-processing. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 

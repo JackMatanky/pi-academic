@@ -5,10 +5,26 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 import { PACKAGE_ROOT } from "../lib/paths.js";
+import { loadProfile, updateProfile } from "../lib/profile.js";
 import { resolveResourcePath } from "./resources.js";
+import {
+  articlePaths,
+  buildHealth,
+  extractDocument,
+  listProjectFiles,
+} from "./project.js";
 import { buildStatus } from "./status.js";
 
 const execFileAsync = promisify(execFile);
+const EXPORT_FORMATS = new Set([
+  "docx",
+  "html",
+  "odt",
+  "latex",
+  "tex",
+  "epub",
+  "pdf",
+]);
 
 /** Formats a plain-text MCP tool response with structured details. */
 function textResult(text: string, details: object = {}) {
@@ -28,6 +44,54 @@ function fixTypography(text: string): string {
   fixed = fixed.replace(/[\u200e\u200f]{2,}/gi, "");
   fixed = fixed.replace(/^\s*([.,;:])/, "").trim();
   return fixed;
+}
+
+function jsonObject(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed !== null &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function detailCount(details: object, key: string): number {
+  return key in details && Array.isArray(details[key as keyof typeof details])
+    ? (details[key as keyof typeof details] as unknown[]).length
+    : 0;
+}
+
+async function runCitationAudit(
+  article: string,
+  citationStyle: string,
+  projectRoot: string,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>> {
+  const args = [
+    join(PACKAGE_ROOT, "scripts", "audit-citations.py"),
+    article,
+    "--citation-style",
+    citationStyle,
+    "--project-root",
+    projectRoot,
+  ];
+  const { stdout } = await execFileAsync("python3", args, {
+    cwd: projectRoot,
+    signal,
+  });
+  const parsed = JSON.parse(stdout) as unknown;
+  return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
+    : { ok: false, error: "audit-citations.py returned a non-object result" };
+}
+
+function exportOutputPath(article: string, format: string): string {
+  const normalized = format === "latex" ? "tex" : format;
+  return `${article.replace(/\.[^.\/]+$/, "")}.${normalized}`;
 }
 
 /** Registers package-aware Academic Writer tools for Pi. */
@@ -107,10 +171,159 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       const text = [
         `Academic Writer status: ${status.ok ? "profile found" : "profile missing"}`,
         `Sources: ${sourceCount}`,
+        `Articles: ${status.articles.count}`,
+        `Past articles: ${status.pastArticles.count}`,
         `Active runs: ${activeRuns}`,
         `Last run: ${lastRun}`,
       ].join("\n");
       return textResult(text, status);
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_health",
+    label: "Academic Writer Health",
+    description:
+      "Return deterministic local health data: profile/source/run state, packaged agents, and local command availability. Live MCP probes still belong in the health skill.",
+    parameters: Type.Object({}),
+    execute: async (_id, _params, _signal, _onUpdate, ctx) => {
+      const health = buildHealth(ctx.cwd);
+      const text = [
+        `Profile: ${health.profile.exists ? "found" : "missing"}`,
+        `Sources: ${health.sources.count}`,
+        `Runs active: ${health.runs.active.length}`,
+        `Pandoc: ${health.commands.pandoc ? "installed" : "missing"}`,
+        `PDF engine: ${health.commands.xelatex || health.commands.tectonic ? "installed" : "missing"}`,
+      ].join("\n");
+      return textResult(text, health);
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_get_profile",
+    label: "Academic Writer Get Profile",
+    description:
+      "Read and parse .academic-helper/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
+    parameters: Type.Object({}),
+    execute: async (_id, _params, _signal, _onUpdate, ctx) => {
+      const profile = loadProfile(ctx.cwd);
+      if (!profile) {
+        return textResult("Academic Writer profile missing", {
+          ok: false,
+          path: ".academic-helper/profile.md",
+        });
+      }
+      return textResult(JSON.stringify(profile, null, 2), {
+        ok: true,
+        path: ".academic-helper/profile.md",
+        profile,
+      });
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_update_profile",
+    label: "Academic Writer Update Profile",
+    description:
+      "Patch recognized .academic-helper/profile.md fields using a JSON object string. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
+    parameters: Type.Object({
+      fieldsJson: Type.String({
+        minLength: 2,
+        description:
+          'JSON object of profile fields to replace, e.g. {"tools":{...}} or {"fieldOfStudy":"..."}.',
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const patch = jsonObject(String(params.fieldsJson ?? ""));
+      if (!patch) {
+        return textResult(
+          "Profile update failed: fieldsJson must be a JSON object",
+          {
+            ok: false,
+          },
+        );
+      }
+      const profile = updateProfile(ctx.cwd, patch);
+      if (!profile) {
+        return textResult(
+          "Profile update failed: profile missing or unreadable",
+          {
+            ok: false,
+            path: ".academic-helper/profile.md",
+          },
+        );
+      }
+      return textResult("Profile updated", {
+        ok: true,
+        path: ".academic-helper/profile.md",
+        profile,
+      });
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_article_paths",
+    label: "Academic Writer Article Paths",
+    description:
+      "Build deterministic article slug, markdown, DOCX, and intermediate JSON paths from a subject. Supports non-English titles.",
+    parameters: Type.Object({
+      subject: Type.String({
+        minLength: 1,
+        description: "Article subject/title.",
+      }),
+    }),
+    execute: async (_id, params) => {
+      const paths = articlePaths(String(params.subject ?? ""));
+      return textResult(JSON.stringify(paths, null, 2), { ok: true, ...paths });
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_list_project_files",
+    label: "Academic Writer Project Files",
+    description:
+      "List project articles or past-article corpus files deterministically in newest-first order. Use instead of ls/find/head/wc in skills.",
+    parameters: Type.Object({
+      kind: Type.String({
+        description:
+          "articles for articles/*.md, or past_articles for past-articles/.",
+      }),
+      limit: Type.Optional(Type.Number({ minimum: 1, maximum: 200 })),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const kind =
+        params.kind === "past_articles" ? "past_articles" : "articles";
+      const result = listProjectFiles(
+        ctx.cwd,
+        kind,
+        typeof params.limit === "number" ? params.limit : 50,
+      );
+      const text = result.files.map((file) => file.path).join("\n") || "(none)";
+      return textResult(text, { ok: true, ...result });
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_extract_document",
+    label: "Academic Writer Extract Document",
+    description:
+      "Extract deterministic plain text from markdown, text, PDF, or DOCX files. Use instead of inline python/docx/pdfplumber shell snippets.",
+    parameters: Type.Object({
+      path: Type.String({ minLength: 1, description: "Document path." }),
+    }),
+    execute: async (_id, params, signal, _onUpdate, ctx) => {
+      const result = await extractDocument(
+        ctx.cwd,
+        String(params.path),
+        signal,
+      );
+      return textResult(
+        result.ok ? result.text : `Document extraction failed: ${result.error}`,
+        {
+          ...result,
+          length: result.text.length,
+        },
+      );
     },
   });
 
@@ -177,48 +390,21 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       }),
     }),
     execute: async (_id, params, signal, _onUpdate, ctx) => {
-      const args = [
-        join(PACKAGE_ROOT, "scripts", "audit-citations.py"),
-        String(params.article),
-        "--citation-style",
-        String(params.citationStyle),
-        "--project-root",
-        ctx.cwd,
-      ];
       try {
-        const { stdout } = await execFileAsync("python3", args, {
-          cwd: ctx.cwd,
+        const details = await runCitationAudit(
+          String(params.article),
+          String(params.citationStyle),
+          ctx.cwd,
           signal,
-        });
-        const parsed = JSON.parse(stdout) as unknown;
-        const details =
-          parsed !== null &&
-          typeof parsed === "object" &&
-          !Array.isArray(parsed)
-            ? parsed
-            : {
-                ok: false,
-                error: "audit-citations.py returned a non-object result",
-              };
-        const ok = "ok" in details && details.ok === true;
-        const keys =
-          "citationKeys" in details && Array.isArray(details.citationKeys)
-            ? details.citationKeys.length
-            : 0;
-        const missingSources =
-          "missingFromSources" in details &&
-          Array.isArray(details.missingFromSources)
-            ? details.missingFromSources.length
-            : 0;
-        const missingBibliography =
-          "missingFromBibliography" in details &&
-          Array.isArray(details.missingFromBibliography)
-            ? details.missingFromBibliography.length
-            : 0;
-        const warnings =
-          "warnings" in details && Array.isArray(details.warnings)
-            ? details.warnings.length
-            : 0;
+        );
+        const ok = details.ok === true;
+        const keys = detailCount(details, "citationKeys");
+        const missingSources = detailCount(details, "missingFromSources");
+        const missingBibliography = detailCount(
+          details,
+          "missingFromBibliography",
+        );
+        const warnings = detailCount(details, "warnings");
         const summary = ok
           ? `Citation audit passed: ${keys} cite key(s), ${warnings} warning(s).`
           : `Citation audit failed: ${missingSources} missing source key(s), ${missingBibliography} missing bibliography key(s).`;
@@ -226,6 +412,100 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return textResult(`Citation audit failed: ${message}`, {
+          ok: false,
+          error: message,
+        });
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_export_article",
+    label: "Academic Writer Export Article",
+    description:
+      "Run the mechanical citation audit, then export an audited markdown article to DOCX or other requested formats with Pandoc. Continues other formats when one fails.",
+    parameters: Type.Object({
+      article: Type.String({
+        minLength: 1,
+        description: "Markdown article path.",
+      }),
+      citationStyle: Type.String({
+        minLength: 1,
+        description:
+          "Profile citationStyle; inline-parenthetical means literal mode.",
+      }),
+      formats: Type.Array(Type.String({ minLength: 2 }), {
+        description: "Formats: docx, html, odt, latex/tex, epub, pdf.",
+      }),
+      pdfEngine: Type.Optional(
+        Type.String({
+          description: "Optional PDF engine: xelatex or tectonic.",
+        }),
+      ),
+    }),
+    execute: async (_id, params, signal, _onUpdate, ctx) => {
+      const article = String(params.article);
+      const citationStyle = String(params.citationStyle);
+      const formats = Array.isArray(params.formats)
+        ? params.formats
+            .map((format) => String(format).toLowerCase())
+            .filter((format) => EXPORT_FORMATS.has(format))
+        : [];
+      if (formats.length === 0) {
+        return textResult("Export failed: no supported formats requested", {
+          ok: false,
+          supported: [...EXPORT_FORMATS].sort(),
+        });
+      }
+      try {
+        const audit = await runCitationAudit(
+          article,
+          citationStyle,
+          ctx.cwd,
+          signal,
+        );
+        if (audit.ok !== true) {
+          return textResult("Export stopped: citation audit failed", {
+            ok: false,
+            audit,
+          });
+        }
+        const results: Array<{
+          format: string;
+          output: string;
+          ok: boolean;
+          error?: string;
+        }> = [];
+        const citeproc = citationStyle !== "inline-parenthetical";
+        for (const format of formats) {
+          const output = exportOutputPath(article, format);
+          const args = [article];
+          if (citeproc) args.push("--citeproc");
+          if (format === "pdf" && typeof params.pdfEngine === "string") {
+            args.push(`--pdf-engine=${params.pdfEngine}`);
+          }
+          args.push("-o", output);
+          try {
+            await execFileAsync("pandoc", args, { cwd: ctx.cwd, signal });
+            results.push({ format, output, ok: true });
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            results.push({ format, output, ok: false, error: message });
+          }
+        }
+        const ok = results.every((result) => result.ok);
+        const text = results
+          .map((result) =>
+            result.ok
+              ? `${result.format}: wrote ${result.output}`
+              : `${result.format}: failed - ${result.error}`,
+          )
+          .join("\n");
+        return textResult(text, { ok, audit, results });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return textResult(`Export failed: ${message}`, {
           ok: false,
           error: message,
         });

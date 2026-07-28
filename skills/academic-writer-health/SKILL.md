@@ -1,7 +1,7 @@
 ---
 name: academic-writer-health
 description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
-allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents
+allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents academic_writer_status academic_writer_health
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
@@ -9,41 +9,23 @@ metadata: {author: "Yotam Fromm", version: "0.2.24"}
 
 Run a comprehensive health check on every component of the Academic Writer system. Report status clearly so the researcher knows what's working and what needs attention.
 
-## 1. Profile Check
+## 1. Local package status
 
-```bash
-if [ -f .academic-helper/profile.md ]; then
-  cat .academic-helper/profile.md
-else
-  echo "MISSING"
-fi
-```
+Call `academic_writer_status` and `academic_writer_health`. Use their structured details for:
+- profile existence and parsed fields
+- source and bibliography availability
+- active/last run state
+- past-article/article counts
+- packaged agent files
+- local command availability (`pandoc`, `xelatex`, `tectonic`, `zotero-mcp`, `nlm`)
 
-If missing: report `FAIL` and suggest `/skill:academic-writer-init`.
-
-If found, validate:
-- Has `fieldOfStudy`? ✓/✗
-- Has `citationStyle`? ✓/✗
-- Has `styleFingerprint`? ✓/✗
-- Fingerprint format: is it the expanded (nested) format or the old flat format?
-  - If flat format: suggest re-running `/skill:academic-writer-init` to get the expanded 25-dimension fingerprint
-- Has `tools` object? ✓/✗
-- Has `sources` array? ✓/✗ (and count)
-- `createdAt` / `updatedAt` timestamps
+If the profile is missing: report `FAIL` and suggest `/skill:academic-writer-init`.
 
 ---
 
 ## 2. Past Articles
 
-```bash
-ls past-articles/ 2>/dev/null | head -20
-```
-
-Report:
-- Folder exists? ✓/✗
-- Number of files found
-- File types (PDF, DOCX, other)
-- If empty: "Add 5–10 published articles for style analysis, then re-run `/skill:academic-writer-init`."
+Use `academic_writer_status`/`academic_writer_health` details. If empty: "Add 5–10 published articles for style analysis, then re-run `/skill:academic-writer-init`."
 
 ---
 
@@ -51,16 +33,7 @@ Report:
 
 **Skip if `tools.zotero.enabled` is false.** Report as "Disabled (enable with `/skill:academic-writer-update-tools`)".
 
-Check the server binary and project-local MCP config helper information:
-
-```bash
-command -v zotero-mcp >/dev/null 2>&1 && echo "ZOTERO_MCP_BINARY: INSTALLED" || echo "ZOTERO_MCP_BINARY: NOT_FOUND"
-if [ -f .mcp.json ]; then
-  python3 -c "import json; p='.mcp.json'; d=json.load(open(p)); s=d.get('settings',{}); z=d.get('mcpServers',{}).get('zotero',{}); print('PROJECT_MCP_JSON: FOUND'); print('TOOL_PREFIX:', s.get('toolPrefix')); print('ZOTERO_DIRECT_TOOLS:', z.get('directTools')); print('ZOTERO_COMMAND:', z.get('command'))" 2>&1
-else
-  echo "PROJECT_MCP_JSON: NOT_FOUND (global MCP config may still provide zotero)"
-fi
-```
+Use `academic_writer_health` for the `zotero-mcp` binary check. If a project `.mcp.json` exists and needs debugging, read it with the Read tool; do not parse credentials or copy secrets into the report.
 
 Then call `zotero_get_recent(limit=20)` to probe live MCP connectivity.
 
@@ -96,15 +69,7 @@ Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global M
 
 **Skip if `tools.notebooklm.enabled` is false.** Report as "Disabled (enable with `/skill:academic-writer-update-tools`)".
 
-```bash
-command -v nlm >/dev/null 2>&1 && echo "CLI: INSTALLED" || echo "CLI: NOT_FOUND"
-```
-
-If installed:
-```bash
-nlm login --check 2>&1
-nlm notebook list 2>&1 | head -5
-```
+Use `academic_writer_health` for the `nlm` binary check. If installed, run `nlm login --check` and `nlm notebook list` only as live probes.
 
 Report:
 - CLI installed? ✓/✗
@@ -134,12 +99,7 @@ Report:
 
 **Skip this check's PDF sub-line reporting only if pandoc itself is missing — still report pandoc's own status either way.**
 
-```bash
-command -v pandoc >/dev/null 2>&1 && echo "PANDOC: INSTALLED" || echo "PANDOC: NOT_FOUND"
-command -v xelatex >/dev/null 2>&1 && echo "XELATEX: INSTALLED" || echo "XELATEX: NOT_FOUND"
-command -v tectonic >/dev/null 2>&1 && echo "TECTONIC: INSTALLED" || echo "TECTONIC: NOT_FOUND"
-echo "CSL_RESOLVER: PROVIDED_BY academic_writer_resolve_csl"
-```
+Use `academic_writer_health` command flags for Pandoc, XeLaTeX, and Tectonic availability. The CSL resolver is provided by `academic_writer_resolve_csl`.
 
 If the profile uses citeproc mode (`citationStyle` is anything except `inline-parenthetical`), resolve the configured CSL reference. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`.
 
@@ -171,14 +131,7 @@ Report:
 
 ## 8. Agent Files
 
-Call `academic_writer_list_agents`.
-
-Verify all required agent files exist:
-- `agents/deep-reader.md` ✓/✗
-- `agents/architect.md` ✓/✗
-- `agents/section-writer.md` ✓/✗
-- `agents/auditor.md` ✓/✗
-- `agents/synthesizer.md` ✓/✗
+Use `academic_writer_status` details for packaged agent filenames. Call `academic_writer_list_agents` only if you need the plain-text list.
 
 ---
 

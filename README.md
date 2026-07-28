@@ -13,7 +13,7 @@ AI-first academic writing assistant for Humanities researchers. Writes rigorousl
 - **Anti-AI filter** — every paragraph scored on 5 dimensions to eliminate generic AI writing patterns
 - **Quality gate** — 6-dimension self-review scorecard before export; score below 40/60 triggers your review
 - **Abstract generation** — automatic תקציר with optional dual-language support
-- **Session dashboard** — shows your profile, article count, and tool status at startup
+- **Session dashboard** — shows profile, article count, tool status, plus active/last run state at startup
 
 ---
 
@@ -65,7 +65,7 @@ Your profile is saved to `.academic-helper/profile.md` and loaded automatically.
 /skill:academic-writer-export
 ```
 
-Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc.
+Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after the deterministic citation audit passes.
 
 ---
 
@@ -154,7 +154,7 @@ For Zotero web/API mode, keep secrets in user-global MCP config (`~/.config/mcp/
 ```
 your-research-folder/
 ├── past-articles/              ← Drop your published papers here (PDFs or DOCXs)
-├── articles/                   ← Output .docx files
+├── articles/                   ← Output Markdown, DOCX, and exports
 ├── AUTHOR_VOICE.md             ← Distilled voice profile (git-tracked)
 ├── .voice/                     ← Voice-subsystem working state (fingerprint, interview transcripts, audit)
 └── .academic-helper/
@@ -164,6 +164,7 @@ your-research-folder/
     ├── csl/                     ← Cached/downloaded or custom CSL files for citeproc export
     ├── research-brief.md        ← Output from /skill:academic-writer-ideate
     ├── agent-memory/            ← Per-agent persistent notes
+    ├── runs/                    ← Active/last run state shown in the dashboard
     └── logs/                    ← Session logs
 ```
 

@@ -29,7 +29,7 @@ Without mise, the equivalent raw commands:
 |---|---|
 | `skills/academic-writer-<name>/SKILL.md` | Skill definition (markdown + YAML frontmatter, pi Agent-Skills format) |
 | `agents/<name>.md` | Agent definition (markdown + YAML frontmatter, `pi-subagents` format) |
-| `extensions/pi-academic-writer/index.ts` | Registers package-aware Academic Writer tools (`academic_writer_read_resource`, `academic_writer_resolve_csl`, `academic_writer_generate_docx`, `academic_writer_list_agents`, `academic_writer_fix_typography`) so skills never need package-root environment variables. |
+| `extensions/pi-academic-writer/index.ts` | Registers package-aware Academic Writer tools (`academic_writer_status`, `academic_writer_health`, `academic_writer_get_profile`, `academic_writer_update_profile`, `academic_writer_article_paths`, `academic_writer_list_project_files`, `academic_writer_extract_document`, `academic_writer_audit_citations`, `academic_writer_export_article`, `academic_writer_read_resource`, `academic_writer_resolve_csl`, `academic_writer_generate_docx`, `academic_writer_list_agents`, `academic_writer_fix_typography`) so skills never need package-root environment variables or ad-hoc shell parsing. |
 | `extensions/lifecycle/index.ts` | Session lifecycle handlers (dashboard, stop notification, session log). It must not mount `pi-mcp-adapter`; Pi loads that dependency directly so MCP tools/flags are registered once. |
 | `thresholds.json` | Packaged default for all numeric quality gates. `academic_writer_read_resource(name: thresholds)` resolves `.academic-helper/thresholds.json` first (the per-project override `init`/`setup` copies on first run) and falls back to this file — never inline a threshold in skills or agents. |
 | `package.json` | pi manifest — explicit `pi.extensions`/`pi.skills`, `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`; researcher-installed, never bundled) + the `"pi-subagents": {"agents": ["./agents"]}` discovery key |
@@ -98,7 +98,7 @@ The `write` and `edit` skills use a chained-with-gates pattern:
 3. Per-paragraph 8-skill pipeline (draft → 6 checks → citation audit hard gate).
 4. Synthesis pass + self-review scorecard.
 
-DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-parenthetical` still goes through the JSON-schema + `scripts/generate-docx.py` path (RTL/footnote handling); citeproc mode goes through `pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"` directly, relying on `bibliography:`/`csl:` YAML frontmatter written into the markdown by Step 9a. Resolve CSL paths with `scripts/resolve-csl.py`; don't hardcode a closed list beyond backward-compatible bundled aliases. The citeproc path does not apply Hebrew RTL post-processing — document that limitation when target language is Hebrew.
+DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-parenthetical` still goes through the JSON-schema + `academic_writer_generate_docx` path (RTL/footnote handling); citeproc mode goes through `academic_writer_export_article` with `formats: ["docx"]`, relying on `bibliography:`/`csl:` YAML frontmatter written into the markdown by Step 9a. Resolve CSL paths with `academic_writer_resolve_csl`; don't hardcode a closed list beyond backward-compatible bundled aliases. The citeproc path does not apply Hebrew RTL post-processing — document that limitation when target language is Hebrew.
 
 
 ## Anti-patterns

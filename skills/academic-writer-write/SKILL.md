@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_audit_citations academic_writer_resolve_csl academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -16,15 +16,11 @@ Call `academic_writer_read_resource` with `name: voice_profile_load`, then follo
 
 ## Load Profile
 
-Start by loading the researcher's profile:
+Start by calling `academic_writer_get_profile`.
 
-```bash
-cat .academic-helper/profile.md
-```
+If it returns `ok: false`, tell them: "Please run `/skill:academic-writer-init` first to set up your profile."
 
-If the profile doesn't exist, tell them: "Please run `/skill:academic-writer-init` first to set up your profile."
-
-Store the profile values — you'll use them throughout.
+Store the returned profile values — you'll use them throughout.
 
 ### Run state (profile-scoped)
 
@@ -60,35 +56,16 @@ If the profile has no `tools` key (legacy profile), assume all tools are enabled
 
 ## Pre-flight: existing-article guard
 
-After computing the candidate slug from the user-supplied subject, check whether the article already exists:
+After the researcher gives the subject, call `academic_writer_article_paths` with `subject: SUBJECT` and use the returned `markdown` as `MD_PATH`.
 
-```bash
-SLUG="$(echo "$SUBJECT" | python3 -c "import sys,re; t=sys.stdin.read().strip().lower(); print(re.sub(r'[^a-z0-9]+', '-', t).strip('-')[:60])")"
-MD_PATH="articles/${SLUG}.md"
-
-if [ -f "$MD_PATH" ]; then
-  echo "An article already exists at $MD_PATH."
-  echo "Switching to edit mode — running /skill:academic-writer-edit instead of overwriting."
-  echo "If you intended to start over, delete $MD_PATH first."
-  # Hand off to the edit skill rather than continuing the write pipeline.
-  exit 0
-fi
-```
-
-If the file exists, the skill MUST stop the write pipeline and tell the user to use `/skill:academic-writer-edit articles/${SLUG}.md` (or `/skill:academic-writer-edit-section` for a single section). Do NOT continue with deep-reader, architect, etc., because writing inline at that point produces ungated prose (the 2026-05-02 mikdashim post-compaction failure).
+Check whether `MD_PATH` already exists. If it exists, the skill MUST stop the write pipeline and tell the user to use `/skill:academic-writer-edit MD_PATH` (or `/skill:academic-writer-edit-section` for a single section). Do NOT continue with deep-reader, architect, etc., because writing inline at that point produces ungated prose (the 2026-05-02 mikdashim post-compaction failure).
 
 If the file does not exist, proceed with Phase 1 normally.
 
 ## PHASE 1: CONVERSATIONAL (Steps 1–5, human-in-the-loop)
 
 
-```bash
-# Validate wf_write_article has nodes — if empty, re-register from plugin cache
-if [ "$_AW_NODES" -eq 0 ]; then
-  _AW_DIR=$(find ~/.claude/plugins/cache -name "wf_write_article.json" -path "*/workflows/*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-fi
-echo '{"subject": "pending", "phase": "conversational"}' > /tmp/aw-run-input.json
-```
+Use the run-state contract loaded above for all logging from this point forward; do not use `/tmp` files or package-cache workflow probes.
 
 Record the run ID — use it for ALL logging from this point forward.
 
@@ -371,13 +348,7 @@ Log completion:
 
 Assemble the final article and write to both Markdown and DOCX:
 
-```bash
-# Output to project's articles/ directory (created if needed)
-mkdir -p articles
-FILEBASE="$(echo 'SUBJECT' | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | head -c 50)"
-MD_PATH="articles/${FILEBASE}.md"
-DOCX_PATH="articles/${FILEBASE}.docx"
-```
+Call `academic_writer_article_paths` with the approved article title/subject. Use its returned `markdown` as `$MD_PATH`, `docx` as `$DOCX_PATH`, and `json` as the intermediate DOCX JSON path. Create `articles/` before writing article outputs.
 
 #### Step 9a: Markdown Output
 
@@ -409,11 +380,7 @@ Write the article data to a JSON file, then call `academic_writer_generate_docx`
 
 ##### Citeproc mode
 
-Run Pandoc directly on the audited markdown:
-
-```bash
-pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"
-```
+Call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, and `formats: ["docx"]`.
 
 Warn Hebrew users that this path does not apply `generate-docx.py` Hebrew RTL post-processing unless their CSL/template handles it.
 

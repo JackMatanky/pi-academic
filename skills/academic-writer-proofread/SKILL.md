@@ -1,7 +1,7 @@
 ---
 name: academic-writer-proofread
 description: "Mechanical proofreading (הגהה) pass over a finished article — fixes typos, punctuation, spacing, Hebrew typography, and clear grammar errors, then writes a markdown report documenting every change and why. Suggestion-grade safety: never rewrites prose for style, tone, or voice. Use when an article is drafted and you want a clean copy-edit / proofread (הגהה) before submission, without touching wording or argument."
-allowed-tools: bash read write edit find grep subagent
+allowed-tools: bash read write edit find grep subagent academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document
 metadata: {author: "Yotam Fromm", version: "0.2.0"}
 ---
 
@@ -17,9 +17,7 @@ It does **not** rewrite prose for style, tone, register, or voice, and it does n
 
 ## Step 1 — Load profile (optional)
 
-```bash
-cat .academic-helper/profile.md 2>/dev/null || echo "MISSING"
-```
+Call `academic_writer_get_profile`. If it returns `ok: false`, continue without blocking and note in the report that no profile was loaded.
 
 The profile gives the researcher's primary `targetLanguage` (drives typography rules). If missing, don't block — default language detection to the article's script (Hebrew → RTL/Hebrew typography; Latin → standard orthography) and note in the report that no profile was loaded.
 
@@ -31,18 +29,13 @@ If the user passed a path as an argument, use it. Otherwise ask:
 
 List candidates:
 
-```bash
-ls -t articles/*.md 2>/dev/null | head
-```
+List candidates by calling `academic_writer_list_project_files` with `kind: "articles"`.
 
 Establish a single **`PROOF_BASE`** — a plain-text/markdown file that is both what the proofreader reads and what the corrected copy is built from. This is the key safety step: the corrected copy is **never** a copy of a binary source.
 
-- **Markdown / text source** → `PROOF_BASE` is the source itself. Read it with the `Read` tool.
-- **.docx source** → extract the text to a real markdown file first (do **not** rely on stdout):
-  ```bash
-  python3 -c "import docx,sys; d=docx.Document('SOURCE_PATH'); open('articles/FILEBASE.extracted.md','w').write('\n\n'.join(p.text for p in d.paragraphs))"
-  ```
-  `PROOF_BASE` is `articles/FILEBASE.extracted.md`. A `.docx` source produces a markdown report and a corrected `.md`; it does not round-trip back into Word (that's the future full-port / `/apply` path). The original `.docx` is never touched.
+- **Markdown / text source** → `PROOF_BASE` is the source itself. Read it with the `Read` tool or `academic_writer_extract_document`.
+- **.docx / PDF source** → call `academic_writer_extract_document` with `path: SOURCE_PATH`, then use the Write tool to save the returned text to `articles/FILEBASE.extracted.md`.
+  `PROOF_BASE` is `articles/FILEBASE.extracted.md`. A binary source produces a markdown report and a corrected `.md`; it does not round-trip back into Word (that's the future full-port / `/apply` path). The original source is never touched.
 
 Record `SOURCE_PATH`, `FILEBASE` (the source filename without extension), and `PROOF_BASE`. Determine `LANGUAGE` from the profile's `targetLanguage` if present, else from the article's dominant script.
 
@@ -84,11 +77,7 @@ The proofreader is forbidden from editing inside a citation, quotation, page num
 
 **If there are zero applicable mechanical changes** (proofreader returned `"changes": []`, or all changes were idea-flags / guard-downgraded): do **not** write a `*.proofed.md`. Skip to Step 6 and report a clean pass. No duplicate file for an already-clean article.
 
-Otherwise seed the corrected copy from **`PROOF_BASE`** (the text the proofreader actually read — never the binary source):
-
-```bash
-cp "PROOF_BASE" "articles/${FILEBASE}.proofed.md"
-```
+Otherwise create `articles/${FILEBASE}.proofed.md` with the Write tool from the exact `PROOF_BASE` text the proofreader read. Do not copy a binary source.
 
 Apply each applicable **mechanical** change to `articles/${FILEBASE}.proofed.md` with the `Edit` tool, observing these guards (the apply step is where this feature is most error-prone — typography fixes manipulate exotic/invisible code points: ״ ׳ ־ – U+00A0 U+200F):
 

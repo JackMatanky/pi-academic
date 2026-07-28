@@ -1,7 +1,7 @@
 ---
 name: academic-writer-init
 description: "First-time setup for the Academic Writer. Configures researcher profile, analyzes writing style from past articles, and indexes research sources. Use on first install or when redoing onboarding from scratch."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -34,13 +34,9 @@ If `.academic-helper/profile.md` exists and its `## Tools` JSON block contains a
 
 Profile schema, file format, and legacy migration script: see `references/profile-schema.md`.
 
-Check for existing profile:
+Check for existing profile by calling `academic_writer_get_profile`.
 
-```bash
-cat .academic-helper/profile.md 2>/dev/null && echo "EXISTS" || echo "NOT_FOUND"
-```
-
-**If EXISTS**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+**If it returns `ok: true`**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "You already have an Academic Writer profile. What would you like to do?"
 > 1. **Update my profile** — Keep existing data, modify selected fields only.
 >    ```
@@ -77,7 +73,7 @@ Then greet the user:
 
 ## Phase 1: Integration Detection
 
-Per-tool detection commands, AskUserQuestion-equivalent asks, and port-fallback logic: see `references/integration-setup.md`.
+Per-tool detection commands, numbered-list prompts, and port-fallback logic: see `references/integration-setup.md`.
 
 After running detection (parallel batch), store the tool selection as the `tools` object for Phase 4.
 
@@ -266,11 +262,9 @@ Wait for their reply and match it against the options (accept the option number,
 
 **If "Yes, my papers are ready"**, run:
 
-```bash
-ls past-articles/
-```
+Call `academic_writer_list_project_files` with `kind: "past_articles"` and use the returned file list.
 
-**Step 1: Computational extraction** — Run the metrics extraction script to get hard numbers.
+**Step 1: Computational extraction** — Run the voice-miner subagent on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its returned metrics directly in the confirmation step below; do not write `/tmp` metrics files.
 
 First fetch the **shared Hebrew baseline** from Zotero (book *Hebrew Linguistic Reference*, mirrored on GitHub at [JackMatanky/hebrew-linguistics-data](https://github.com/JackMatanky/hebrew-linguistics-data); the same book is read by the `hebrew-book-producer` plugin so both share one source of truth):
 
@@ -280,20 +274,11 @@ mkdir -p .ctx
 
 Call `zotero_get_item_fulltext(item_key="cmomjonvy0fdmk30zwef79c48")` and use the Write tool to save the returned text to `.ctx/hebrew-linguistic-reference.md`.
 
-Then run the voice-miner subagent on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its output to populate `/tmp/style-metrics.json` for the confirmation step below; no package-root script path is required.
-
 The extractor reads the baseline JSON code block embedded in the `08-style-fingerprint-baseline` chapter of the cached markdown, so there is no separate JSON file in the plugin's `references/` folder.
-
-Read the results:
-```bash
-cat /tmp/style-metrics.json
-```
 
 This gives you 30+ numerical metrics (sentence length, passive voice, transitions, etc.) and contrastive scores showing what's distinctive about this researcher vs. baseline academic Hebrew.
 
-**Step 2: Text extraction for qualitative analysis** — For each file, extract text:
-- PDF: `python3 -c "import sys; import pdfplumber; [print(p.extract_text()) for p in pdfplumber.open(sys.argv[1]).pages]" past-articles/FILENAME 2>/dev/null || strings past-articles/FILENAME | head -500`
-- DOCX: `python3 -c "import docx; d=docx.Document('past-articles/FILENAME'); [print(p.text) for p in d.paragraphs]" 2>/dev/null`
+**Step 2: Text extraction for qualitative analysis** — For each file, call `academic_writer_extract_document` with that file path and use the returned text.
 
 **Step 3: Qualitative analysis** — Read the text and computational metrics. Analyze across the qualitative dimensions (C–I below) that the script cannot compute: paragraph formula, tone, rhetorical patterns, templates, representative excerpts.
 

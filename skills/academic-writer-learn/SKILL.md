@@ -1,7 +1,7 @@
 ---
 name: academic-writer-learn
 description: "Style learning — scans past-articles/ for new files, extracts style patterns, and merges them into the existing style fingerprint. Shows a diff report. Use after adding new past articles to past-articles/ — rebuilds the style fingerprint."
-allowed-tools: bash read write find grep
+allowed-tools: bash read write find grep academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -11,21 +11,15 @@ Trigger the style miner to analyze new articles in `past-articles/` and update t
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
-If no profile, tell the researcher to run `/skill:academic-writer-init` first.
+If it returns `ok: false`, tell the researcher to run `/skill:academic-writer-init` first.
 
-Extract the current `styleFingerprint` and `analyzedArticles` list (if present).
+Use the returned `styleFingerprint` and `analyzedArticles` list (if present).
 
 ## Step 1: Scan for New Articles
 
-```bash
-ls past-articles/
-```
-
-Compare against `profile.analyzedArticles` (array of filenames already analyzed). Identify new files not yet processed.
+Call `academic_writer_list_project_files` with `kind: "past_articles"` and compare the returned filenames against `profile.analyzedArticles` (array of filenames already analyzed). Identify new files not yet processed.
 
 If no new files found:
 > "No new articles found in `past-articles/`. Add new papers (PDF or DOCX) and run `/skill:academic-writer-learn` again."

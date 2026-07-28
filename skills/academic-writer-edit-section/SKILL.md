@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit-section
 description: "Quick edit of a single section — rewrite, expand, cut, fix citations, or adjust style. Faster than full article edit. Use when changing one specific section only — faster than full edit."
-allowed-tools: bash read write find grep subagent
+allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_extract_document
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -24,9 +24,7 @@ to seed it." Do not block writing.
 
 ## Load Profile
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
 **Load the full `styleFingerprint`** — edits must maintain the researcher's voice.
 
@@ -37,10 +35,7 @@ cat .academic-helper/profile.md
 Ask:
 > "Which section do you want to edit? Give me the section title, number, or paste the text."
 
-If the article is in a file:
-```bash
-python3 -c "import docx; d=docx.Document('FILE_PATH'); [print(p.text) for p in d.paragraphs]"
-```
+If the article is in a file, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction fails, stop and report the tool's error.
 
 Parse the target section and all surrounding sections (needed for repetition checking and transition context).
 
@@ -136,7 +131,7 @@ Show the revised section with a change summary:
 >
 > Would you like me to export the full updated article as .docx?
 
-**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): JSON schema → `generate-docx.py` for `inline-parenthetical` (unchanged), or `pandoc "$MD_PATH" --citeproc -o "$DOCX_PATH"` for citeproc mode using the resolved CSL file in the markdown frontmatter. This skill does not define its own export procedure — see those two skills for the resolver contract and exact commands.
+**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): JSON schema → `academic_writer_generate_docx` for `inline-parenthetical` (unchanged), or `academic_writer_export_article` with `formats: ["docx"]` for citeproc mode using the resolved CSL file in the markdown frontmatter. This skill does not define its own export procedure — see those two skills for the resolver contract and exact commands.
 
 ---
 

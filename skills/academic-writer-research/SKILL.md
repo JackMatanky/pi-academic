@@ -1,7 +1,7 @@
 ---
 name: academic-writer-research
 description: "Research a subject or answer questions using your indexed sources — Zotero and RAG. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write find grep subagent
+allowed-tools: bash read write find grep subagent academic_writer_get_profile
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -13,13 +13,11 @@ This skill uses whichever data tools are enabled in the profile. It spawns **par
 
 ## Load Profile & Tools
 
-```bash
-cat .academic-helper/profile.md
-```
+Call `academic_writer_get_profile`.
 
-If no profile exists: "Run `/skill:academic-writer-init` first to set up your profile and index your sources."
+If it returns `ok: false`: "Run `/skill:academic-writer-init` first to set up your profile and index your sources."
 
-Read the `tools` object to know which integrations are available.
+Read the returned `tools` object to know which integrations are available.
 
 ---
 

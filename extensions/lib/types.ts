@@ -16,7 +16,7 @@ export interface ProfileData {
 export interface ToolConfig {
   enabled: boolean;
   path?: string;
-  mode?: "local" | "hybrid";
+  mode?: string;
 }
 
 /** Structured author voice profile mined from past articles. */

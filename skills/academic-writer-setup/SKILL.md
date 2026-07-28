@@ -1,7 +1,7 @@
 ---
 name: academic-writer-setup
 description: "First-time setup for Academic Writer — creates researcher profile, detects integrations, analyzes writing style from past articles. Use for a quick onboarding (faster than init); does not include source indexing."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_get_profile academic_writer_list_project_files
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -64,12 +64,9 @@ if os.path.exists(old_path) and not os.path.exists(new_path):
 PYTHON
 ```
 
-Check for existing profile:
-```bash
-cat .academic-helper/profile.md 2>/dev/null && echo "EXISTS" || echo "NOT_FOUND"
-```
+Check for existing profile by calling `academic_writer_get_profile`.
 
-If EXISTS, load and show current settings, then:
+If it returns `ok: true`, load and show current settings, then:
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "A profile already exists. What would you like to do?"
@@ -225,9 +222,7 @@ If Zotero is selected but not detected:
 
 Check for past articles:
 
-```bash
-ls past-articles/ 2>/dev/null | wc -l
-```
+Call `academic_writer_list_project_files` with `kind: "past_articles"` and count the returned `files`.
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "Found N papers in past-articles/. Analyze them for style fingerprinting?"
