@@ -10,10 +10,6 @@
     "noEmit": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
 }

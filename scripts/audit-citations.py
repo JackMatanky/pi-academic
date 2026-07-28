@@ -64,12 +64,16 @@ def _extract_markers(article: str) -> tuple[list[str], list[str], list[str]]:
     return markers, keys, malformed
 
 
-def audit(article_path: Path, citation_style: str, project_root: Path) -> dict[str, Any]:
+def audit(
+    article_path: Path, citation_style: str, project_root: Path
+) -> dict[str, Any]:
     details: dict[str, Any] = {
         "ok": True,
         "article": str(article_path.relative_to(project_root)),
         "citationStyle": citation_style,
-        "mode": "inline-parenthetical" if citation_style == "inline-parenthetical" else "citeproc",
+        "mode": "inline-parenthetical"
+        if citation_style == "inline-parenthetical"
+        else "citeproc",
         "markers": [],
         "citationKeys": [],
         "missingFromSources": [],
@@ -92,7 +96,9 @@ def audit(article_path: Path, citation_style: str, project_root: Path) -> dict[s
     if citation_style == "inline-parenthetical":
         if markers:
             details["ok"] = False
-            details["error"] = "inline-parenthetical articles must not contain Pandoc citeproc markers"
+            details["error"] = (
+                "inline-parenthetical articles must not contain Pandoc citeproc markers"
+            )
         return details
 
     sources_path = project_root / ".academic-helper" / "sources.json"
@@ -118,7 +124,9 @@ def audit(article_path: Path, citation_style: str, project_root: Path) -> dict[s
 
     bib_keys: set[str] = set()
     if bibliography_path.is_file():
-        bib_keys = set(BIB_KEY_RE.findall(bibliography_path.read_text(encoding="utf-8")))
+        bib_keys = set(
+            BIB_KEY_RE.findall(bibliography_path.read_text(encoding="utf-8"))
+        )
     else:
         details["ok"] = False
         details["error"] = ".academic-helper/bibliography.bib not found"
@@ -135,7 +143,9 @@ def audit(article_path: Path, citation_style: str, project_root: Path) -> dict[s
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Audit Academic Writer citations")
-    parser.add_argument("article", help="Markdown article path, relative to project root")
+    parser.add_argument(
+        "article", help="Markdown article path, relative to project root"
+    )
     parser.add_argument("--citation-style", required=True)
     parser.add_argument("--project-root", default=".")
     args = parser.parse_args()

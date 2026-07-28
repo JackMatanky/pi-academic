@@ -13,7 +13,9 @@ Run ALL in parallel:
 - **NotebookLM**:
 
 ```python
-Bash(command="command -v nlm >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo 'DETECTED' || echo 'NOT_DETECTED'")
+Bash(
+    command="command -v nlm >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo 'DETECTED' || echo 'NOT_DETECTED'"
+)
 ```
 
 ## Present Results

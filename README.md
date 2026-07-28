@@ -208,18 +208,23 @@ Skills (`skills/`), agents (`agents/`), and extensions (`extensions/`) are the p
 With [mise](https://mise.jdx.dev) (recommended — pins the toolchain, manages the `uv`-synced `.venv` for you):
 
 ```bash
-mise install       # provisions Node/uv/Python, npm-installs both trees, uv-syncs pyproject.toml
-mise run typecheck # strict TS check on extensions/
-mise run test      # full test suite
+mise install           # provisions Node/uv/Python/hk/taplo, npm-installs both trees, uv-syncs pyproject.toml
+mise run fmt           # format Python, TS/JS, JSON/YAML, and TOML
+mise run lint          # formatting checks + ruff + strict TS
+mise run test          # full test suite
+mise run ci            # lint + test
+mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 ```
 
 Without mise:
 
 ```bash
 npm install && npm --prefix extensions install  # dev tooling only — peerDependencies aren't wired as active Pi extensions here
-uv sync                                          # python-docx, lxml, pdfplumber, pytest, pyyaml
+uv sync                                          # python-docx, lxml, pdfplumber, pytest, pyyaml, ruff
+npx prettier --check "**/*.{ts,js,json,yml,yaml}"
+uv run ruff check --select E9,F63,F7,F82 .
 npm run typecheck                                # strict TS check on extensions/
-uv run pytest tests/                             # full test suite
+uv run python -m pytest tests/                  # full test suite
 ```
 
 **Versioning is automatic.** Every push to `main` triggers CI that bumps the patch version in `package.json`, tags the release, and creates a GitHub Release. Do not bump versions manually.

@@ -5,20 +5,23 @@ a single researcher on a local machine; the package should never assume team wor
 
 ## Commands
 
-With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / Python 3.12 / uv, manages the uv-synced `.venv`):
+With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / Python 3.12 / uv / hk / taplo, manages the uv-synced `.venv`):
 
-- `mise install` — provisions Node/uv/Python and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`, plus `uv sync` (installs `pyproject.toml`/`uv.lock` deps into `.venv`)
+- `mise install` — provisions Node/uv/Python/hk/taplo and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`, plus `uv sync` (installs `pyproject.toml`/`uv.lock` deps into `.venv`)
+- `mise run fmt` — formats Python, TS/JS, JSON/YAML, and TOML
+- `mise run lint` — runs formatting checks, Ruff, and strict TS
 - `mise run test` (alias `t`) — full pytest suite
 - `mise run typecheck` — strict TS check on `extensions/`
-- `mise run ci` — typecheck + test
-- `mise run install-hooks` — installs the git pre-push hook (run once after cloning)
+- `mise run ci` — lint + test
+- `mise run install-hooks` — installs hk-managed pre-commit/pre-push hooks (run once after cloning, or use `hk install --global`)
 
 Without mise, the equivalent raw commands:
 
-- `npm install && npm --prefix extensions install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`, plus the `extensions/` typecheck sandbox
-- `uv sync` — `python-docx`, `lxml`, `pdfplumber` (`project.dependencies`) plus `pytest`, `pyyaml` (`dependency-groups.dev`)
+- `npm install && npm --prefix extensions install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`, plus root/extension dev tooling
+- `uv sync` — `python-docx`, `lxml`, `pdfplumber` (`project.dependencies`) plus `pytest`, `pyyaml`, `ruff` (`dependency-groups.dev`)
+- `npx prettier --check "**/*.{ts,js,json,yml,yaml}" && uv run ruff check --select E9,F63,F7,F82 .` — raw lint pieces before TS
 - `npm run typecheck` — strict TS check on `extensions/`
-- `uv run pytest tests/` — run the full test suite (also runs via the installed pre-push hook, `bash scripts/install-hooks.sh`)
+- `uv run python -m pytest tests/` — run the full test suite
 
 ## Source layout
 

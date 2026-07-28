@@ -18,7 +18,6 @@ function textResult(text: string, details: object = {}) {
   };
 }
 
-
 /** Applies deterministic Hebrew/academic typography cleanup to one paragraph. */
 function fixTypography(text: string): string {
   let fixed = text;
@@ -30,7 +29,6 @@ function fixTypography(text: string): string {
   fixed = fixed.replace(/^\s*([.,;:])/, "").trim();
   return fixed;
 }
-
 
 /** Registers package-aware Academic Writer tools for Pi. */
 export default function piAcademicWriter(pi: ExtensionAPI) {
@@ -45,19 +43,36 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           "Resource name: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, or citation_review_gate.",
       }),
       language: Type.Optional(
-        Type.String({ description: "Language for anti_ai_patterns; english selects English, anything else selects Hebrew." }),
+        Type.String({
+          description:
+            "Language for anti_ai_patterns; english selects English, anything else selects Hebrew.",
+        }),
       ),
-      includePath: Type.Optional(Type.Boolean({ description: "Include the package file path in the result for deliberate package edits." })),
+      includePath: Type.Optional(
+        Type.Boolean({
+          description:
+            "Include the package file path in the result for deliberate package edits.",
+        }),
+      ),
     }),
     execute: async (_id, params, _signal, _onUpdate, ctx) => {
       const name = typeof params.name === "string" ? params.name : "";
       const path = resolveResourcePath(name, ctx.cwd, params.language);
       if (!existsSync(path)) {
-        return textResult(`Academic Writer resource not found: ${name}`, { ok: false, name, path });
+        return textResult(`Academic Writer resource not found: ${name}`, {
+          ok: false,
+          name,
+          path,
+        });
       }
       const content = readFileSync(path, "utf-8");
-      const body = params.includePath ? `RESOURCE_PATH: ${path}\n---\n${content}` : content;
-      const source = name === "thresholds" && path !== join(PACKAGE_ROOT, "thresholds.json") ? "project" : "package";
+      const body = params.includePath
+        ? `RESOURCE_PATH: ${path}\n---\n${content}`
+        : content;
+      const source =
+        name === "thresholds" && path !== join(PACKAGE_ROOT, "thresholds.json")
+          ? "project"
+          : "package";
       return textResult(body, { ok: true, name, path, source });
     },
   });
@@ -79,7 +94,8 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_status",
     label: "Academic Writer Status",
-    description: "Report project-local Academic Writer setup state, source/bibliography availability, run state, and packaged agents.",
+    description:
+      "Report project-local Academic Writer setup state, source/bibliography availability, run state, and packaged agents.",
     parameters: Type.Object({}),
     execute: async (_id, _params, _signal, _onUpdate, ctx) => {
       const status = buildStatus(ctx.cwd);
@@ -104,8 +120,17 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     description:
       "Resolve a bundled alias, CSL repository id, cached style, or custom .csl path to a local CSL file for Pandoc.",
     parameters: Type.Object({
-      style: Type.String({ minLength: 1, description: "CSL alias/id/path, e.g. apa, mla, chicago, nature, or .academic-helper/csl/custom.csl." }),
-      download: Type.Optional(Type.Boolean({ description: "Download missing repository style ids into .academic-helper/csl/." })),
+      style: Type.String({
+        minLength: 1,
+        description:
+          "CSL alias/id/path, e.g. apa, mla, chicago, nature, or .academic-helper/csl/custom.csl.",
+      }),
+      download: Type.Optional(
+        Type.Boolean({
+          description:
+            "Download missing repository style ids into .academic-helper/csl/.",
+        }),
+      ),
     }),
     execute: async (_id, params, signal, _onUpdate, ctx) => {
       const args = [
@@ -118,12 +143,18 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       ];
       if (params.download) args.push("--download");
       try {
-        const { stdout } = await execFileAsync("python3", args, { cwd: ctx.cwd, signal });
+        const { stdout } = await execFileAsync("python3", args, {
+          cwd: ctx.cwd,
+          signal,
+        });
         const path = stdout.trim();
         return textResult(path, { ok: true, path });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        return textResult(`CSL resolution failed: ${message}`, { ok: false, error: message });
+        return textResult(`CSL resolution failed: ${message}`, {
+          ok: false,
+          error: message,
+        });
       }
     },
   });
@@ -136,11 +167,13 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     parameters: Type.Object({
       article: Type.String({
         minLength: 1,
-        description: "Path to the article markdown file; relative paths resolve from the project root.",
+        description:
+          "Path to the article markdown file; relative paths resolve from the project root.",
       }),
       citationStyle: Type.String({
         minLength: 1,
-        description: "inline-parenthetical for literal citation mode; any other value means citeproc mode.",
+        description:
+          "inline-parenthetical for literal citation mode; any other value means citeproc mode.",
       }),
     }),
     execute: async (_id, params, signal, _onUpdate, ctx) => {
@@ -153,23 +186,49 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         ctx.cwd,
       ];
       try {
-        const { stdout } = await execFileAsync("python3", args, { cwd: ctx.cwd, signal });
+        const { stdout } = await execFileAsync("python3", args, {
+          cwd: ctx.cwd,
+          signal,
+        });
         const parsed = JSON.parse(stdout) as unknown;
-        const details = parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-          ? parsed
-          : { ok: false, error: "audit-citations.py returned a non-object result" };
+        const details =
+          parsed !== null &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed)
+            ? parsed
+            : {
+                ok: false,
+                error: "audit-citations.py returned a non-object result",
+              };
         const ok = "ok" in details && details.ok === true;
-        const keys = "citationKeys" in details && Array.isArray(details.citationKeys) ? details.citationKeys.length : 0;
-        const missingSources = "missingFromSources" in details && Array.isArray(details.missingFromSources) ? details.missingFromSources.length : 0;
-        const missingBibliography = "missingFromBibliography" in details && Array.isArray(details.missingFromBibliography) ? details.missingFromBibliography.length : 0;
-        const warnings = "warnings" in details && Array.isArray(details.warnings) ? details.warnings.length : 0;
+        const keys =
+          "citationKeys" in details && Array.isArray(details.citationKeys)
+            ? details.citationKeys.length
+            : 0;
+        const missingSources =
+          "missingFromSources" in details &&
+          Array.isArray(details.missingFromSources)
+            ? details.missingFromSources.length
+            : 0;
+        const missingBibliography =
+          "missingFromBibliography" in details &&
+          Array.isArray(details.missingFromBibliography)
+            ? details.missingFromBibliography.length
+            : 0;
+        const warnings =
+          "warnings" in details && Array.isArray(details.warnings)
+            ? details.warnings.length
+            : 0;
         const summary = ok
           ? `Citation audit passed: ${keys} cite key(s), ${warnings} warning(s).`
           : `Citation audit failed: ${missingSources} missing source key(s), ${missingBibliography} missing bibliography key(s).`;
         return textResult(summary, details);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        return textResult(`Citation audit failed: ${message}`, { ok: false, error: message });
+        return textResult(`Citation audit failed: ${message}`, {
+          ok: false,
+          error: message,
+        });
       }
     },
   });
@@ -177,10 +236,19 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_generate_docx",
     label: "Academic Writer Generate DOCX",
-    description: "Generate an Academic Writer .docx from the article JSON payload using the packaged DOCX generator.",
+    description:
+      "Generate an Academic Writer .docx from the article JSON payload using the packaged DOCX generator.",
     parameters: Type.Object({
-      input: Type.String({ minLength: 1, description: "Path to the article JSON input file; relative paths resolve from the project root." }),
-      output: Type.String({ minLength: 1, description: "Output .docx path; relative paths resolve from the project root." }),
+      input: Type.String({
+        minLength: 1,
+        description:
+          "Path to the article JSON input file; relative paths resolve from the project root.",
+      }),
+      output: Type.String({
+        minLength: 1,
+        description:
+          "Output .docx path; relative paths resolve from the project root.",
+      }),
     }),
     execute: async (_id, params, signal, _onUpdate, ctx) => {
       const args = [
@@ -191,12 +259,23 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         String(params.output),
       ];
       try {
-        const { stdout, stderr } = await execFileAsync("python3", args, { cwd: ctx.cwd, signal });
-        const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
-        return textResult(output || `Generated ${params.output}`, { ok: true, output: params.output });
+        const { stdout, stderr } = await execFileAsync("python3", args, {
+          cwd: ctx.cwd,
+          signal,
+        });
+        const output = [stdout.trim(), stderr.trim()]
+          .filter(Boolean)
+          .join("\n");
+        return textResult(output || `Generated ${params.output}`, {
+          ok: true,
+          output: params.output,
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        return textResult(`DOCX generation failed: ${message}`, { ok: false, error: message });
+        return textResult(`DOCX generation failed: ${message}`, {
+          ok: false,
+          error: message,
+        });
       }
     },
   });
@@ -204,7 +283,8 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_fix_typography",
     label: "Academic Writer Fix Typography",
-    description: "Apply deterministic Hebrew/academic typography cleanup to a paragraph without reading package paths.",
+    description:
+      "Apply deterministic Hebrew/academic typography cleanup to a paragraph without reading package paths.",
     parameters: Type.Object({
       text: Type.String({ description: "Paragraph text to clean." }),
     }),

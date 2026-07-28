@@ -31,7 +31,9 @@ class TestCitationAudit(unittest.TestCase):
             root = Path(tmp)
             (root / ".academic-helper").mkdir()
             (root / "articles").mkdir()
-            (root / "articles" / "ok.md").write_text("Text [@smith2020, p. 4].", encoding="utf-8")
+            (root / "articles" / "ok.md").write_text(
+                "Text [@smith2020, p. 4].", encoding="utf-8"
+            )
             (root / ".academic-helper" / "sources.json").write_text(
                 json.dumps([{"citeKey": "smith2020"}]),
                 encoding="utf-8",
@@ -55,7 +57,9 @@ class TestCitationAudit(unittest.TestCase):
                 json.dumps([{"citeKey": "missing2020"}]),
                 encoding="utf-8",
             )
-            (root / ".academic-helper" / "bibliography.bib").write_text("", encoding="utf-8")
+            (root / ".academic-helper" / "bibliography.bib").write_text(
+                "", encoding="utf-8"
+            )
 
             data = self.run_audit(root, "article.md", "apa")
 
@@ -67,8 +71,12 @@ class TestCitationAudit(unittest.TestCase):
             root = Path(tmp)
             (root / ".academic-helper").mkdir()
             (root / "article.md").write_text("Text [@].", encoding="utf-8")
-            (root / ".academic-helper" / "sources.json").write_text("[]", encoding="utf-8")
-            (root / ".academic-helper" / "bibliography.bib").write_text("", encoding="utf-8")
+            (root / ".academic-helper" / "sources.json").write_text(
+                "[]", encoding="utf-8"
+            )
+            (root / ".academic-helper" / "bibliography.bib").write_text(
+                "", encoding="utf-8"
+            )
 
             data = self.run_audit(root, "article.md", "mla")
 

@@ -24,7 +24,6 @@ const JSON_SECTION_KEYS: Record<string, string> = {
   outputformatpreferences: "outputFormatPreferences",
 };
 
-
 /** Parses the profile's deliberately small YAML-frontmatter subset. */
 function parseFrontmatter(raw: string, fields: ProfileFields): void {
   const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
@@ -62,7 +61,11 @@ function parseFrontmatter(raw: string, fields: ProfileFields): void {
 }
 
 /** Stores a recognized JSON profile section under its canonical profile key. */
-function assignJsonSection(heading: string, parsed: unknown, fields: ProfileFields): void {
+function assignJsonSection(
+  heading: string,
+  parsed: unknown,
+  fields: ProfileFields,
+): void {
   const key = JSON_SECTION_KEYS[heading];
   if (key) fields[key] = parsed;
 }

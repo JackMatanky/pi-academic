@@ -1,9 +1,11 @@
 import json
 import os
 import re
-import unittest
-import yaml
 import subprocess
+import tomllib
+import unittest
+
+import yaml
 
 
 def _read(path):
@@ -38,7 +40,9 @@ class TestSkills(unittest.TestCase):
             self.assertIsNotNone(fm, f"Missing frontmatter in {skill_path}")
             self.assertIn("name", fm)
             self.assertEqual(
-                fm["name"], d, f"Skill name {fm['name']} does not match directory {d}"
+                fm["name"],
+                d,
+                f"Skill name {fm['name']} does not match directory {d}",
             )
             self.assertIn("description", fm)
             self.assertNotIn("user-invocable", fm)
@@ -81,7 +85,9 @@ class TestAgents(unittest.TestCase):
             if "tools" in fm:
                 tools_str = fm["tools"]
                 self.assertIsInstance(
-                    tools_str, str, f"tools must be a scalar string in {agent_path}"
+                    tools_str,
+                    str,
+                    f"tools must be a scalar string in {agent_path}",
                 )
                 # pi-subagents' frontmatter parser splits tools ONLY on commas
                 # (src/agents/frontmatter.ts: parseFrontmatterList -> value.split(",")).
@@ -117,6 +123,7 @@ class TestAgents(unittest.TestCase):
                 self.assertIn(
                     "## Output", body, f"Missing Output section in {agent_path}"
                 )
+
     def test_agents_permission_frontmatter(self):
         agents_dir = "agents"
         for agent_file in os.listdir(agents_dir):
@@ -130,8 +137,14 @@ class TestAgents(unittest.TestCase):
                 f"Agent {agent_file} should declare a permission block for optional pi-permission-system integration",
             )
             perm = fm["permission"]
-            self.assertIsInstance(perm, dict, f"permission block in {agent_file} must be a dict")
-            self.assertIn("*", perm, f"permission block in {agent_file} must declare wildcard default ('*')")
+            self.assertIsInstance(
+                perm, dict, f"permission block in {agent_file} must be a dict"
+            )
+            self.assertIn(
+                "*",
+                perm,
+                f"permission block in {agent_file} must declare wildcard default ('*')",
+            )
 
 
 class TestPackageManifest(unittest.TestCase):
@@ -173,6 +186,37 @@ class TestPackageManifest(unittest.TestCase):
         self.assertTrue(os.path.isdir("agents"))
 
 
+class TestDevTooling(unittest.TestCase):
+    def test_mise_tasks_cover_format_lint_and_hk(self):
+        with open("mise.toml", "rb") as f:
+            data = tomllib.load(f)
+
+        tools = data.get("tools", {})
+        self.assertIn("hk", tools)
+        self.assertIn("taplo", tools)
+
+        tasks = data.get("tasks", {})
+        for task in ["fmt", "fmt-check", "lint", "ci", "install-hooks"]:
+            self.assertIn(task, tasks)
+
+        lint_run = "\n".join(tasks["lint"]["run"])
+        self.assertIn("ruff check", lint_run)
+        self.assertIn("npm run typecheck", lint_run)
+        self.assertIn("fmt-check", lint_run)
+        self.assertEqual(tasks["install-hooks"]["run"], "hk install")
+        self.assertIn("lint", tasks["ci"]["depends"])
+        self.assertIn("test", tasks["ci"]["depends"])
+
+    def test_hk_runs_before_commit_and_push(self):
+        content = _read("hk.pkl")
+        self.assertIn("github.com/jdx/hk", content)
+        self.assertIn('["pre-commit"]', content)
+        self.assertIn('["pre-push"]', content)
+        self.assertIn("mise run fmt", content)
+        self.assertIn("mise run lint", content)
+        self.assertIn("mise run ci", content)
+
+
 class TestJSON(unittest.TestCase):
     def test_json_validity(self):
         for root, dirs, files in os.walk("."):
@@ -194,7 +238,10 @@ class TestExtensions(unittest.TestCase):
         self.assertTrue(os.path.isdir(ext_dir))
 
         res = subprocess.run(
-            ["npx", "tsc", "--noEmit"], cwd=ext_dir, capture_output=True, text=True
+            ["npx", "tsc", "--noEmit"],
+            cwd=ext_dir,
+            capture_output=True,
+            text=True,
         )
         if res.returncode != 0:
             lines = res.stdout.split(chr(10))
@@ -207,7 +254,6 @@ class TestExtensions(unittest.TestCase):
                 self.fail(
                     f"TypeScript compilation failed in extensions: {chr(10).join(errors)}"
                 )
-
 
         with open(os.path.join(ext_dir, "tsconfig.json"), "r", encoding="utf-8") as f:
             tsconfig = json.load(f)
@@ -235,7 +281,9 @@ class TestExtensions(unittest.TestCase):
         )
 
         tools_path = "extensions/pi-academic-writer/index.ts"
-        self.assertTrue(os.path.isfile(tools_path), "pi-academic-writer extension missing")
+        self.assertTrue(
+            os.path.isfile(tools_path), "pi-academic-writer extension missing"
+        )
         tools = _read(tools_path)
         for name in [
             "academic_writer_read_resource",
@@ -249,15 +297,26 @@ class TestExtensions(unittest.TestCase):
             self.assertIn(name, tools)
 
         forbidden = [root_env, f"extensions/{env_inject}"]
-        for d in ["AGENTS.md", "README.md", "skills", "agents", "extensions", "tests"]:
+        for d in [
+            "AGENTS.md",
+            "README.md",
+            "skills",
+            "agents",
+            "extensions",
+            "tests",
+        ]:
             if not os.path.exists(d):
                 continue
-            paths = [d] if os.path.isfile(d) else [
-                os.path.join(root, file)
-                for root, _, files in os.walk(d)
-                for file in files
-                if file.endswith((".md", ".ts", ".py"))
-            ]
+            paths = (
+                [d]
+                if os.path.isfile(d)
+                else [
+                    os.path.join(root, file)
+                    for root, _, files in os.walk(d)
+                    for file in files
+                    if file.endswith((".md", ".ts", ".py"))
+                ]
+            )
             for path in paths:
                 content = _read(path)
                 for marker in forbidden:
@@ -270,11 +329,9 @@ class TestExtensions(unittest.TestCase):
         silently does nothing."""
         resources_source = _read("extensions/pi-academic-writer/resources.ts")
         tools_source = _read("extensions/pi-academic-writer/index.ts")
-        self.assertIn(
-            'join(projectRoot, ".academic-helper", "thresholds.json")',
-            resources_source,
-            "resolveResourcePath must resolve a project-local thresholds override",
-        )
+        self.assertIn("projectOverride", resources_source)
+        self.assertIn('".academic-helper"', resources_source)
+        self.assertIn('"thresholds.json"', resources_source)
         self.assertIn(
             "resolveResourcePath(name, ctx.cwd, params.language)",
             tools_source,
@@ -298,11 +355,13 @@ class TestExtensions(unittest.TestCase):
             "citation_review_gate": "skills/academic-writer-review/references/citation-review-gate.md",
         }.items():
             self.assertIn(resource, resources_source)
-            self.assertTrue(os.path.isfile(path), f"missing resource file for {resource}")
+            self.assertTrue(
+                os.path.isfile(path), f"missing resource file for {resource}"
+            )
 
     def test_citation_audit_is_wired_into_output_paths(self):
         tools_source = _read("extensions/pi-academic-writer/index.ts")
-        self.assertIn("scripts\", \"audit-citations.py", tools_source)
+        self.assertIn('scripts", "audit-citations.py', tools_source)
         for skill in [
             "skills/academic-writer-write/SKILL.md",
             "skills/academic-writer-edit/SKILL.md",
@@ -441,7 +500,10 @@ class TestCrossReferences(unittest.TestCase):
             help_body = _read(help_path)
             skills_dir = "skills"
             for d in os.listdir(skills_dir):
-                if not d.startswith("academic-writer-") or d == "academic-writer-update-tools":
+                if (
+                    not d.startswith("academic-writer-")
+                    or d == "academic-writer-update-tools"
+                ):
                     continue
                 self.assertIn(d, help_body, f"Help skill missing reference to {d}")
 

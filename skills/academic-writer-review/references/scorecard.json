@@ -112,10 +112,30 @@
     "passThreshold": 40,
     "_comment": "passThreshold mirrors thresholds.json:selfReview.passThreshold. Keep in sync.",
     "grades": [
-      { "label": "Excellent", "min": 50, "max": 60, "note": "ready for submission" },
-      { "label": "Good", "min": 40, "max": 49, "note": "minor improvements recommended" },
-      { "label": "Needs Work", "min": 30, "max": 39, "note": "specific issues to address" },
-      { "label": "Poor", "min": 0, "max": 29, "note": "significant revision needed" }
+      {
+        "label": "Excellent",
+        "min": 50,
+        "max": 60,
+        "note": "ready for submission"
+      },
+      {
+        "label": "Good",
+        "min": 40,
+        "max": 49,
+        "note": "minor improvements recommended"
+      },
+      {
+        "label": "Needs Work",
+        "min": 30,
+        "max": 39,
+        "note": "specific issues to address"
+      },
+      {
+        "label": "Poor",
+        "min": 0,
+        "max": 29,
+        "note": "significant revision needed"
+      }
     ]
   }
 }

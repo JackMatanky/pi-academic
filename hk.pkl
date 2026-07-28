@@ -1,0 +1,46 @@
+amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.pkl"
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps {
+      ["format"] {
+        check = "mise run fmt-check"
+        fix = "mise run fmt"
+        stage = List("**/*.py", "**/*.md", "**/*.ts", "**/*.js", "**/*.json", "**/*.yml", "**/*.yaml", "**/*.toml")
+        exclusive = true
+      }
+      ["lint"] {
+        check = "mise run lint"
+        exclusive = true
+      }
+    }
+  }
+  ["pre-push"] {
+    steps {
+      ["ci"] {
+        check = "mise run ci"
+        exclusive = true
+      }
+    }
+  }
+  ["check"] {
+    steps {
+      ["lint"] {
+        check = "mise run lint"
+        exclusive = true
+      }
+    }
+  }
+  ["fix"] {
+    fix = true
+    steps {
+      ["format"] {
+        check = "mise run fmt-check"
+        fix = "mise run fmt"
+        exclusive = true
+      }
+    }
+  }
+}

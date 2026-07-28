@@ -32,7 +32,12 @@ function readJson(path: string): unknown | null {
 /** Counts sources from either the current array shape or a wrapped legacy shape. */
 function countSources(value: unknown): number {
   if (Array.isArray(value)) return value.length;
-  if (value !== null && typeof value === "object" && !Array.isArray(value) && "sources" in value) {
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "sources" in value
+  ) {
     if (Array.isArray(value.sources)) return value.sources.length;
   }
   return 0;
@@ -54,7 +59,10 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
     count: countSources(readJson(sourcesPath)),
     path: ".academic-helper/sources.json",
   };
-  const bibliography = fileState(projectRoot, ".academic-helper/bibliography.bib");
+  const bibliography = fileState(
+    projectRoot,
+    ".academic-helper/bibliography.bib",
+  );
   const agentsDir = join(PACKAGE_ROOT, "agents");
   const agents = readdirSync(agentsDir)
     .filter((entry) => entry.endsWith(".md"))

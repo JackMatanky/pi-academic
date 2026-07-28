@@ -98,7 +98,9 @@ Run ALL detection commands in **one parallel batch**:
 - **Zotero**: call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise.
 - **NotebookLM**:
 ```python
-Bash(command="command -v nlm >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo 'notebooklm: DETECTED' || echo 'notebooklm: NOT_FOUND'")
+Bash(
+    command="command -v nlm >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo 'notebooklm: DETECTED' || echo 'notebooklm: NOT_FOUND'"
+)
 ```
 
 MongoDB Agent Skills is auto-configured silently — do not show it to the user.

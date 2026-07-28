@@ -1,19 +1,20 @@
 # academic-writer — dev toolchain, managed by mise (https://mise.jdx.dev)
 #
-# `mise install` provisions Node/uv/Python; the postinstall hook then
-# bootstraps both npm trees (root + extensions/) and syncs the uv-managed
-# Python environment (pyproject.toml + uv.lock), so a fresh clone is ready
-# for `mise run test` / `mise run typecheck` with one command.
+# `mise install` provisions Node/uv/Python/hk/taplo; the postinstall hook then
+# bootstraps npm trees (root + extensions/) and syncs the uv-managed
+# Python environment (pyproject.toml + uv.lock), so a fresh clone is ready for
+# `mise run lint` / `mise run test` with one command.
 #
 # Note: this does NOT manage zotero-mcp (`pip install zotero-mcp-server`) —
 # that's an end-user runtime dependency of the *installed* pi package
 # (see README.md "Quick Start"), not this repo's own dev/build toolchain.
 
 [tools]
-node = "26"    # matches package.json engines (>=20) and extensions/@types/node ^26
+node = "26"      # matches package.json engines (>=20) and extensions/@types/node ^26
 python = "3.12"
 uv = "latest"
-
+hk = "latest"
+taplo = "latest"
 [settings]
 # Sources the .venv that `uv sync`/`uv run` manage via pyproject.toml +
 # uv.lock (mise locates the project by walking up for uv.lock). "create|source"
@@ -27,30 +28,50 @@ UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
 
 [tasks.setup]
 description = "Install npm deps (root + extensions/) and sync Python deps via uv"
+run = ["npm install", "npm --prefix extensions install", "uv sync"]
+
+[tasks.fmt]
+description = "Format Python, TypeScript, JSON, YAML, and TOML"
 run = [
-  "npm install",
-  "npm --prefix extensions install",
-  "uv sync",
+  "uv run ruff format .",
+  "npx prettier --write \"**/*.{ts,js,json,yml,yaml}\"",
+  "taplo format mise.toml",
+]
+
+[tasks.fmt-check]
+description = "Check formatting without changing files"
+run = [
+  "uv run ruff format --check .",
+  "npx prettier --check \"**/*.{ts,js,json,yml,yaml}\"",
+  "taplo check mise.toml",
+]
+
+[tasks.lint]
+description = "Lint Python, TypeScript, JSON/YAML formatting, and TOML"
+run = [
+  "mise run fmt-check",
+  "uv run ruff check --select E9,F63,F7,F82 .",
+  "npm run typecheck",
 ]
 
 [tasks.test]
 description = "Run the Python test suite"
 alias = "t"
-run = "uv run pytest tests/"
+run = "uv run python -m pytest tests/"
 
 [tasks.typecheck]
 description = "Strict TypeScript check on extensions/"
 run = "npm run typecheck"
 
 [tasks.ci]
-description = "Everything CI-equivalent: typecheck + tests"
-depends = ["typecheck", "test"]
+description = "Everything CI-equivalent: lint + tests"
+depends = ["lint", "test"]
 
 [tasks.install-hooks]
-description = "Install the git pre-push hook that runs the test suite (run once after cloning)"
-run = "bash scripts/install-hooks.sh"
+description = "Install hk git hooks for this repo (run once after cloning)"
+run = "hk install"
 
 [hooks]
-# Runs after `mise install` provisions node/uv/python (including on a no-op
+# Runs after `mise install` provisions node/uv/python/hk/taplo (including on a no-op
 # install), so dependencies stay in sync whenever the pinned versions change.
 postinstall = { task = "setup" }

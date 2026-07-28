@@ -7,11 +7,16 @@ import { summarizeRuns } from "../lib/runs.js";
 import type { ProfileData } from "../lib/types.js";
 
 /** Condenses run-state details for the session dashboard. */
-function runSummary(projectDir: string): { active: number; last: string | null } {
+function runSummary(projectDir: string): {
+  active: number;
+  last: string | null;
+} {
   const runs = summarizeRuns(projectDir);
   return {
     active: runs.active.length,
-    last: runs.last ? `${runs.last.status}: ${runs.last.title ?? runs.last.runId}` : null,
+    last: runs.last
+      ? `${runs.last.status}: ${runs.last.title ?? runs.last.runId}`
+      : null,
   };
 }
 
@@ -55,13 +60,19 @@ function enabledToolNames(profile: ProfileData): string[] {
 }
 
 /** Counts past source articles that have not yet been voice-mined. */
-function unanalyzedPastArticleCount(projectDir: string, analyzedCount: number): number {
+function unanalyzedPastArticleCount(
+  projectDir: string,
+  analyzedCount: number,
+): number {
   const total = countFiles(projectDir, "past-articles", isPastArticle);
   return Math.max(0, total - analyzedCount);
 }
 
 /** Builds the fixed-width session-start dashboard shown to researchers. */
-function buildDashboardLines(projectDir: string, profile: ProfileData): string[] {
+function buildDashboardLines(
+  projectDir: string,
+  profile: ProfileData,
+): string[] {
   const lines: string[] = [
     "",
     "╔══════════════════════════════════════════════════╗",
@@ -82,7 +93,8 @@ function buildDashboardLines(projectDir: string, profile: ProfileData): string[]
 
   const runs = runSummary(projectDir);
   lines.push(`║  Active runs: ${String(runs.active).padEnd(32)}║`);
-  if (runs.last) lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
+  if (runs.last)
+    lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
 
   if (existsSync(join(projectDir, ".academic-helper", "research-brief.md"))) {
     lines.push("║  Research brief: Available                       ║");
