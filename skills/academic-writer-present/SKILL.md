@@ -1,7 +1,7 @@
 ---
 name: academic-writer-present
 description: "Post-article deliverables — generate conference presentation outlines, journal submission summaries, and book chapter proposals from a completed article. Use after publishing an article when you need conference/journal/proposal deliverables."
-allowed-tools: bash read write glob grep
+allowed-tools: bash read write find grep
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 

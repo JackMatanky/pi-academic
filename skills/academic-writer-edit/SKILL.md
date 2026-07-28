@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit
 description: "Edit a previously written article — revise sections, fix citations, adjust tone, restructure arguments, or rewrite passages. Use when revising an article that's already drafted — multiple sections, restructuring, or major changes."
-allowed-tools: bash read write glob grep subagent academic_writer_resolve_csl academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_resolve_csl academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 

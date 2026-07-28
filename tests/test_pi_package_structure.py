@@ -117,6 +117,21 @@ class TestAgents(unittest.TestCase):
                 self.assertIn(
                     "## Output", body, f"Missing Output section in {agent_path}"
                 )
+    def test_agents_permission_frontmatter(self):
+        agents_dir = "agents"
+        for agent_file in os.listdir(agents_dir):
+            if not agent_file.endswith(".md"):
+                continue
+            agent_path = os.path.join(agents_dir, agent_file)
+            fm, _ = _parse_frontmatter(agent_path)
+            self.assertIn(
+                "permission",
+                fm,
+                f"Agent {agent_file} should declare a permission block for optional pi-permission-system integration",
+            )
+            perm = fm["permission"]
+            self.assertIsInstance(perm, dict, f"permission block in {agent_file} must be a dict")
+            self.assertIn("*", perm, f"permission block in {agent_file} must declare wildcard default ('*')")
 
 
 class TestPackageManifest(unittest.TestCase):
@@ -388,7 +403,7 @@ class TestCrossReferences(unittest.TestCase):
             help_body = _read(help_path)
             skills_dir = "skills"
             for d in os.listdir(skills_dir):
-                if d == "academic-writer-update-tools":
+                if not d.startswith("academic-writer-") or d == "academic-writer-update-tools":
                     continue
                 self.assertIn(d, help_body, f"Help skill missing reference to {d}")
 

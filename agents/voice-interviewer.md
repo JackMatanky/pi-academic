@@ -1,7 +1,12 @@
 ---
 name: voice-interviewer
 description: "Stage 2 of the voice subsystem — run one adversarial interview session at a time, append to the session transcript, hand back to the orchestrator when the session ends. Use only inside the `:voice` skill."
-tools: read, write, glob
+tools: read, write, find
+permission:
+  "*": allow
+  write:
+    "*": ask
+    ".voice/interview/*.md": allow
 metadata:
   author: Academic Helper
   version: 1.0.0

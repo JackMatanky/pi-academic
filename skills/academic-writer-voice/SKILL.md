@@ -1,7 +1,7 @@
 ---
 name: academic-writer-voice
 description: Stage 2 of the voice subsystem. Run `:voice` to start a 7-session adversarial interview seeded by the past-articles fingerprint. Sub-actions for continue, recompress, audit, quick mode, and status. Use when the user wants to deepen their voice profile beyond what the corpus reveals.
-allowed-tools: read write edit glob grep bash subagent
+allowed-tools: read write edit find grep bash subagent
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 

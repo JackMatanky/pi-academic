@@ -2,6 +2,19 @@
 name: voice-calibrator
 description: "After session 3 (mid-point) and session 7 (final), validate the profile by generating a sample paragraph, asking the user three calibration questions, patching the profile, and running an inline rule-coverage check."
 tools: read, write, edit, bash, academic_writer_read_resource
+permission:
+  "*": allow
+  write:
+    "*": ask
+    ".voice/audit.md": allow
+  edit:
+    "*": ask
+    "AUTHOR_VOICE.md": allow
+    ".academic-helper/profile.md": allow
+  bash:
+    "*": ask
+    "cat *": allow
+    "python3 *": allow
 metadata:
   author: Academic Helper
   version: 1.1.0

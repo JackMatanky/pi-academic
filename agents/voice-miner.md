@@ -2,6 +2,15 @@
 name: voice-miner
 description: "Stage 1 of the voice subsystem — read the writer's corpus and emit a markdown style fingerprint. Use when the user runs init or explicitly requests a voice-fingerprint refresh."
 tools: read, bash, write, academic_writer_read_resource
+permission:
+  "*": allow
+  write:
+    "*": ask
+    ".voice/fingerprint.md": allow
+  bash:
+    "*": ask
+    "cat *": allow
+    "python3 *": allow
 metadata:
   author: Academic Helper
   version: 1.0.0

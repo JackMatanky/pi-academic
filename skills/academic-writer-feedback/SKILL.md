@@ -1,7 +1,7 @@
 ---
 name: academic-writer-feedback
 description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and session memory. Use after the researcher reviews an article produced by /academic-writer."
-allowed-tools: bash read write edit glob grep subagent academic_writer_read_resource
+allowed-tools: bash read write edit find grep subagent academic_writer_read_resource
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 

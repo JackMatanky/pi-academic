@@ -1,7 +1,7 @@
 ---
 name: academic-writer-export
 description: "Convert a finished article to additional document formats (PDF, HTML, ODT, LaTeX, EPUB) via pandoc. Use when the researcher wants to convert a finished article to PDF, HTML, ODT, LaTeX, or EPUB — after /skill:academic-writer-write or /skill:academic-writer-edit has produced articles/<slug>.md."
-allowed-tools: bash read glob
+allowed-tools: bash read find
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 

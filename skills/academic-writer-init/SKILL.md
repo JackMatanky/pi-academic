@@ -1,7 +1,7 @@
 ---
 name: academic-writer-init
 description: "First-time setup for the Academic Writer. Configures researcher profile, analyzes writing style from past articles, and indexes research sources. Use on first install or when redoing onboarding from scratch."
-allowed-tools: bash read write glob grep academic_writer_read_resource academic_writer_resolve_csl
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 

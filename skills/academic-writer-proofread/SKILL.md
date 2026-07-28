@@ -1,7 +1,7 @@
 ---
 name: academic-writer-proofread
 description: "Mechanical proofreading (הגהה) pass over a finished article — fixes typos, punctuation, spacing, Hebrew typography, and clear grammar errors, then writes a markdown report documenting every change and why. Suggestion-grade safety: never rewrites prose for style, tone, or voice. Use when an article is drafted and you want a clean copy-edit / proofread (הגהה) before submission, without touching wording or argument."
-allowed-tools: bash read write edit glob grep subagent
+allowed-tools: bash read write edit find grep subagent
 metadata: {author: "Yotam Fromm", version: "0.2.0"}
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write glob grep subagent academic_writer_read_resource academic_writer_resolve_csl academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_resolve_csl academic_writer_generate_docx
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: academic-writer-review
 description: "Self-review quality gate — scores a completed article on 6 dimensions (structure, argument logic, citation completeness, source coverage, writing quality, academic conventions) and presents a scorecard before final output. Use after writing to score the article on quality dimensions before publication."
-allowed-tools: bash read glob grep academic_writer_read_resource
+allowed-tools: bash read find grep academic_writer_read_resource
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 

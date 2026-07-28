@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit-section
 description: "Quick edit of a single section — rewrite, expand, cut, fix citations, or adjust style. Faster than full article edit. Use when changing one specific section only — faster than full edit."
-allowed-tools: bash read write glob grep subagent
+allowed-tools: bash read write find grep subagent
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 

@@ -2,6 +2,14 @@
 name: voice-distiller
 description: "Compress one or more session transcripts plus the fingerprint into the unified AUTHOR_VOICE.md, merging with any prior profile. Use after a Stage 2 session completes, after migration, or on `:voice recompress`."
 tools: read, write, edit
+permission:
+  "*": allow
+  write:
+    "*": ask
+    "AUTHOR_VOICE.md": allow
+  edit:
+    "*": ask
+    "AUTHOR_VOICE.md": allow
 metadata:
   author: Academic Helper
   version: 1.0.0

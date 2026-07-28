@@ -1,7 +1,17 @@
 ---
 name: deep-reader
 description: "Use to explore Zotero source documents and map available evidence, arguments, and gaps before any thesis is proposed. NOT for writing or editing — read-only source exploration only. Exception — the only permitted writes are the bibliographic source registry at .academic-helper/sources.json and the derived BibTeX bibliography at .academic-helper/bibliography.bib."
-tools: read, write, grep, glob, bash, mcp:zotero
+tools: read, write, grep, find, bash, mcp:zotero
+permission:
+  "*": allow
+  write:
+    "*": ask
+    ".academic-helper/sources.json": allow
+    ".academic-helper/bibliography.bib": allow
+  bash:
+    "*": ask
+    "cat *": allow
+    "python3 *": allow
 ---
 
 # Deep Reader Agent
@@ -280,4 +290,3 @@ KEY AUTHORS & POSITIONS:
 TENSIONS IN SOURCES:
 - [Author A] argues X while [Author B] argues Y on [topic]
 ```
-

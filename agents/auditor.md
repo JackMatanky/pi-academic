@@ -1,7 +1,14 @@
 ---
 name: auditor
 description: "Use as the citation hard gate — verifies factual claims against actual sources with page accuracy. Spawned only by section-writer per paragraph. Returns VERDICT line as final output. NOT for writing, editing, or style review."
-tools: read, grep, glob, bash, web_search, mcp:zotero
+tools: read, grep, find, bash, web_search, mcp:zotero
+permission:
+  "*": allow
+  bash:
+    "*": ask
+    "python3 *": allow
+    "cat *": allow
+    "grep *": allow
 ---
 
 # Auditor Agent

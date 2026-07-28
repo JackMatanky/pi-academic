@@ -1,7 +1,16 @@
 ---
 name: architect
 description: "Use to generate thesis options (Mode A), a structured article outline (Mode B), or — when passed `mode: ownership-only` — only the evidence-ownership.json file from the user's existing draft (Mode C). Runs AFTER deep-reader completes, BEFORE any section writing begins. NOT for writing prose or verifying citations."
-tools: read, write, grep, glob, bash
+tools: read, write, grep, find, bash
+permission:
+  "*": allow
+  write:
+    "*": ask
+    ".academic-helper/evidence-ownership.json": allow
+  bash:
+    "*": ask
+    "python3 *": allow
+    "cat *": allow
 ---
 
 # Architect Agent

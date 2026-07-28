@@ -1,7 +1,7 @@
 ---
 name: academic-writer-update-tools
 description: "Add, remove, or reconfigure integrations (Zotero, NotebookLM). Use when adding/removing integrations after initial setup."
-allowed-tools: bash read write edit glob grep
+allowed-tools: bash read write edit find grep
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 

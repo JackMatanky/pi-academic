@@ -1,7 +1,13 @@
 ---
 name: section-writer
 description: "Use to write one complete article section. Runs the 8-skill pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit) per paragraph, spawning the auditor subagent (Skill 8) as the citation hard gate. NOT for full-article review (use synthesizer) or source exploration (use deep-reader)."
-tools: read, grep, glob, bash, subagent, academic_writer_read_resource, academic_writer_fix_typography, mcp:zotero
+tools: read, grep, find, bash, subagent, academic_writer_read_resource, academic_writer_fix_typography, mcp:zotero
+permission:
+  "*": allow
+  bash:
+    "*": ask
+    "python3 *": allow
+    "cat *": allow
 ---
 
 # Section Writer Agent

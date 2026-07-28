@@ -1,7 +1,7 @@
 ---
 name: academic-writer-research
 description: "Research a subject or answer questions using your indexed sources — Zotero and RAG. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write glob grep subagent
+allowed-tools: bash read write find grep subagent
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
