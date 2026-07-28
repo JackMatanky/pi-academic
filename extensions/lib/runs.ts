@@ -4,6 +4,7 @@ import { join } from "node:path";
 const RUNS_RELATIVE_DIR = ".academic-helper/runs";
 const ACTIVE_STATUSES = new Set(["planned", "running", "blocked"]);
 
+/** Project run metadata stored in `.academic-helper/runs/<run-id>.json`. */
 export interface RunInfo {
   runId: string;
   status: string;
@@ -12,12 +13,14 @@ export interface RunInfo {
   path: string;
 }
 
+/** Sorted run-state summary for dashboards and status tools. */
 export interface RunSummary {
   dir: string;
   active: RunInfo[];
   last: RunInfo | null;
 }
 
+/** Reads JSON without letting malformed run files break session startup. */
 function readJson(path: string): unknown | null {
   try {
     return JSON.parse(readFileSync(path, "utf-8")) as unknown;
@@ -26,6 +29,7 @@ function readJson(path: string): unknown | null {
   }
 }
 
+/** Converts one run-state JSON file into a typed summary row. */
 function readRun(path: string, relativePath: string, fallbackRunId: string): RunInfo & { mtimeMs: number } {
   const data = readJson(path);
   const isRun = data !== null && typeof data === "object" && !Array.isArray(data);
@@ -39,6 +43,7 @@ function readRun(path: string, relativePath: string, fallbackRunId: string): Run
   };
 }
 
+/** Summarizes active and latest Academic Writer runs for a project. */
 export function summarizeRuns(projectDir: string): RunSummary {
   const runsDir = join(projectDir, RUNS_RELATIVE_DIR);
   if (!existsSync(runsDir)) return { dir: RUNS_RELATIVE_DIR, active: [], last: null };

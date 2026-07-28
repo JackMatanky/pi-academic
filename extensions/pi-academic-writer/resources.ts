@@ -2,12 +2,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { PACKAGE_ROOT } from "../lib/paths.js";
 
+/** Narrows resource language options to the packaged anti-AI pattern files. */
 function normalizeLanguage(language: unknown): "english" | "hebrew" {
   if (typeof language !== "string") return "hebrew";
   const normalized = language.trim().toLowerCase();
   return normalized.startsWith("en") || normalized === "english" ? "english" : "hebrew";
 }
 
+/** Resolves a stable Academic Writer resource name to its package/project file path. */
 export function resolveResourcePath(name: string, projectRoot: string, language?: unknown): string {
   switch (name) {
     case "thresholds": {

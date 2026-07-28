@@ -6,6 +6,7 @@ import { getProfilePath, loadProfile } from "../lib/profile.js";
 import { summarizeRuns } from "../lib/runs.js";
 import type { ProfileData } from "../lib/types.js";
 
+/** Condenses run-state details for the session dashboard. */
 function runSummary(projectDir: string): { active: number; last: string | null } {
   const runs = summarizeRuns(projectDir);
   return {
@@ -16,18 +17,22 @@ function runSummary(projectDir: string): { active: number; last: string | null }
 
 const DASHBOARD_REASONS = new Set(["startup", "new", "resume"]);
 
+/** Returns whether this lifecycle event should display the dashboard. */
 function shouldShowDashboard(reason: string): boolean {
   return DASHBOARD_REASONS.has(reason);
 }
 
+/** Matches generated Word documents in project article folders. */
 function isDocx(file: string): boolean {
   return file.endsWith(".docx");
 }
 
+/** Matches past articles that can seed the voice-learning flow. */
 function isPastArticle(file: string): boolean {
   return file.endsWith(".pdf") || isDocx(file);
 }
 
+/** Counts matching files in an optional project-relative directory. */
 function countFiles(
   projectDir: string,
   relativeDir: string,
@@ -42,17 +47,20 @@ function countFiles(
   }
 }
 
+/** Lists enabled integrations from the parsed profile. */
 function enabledToolNames(profile: ProfileData): string[] {
   return Object.entries(profile.tools ?? {})
     .filter(([, config]) => config.enabled)
     .map(([name]) => name);
 }
 
+/** Counts past source articles that have not yet been voice-mined. */
 function unanalyzedPastArticleCount(projectDir: string, analyzedCount: number): number {
   const total = countFiles(projectDir, "past-articles", isPastArticle);
   return Math.max(0, total - analyzedCount);
 }
 
+/** Builds the fixed-width session-start dashboard shown to researchers. */
 function buildDashboardLines(projectDir: string, profile: ProfileData): string[] {
   const lines: string[] = [
     "",
@@ -98,6 +106,7 @@ function buildDashboardLines(projectDir: string, profile: ProfileData): string[]
   return lines;
 }
 
+/** Registers Academic Writer lifecycle notifications and session logging. */
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (event, ctx) => {
     if (!shouldShowDashboard(event.reason)) return;

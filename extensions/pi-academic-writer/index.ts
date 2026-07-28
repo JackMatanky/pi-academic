@@ -10,6 +10,7 @@ import { buildStatus } from "./status.js";
 
 const execFileAsync = promisify(execFile);
 
+/** Formats a plain-text MCP tool response with structured details. */
 function textResult(text: string, details: object = {}) {
   return {
     content: [{ type: "text" as const, text }],
@@ -18,6 +19,7 @@ function textResult(text: string, details: object = {}) {
 }
 
 
+/** Applies deterministic Hebrew/academic typography cleanup to one paragraph. */
 function fixTypography(text: string): string {
   let fixed = text;
   fixed = fixed.replace(/[-\u2014]/g, " - ");
@@ -30,6 +32,7 @@ function fixTypography(text: string): string {
 }
 
 
+/** Registers package-aware Academic Writer tools for Pi. */
 export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_read_resource",

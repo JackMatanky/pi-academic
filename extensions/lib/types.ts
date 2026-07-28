@@ -1,3 +1,4 @@
+/** Parsed `.academic-helper/profile.md` data used by extensions and lifecycle hooks. */
 export interface ProfileData {
   fieldOfStudy?: string;
   citationStyle?: string;
@@ -11,12 +12,14 @@ export interface ProfileData {
   analyzedArticles?: string[];
 }
 
+/** User-configured integration metadata from the profile. */
 export interface ToolConfig {
   enabled: boolean;
   path?: string;
   mode?: "local" | "hybrid";
 }
 
+/** Structured author voice profile mined from past articles. */
 export interface StyleFingerprint {
   sentenceLevel?: SentenceLevel;
   vocabularyAndRegister?: VocabularyAndRegister;
@@ -37,6 +40,7 @@ export interface StyleFingerprint {
   sampleExcerpts?: string[];
 }
 
+/** Sentence-level voice characteristics. */
 interface SentenceLevel {
   averageLength?: string;
   structureVariety?: string;
@@ -44,6 +48,7 @@ interface SentenceLevel {
   passiveVoice?: string;
 }
 
+/** Vocabulary and register preferences. */
 interface VocabularyAndRegister {
   complexity?: string;
   registerLevel?: string;
@@ -51,6 +56,7 @@ interface VocabularyAndRegister {
   hebrewConventions?: string;
 }
 
+/** Paragraph-level structure and evidence handling. */
 interface ParagraphStructureConfig {
   pattern?: string;
   argumentProgression?: string;
@@ -58,16 +64,19 @@ interface ParagraphStructureConfig {
   evidenceAnalysis?: string;
 }
 
+/** Tone, stance, and hedging preferences. */
 interface ToneAndVoice {
   descriptors?: string[];
   authorStance?: string;
   hedgingPatterns?: string[];
 }
 
+/** Preferred transition phrases grouped by role. */
 interface Transitions {
   preferred?: Record<string, string[]>;
 }
 
+/** Citation density and integration preferences. */
 interface Citations {
   integrationStyle?: string;
   density?: string;
@@ -75,17 +84,20 @@ interface Citations {
   quoteLengthPreference?: string;
 }
 
+/** Common rhetorical moves in the researcher's writing. */
 interface RhetoricalPatterns {
   common?: string[];
   emphasisTechniques?: string[];
 }
 
+/** Preferred article-level structure. */
 interface ArticleStructure {
   sections?: string[];
   introPattern?: string;
   conclusionPattern?: string;
 }
 
+/** Default document formatting preferences. */
 interface OutputFormatPreferences {
   font?: string;
   bodySize?: number;

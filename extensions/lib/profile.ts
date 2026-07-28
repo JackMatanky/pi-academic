@@ -5,10 +5,12 @@ import type { ProfileData } from "./types.js";
 const PROFILE_DIR = ".academic-helper";
 const PROFILE_RELATIVE_PATH = ".academic-helper/profile.md";
 
+/** Returns the project-local `.academic-helper` directory path. */
 export function getProfileDirPath(projectDir: string): string {
   return join(projectDir, PROFILE_DIR);
 }
 
+/** Returns the project-local Academic Writer profile markdown path. */
 export function getProfilePath(projectDir: string): string {
   return join(projectDir, PROFILE_RELATIVE_PATH);
 }
@@ -23,6 +25,7 @@ const JSON_SECTION_KEYS: Record<string, string> = {
 };
 
 
+/** Parses the profile's deliberately small YAML-frontmatter subset. */
 function parseFrontmatter(raw: string, fields: ProfileFields): void {
   const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) return;
@@ -58,11 +61,13 @@ function parseFrontmatter(raw: string, fields: ProfileFields): void {
   }
 }
 
+/** Stores a recognized JSON profile section under its canonical profile key. */
 function assignJsonSection(heading: string, parsed: unknown, fields: ProfileFields): void {
   const key = JSON_SECTION_KEYS[heading];
   if (key) fields[key] = parsed;
 }
 
+/** Parses profile JSON sections headed by `## <Name>`. */
 function parseJsonSections(raw: string, fields: ProfileFields): void {
   const sectionRe = /^## ([^\n]+)\n+```json\n([\s\S]*?)\n```/gm;
   let m: RegExpExecArray | null;
@@ -76,6 +81,7 @@ function parseJsonSections(raw: string, fields: ProfileFields): void {
   }
 }
 
+/** Parses a profile markdown document, returning null only for unreadable parser failures. */
 function parseProfileMd(raw: string): ProfileData | null {
   try {
     const profile: ProfileFields = {};
@@ -87,6 +93,7 @@ function parseProfileMd(raw: string): ProfileData | null {
   }
 }
 
+/** Loads the project profile if `.academic-helper/profile.md` exists. */
 export function loadProfile(projectDir: string): ProfileData | null {
   const profilePath = getProfilePath(projectDir);
   if (!existsSync(profilePath)) return null;
