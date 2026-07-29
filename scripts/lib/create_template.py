@@ -18,7 +18,14 @@ import sys
 
 
 def create_template_with_footnotes(template_path="footnote_template.docx"):
-    """Create a template document with footnotes infrastructure."""
+    """Create a template document with footnotes infrastructure.
+
+    Args:
+        template_path: Template path supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
 
     # First create a basic document
     doc = Document()

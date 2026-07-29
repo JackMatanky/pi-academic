@@ -35,10 +35,18 @@ class FootnoteAdder:
     def __init__(self, is_rtl: bool = False):
         """Initialize FootnoteAdder.
 
+        Details:
+
+            Args:
+                is_rtl: When True, footnote paragraphs and text runs get RTL
+                        direction elements (w:bidi, w:jc right, w:rtl). Set this
+                        to True for Hebrew/Arabic documents.
+
         Args:
-            is_rtl: When True, footnote paragraphs and text runs get RTL
-                    direction elements (w:bidi, w:jc right, w:rtl). Set this
-                    to True for Hebrew/Arabic documents.
+            is_rtl: Is rtl supplied by the caller.
+
+        Returns:
+            None.
         """
         self.footnote_id = 0
         self.footnotes_to_add = []
@@ -47,13 +55,23 @@ class FootnoteAdder:
     def add_footnote(self, paragraph, text, footnote_text):
         """Add a footnote reference to a paragraph.
 
+        Details:
+
+            Args:
+                paragraph: The python-docx paragraph object
+                text: Text to add before the footnote reference (can be empty string)
+                footnote_text: The footnote content
+
+            Returns:
+                The footnote run object
+
         Args:
-            paragraph: The python-docx paragraph object
-            text: Text to add before the footnote reference (can be empty string)
-            footnote_text: The footnote content
+            paragraph: Paragraph supplied by the caller.
+            text: Text supplied by the caller.
+            footnote_text: Footnote text supplied by the caller.
 
         Returns:
-            The footnote run object
+            The helper result, or None when the helper performs work for side effects only.
         """
         self.footnote_id += 1
 
@@ -82,8 +100,16 @@ class FootnoteAdder:
     def finalize_footnotes(self, docx_path):
         """Add all queued footnotes to the document. Call after doc.save().
 
+        Details:
+
+            Args:
+                docx_path: Path to the saved .docx file
+
         Args:
-            docx_path: Path to the saved .docx file
+            docx_path: Docx path supplied by the caller.
+
+        Returns:
+            The helper result, or None when the helper performs work for side effects only.
         """
         if not self.footnotes_to_add:
             return
@@ -151,7 +177,14 @@ class FootnoteAdder:
             shutil.rmtree(extract_dir)
 
     def _cleanup_docx(self, extract_dir):
-        """Remove Mac-specific elements and fix XML formatting."""
+        """Remove Mac-specific elements and fix XML formatting.
+
+        Args:
+            extract_dir: Extract dir supplied by the caller.
+
+        Returns:
+            The helper result, or None when the helper performs work for side effects only.
+        """
 
         for root_dir, dirs, files in os.walk(extract_dir):
             for file in files:
@@ -217,7 +250,15 @@ class FootnoteAdder:
                 f.write(content)
 
     def _repack_docx(self, extract_dir, docx_path):
-        """Repack the docx with proper OOXML file order."""
+        """Repack the docx with proper OOXML file order.
+
+        Args:
+            extract_dir: Extract dir supplied by the caller.
+            docx_path: Docx path supplied by the caller.
+
+        Returns:
+            The helper result, or None when the helper performs work for side effects only.
+        """
         all_files = []
         for root_dir, dirs, files in os.walk(extract_dir):
             for file in files:
@@ -236,6 +277,16 @@ class FootnoteAdder:
         ]
 
         def sort_key(item):
+            """Sort DOCX archive members into Word-compatible package order.
+
+            This component keeps the surrounding module contract explicit and testable.
+
+            Args:
+                item: Item supplied by the caller.
+
+            Returns:
+                The helper result, or None when the helper performs work for side effects only.
+            """
             try:
                 return (priority_order.index(item[1]), item[1])
             except ValueError:

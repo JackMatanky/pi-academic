@@ -8,10 +8,24 @@ AGENT = ROOT / "agents" / "voice-miner.md"
 
 
 def test_voice_miner_agent_exists():
+    """Assert voice miner agent exists.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     assert AGENT.is_file()
 
 
 def test_voice_miner_frontmatter_complete():
+    """Assert voice miner frontmatter complete.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = AGENT.read_text()
     assert text.startswith("---\n")
     fm_end = text.index("\n---\n", 4)
@@ -28,6 +42,13 @@ def test_voice_miner_frontmatter_complete():
 
 
 def test_voice_miner_specifies_io_contract():
+    """Assert voice miner specifies io contract.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = AGENT.read_text()
     assert "past-articles/" in text or "corpus" in text.lower()
     assert ".voice/fingerprint.md" in text

@@ -9,8 +9,20 @@ from pathlib import Path
 
 
 class TestExtensionRuntime(unittest.TestCase):
+    """Test cases covering ExtensionRuntime.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     @classmethod
     def setUpClass(cls):
+        """setUpClass.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         cls.build_root = Path(
             tempfile.mkdtemp(prefix=".aw-runtime-", dir=".")
         ).resolve()
@@ -36,9 +48,27 @@ class TestExtensionRuntime(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """tearDownClass.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         shutil.rmtree(cls.build_root, ignore_errors=True)
 
     def run_tools(self, project_root: Path, env=None):
+        """run tools.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Args:
+            project_root: Project root supplied by the caller.
+            env: Env supplied by the caller.
+
+        Returns:
+            The helper result, or None when the helper performs work for side effects only.
+        """
         script = self.build_root / "runtime-smoke.mjs"
         extension_url = (
             self.build_root / "extensions" / "pi-academic-writer" / "index.js"
@@ -110,6 +140,19 @@ class TestExtensionRuntime(unittest.TestCase):
         return json.loads(res.stdout)
 
     def call_tool(self, project_root: Path, name: str, params: dict, env=None):
+        """call tool.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Args:
+            project_root: Project root supplied by the caller.
+            name: Name supplied by the caller.
+            params: Params supplied by the caller.
+            env: Env supplied by the caller.
+
+        Returns:
+            The helper result, or None when the helper performs work for side effects only.
+        """
         script = self.build_root / f"runtime-{name}.mjs"
         extension_url = (
             self.build_root / "extensions" / "pi-academic-writer" / "index.js"
@@ -146,6 +189,13 @@ class TestExtensionRuntime(unittest.TestCase):
         return json.loads(res.stdout)
 
     def test_package_tools_run_against_project_state(self):
+        """Assert package tools run against project state.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             helper = root / ".academic-writer"
@@ -265,6 +315,13 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertEqual(data["ingested"]["details"]["count"], 1)
 
     def test_export_passes_citeproc_options_to_pandoc(self):
+        """Assert export passes citeproc options to pandoc.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             helper = root / ".academic-writer"
@@ -323,6 +380,13 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertIn("--csl=style.csl", args)
 
     def test_docx_extraction_prefers_pandoc_citations(self):
+        """Assert docx extraction prefers pandoc citations.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "doc.docx").write_bytes(b"fake docx; pandoc stub handles it")
@@ -353,6 +417,13 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertEqual(args[:4], ["-f", "docx+citations", "-t", "markdown"])
 
     def test_migrates_json_profile(self):
+        """Assert migrates json profile.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             profile_dir = root / ".academic-writer"

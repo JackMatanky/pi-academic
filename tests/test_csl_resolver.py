@@ -11,6 +11,17 @@ SCRIPT = ROOT / "scripts" / "resolve-csl.py"
 
 
 def run_resolver(*args, cwd=None):
+    """run resolver.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        cwd: Cwd supplied by the caller.
+        args: Args supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     return subprocess.run(
         ["python3", str(SCRIPT), *args],
         cwd=cwd or ROOT,
@@ -21,6 +32,17 @@ def run_resolver(*args, cwd=None):
 
 
 def write_csl(path: Path, title: str = "Custom Journal"):
+    """write csl.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        path: Path supplied by the caller.
+        title: Title supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -32,6 +54,16 @@ def write_csl(path: Path, title: str = "Custom Journal"):
 
 
 def test_resolves_popular_alias_from_project_cache(tmp_path):
+    """Assert resolves popular alias from project cache.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        tmp_path: Tmp path supplied by the caller.
+
+    Returns:
+        None.
+    """
     cached = tmp_path / ".academic-writer" / "csl" / "apa.csl"
     write_csl(cached, "APA")
 
@@ -42,6 +74,16 @@ def test_resolves_popular_alias_from_project_cache(tmp_path):
 
 
 def test_resolves_project_custom_csl(tmp_path):
+    """Assert resolves project custom csl.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        tmp_path: Tmp path supplied by the caller.
+
+    Returns:
+        None.
+    """
     custom = tmp_path / ".academic-writer" / "csl" / "custom-journal.csl"
     write_csl(custom)
 
@@ -51,6 +93,16 @@ def test_resolves_project_custom_csl(tmp_path):
 
 
 def test_downloads_direct_csl_url_to_project_cache(tmp_path):
+    """Assert downloads direct csl url to project cache.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        tmp_path: Tmp path supplied by the caller.
+
+    Returns:
+        None.
+    """
     source_dir = tmp_path / "served"
     source = source_dir / "journal.csl"
     write_csl(source, "Served Journal")
@@ -76,6 +128,16 @@ def test_downloads_direct_csl_url_to_project_cache(tmp_path):
 
 
 def test_unknown_style_without_download_fails_cleanly(tmp_path):
+    """Assert unknown style without download fails cleanly.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        tmp_path: Tmp path supplied by the caller.
+
+    Returns:
+        None.
+    """
     result = run_resolver("definitely-not-a-real-style-id-xyz", cwd=tmp_path)
     assert result.returncode != 0
     assert "Unknown CSL style" in result.stderr

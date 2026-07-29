@@ -19,6 +19,17 @@ BIB_KEY_RE = re.compile(r"@\w+\s*\{\s*([^,\s]+)\s*,", re.MULTILINE)
 
 
 def _inside(root: Path, candidate: str) -> Path:
+    """Resolve a candidate path and keep it inside the project root.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        root: Root supplied by the caller.
+        candidate: Candidate supplied by the caller.
+
+    Returns:
+        The Path result described by this helper contract.
+    """
     path = Path(candidate).expanduser()
     resolved = (path if path.is_absolute() else root / path).resolve()
     if resolved != root and root not in resolved.parents:
@@ -27,10 +38,30 @@ def _inside(root: Path, candidate: str) -> Path:
 
 
 def _read_json(path: Path) -> Any:
+    """Read a JSON file used by the citation audit.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        path: Path supplied by the caller.
+
+    Returns:
+        The Any result described by this helper contract.
+    """
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _collect_cite_keys(value: Any) -> set[str]:
+    """Collect cite keys from nested citation asset data.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        value: Value supplied by the caller.
+
+    Returns:
+        The set[str] result described by this helper contract.
+    """
     if isinstance(value, list):
         keys: set[str] = set()
         for item in value:
@@ -49,6 +80,16 @@ def _collect_cite_keys(value: Any) -> set[str]:
 
 
 def _extract_markers(article: str) -> tuple[list[str], list[str], list[str]]:
+    """Extract Pandoc citation markers and malformed marker text.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        article: Article supplied by the caller.
+
+    Returns:
+        The tuple[list[str], list[str], list[str]] result described by this helper contract.
+    """
     markers = [match.group(0) for match in MARKER_RE.finditer(article)]
     keys: list[str] = []
     malformed: list[str] = []
@@ -65,6 +106,17 @@ def _extract_markers(article: str) -> tuple[list[str], list[str], list[str]]:
 
 
 def _citation_assets(article_path: Path, project_root: Path) -> tuple[Path, Path, str]:
+    """Resolve article-local citation assets before global cache files.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        article_path: Article path supplied by the caller.
+        project_root: Project root supplied by the caller.
+
+    Returns:
+        The tuple[Path, Path, str] result described by this helper contract.
+    """
     rel_article = article_path.relative_to(project_root)
     local_base = project_root / rel_article.with_suffix("")
     local_sources = local_base.with_name(f"{local_base.name}.sources.json")
@@ -79,6 +131,18 @@ def _citation_assets(article_path: Path, project_root: Path) -> tuple[Path, Path
 def audit(
     article_path: Path, citation_style: str, project_root: Path
 ) -> dict[str, Any]:
+    """Audit an article for deterministic citation asset consistency.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        article_path: Article path supplied by the caller.
+        citation_style: Citation style supplied by the caller.
+        project_root: Project root supplied by the caller.
+
+    Returns:
+        The dict[str, Any] result described by this helper contract.
+    """
     details: dict[str, Any] = {
         "ok": True,
         "article": str(article_path.relative_to(project_root)),
@@ -161,6 +225,13 @@ def audit(
 
 
 def main() -> None:
+    """Run the command-line entry point.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(description="Audit Academic Writer citations")
     parser.add_argument(
         "article", help="Markdown article path, relative to project root"

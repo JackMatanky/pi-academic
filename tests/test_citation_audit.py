@@ -9,7 +9,24 @@ SCRIPT = Path("scripts/audit-citations.py").resolve()
 
 
 class TestCitationAudit(unittest.TestCase):
+    """Test cases covering CitationAudit.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def run_audit(self, root: Path, article: str, style: str):
+        """run audit.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Args:
+            root: Root supplied by the caller.
+            article: Article supplied by the caller.
+            style: Style supplied by the caller.
+
+        Returns:
+            The helper result, or None when the helper performs work for side effects only.
+        """
         res = subprocess.run(
             [
                 "python3",
@@ -27,6 +44,13 @@ class TestCitationAudit(unittest.TestCase):
         return json.loads(res.stdout)
 
     def test_citeproc_requires_sources_and_bibliography_keys(self):
+        """Assert citeproc requires sources and bibliography keys.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".academic-writer").mkdir()
@@ -49,6 +73,13 @@ class TestCitationAudit(unittest.TestCase):
             self.assertEqual(data["citationKeys"], ["smith2020"])
 
     def test_citeproc_prefers_article_local_assets(self):
+        """Assert citeproc prefers article local assets.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".academic-writer").mkdir()
@@ -81,6 +112,13 @@ class TestCitationAudit(unittest.TestCase):
             self.assertEqual(data["bibliographyPath"], "articles/ok.bibliography.bib")
 
     def test_citeproc_reports_missing_bib_key(self):
+        """Assert citeproc reports missing bib key.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".academic-writer").mkdir()
@@ -99,6 +137,13 @@ class TestCitationAudit(unittest.TestCase):
             self.assertEqual(data["missingFromBibliography"], ["missing2020"])
 
     def test_citeproc_reports_malformed_marker(self):
+        """Assert citeproc reports malformed marker.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".academic-writer").mkdir()
@@ -116,6 +161,13 @@ class TestCitationAudit(unittest.TestCase):
             self.assertEqual(data["malformedMarkers"], ["[@]"])
 
     def test_inline_mode_rejects_pandoc_markers(self):
+        """Assert inline mode rejects pandoc markers.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "article.md").write_text("Text [@smith2020].", encoding="utf-8")

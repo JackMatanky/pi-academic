@@ -9,11 +9,31 @@ import yaml
 
 
 def _read(path):
+    """Read a UTF-8 project file for structural assertions.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        path: Path supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def _parse_frontmatter(path):
+    """Parse a Markdown YAML frontmatter block for assertions.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        path: Path supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     content = _read(path)
     fm_match = re.match(r"^---\n(.*?)\n---\n(.*)", content, re.DOTALL)
     if not fm_match:
@@ -26,7 +46,19 @@ def _parse_frontmatter(path):
 
 
 class TestSkills(unittest.TestCase):
+    """Test cases covering Skills.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_skills_frontmatter(self):
+        """Assert skills frontmatter.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         skills_dir = "skills"
         self.assertTrue(os.path.isdir(skills_dir))
         names = set()
@@ -55,7 +87,19 @@ class TestSkills(unittest.TestCase):
 
 
 class TestAgents(unittest.TestCase):
+    """Test cases covering Agents.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_agents_frontmatter(self):
+        """Assert agents frontmatter.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         agents_dir = "agents"
         self.assertTrue(os.path.isdir(agents_dir))
 
@@ -125,6 +169,13 @@ class TestAgents(unittest.TestCase):
                 )
 
     def test_agents_permission_frontmatter(self):
+        """Assert agents permission frontmatter.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         agents_dir = "agents"
         for agent_file in os.listdir(agents_dir):
             if not agent_file.endswith(".md"):
@@ -148,7 +199,19 @@ class TestAgents(unittest.TestCase):
 
 
 class TestPackageManifest(unittest.TestCase):
+    """Test cases covering PackageManifest.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_package_json(self):
+        """Assert package json.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         path = "package.json"
         self.assertTrue(os.path.isfile(path))
         with open(path, "r") as f:
@@ -187,7 +250,19 @@ class TestPackageManifest(unittest.TestCase):
 
 
 class TestDevTooling(unittest.TestCase):
+    """Test cases covering DevTooling.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_mise_tasks_cover_format_lint_and_hk(self):
+        """Assert mise tasks cover format lint and hk.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         with open("mise.toml", "rb") as f:
             data = tomllib.load(f)
 
@@ -208,6 +283,13 @@ class TestDevTooling(unittest.TestCase):
         self.assertIn("test", tasks["ci"]["depends"])
 
     def test_hk_runs_before_commit_and_push(self):
+        """Assert hk runs before commit and push.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         content = _read("hk.pkl")
         self.assertIn("github.com/jdx/hk", content)
         self.assertIn('["pre-commit"]', content)
@@ -218,7 +300,19 @@ class TestDevTooling(unittest.TestCase):
 
 
 class TestJSON(unittest.TestCase):
+    """Test cases covering JSON.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_json_validity(self):
+        """Assert json validity.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         for root, dirs, files in os.walk("."):
             if "node_modules" in root:
                 continue
@@ -233,7 +327,19 @@ class TestJSON(unittest.TestCase):
 
 
 class TestExtensions(unittest.TestCase):
+    """Test cases covering Extensions.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_extensions_valid(self):
+        """Assert extensions valid.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         ext_dir = "extensions"
         self.assertTrue(os.path.isdir(ext_dir))
 
@@ -272,6 +378,13 @@ class TestExtensions(unittest.TestCase):
                 )
 
     def test_csl_styles_are_downloaded_not_bundled(self):
+        """Assert csl styles are downloaded not bundled.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         resolver = _read("scripts/resolve-csl.py")
         self.assertIn("ZOTERO_STYLE_BASE", resolver)
         self.assertIn("POPULAR_STYLES", resolver)
@@ -281,7 +394,11 @@ class TestExtensions(unittest.TestCase):
         )
 
     def test_no_academic_writer_root_env_contract(self):
-        """Package assets must be exposed through tools, not global bash env injection."""
+        """Package assets must be exposed through tools, not global bash env injection.
+
+        Returns:
+            None.
+        """
         root_env = "ACADEMIC_WRITER" + "_ROOT"
         env_inject = "env" + "-inject"
         self.assertFalse(
@@ -333,10 +450,16 @@ class TestExtensions(unittest.TestCase):
                     self.assertNotIn(marker, content, path)
 
     def test_thresholds_resource_honors_project_override(self):
-        """academic_writer_read_resource(name: thresholds) must prefer the
-        project's .academic-writer/thresholds.json (created by init/setup)
-        over the packaged default — otherwise editing the per-project copy
-        silently does nothing."""
+        """academic_writer_read_resource(name: thresholds) must prefer the.
+
+        Details:
+            project's .academic-writer/thresholds.json (created by init/setup)
+            over the packaged default — otherwise editing the per-project copy
+            silently does nothing.
+
+        Returns:
+            None.
+        """
         resources_source = _read("extensions/pi-academic-writer/resources.ts")
         tools_source = _read("extensions/pi-academic-writer/index.ts")
         self.assertIn("projectOverride", resources_source)
@@ -357,6 +480,13 @@ class TestExtensions(unittest.TestCase):
         )
 
     def test_packaged_prompt_resources_exist(self):
+        """Assert packaged prompt resources exist.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         resources_source = _read("extensions/pi-academic-writer/resources.ts")
         for resource, path in {
             "voice_profile_load": "skills/academic-writer-write/references/voice-profile-load.md",
@@ -370,6 +500,13 @@ class TestExtensions(unittest.TestCase):
             )
 
     def test_citation_audit_is_wired_into_output_paths(self):
+        """Assert citation audit is wired into output paths.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         tools_source = _read("extensions/pi-academic-writer/index.ts")
         self.assertIn('scripts", "audit-citations.py', tools_source)
         for skill in [
@@ -383,6 +520,13 @@ class TestExtensions(unittest.TestCase):
             self.assertIn("run_state_contract", content, skill)
 
     def test_profile_migration_is_tool_backed(self):
+        """Assert profile migration is tool backed.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         tools = _read("extensions/pi-academic-writer/index.ts")
         profile = _read("extensions/lib/profile.ts")
         schema = _read("skills/academic-writer-init/references/profile-schema.md")
@@ -396,6 +540,13 @@ class TestExtensions(unittest.TestCase):
         self.assertNotIn("python3 << 'PYTHON'", setup)
 
     def test_no_academic_helper_references(self):
+        """Assert no academic helper references.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         for root, _, files in os.walk("."):
             if any(
                 part in {".git", "node_modules", ".venv"}
@@ -419,17 +570,36 @@ class TestExtensions(unittest.TestCase):
 
 
 class TestMcpWiring(unittest.TestCase):
+    """Test cases covering McpWiring.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_no_bundled_mcp_json(self):
         # MCP credentials/config live in the researcher's standard MCP config
         # layers, not in the published package repository. The package may
         # scaffold a user project .mcp.json during init/setup, but it must not
         # ship one from this repo.
+        """Assert no bundled mcp json.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         self.assertFalse(
             os.path.isfile(".mcp.json"),
             ".mcp.json should be user/project config, not a package source file",
         )
 
     def test_lifecycle_does_not_mount_mcp_adapter(self):
+        """Assert lifecycle does not mount mcp adapter.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         lifecycle_path = "extensions/lifecycle/index.ts"
         self.assertTrue(os.path.isfile(lifecycle_path))
         content = _read(lifecycle_path)
@@ -450,6 +620,13 @@ class TestMcpWiring(unittest.TestCase):
         )
 
     def test_docs_require_direct_mcp_tools(self):
+        """Assert docs require direct mcp tools.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         docs = "\n".join(
             _read(path)
             for path in [
@@ -475,6 +652,13 @@ class TestMcpWiring(unittest.TestCase):
         # can be pinned to any provider via subagents.agentOverrides.<name>.model
         # without a package-maintained server, build step, or API-key-through-env
         # plumbing. If `mcp/` reappears, something regressed this decision.
+        """Assert no bundled mcp server dir.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         self.assertFalse(
             os.path.isdir("mcp"),
             "mcp/ should not exist — model choice is a pi setting, not a bundled MCP server (see AGENTS.md)",
@@ -485,6 +669,13 @@ class TestMcpWiring(unittest.TestCase):
         # for brokering which of two hardcoded models drafted prose. Pi's own
         # per-agent model selection replaces this entirely — no skill/agent
         # should reintroduce a runtime engine-choice branch.
+        """Assert no engine choice plumbing.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         pattern = re.compile(
             r"geminiFallback|geminiMode|compare-models|gemini_write_section|gemini_synthesize|gemini_edit|gemini_calibrate_sample|gemini_raw",
             re.IGNORECASE,
@@ -505,7 +696,19 @@ class TestMcpWiring(unittest.TestCase):
 
 
 class TestReadmeAndAgentsMd(unittest.TestCase):
+    """Test cases covering ReadmeAndAgentsMd.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_slash_commands(self):
+        """Assert slash commands.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         readme = _read("README.md") if os.path.isfile("README.md") else ""
         agents_md = _read("AGENTS.md") if os.path.isfile("AGENTS.md") else ""
 
@@ -526,6 +729,13 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
             )
 
     def test_pdf_export_uses_health_and_wrapper_tools(self):
+        """Assert pdf export uses health and wrapper tools.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         export_skill = _read("skills/academic-writer-export/SKILL.md")
         health_skill = _read("skills/academic-writer-health/SKILL.md")
         readme = _read("README.md")
@@ -538,7 +748,19 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
 
 
 class TestCrossReferences(unittest.TestCase):
+    """Test cases covering CrossReferences.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_cross_references(self):
+        """Assert cross references.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         sw_path = "agents/section-writer.md"
         w_path = "skills/academic-writer-write/SKILL.md"
         if os.path.isfile(sw_path) and os.path.isfile(w_path):
@@ -560,7 +782,19 @@ class TestCrossReferences(unittest.TestCase):
 
 
 class TestNoCandlekeepReferences(unittest.TestCase):
+    """Test cases covering NoCandlekeepReferences.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_no_candlekeep(self):
+        """Assert no candlekeep.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         pattern = re.compile(
             r"candlekeep|ck items|ck auth|ck books|command -v ck\b|voice-sync",
             re.IGNORECASE,
@@ -598,11 +832,23 @@ class TestNoCandlekeepReferences(unittest.TestCase):
 
 
 class TestNoStaleClaudeCodeArtifacts(unittest.TestCase):
+    """Test cases covering NoStaleClaudeCodeArtifacts.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
     def test_no_old_slash_command_form(self):
         # `/academic-writer:<name>` was the Claude Code plugin slash-command
         # form; pi skills register as `/skill:academic-writer-<name>`. A
         # stray old-form reference is a dead command the model will emit
         # verbatim to the researcher.
+        """Assert no old slash command form.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         pattern = re.compile(r"/academic-writer:[a-zA-Z0-9_-]+")
         for d in ["skills", "agents"]:
             if not os.path.isdir(d):
@@ -622,6 +868,13 @@ class TestNoStaleClaudeCodeArtifacts(unittest.TestCase):
     def test_no_claude_code_runtime_mentions(self):
         # Claude-Code-specific runtime instructions (e.g. "restart Claude
         # Code") are wrong under pi and mislead the researcher.
+        """Assert no claude code runtime mentions.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
         for d in ["skills", "agents"]:
             if not os.path.isdir(d):
                 continue

@@ -6,6 +6,13 @@ A = Path("agents/architect.md")
 
 
 def test_architect_checks_chapter_coverage():
+    """Assert architect checks chapter coverage.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = A.read_text(encoding="utf-8")
     assert "chapter_coverage" in text
     assert (

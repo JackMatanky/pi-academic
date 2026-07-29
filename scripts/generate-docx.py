@@ -53,19 +53,26 @@ SECTION_TITLE_WORD_THRESHOLD = 1500
 
 
 def validate_hebrew_text(text: str) -> str:
-    """
-    Fix common Hebrew typographic errors that betray AI origin.
+    """Fix common Hebrew typographic errors that betray AI origin.
 
-    Fixes:
-    - Em-dashes (—) → replaced with space-hyphen-space
-    - Straight quotes (") → replaced with gereshayim (״)
-    - Unnecessary directional marks (RLM/LRM) → removed
+    Details:
+
+        Fixes:
+        - Em-dashes (—) → replaced with space-hyphen-space
+        - Straight quotes (") → replaced with gereshayim (״)
+        - Unnecessary directional marks (RLM/LRM) → removed
+
+        Args:
+            text: Hebrew or mixed text string
+
+        Returns:
+            Cleaned text with AI typography tells removed
 
     Args:
-        text: Hebrew or mixed text string
+        text: Text supplied by the caller.
 
     Returns:
-        Cleaned text with AI typography tells removed
+        The str result described by this helper contract.
     """
     if not text:
         return text
@@ -102,9 +109,17 @@ def validate_hebrew_text(text: str) -> str:
 def set_rtl_para(para):
     """Enable RTL layout for a paragraph via w:bidi.
 
-    w:bidi marks the paragraph as RTL so text flows right-to-left. Paragraph
-    alignment (w:jc) is set separately by the caller via para.alignment, so
-    this function only adds the bidi element to avoid duplicate jc elements.
+    Details:
+
+        w:bidi marks the paragraph as RTL so text flows right-to-left. Paragraph
+        alignment (w:jc) is set separately by the caller via para.alignment, so
+        this function only adds the bidi element to avoid duplicate jc elements.
+
+    Args:
+        para: Para supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
     """
     pPr = para._p.get_or_add_pPr()
     bidi = OxmlElement("w:bidi")
@@ -113,13 +128,35 @@ def set_rtl_para(para):
 
 
 def set_rtl_run(run):
-    """Enable RTL on a specific run via w:rtl in rPr element."""
+    """Enable RTL on a specific run via w:rtl in rPr element.
+
+    Args:
+        run: Run supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     rPr = run._element.get_or_add_rPr()
     rtl_elem = OxmlElement("w:rtl")
     rPr.append(rtl_elem)
 
 
 def _style_run(run, font_name, font_size, bold, italic, is_rtl):
+    """Apply a named Word style to a run when the style exists.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        run: Run supplied by the caller.
+        font_name: Font name supplied by the caller.
+        font_size: Font size supplied by the caller.
+        bold: Bold supplied by the caller.
+        italic: Italic supplied by the caller.
+        is_rtl: Is rtl supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     run.font.name = font_name
     run.font.size = Pt(font_size)
     run.bold = bold
@@ -144,25 +181,44 @@ def add_para(
     footnotes=None,
     footnote_adder=None,
 ):
-    """
-    Add a paragraph with proper RTL handling for Hebrew text.
+    """Add a paragraph with proper RTL handling for Hebrew text.
 
-    Key principle: Write text naturally, let DOCX handle bidirectional rendering.
-    No manual insertion of directional marks.
+    Details:
+
+        Key principle: Write text naturally, let DOCX handle bidirectional rendering.
+        No manual insertion of directional marks.
+
+        Args:
+            doc: python-docx Document
+            text: Paragraph text (Hebrew or mixed)
+            font_name: Font name (e.g., "David")
+            font_size: Font size in points
+            is_rtl: Whether text is right-to-left
+            bold, italic: Text formatting
+            align: Paragraph alignment
+            space_before, space_after: Spacing in points
+            line_spacing: Line spacing multiplier (e.g., 1.5)
+
+        Returns:
+            The Paragraph object
 
     Args:
-        doc: python-docx Document
-        text: Paragraph text (Hebrew or mixed)
-        font_name: Font name (e.g., "David")
-        font_size: Font size in points
-        is_rtl: Whether text is right-to-left
-        bold, italic: Text formatting
-        align: Paragraph alignment
-        space_before, space_after: Spacing in points
-        line_spacing: Line spacing multiplier (e.g., 1.5)
+        doc: Doc supplied by the caller.
+        text: Text supplied by the caller.
+        font_name: Font name supplied by the caller.
+        font_size: Font size supplied by the caller.
+        is_rtl: Is rtl supplied by the caller.
+        bold: Bold supplied by the caller.
+        italic: Italic supplied by the caller.
+        align: Align supplied by the caller.
+        space_before: Space before supplied by the caller.
+        space_after: Space after supplied by the caller.
+        line_spacing: Line spacing supplied by the caller.
+        footnotes: Footnotes supplied by the caller.
+        footnote_adder: Footnote adder supplied by the caller.
 
     Returns:
-        The Paragraph object
+        The helper result, or None when the helper performs work for side effects only.
     """
     # Validate and clean text (remove AI typography tells)
     text = validate_hebrew_text(text)
@@ -204,7 +260,14 @@ def add_para(
 
 
 def add_page_numbers(doc):
-    """Add centered page numbers in footer."""
+    """Add centered page numbers in footer.
+
+    Args:
+        doc: Doc supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     section = doc.sections[0]
     footer = section.footer
     para = footer.paragraphs[0]
@@ -222,7 +285,15 @@ def add_page_numbers(doc):
 
 
 def generate_docx(data: dict, output_path: str):
-    """Generate a .docx file from article data."""
+    """Generate a .docx file from article data.
+
+    Args:
+        data: Data supplied by the caller.
+        output_path: Output path supplied by the caller.
+
+    Returns:
+        The helper result, or None when the helper performs work for side effects only.
+    """
     # Extract format settings with defaults
     fmt = data.get("format", {})
     font_name = fmt.get("font", "David")
@@ -395,6 +466,13 @@ def generate_docx(data: dict, output_path: str):
 
 
 def main():
+    """Run the command-line entry point.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(description="Generate academic article DOCX")
     parser.add_argument("--input", required=True, help="Path to article JSON file")
     parser.add_argument("--output", required=True, help="Output .docx path")

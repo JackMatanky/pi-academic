@@ -6,10 +6,24 @@ SKILL = ROOT / "skills" / "academic-writer-voice" / "SKILL.md"
 
 
 def test_skill_exists():
+    """Assert skill exists.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     assert SKILL.is_file()
 
 
 def test_skill_frontmatter_complete():
+    """Assert skill frontmatter complete.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = SKILL.read_text()
     fm = yaml.safe_load(text.split("---")[1])
     assert fm["name"] == "academic-writer-voice"
@@ -22,6 +36,13 @@ def test_skill_frontmatter_complete():
 
 
 def test_skill_lists_subactions():
+    """Assert skill lists subactions.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = SKILL.read_text()
     # `sync` was dropped with the Candlekeep voice-sync removal — no sub-action
     # should push/pull through an external store anymore.
@@ -31,6 +52,13 @@ def test_skill_lists_subactions():
 
 
 def test_skill_invokes_correct_agents():
+    """Assert skill invokes correct agents.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = SKILL.read_text()
     assert "voice-interviewer" in text
     assert "voice-distiller" in text

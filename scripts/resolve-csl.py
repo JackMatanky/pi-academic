@@ -65,6 +65,16 @@ RAW_CSL_BASE = "https://raw.githubusercontent.com/citation-style-language/styles
 
 
 def _looks_like_csl(path: Path) -> bool:
+    """Detect whether a string names a local CSL file or URL.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        path: Path supplied by the caller.
+
+    Returns:
+        The bool result described by this helper contract.
+    """
     try:
         head = path.read_text(encoding="utf-8", errors="ignore")[:2048].lower()
     except OSError:
@@ -75,6 +85,16 @@ def _looks_like_csl(path: Path) -> bool:
 
 
 def _validate_csl(path: Path) -> Path:
+    """Validate that a path points to a readable CSL style.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        path: Path supplied by the caller.
+
+    Returns:
+        The Path result described by this helper contract.
+    """
     if not path.is_file():
         raise SystemExit(f"CSL file not found: {path}")
     if path.suffix.lower() != ".csl":
@@ -85,6 +105,16 @@ def _validate_csl(path: Path) -> Path:
 
 
 def _alias_key(style: str) -> str:
+    """Normalize a citation style alias for lookup.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        style: Style supplied by the caller.
+
+    Returns:
+        The str result described by this helper contract.
+    """
     value = style.strip().lower()
     if value.endswith(".csl"):
         value = value[:-4]
@@ -94,6 +124,16 @@ def _alias_key(style: str) -> str:
 
 
 def _style_id(style: str) -> str:
+    """Normalize a Citation Style Language repository style id.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        style: Style supplied by the caller.
+
+    Returns:
+        The str result described by this helper contract.
+    """
     raw = style.strip()
     if raw.endswith(".csl"):
         raw = raw[:-4]
@@ -101,6 +141,16 @@ def _style_id(style: str) -> str:
 
 
 def _safe_cache_name(style_id: str) -> str:
+    """Build a filesystem-safe cache filename for a CSL style.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        style_id: Style id supplied by the caller.
+
+    Returns:
+        The str result described by this helper contract.
+    """
     name = _style_id(style_id).strip().removesuffix(".csl")
     if "/" in name or ".." in name or not name:
         raise SystemExit(f"Invalid CSL style id: {style_id}")
@@ -108,6 +158,17 @@ def _safe_cache_name(style_id: str) -> str:
 
 
 def _download_url(url: str, target: Path) -> Path:
+    """Build the GitHub raw download URL for a CSL style id.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        url: Url supplied by the caller.
+        target: Target supplied by the caller.
+
+    Returns:
+        The Path result described by this helper contract.
+    """
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
         with urlopen(url, timeout=15) as response:
@@ -124,6 +185,17 @@ def _download_url(url: str, target: Path) -> Path:
 
 
 def _download_style(style_id: str, cache_dir: Path) -> Path:
+    """Download and cache a CSL style file.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        style_id: Style id supplied by the caller.
+        cache_dir: Cache dir supplied by the caller.
+
+    Returns:
+        The Path result described by this helper contract.
+    """
     safe_id = _safe_cache_name(style_id)
     target = cache_dir / f"{safe_id}.csl"
     if target.exists():
@@ -143,6 +215,17 @@ def _download_style(style_id: str, cache_dir: Path) -> Path:
 
 
 def _url_cache_target(url: str, cache_dir: Path) -> Path:
+    """Choose a cache filename for a direct CSL URL.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        url: Url supplied by the caller.
+        cache_dir: Cache dir supplied by the caller.
+
+    Returns:
+        The Path result described by this helper contract.
+    """
     path = urlparse(url).path.rstrip("/")
     name = Path(path).name or "style"
     if name == "styles" or not name:
@@ -155,6 +238,19 @@ def _url_cache_target(url: str, cache_dir: Path) -> Path:
 def resolve_style(
     style: str, package_root: Path, project_root: Path, download: bool
 ) -> Path:
+    """Resolve a requested CSL style to a local file path.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Args:
+        style: Style supplied by the caller.
+        package_root: Package root supplied by the caller.
+        project_root: Project root supplied by the caller.
+        download: Download supplied by the caller.
+
+    Returns:
+        The Path result described by this helper contract.
+    """
     del package_root  # kept for backward-compatible CLI calls
     raw = style.strip()
     if not raw:
@@ -195,6 +291,13 @@ def resolve_style(
 
 
 def main() -> None:
+    """Run the command-line entry point.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(
         description="Resolve custom/downloaded CSL styles for Academic Writer"
     )

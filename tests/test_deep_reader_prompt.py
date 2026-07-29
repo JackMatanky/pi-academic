@@ -6,6 +6,13 @@ DR = Path("agents/deep-reader.md")
 
 
 def test_deep_reader_has_chapter_enumeration_trigger():
+    """Assert deep reader has chapter enumeration trigger.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = DR.read_text(encoding="utf-8")
     assert (
         "לאורך הספרים" in text
@@ -16,6 +23,13 @@ def test_deep_reader_has_chapter_enumeration_trigger():
 
 
 def test_deep_reader_chapter_coverage_schema():
+    """Assert deep reader chapter coverage schema.
+
+    This component keeps the surrounding module contract explicit and testable.
+
+    Returns:
+        None.
+    """
     text = DR.read_text(encoding="utf-8")
     assert "covered" in text
     assert "skipped-irrelevant" in text

@@ -17,7 +17,7 @@ const PROFILE_DIR = ".academic-writer";
  */
 const PROFILE_RELATIVE_PATH = ".academic-writer/profile.md";
 /**
- * Legacy project-relative JSON profile path migrated on first load.
+ * Old project-relative JSON profile path migrated on first load.
  *
  * @remarks
  * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
@@ -56,7 +56,7 @@ export function getProfilePath(projectDir: string): string {
  */
 type ProfileFields = ProfileData & Record<string, unknown>;
 /**
- * Result payload for one legacy JSON-to-markdown profile migration attempt.
+ * Result payload for one JSON-to-markdown profile migration attempt.
  *
  * @remarks
  * Defines the serializable shape shared between extension tools, tests, and prompts.
