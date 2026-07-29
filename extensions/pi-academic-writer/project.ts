@@ -21,9 +21,27 @@ import {
 import { promisify } from "node:util";
 import { buildStatus, type AcademicWriterStatus } from "./status.js";
 
+/**
+ * Promisified `execFile` used for bounded external extraction commands.
+ *
+ * @remarks
+ * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
+ */
 const execFileAsync = promisify(execFile);
+/**
+ * File extensions accepted by local source ingestion.
+ *
+ * @remarks
+ * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
+ */
 const SUPPORTED_SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
+/**
+ * Deterministic article output paths derived from a researcher-provided subject.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface ArticlePaths {
   slug: string;
   markdown: string;
@@ -33,6 +51,12 @@ export interface ArticlePaths {
   bibliography: string;
 }
 
+/**
+ * Project article or corpus file metadata returned by listing tools.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface ProjectFile {
   name: string;
   path: string;
@@ -40,6 +64,12 @@ export interface ProjectFile {
   mtimeMs: number;
 }
 
+/**
+ * Newest-first file listing for an Academic Writer project directory.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface ProjectFileList {
   kind: "articles" | "past_articles";
   dir: string;
@@ -47,6 +77,12 @@ export interface ProjectFileList {
   files: ProjectFile[];
 }
 
+/**
+ * Plain-text extraction result for one source or article document.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface ExtractedDocument {
   ok: boolean;
   path: string;
@@ -54,6 +90,12 @@ export interface ExtractedDocument {
   error?: string;
 }
 
+/**
+ * Source registry record generated from one project-local source file.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface LocalSourceRecord {
   sourceId: string;
   citeKey: string;
@@ -71,6 +113,12 @@ export interface LocalSourceRecord {
   extractionNotes: string;
 }
 
+/**
+ * Result payload written by local folder source ingestion.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface SourceIngestionResult {
   ok: boolean;
   sourceDirectory: string;
@@ -81,17 +129,35 @@ export interface SourceIngestionResult {
   errors: Array<{ path: string; error: string }>;
 }
 
+/**
+ * Article-local citation asset paths used for frozen snapshots.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface CitationAssetPaths {
   sources: string;
   bibliography: string;
 }
 
+/**
+ * Result payload for copying current citation caches beside an article.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface CitationSnapshotResult extends CitationAssetPaths {
   ok: boolean;
   copied: string[];
   missing: string[];
 }
 
+/**
+ * Deterministic DOCX JSON assembly result.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface DocxAssemblyResult {
   ok: boolean;
   input: string;
@@ -102,18 +168,50 @@ export interface DocxAssemblyResult {
   error?: string;
 }
 
+/**
+ * Health payload extending status data with local command availability.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface HealthStatus extends AcademicWriterStatus {
   commands: Record<string, boolean>;
 }
 
+/**
+ * Returns a project-relative path, falling back to the basename for the root itself.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param path - File path to read, write, or resolve.
+ * @returns The typed result described by this helper contract.
+ */
 function toRelative(projectRoot: string, path: string): string {
   return relative(projectRoot, path) || basename(path);
 }
 
+/**
+ * Resolves project-relative input paths while preserving absolute inputs.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param path - File path to read, write, or resolve.
+ * @returns The typed result described by this helper contract.
+ */
 function resolveInputPath(projectRoot: string, path: string): string {
   return isAbsolute(path) ? path : resolve(projectRoot, path);
 }
 
+/**
+ * Normalizes free-form subjects into stable filesystem-safe article slugs.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
 function compactSlug(value: string): string {
   const slug = value
     .normalize("NFKC")
@@ -126,6 +224,14 @@ function compactSlug(value: string): string {
   return slug || "article";
 }
 
+/**
+ * Builds a BibTeX-safe citekey prefix from source metadata.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
 function citeKeyBase(value: string): string {
   return (
     value
@@ -137,7 +243,14 @@ function citeKeyBase(value: string): string {
   ).slice(0, 48);
 }
 
-/** Builds one deterministic article slug and output path set. */
+/**
+ * Builds one deterministic article slug and output path set.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param subject - Researcher-provided article subject.
+ * @returns The typed result described by this helper contract.
+ */
 export function articlePaths(subject: string): ArticlePaths {
   const slug = compactSlug(subject);
   return {
@@ -150,6 +263,14 @@ export function articlePaths(subject: string): ArticlePaths {
   };
 }
 
+/**
+ * Derives article-local source and bibliography snapshot paths.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param article - Article markdown path, relative to the project root unless absolute.
+ * @returns The typed result described by this helper contract.
+ */
 export function citationAssetPaths(article: string): CitationAssetPaths {
   const base = article.replace(/\.[^.\/]+$/, "");
   return {
@@ -158,7 +279,16 @@ export function citationAssetPaths(article: string): CitationAssetPaths {
   };
 }
 
-/** Lists project article or corpus files in newest-first order. */
+/**
+ * Lists project article or corpus files in newest-first order.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param kind - Project file bucket to list.
+ * @param limit - Maximum number of files to return.
+ * @returns The typed result described by this helper contract.
+ */
 export function listProjectFiles(
   projectRoot: string,
   kind: "articles" | "past_articles",
@@ -190,6 +320,16 @@ export function listProjectFiles(
   return { kind, dir, count: files.length, files: files.slice(0, limit) };
 }
 
+/**
+ * Runs a small Python extractor snippet and returns trimmed stdout.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param code - Python source snippet executed for extraction.
+ * @param path - File path to read, write, or resolve.
+ * @param signal - Optional abort signal forwarded to subprocesses.
+ * @returns The typed result described by this helper contract.
+ */
 async function extractWithPython(
   code: string,
   path: string,
@@ -201,6 +341,15 @@ async function extractWithPython(
   return stdout.trim();
 }
 
+/**
+ * Extracts DOCX text with Pandoc when Pandoc is installed.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param path - File path to read, write, or resolve.
+ * @param signal - Optional abort signal forwarded to subprocesses.
+ * @returns The typed result described by this helper contract.
+ */
 async function extractDocxWithPandoc(
   path: string,
   signal?: AbortSignal,
@@ -218,7 +367,16 @@ async function extractDocxWithPandoc(
   }
 }
 
-/** Extracts plain text from markdown/text/PDF/DOCX using package dev deps when needed. */
+/**
+ * Extracts plain text from markdown/text/PDF/DOCX using package dev deps when needed.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param inputPath - Input document path, relative to the project root unless absolute.
+ * @param signal - Optional abort signal forwarded to subprocesses.
+ * @returns The typed result described by this helper contract.
+ */
 export async function extractDocument(
   projectRoot: string,
   inputPath: string,
@@ -264,6 +422,14 @@ export async function extractDocument(
   }
 }
 
+/**
+ * Finds the first non-heading content line for generated local source titles.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param text - Input text to process.
+ * @returns The typed result described by this helper contract.
+ */
 function firstContentLine(text: string): string | null {
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.replace(/^#+\s*/, "").trim();
@@ -272,15 +438,40 @@ function firstContentLine(text: string): string | null {
   return null;
 }
 
+/**
+ * Extracts a plausible publication year from source text or paths.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
 function extractYear(value: string): string | null {
   const match = /\b(1[5-9]\d{2}|20\d{2})\b/.exec(value);
   return match?.[1] ?? null;
 }
 
+/**
+ * Escapes local-source metadata for a minimal BibTeX field value.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
 function bibtexValue(value: string): string {
   return value.replace(/[{}]/g, "").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Returns a unique citekey by appending numeric suffixes on collisions.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param base - Preferred citekey prefix before collision suffixes.
+ * @param used - Set of citekeys already assigned during the current ingestion.
+ * @returns The typed result described by this helper contract.
+ */
 function uniqueCiteKey(base: string, used: Set<string>): string {
   let candidate = base;
   let suffix = 2;
@@ -292,6 +483,16 @@ function uniqueCiteKey(base: string, used: Set<string>): string {
   return candidate;
 }
 
+/**
+ * Builds a local source registry record from extracted document text.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param document - Extracted local source document used to build a source record.
+ * @param usedKeys - Mutable citekey set used to avoid duplicates.
+ * @returns The typed result described by this helper contract.
+ */
 function sourceRecordFromDocument(
   projectRoot: string,
   document: ExtractedDocument,
@@ -323,6 +524,14 @@ function sourceRecordFromDocument(
   };
 }
 
+/**
+ * Serializes one local source registry record as a minimal BibTeX entry.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param record - Local source registry record to serialize.
+ * @returns The typed result described by this helper contract.
+ */
 function sourceBibtex(record: LocalSourceRecord): string {
   const fields = [
     `  title = {${bibtexValue(record.workTitle)}}`,
@@ -332,6 +541,15 @@ function sourceBibtex(record: LocalSourceRecord): string {
   return `@misc{${record.citeKey},\n${fields.join(",\n")}\n}\n`;
 }
 
+/**
+ * Resolves explicit source paths or scans the default local sources folder.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param paths - Optional explicit local source paths to ingest.
+ * @returns The typed result described by this helper contract.
+ */
 function sourceInputs(projectRoot: string, paths?: string[]): string[] {
   if (paths && paths.length > 0) return paths;
   const sourceDir = join(projectRoot, ".academic-writer", "sources");
@@ -344,6 +562,16 @@ function sourceInputs(projectRoot: string, paths?: string[]): string[] {
     .map((entry) => join(".academic-writer", "sources", entry));
 }
 
+/**
+ * Ingests local source files into `.academic-writer` source and bibliography caches.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param paths - Optional explicit local source paths to ingest.
+ * @param signal - Optional abort signal forwarded to subprocesses.
+ * @returns The typed result described by this helper contract.
+ */
 export async function ingestSources(
   projectRoot: string,
   paths?: string[],
@@ -399,6 +627,15 @@ export async function ingestSources(
   };
 }
 
+/**
+ * Copies current citation caches into article-local frozen citation assets.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param article - Article markdown path, relative to the project root unless absolute.
+ * @returns The typed result described by this helper contract.
+ */
 export function snapshotCitationAssets(
   projectRoot: string,
   article: string,
@@ -423,11 +660,29 @@ export function snapshotCitationAssets(
   return { ok: missing.length === 0, ...local, copied, missing };
 }
 
+/**
+ * Counts word-like tokens for generated DOCX metadata.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param text - Input text to process.
+ * @returns The typed result described by this helper contract.
+ */
 function countWords(text: string): number {
   const matches = text.trim().match(/[\p{L}\p{N}]+/gu);
   return matches?.length ?? 0;
 }
 
+/**
+ * Parses article markdown into the JSON shape consumed by the DOCX generator.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param markdown - Value supplied by the caller.
+ * @param targetLanguage - Value supplied by the caller.
+ * @param titleOverride - Value supplied by the caller.
+ * @returns The typed result described by this helper contract.
+ */
 function parseMarkdownArticle(
   markdown: string,
   targetLanguage?: string,
@@ -480,6 +735,12 @@ function parseMarkdownArticle(
   };
 }
 
+/**
+ * Writes deterministic DOCX JSON for an article markdown file.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ */
 export function assembleDocxJson(
   projectRoot: string,
   input: string,
@@ -527,6 +788,14 @@ export function assembleDocxJson(
   }
 }
 
+/**
+ * Returns whether an executable command is available on the current PATH.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param command - Executable command name to search for on PATH.
+ * @returns The typed result described by this helper contract.
+ */
 function commandExists(command: string): boolean {
   for (const dir of (process.env.PATH ?? "").split(":")) {
     if (!dir) continue;
@@ -540,7 +809,14 @@ function commandExists(command: string): boolean {
   return false;
 }
 
-/** Builds deterministic local health data without probing network/MCP servers. */
+/**
+ * Builds deterministic local health data without probing network/MCP servers.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @returns The typed result described by this helper contract.
+ */
 export function buildHealth(projectRoot: string): HealthStatus {
   return {
     ...buildStatus(projectRoot),

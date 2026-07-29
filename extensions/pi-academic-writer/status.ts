@@ -5,20 +5,41 @@ import { loadProfile } from "../lib/profile.js";
 import { summarizeRuns, type RunSummary } from "../lib/runs.js";
 import type { ToolConfig } from "../lib/types.js";
 
+/**
+ * File extensions counted as local project source documents.
+ *
+ * @remarks
+ * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
+ */
 const SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
-/** Existence metadata for project-local Academic Writer files. */
+/**
+ * Existence metadata for project-local Academic Writer files.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 interface FileState {
   exists: boolean;
   path: string;
 }
 
-/** Directory metadata for project-local files. */
+/**
+ * Directory metadata for project-local files.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 interface DirectoryState extends FileState {
   count: number;
 }
 
-/** Full status payload returned by `academic_writer_status`. */
+/**
+ * Full status payload returned by `academic_writer_status`.
+ *
+ * @remarks
+ * Defines the serializable shape shared between extension tools, tests, and prompts.
+ */
 export interface AcademicWriterStatus {
   ok: boolean;
   profile: FileState;
@@ -33,7 +54,14 @@ export interface AcademicWriterStatus {
   agents: string[];
 }
 
-/** Reads optional project JSON without surfacing parse failures in status output. */
+/**
+ * Reads optional project JSON without surfacing parse failures in status output.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param path - File path to read, write, or resolve.
+ * @returns The typed result described by this helper contract.
+ */
 function readJson(path: string): unknown | null {
   try {
     return JSON.parse(readFileSync(path, "utf-8")) as unknown;
@@ -42,7 +70,14 @@ function readJson(path: string): unknown | null {
   }
 }
 
-/** Counts sources from either the current array shape or a wrapped object shape. */
+/**
+ * Counts sources from either the current array shape or a wrapped object shape.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
 function countSources(value: unknown): number {
   if (Array.isArray(value)) return value.length;
   if (
@@ -56,13 +91,30 @@ function countSources(value: unknown): number {
   return 0;
 }
 
-/** Builds a relative-path file existence record. */
+/**
+ * Builds a relative-path file existence record.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param relativePath - Value supplied by the caller.
+ * @returns The typed result described by this helper contract.
+ */
 function fileState(projectRoot: string, relativePath: string): FileState {
   const path = join(projectRoot, relativePath);
   return { exists: existsSync(path), path: relativePath };
 }
 
-/** Counts matching files in an optional project-local directory. */
+/**
+ * Counts matching files in an optional project-local directory.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param relativePath - Value supplied by the caller.
+ * @param matches - Predicate that selects files or directory entries to count.
+ * @returns The typed result described by this helper contract.
+ */
 function directoryState(
   projectRoot: string,
   relativePath: string,
@@ -73,7 +125,14 @@ function directoryState(
   return { exists: existsSync(path), path: relativePath, count };
 }
 
-/** Builds the project-local status object shown by the status tool. */
+/**
+ * Builds the project-local status object shown by the status tool.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @returns The typed result described by this helper contract.
+ */
 export function buildStatus(projectRoot: string): AcademicWriterStatus {
   const profile = fileState(projectRoot, ".academic-writer/profile.md");
   const voice = fileState(projectRoot, "AUTHOR_VOICE.md");

@@ -2,7 +2,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { PACKAGE_ROOT } from "../lib/paths.js";
 
-/** Narrows resource language options to the packaged anti-AI pattern files. */
+/**
+ * Narrows resource language options to the packaged anti-AI pattern files.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param language - Optional language selector for language-specific resources.
+ * @returns The typed result described by this helper contract.
+ */
 function normalizeLanguage(language: unknown): "english" | "hebrew" {
   if (typeof language !== "string") return "hebrew";
   const normalized = language.trim().toLowerCase();
@@ -11,7 +18,16 @@ function normalizeLanguage(language: unknown): "english" | "hebrew" {
     : "hebrew";
 }
 
-/** Resolves a stable Academic Writer resource name to its package/project file path. */
+/**
+ * Resolves a stable Academic Writer resource name to its package/project file path.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param name - Stable packaged resource name.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param language - Optional language selector for language-specific resources.
+ * @returns The typed result described by this helper contract.
+ */
 export function resolveResourcePath(
   name: string,
   projectRoot: string,

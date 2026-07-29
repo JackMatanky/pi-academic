@@ -23,7 +23,19 @@ import {
 } from "./project.js";
 import { buildStatus } from "./status.js";
 
+/**
+ * Promisified `execFile` used for package scripts and Pandoc export calls.
+ *
+ * @remarks
+ * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
+ */
 const execFileAsync = promisify(execFile);
+/**
+ * Export formats accepted by `academic_writer_export_article`.
+ *
+ * @remarks
+ * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
+ */
 const EXPORT_FORMATS = new Set([
   "docx",
   "html",
@@ -34,7 +46,15 @@ const EXPORT_FORMATS = new Set([
   "pdf",
 ]);
 
-/** Formats a plain-text MCP tool response with structured details. */
+/**
+ * Formats a plain-text MCP tool response with structured details.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param text - Input text to process.
+ * @param details - Structured detail payload returned beside the text response.
+ * @returns A Pi-compatible text response with attached structured details.
+ */
 function textResult(text: string, details: object = {}) {
   return {
     content: [{ type: "text" as const, text }],
@@ -42,7 +62,14 @@ function textResult(text: string, details: object = {}) {
   };
 }
 
-/** Applies deterministic Hebrew/academic typography cleanup to one paragraph. */
+/**
+ * Applies deterministic Hebrew/academic typography cleanup to one paragraph.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param text - Input text to process.
+ * @returns The typed result described by this helper contract.
+ */
 function fixTypography(text: string): string {
   let fixed = text;
   fixed = fixed.replace(/[-\u2014]/g, " - ");
@@ -54,6 +81,14 @@ function fixTypography(text: string): string {
   return fixed;
 }
 
+/**
+ * Parses a JSON object string, rejecting arrays and primitive values.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
 function jsonObject(value: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(value) as unknown;
@@ -67,12 +102,32 @@ function jsonObject(value: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * Counts an array field in a structured tool detail object.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param details - Structured detail payload returned beside the text response.
+ * @param key - Detail key to inspect.
+ * @returns The typed result described by this helper contract.
+ */
 function detailCount(details: object, key: string): number {
   return key in details && Array.isArray(details[key as keyof typeof details])
     ? (details[key as keyof typeof details] as unknown[]).length
     : 0;
 }
 
+/**
+ * Runs the deterministic citation audit script and returns its JSON payload.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param article - Article markdown path, relative to the project root unless absolute.
+ * @param citationStyle - Citation mode or citeproc style identifier used by the audit.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param signal - Optional abort signal forwarded to subprocesses.
+ * @returns The typed result described by this helper contract.
+ */
 async function runCitationAudit(
   article: string,
   citationStyle: string,
@@ -97,12 +152,27 @@ async function runCitationAudit(
     : { ok: false, error: "audit-citations.py returned a non-object result" };
 }
 
+/**
+ * Derives the export output path for a requested article format.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param article - Article markdown path, relative to the project root unless absolute.
+ * @param format - Requested export format.
+ * @returns The typed result described by this helper contract.
+ */
 function exportOutputPath(article: string, format: string): string {
   const normalized = format === "latex" ? "tex" : format;
   return `${article.replace(/\.[^.\/]+$/, "")}.${normalized}`;
 }
 
-/** Registers package-aware Academic Writer tools for Pi. */
+/**
+ * Registers package-aware Academic Writer tools for Pi.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param pi - Pi extension API used to register lifecycle hooks or tools.
+ */
 export default function piAcademicWriter(pi: ExtensionAPI) {
   pi.registerTool({
     name: "academic_writer_read_resource",

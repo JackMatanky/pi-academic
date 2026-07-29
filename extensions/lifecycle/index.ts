@@ -6,7 +6,14 @@ import { getProfilePath, loadProfile } from "../lib/profile.js";
 import { summarizeRuns } from "../lib/runs.js";
 import type { ProfileData } from "../lib/types.js";
 
-/** Condenses run-state details for the session dashboard. */
+/**
+ * Condenses run-state details for the session dashboard.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectDir - Absolute project directory used for project-local state.
+ * @returns A compact run count and last-run label for dashboard rendering.
+ */
 function runSummary(projectDir: string): {
   active: number;
   last: string | null;
@@ -20,24 +27,60 @@ function runSummary(projectDir: string): {
   };
 }
 
+/**
+ * Lifecycle reasons that should display the session dashboard.
+ *
+ * @remarks
+ * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
+ */
 const DASHBOARD_REASONS = new Set(["startup", "new", "resume"]);
 
-/** Returns whether this lifecycle event should display the dashboard. */
+/**
+ * Returns whether this lifecycle event should display the dashboard.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param reason - Lifecycle event reason emitted by Pi.
+ * @returns The typed result described by this helper contract.
+ */
 function shouldShowDashboard(reason: string): boolean {
   return DASHBOARD_REASONS.has(reason);
 }
 
-/** Matches generated Word documents in project article folders. */
+/**
+ * Matches generated Word documents in project article folders.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param file - Filename or directory entry to test.
+ * @returns The typed result described by this helper contract.
+ */
 function isDocx(file: string): boolean {
   return file.endsWith(".docx");
 }
 
-/** Matches past articles that can seed the voice-learning flow. */
+/**
+ * Matches past articles that can seed the voice-learning flow.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param file - Filename or directory entry to test.
+ * @returns The typed result described by this helper contract.
+ */
 function isPastArticle(file: string): boolean {
   return file.endsWith(".pdf") || isDocx(file);
 }
 
-/** Counts matching files in an optional project-relative directory. */
+/**
+ * Counts matching files in an optional project-relative directory.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectDir - Absolute project directory used for project-local state.
+ * @param relativeDir - Project-relative directory to inspect.
+ * @param matches - Predicate that selects files or directory entries to count.
+ * @returns The typed result described by this helper contract.
+ */
 function countFiles(
   projectDir: string,
   relativeDir: string,
@@ -52,14 +95,29 @@ function countFiles(
   }
 }
 
-/** Lists enabled integrations from the parsed profile. */
+/**
+ * Lists enabled integrations from the parsed profile.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param profile - Parsed profile data used by the caller.
+ * @returns The typed result described by this helper contract.
+ */
 function enabledToolNames(profile: ProfileData): string[] {
   return Object.entries(profile.tools ?? {})
     .filter(([, config]) => config.enabled)
     .map(([name]) => name);
 }
 
-/** Counts past source articles that have not yet been voice-mined. */
+/**
+ * Counts past source articles that have not yet been voice-mined.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectDir - Absolute project directory used for project-local state.
+ * @param analyzedCount - Number of past articles already recorded as analyzed.
+ * @returns The typed result described by this helper contract.
+ */
 function unanalyzedPastArticleCount(
   projectDir: string,
   analyzedCount: number,
@@ -68,7 +126,15 @@ function unanalyzedPastArticleCount(
   return Math.max(0, total - analyzedCount);
 }
 
-/** Builds the fixed-width session-start dashboard shown to researchers. */
+/**
+ * Builds the fixed-width session-start dashboard shown to researchers.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectDir - Absolute project directory used for project-local state.
+ * @param profile - Parsed profile data used by the caller.
+ * @returns The typed result described by this helper contract.
+ */
 function buildDashboardLines(
   projectDir: string,
   profile: ProfileData,
@@ -132,7 +198,13 @@ function buildDashboardLines(
   return lines;
 }
 
-/** Registers Academic Writer lifecycle notifications and session logging. */
+/**
+ * Registers Academic Writer lifecycle notifications and session logging.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param pi - Pi extension API used to register lifecycle hooks or tools.
+ */
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (event, ctx) => {
     if (!shouldShowDashboard(event.reason)) return;
