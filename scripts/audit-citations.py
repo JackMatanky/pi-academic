@@ -64,6 +64,18 @@ def _extract_markers(article: str) -> tuple[list[str], list[str], list[str]]:
     return markers, keys, malformed
 
 
+def _citation_assets(article_path: Path, project_root: Path) -> tuple[Path, Path, str]:
+    rel_article = article_path.relative_to(project_root)
+    local_base = project_root / rel_article.with_suffix("")
+    local_sources = local_base.with_name(f"{local_base.name}.sources.json")
+    local_bib = local_base.with_name(f"{local_base.name}.bibliography.bib")
+    global_sources = project_root / ".academic-writer" / "sources.json"
+    global_bib = project_root / ".academic-writer" / "bibliography.bib"
+    if local_sources.is_file() or local_bib.is_file():
+        return local_sources, local_bib, "article"
+    return global_sources, global_bib, "global"
+
+
 def audit(
     article_path: Path, citation_style: str, project_root: Path
 ) -> dict[str, Any]:
@@ -74,6 +86,9 @@ def audit(
         "mode": "inline-parenthetical"
         if citation_style == "inline-parenthetical"
         else "citeproc",
+        "assetScope": None,
+        "sourcesPath": None,
+        "bibliographyPath": None,
         "markers": [],
         "citationKeys": [],
         "missingFromSources": [],
@@ -101,8 +116,12 @@ def audit(
             )
         return details
 
-    sources_path = project_root / ".academic-writer" / "sources.json"
-    bibliography_path = project_root / ".academic-writer" / "bibliography.bib"
+    sources_path, bibliography_path, asset_scope = _citation_assets(
+        article_path, project_root
+    )
+    details["assetScope"] = asset_scope
+    details["sourcesPath"] = str(sources_path.relative_to(project_root))
+    details["bibliographyPath"] = str(bibliography_path.relative_to(project_root))
 
     if not markers:
         details["warnings"].append("No Pandoc citeproc markers found")
@@ -115,11 +134,11 @@ def audit(
             source_keys = _collect_cite_keys(_read_json(sources_path))
         except (OSError, json.JSONDecodeError) as exc:
             details["ok"] = False
-            details["error"] = f"Could not read sources.json: {exc}"
+            details["error"] = f"Could not read {details['sourcesPath']}: {exc}"
             return details
     else:
         details["ok"] = False
-        details["error"] = ".academic-writer/sources.json not found"
+        details["error"] = f"{details['sourcesPath']} not found"
         return details
 
     bib_keys: set[str] = set()
@@ -129,7 +148,7 @@ def audit(
         )
     else:
         details["ok"] = False
-        details["error"] = ".academic-writer/bibliography.bib not found"
+        details["error"] = f"{details['bibliographyPath']} not found"
         return details
 
     missing_sources = [key for key in keys if key not in source_keys]

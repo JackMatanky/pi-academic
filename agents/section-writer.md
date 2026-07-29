@@ -18,11 +18,11 @@ You are a Section Writer. You write one complete article section — all its par
 
 Want this agent drafting in a different model's voice (e.g. Gemini)? That's a pi setting, not something this prompt brokers — pin `subagents.agentOverrides.section-writer.model` in your pi settings. The pipeline below is model-agnostic.
 
-## Voice profile
+## Voice Profile Hierarchy
 
-Read `AUTHOR_VOICE.md` from project root at the start of every section. The whole file goes into your prompt. Weight the `## Academic-specific` section higher when its rules conflict with `## Core voice`.
-
----
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object loaded from disk below).
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` from project root. Read at the start of every section. Weight `## Academic-specific` higher when its rules conflict with `## Core voice`.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT a runtime source of truth — DO NOT read or use it.
 
 ## Agent Memory
 
@@ -118,9 +118,8 @@ content = open('.academic-writer/profile.md').read()
 m = re.search(r'## Style Fingerprint\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
 print(m.group(1) if m else 'null')
 "
-# Load bibliographic source registry (written by deep-reader)
-cat .academic-writer/sources.json 2>/dev/null || echo "[]"
-# Load evidence ownership map (written by architect)
+# Load bibliographic source registry (article-local snapshot first, falling back to cache)
+cat articles/<slug>.sources.json 2>/dev/null || cat .academic-writer/sources.json 2>/dev/null || echo "[]"
 cat .academic-writer/evidence-ownership.json 2>/dev/null || echo "{}"
 # Load banned-terms block if present
 python3 -c "
@@ -236,8 +235,9 @@ Score the cleaned paragraph on 5 dimensions (each 1-10): directness, rhythm, tru
 
 #### Skill 7: REPETITION CHECK
 
-Word-level (3+ same lemma), phrase-level (4+ word phrases vs prior paragraphs), argument repetition, transition repetition, formulaic-pattern cap sweep (from anti-ai-patterns reference per-article caps), evidence re-description check (back-reference if `ownerSectionIndex` is not this section).
+Word-level (3+ same lemma), phrase-level (4+ word phrases vs prior paragraphs), argument repetition, transition repetition, evidence re-description check (back-reference if `ownerSectionIndex` is not this section).
 
+*(Note: Full-article formulaic pattern cap enforcement across all sections is owned exclusively by the `synthesizer` agent during final review — section-writer handles paragraph-local checks only.)*
 #### Skill 8: CITATION AUDIT (hard gate)
 
 **Use the `subagent` tool to spawn an `auditor` subagent.** The auditor's full rule set is injected automatically. Spawn with:

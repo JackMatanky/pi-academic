@@ -30,6 +30,10 @@ Never summarize feedback without acting on it.
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
+### Voice Source Hierarchy
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
 ## Load Profile
 
 Call `academic_writer_get_profile`.
@@ -49,9 +53,7 @@ If multiple `.md` files exist, present the most recent ones as options plus an "
 
 Once chosen, load the artifacts:
 
-Read the chosen article with the Read tool. Also read `.academic-writer/sources.json` and `.academic-writer/evidence-ownership.json` when present; treat missing files as `[]` and `{}` respectively.
-
-
+Read the chosen article with the Read tool. Also read article-local citation registry `articles/<slug>.sources.json` first, falling back to `.academic-writer/sources.json` when absent. Read `.academic-writer/evidence-ownership.json` when present; treat missing files as `[]` and `{}` respectively.
 ## Phase 2 — Structured Interview
 
 Walk the researcher through four topic blocks, one at a time. For each block, present the question with its numbered options below. **Do not** ask all four blocks at once.
@@ -217,9 +219,21 @@ Then show a summary to the researcher:
 >
 > Next runs of `/skill:academic-writer-write` will pick up all profile and pattern changes automatically. For the article itself, the edits have been written to `articles/<slug>.md` — you may want to regenerate the .docx by running the last step of `/skill:academic-writer-write` or edit and re-export manually."
 
+## Reviewer-Response Workflow (Peer Review / Decision Letter Mode)
 
-(No dedicated workflow is required — this is a freestyle event.)
+When the researcher provides a reviewer report (peer review comments, editor decision letter, referee notes) alongside a manuscript path (`articles/<slug>.md`):
 
+1. **Parse Reviewer Comments**: Extract individual reviewer points (Reviewer 1 Point 1, Reviewer 1 Point 2, Reviewer 2 Point 1, etc.).
+2. **Generate Response Matrix & Cover Letter**:
+   - Create `articles/<slug>-reviewer-response.md`.
+   - Structure:
+     - **Cover Letter**: Professional summary to the journal editor.
+     - **Response Matrix Table**:
+       | Reviewer & Point # | Original Comment | Author Response / Action Taken | Mapped Article Edits (Section / Paragraph) |
+3. **Apply Mapped Edits**:
+   - Execute corresponding edits directly on the manuscript (`articles/<slug>.md`).
+   - Pass updated paragraphs through `section-writer`/`auditor` pipeline to preserve voice fingerprint and citation integrity.
+4. **Summary Output**: Present the generated response matrix location and list of revised manuscript sections.
 ## Rules
 
 - **Never silently batch changes.** Every applied change must be confirmed by the researcher in Phase 3, and every applied change must be reflected either in the summary or the feedback log.

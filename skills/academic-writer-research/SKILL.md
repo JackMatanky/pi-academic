@@ -1,7 +1,7 @@
 ---
 name: academic-writer-research
-description: "Research a subject or answer questions using your indexed sources — Zotero and RAG. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write find grep subagent academic_writer_get_profile
+description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
+allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -45,33 +45,18 @@ Accept any of these forms:
 Based on the question and enabled tools, spawn ALL applicable agents **at the same time**:
 
 **Use the `subagent` tool to spawn subagents in parallel — call the `subagent` tool multiple times in a single response — each call executes independently and pi runs sibling tool calls from one assistant message concurrently by default, matching the existing parallel-subagent pattern with zero behavior change:**
+1. **Local Folder Source Ingest**: Call `academic_writer_ingest_sources` to index any local files under `.academic-writer/sources/`.
 
-1. **RAG subagent**: Pass as prompt the question, questionType, sourceIds. This subagent runs multi-mode RAG queries (mix + local + bypass as needed).
+2. **Zotero subagent** (if `tools.zotero.enabled`): Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. Preferred for searching/reading Zotero documents.
 
-2. **Zotero subagent** (if `tools.zotero.enabled`): Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. This subagent searches/reads Zotero documents directly, constrained to that collection when present.
+3. **NotebookLM subagent** (if `tools.notebooklm.enabled`): Pass `tools.notebooklm.notebook` if configured. Query that notebook for supplementary context using `notebook_query`.
 
-3. **NotebookLM subagent** (if `tools.notebooklm.enabled`): Pass `tools.notebooklm.notebook` if configured. Query that notebook first; otherwise query existing notebooks or create a temporary research notebook. Use the `notebook_query` MCP tool for AI-powered Q&A against indexed sources. NotebookLM excels at synthesizing across multiple sources and identifying connections that keyword search may miss.
-
+*(Note: Vectorless RAG semantic vector search is a future TODO item and is not active in current tool runs.)*
 Each subagent runs independently and returns its findings.
 
-### RAG Subagent Instructions
+### Local Folder Sources Instructions
 
-The RAG subagent should:
-
-1. **Classify the question type** and select RAG modes:
-
-| Question type | Queries to run |
-|--------------|----------------|
-| Direct question | `mix` (broad) + `local` (key entities) |
-| Topic exploration | `global` (themes) + `mix` (detail) + `local` (per entity) |
-| Comparison | `local` (Author A) + `local` (Author B) + `mix` (topic) |
-| Quote search | `bypass` (exact) + `mix` (context) |
-| Source lookup | `mix` (topic) |
-
-2. **Run all queries** with `include_context: true`, `top_k: 30`, `rerank_top_k: 10`, `enable_rerank: true`
-3. **Return organized passages** with source attribution from the `context` field
-4. **Never cite the `answer` field** — only `context`
-
+Call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD files from `.academic-writer/sources/`. Search and read extracted content to answer research queries.
 ### Zotero Subagent Instructions
 
 The Zotero subagent should:
@@ -87,10 +72,10 @@ The NotebookLM subagent should:
 
 1. **Choose notebook scope**: use `tools.notebooklm.notebook` when present; otherwise use `notebook_list` to find relevant notebooks.
 2. **Query notebooks**: Use `notebook_query` MCP tool with the research question for AI-powered Q&A
-3. **Cross-reference**: NotebookLM answers are AI-synthesized — always cross-reference key claims against Zotero/RAG results for citation accuracy
+3. **Cross-reference**: NotebookLM answers are AI-synthesized — always cross-reference key claims against Zotero or ingested local source results for citation accuracy
 4. **Return findings** with notebook name and any source references NotebookLM provides
 
-**Important:** NotebookLM answers are supplementary context. Never cite NotebookLM output as a primary source — always verify claims against Zotero or RAG results.
+**Important:** NotebookLM answers are supplementary context. Never cite NotebookLM output as a primary source — always verify claims against Zotero or ingested local sources.
 
 ---
 
@@ -98,17 +83,16 @@ The NotebookLM subagent should:
 
 Once all subagents return, **merge results** by deduplicating and cross-referencing:
 
-1. If both RAG and Zotero found the same passage, use Zotero's version (more precise page numbers)
-2. If RAG found something Zotero didn't, include it with a note that page numbers come from RAG
-3. If Zotero found full text that RAG summarized, prefer the full text
+1. If both Zotero and local files found the same passage, prefer Zotero's version for page precision.
+2. Always verify claims against Zotero or ingested local documents.
 
 ### For factual questions:
 
 > **Answer:** [Direct answer grounded in sources]
 >
 > **Sources:**
-> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via Zotero/RAG)*
-> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via RAG)*
+> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via Zotero or local source)*
+> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via local source; page may need manual verification)*
 >
 > **Context:** [Brief explanation of how these sources relate]
 
@@ -144,7 +128,7 @@ Once all subagents return, **merge results** by deduplicating and cross-referenc
 > > "[exact quote]"
 >
 > **Context:** [surrounding text / chapter / argument]
-> **Verified:** ✓ Zotero page confirmed / ⚠ RAG only (page may need verification)
+> **Verified:** ✓ Zotero page confirmed / ⚠ local-source text only (page may need verification)
 
 ---
 
@@ -161,9 +145,7 @@ After presenting findings, ask:
 
 ## Critical Rules
 
-- **NEVER fabricate citations.** Only cite what RAG or Zotero returns.
-- **NEVER invent page numbers.** Use `bypass` mode + `zotero_get_item_fulltext` to verify.
-- If a question can't be answered from available sources, say so clearly: "Your indexed sources don't contain information about this. You may need to add more sources via Zotero."
-- Always show which tool provided each piece of information.
-- **NotebookLM is supplementary** — its AI-synthesized answers must be verified against Zotero/RAG before citing.
+- **NEVER fabricate citations.** Only cite what Zotero or ingested local sources return.
+- **NEVER invent page numbers.**
+- If a question can't be answered from available sources, say so clearly: "Your indexed sources don't contain information about this. You may need to add more sources to `.academic-writer/sources/` or via Zotero."
 - If a tool is disabled, skip it and note: "I searched [available tools]. Enable [disabled tool] with `/skill:academic-writer-update-tools` for broader coverage."

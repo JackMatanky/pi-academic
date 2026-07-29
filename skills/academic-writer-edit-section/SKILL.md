@@ -7,19 +7,18 @@ metadata: {author: "Yotam Fromm", version: "0.2.19"}
 
 # Academic Writer — Edit Section
 
-> **Do NOT use this skill** for multi-section edits, restructuring, or full-article tone changes — use `/skill:academic-writer-edit` instead.
+> **DEPRECATION & ROUTING NOTICE:** This skill is a convenience wrapper that defers directly to `/skill:academic-writer-edit` in single-section mode. You can call `/skill:academic-writer-edit` directly, which handles single-section routing natively.
 
-A fast, focused edit for a single section of an article. Use this instead of `/skill:academic-writer-edit` when you know exactly which section needs work.
+A fast, focused edit for a single section of an article.
 
 ### Voice profile load (first step of every run)
 
-1. Read `AUTHOR_VOICE.md` from project root. Whole file goes into the section-writer system prompt.
-2. The section writer is instructed to weight `## Academic-specific` rules higher when they
-   conflict with `## Core voice` rules; everything else applies as written.
+**Voice Source Hierarchy:**
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root. Loaded via `voice_profile_load`.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
 
-If `AUTHOR_VOICE.md` is missing or empty, warn once: "No voice profile. Run `/skill:academic-writer-init`
-to seed it." Do not block writing.
-
+Read `AUTHOR_VOICE.md` from project root. Weight `## Academic-specific` higher when it conflicts with `## Core voice`. If missing, warn once: "No voice profile overlay. Using canonical profile fingerprint from `/skill:academic-writer-init`."
 ---
 
 ## Load Profile
@@ -81,8 +80,7 @@ Common edit types:
 Pass as prompt: the section (title, current text, edit instructions, suggested sources), sectionIndex, thesis, styleFingerprint, citationStyle, tools, priorSectionTexts (text of adjacent sections for repetition awareness).
 
 If the researcher wants to expand with new evidence, **first use the `subagent` tool to spawn research subagents in parallel** — call the `subagent` tool multiple times in a single response — each call executes independently and pi runs sibling tool calls from one assistant message concurrently by default, matching the existing parallel-subagent pattern with zero behavior change:
-- One subagent for RAG queries on the expansion topic
-- One subagent for Zotero reads for relevant documents, scoped to `tools.zotero.collection` when configured
+- One subagent for Zotero or local source reads (`.academic-writer/sources/` via `academic_writer_ingest_sources`), scoped to `tools.zotero.collection` when configured (Note: RAG semantic vector search is a future TODO)
 
 Then feed results to the section-writer.
 
@@ -131,7 +129,7 @@ Show the revised section with a change summary:
 >
 > Would you like me to export the full updated article as .docx?
 
-**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): JSON schema → `academic_writer_generate_docx` for `inline-parenthetical` (unchanged), or `academic_writer_export_article` with `formats: ["docx"]` and the resolved CSL path for citeproc mode. This skill does not define its own export procedure — see those two skills for the resolver contract and exact commands.
+**NOTE:** if the researcher says yes, exporting follows the same `citationStyle` branch documented in write-article's Step 9 (and edit-article's Output step): deterministic DOCX JSON assembly via `academic_writer_assemble_docx_json` → `academic_writer_generate_docx` for `inline-parenthetical`, or `academic_writer_export_article` with `formats: ["docx"]` and the resolved CSL path for citeproc mode. This skill does not define its own export procedure — see those two skills for the resolver contract and exact commands.
 
 ---
 

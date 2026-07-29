@@ -1,4 +1,4 @@
-# Integration Setup (Zotero, NotebookLM)
+# Integration Setup (Zotero, NotebookLM, Sefaria)
 
 > Loaded on demand by `init` Phase 1. Each tool has detection command, configuration block, and registration steps.
 > MCP server credentials/configuration belong in standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json`), not in `.academic-writer/profile.md`.
@@ -11,7 +11,8 @@ Run ALL in parallel:
 - **Zotero server binary**: `command -v zotero-mcp >/dev/null 2>&1 && echo "ZOTERO_MCP_BINARY: INSTALLED" || echo "ZOTERO_MCP_BINARY: NOT_FOUND"`.
 - **Project MCP config**: `test -f .mcp.json && cat .mcp.json || echo "NO_PROJECT_MCP_JSON"`. This is only for helping the researcher see whether the project already has MCP config; do not treat absence as failure if a global MCP config provides the server.
 - **NotebookLM MCP tool availability**: call `notebook_list()`: DETECTED if it returns without an error, NOT_DETECTED otherwise.
-- **NotebookLM CLI/server binary**: `command -v nlm >/dev/null 2>&1 && command -v notebooklm-mcp >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo "NOTEBOOKLM: INSTALLED_AND_AUTHED" || echo "NOTEBOOKLM: NOT_READY"`.
+- **NotebookLM CLI/server binary**: `command -v nlm >/dev/null 2>&1 && command -v notebooklm-mcp >/dev/null 2>&1 && nlm login --check 2>/dev/null && echo "NOTEBOOKLM: INSTALLED_AND_AUTHED" || echo "NOTEBOOKLM: NOT_READY"`
+- **Sefaria MCP tool availability**: check whether bare `get_text` / `search` tools are available; DETECTED only if at least one can be called without a tool-not-found error. Also check `command -v sefaria-mcp >/dev/null 2>&1 && echo "SEFARIA_MCP_BINARY: INSTALLED" || echo "SEFARIA_MCP_BINARY: NOT_FOUND"`..
 
 ## Present Results
 
@@ -70,6 +71,15 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
    }
    ```
 
+3. **Sefaria** — Optional Judaic primary text lookup and verse context expansion.
+   > "Sefaria
+   > ───────
+   > Type:    MCP server with bare tools (`get_text`, `search`)
+   > What:    Biblical/rabbinic text context for source exploration
+   > Status:  ✓ Detected"
+
+   If selected but unavailable, show the Sefaria MCP server setup guidance for the researcher's chosen server. Require standard MCP config with `settings.toolPrefix: "none"` and `directTools: true`; do not store Sefaria credentials in `.academic-writer/profile.md`.
+
 Wait for the researcher's reply and match it against the option number, label text, or a close paraphrase (multiple selections allowed).
 
 **Rules:**
@@ -77,4 +87,5 @@ Wait for the researcher's reply and match it against the option number, label te
 - If a tool is not detected and the researcher selects it, show the setup URL and walk them through installation/configuration. For Zotero and NotebookLM, installation/authentication and MCP registration (`.mcp.json`/global MCP config with `toolPrefix: "none"` + `directTools: true`) are separate checks; complete both before marking either detected.
 - For enabled Zotero, call `zotero_get_collections()` and ask whether to use **all library items** or one default collection. If they choose a collection, save `tools.zotero.collection` as `{ "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }`.
 - For enabled NotebookLM, call `notebook_list()` and ask whether to use **all notebooks** or one default notebook. If they choose one, save `tools.notebooklm.notebook` as `{ "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" }`.
+- For enabled Sefaria, save `tools.sefaria` as `{ "enabled": true, "mode": "mcp-config" }`; no scope or credentials are stored.
 - Store final selection as the `tools` object (used in Phase 4). Store only enabled/disabled intent, mode labels, and optional collection/notebook identifiers — never credentials.

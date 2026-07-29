@@ -48,6 +48,38 @@ class TestCitationAudit(unittest.TestCase):
             self.assertTrue(data["ok"])
             self.assertEqual(data["citationKeys"], ["smith2020"])
 
+    def test_citeproc_prefers_article_local_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".academic-writer").mkdir()
+            (root / "articles").mkdir()
+            (root / "articles" / "ok.md").write_text(
+                "Text [@local2024].", encoding="utf-8"
+            )
+            (root / ".academic-writer" / "sources.json").write_text(
+                json.dumps([{"citeKey": "global2020"}]),
+                encoding="utf-8",
+            )
+            (root / ".academic-writer" / "bibliography.bib").write_text(
+                "@book{global2020, title={Global}}\n",
+                encoding="utf-8",
+            )
+            (root / "articles" / "ok.sources.json").write_text(
+                json.dumps([{"citeKey": "local2024"}]),
+                encoding="utf-8",
+            )
+            (root / "articles" / "ok.bibliography.bib").write_text(
+                "@book{local2024, title={Local}}\n",
+                encoding="utf-8",
+            )
+
+            data = self.run_audit(root, "articles/ok.md", "chicago")
+
+            self.assertTrue(data["ok"])
+            self.assertEqual(data["assetScope"], "article")
+            self.assertEqual(data["sourcesPath"], "articles/ok.sources.json")
+            self.assertEqual(data["bibliographyPath"], "articles/ok.bibliography.bib")
+
     def test_citeproc_reports_missing_bib_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -42,9 +42,10 @@ This walks you through:
 
 | Tool | What it does |
 |------|-------------|
-| **Zotero** | Reference manager — your source PDFs and research materials; can be scoped to one collection |
+| **Zotero** | Reference manager — preferred source for PDFs and research materials; can be scoped to one collection |
+| **Local Sources** | `.academic-writer/sources/` folder for local PDFs, DOCX, TXT, or MD files ingested via `academic_writer_ingest_sources` |
 | **NotebookLM** | AI source Q&A / audio / study guides; can be scoped to one notebook |
-
+| **Sefaria** | Primary Judaic text reference and chapter/verse context expansion (`get_text`, `search`) |
 ---
 
 ## Slash Commands
@@ -113,8 +114,7 @@ When you run `/skill:academic-writer-edit`, you can:
 
 For quick, single-section work, use `/skill:academic-writer-edit-section` instead — it's faster because it only processes one section.
 
-Both edit skills spawn **parallel subagents** for speed — multiple sections are edited simultaneously, and research queries (for finding new evidence) run in parallel across RAG and Zotero.
-
+Both edit skills spawn **parallel subagents** for speed — multiple sections are edited simultaneously, and research queries run in parallel across Zotero and local source folders.
 ---
 
 ## How Research Works
@@ -130,9 +130,12 @@ This is independent of the article pipeline — use it anytime you want to query
 
 ---
 
-## Your Style Fingerprint
+## Your Style Fingerprint & Voice Hierarchy
 
-The fingerprint is extracted from your past articles during `/skill:academic-writer-init`. It captures 25 dimensions of your writing across 8 categories:
+The voice system follows a clear 3-tier hierarchy:
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint`). The fingerprint is extracted from your past articles during `/skill:academic-writer-init` and captures 25 dimensions across 8 categories.
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root. Loaded via `voice_profile_load` as high-level human guidelines.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is an intermediate output from mining tools and is **NOT** a runtime source of truth.
 
 | Category | What it tracks |
 |----------|---------------|
@@ -147,32 +150,30 @@ The fingerprint is extracted from your past articles during `/skill:academic-wri
 
 Every paragraph is scored against this fingerprint. The synthesizer also runs a full-article compliance check at the end.
 
----
-
 ## Speed & Parallelism
 
 The plugin is designed for speed. Wherever possible, work is parallelized:
 
 | Operation | What happens |
 |-----------|-------------|
-| **Deep read** | 3 RAG queries run simultaneously, then entity queries in parallel |
+| **Deep read** | Source documents queried in parallel across Zotero and local sources |
 | **Section writing** | One subagent per section, all writing at the same time |
-| **Research** | RAG + Zotero queried by separate subagents in parallel |
+| **Research** | Zotero + local ingested sources queried by separate subagents in parallel |
 | **Editing multiple sections** | One section-writer subagent per section, all in parallel |
 | **Citation audit (edit)** | One auditor per section, all in parallel |
-
----
 
 ## Files & Folders
 
 | Path | Purpose |
 |------|---------|
 | `.academic-writer/profile.md` | Your researcher profile (field, style, tools, optional Zotero collection / NotebookLM notebook, sources) |
-| `.academic-writer/bibliography.bib` | BibTeX export of your Zotero sources for citeproc articles |
+| `.academic-writer/sources/` | Local folder for PDFs, DOCX, TXT, MD source documents |
+| `.academic-writer/bibliography.bib` | BibTeX export of your sources for citeproc articles |
+| `articles/<slug>.sources.json` | Article-local citation registry snapshot |
+| `articles/<slug>.bibliography.bib` | Article-local BibTeX bibliography snapshot |
 | `past-articles/` | Your published papers for style analysis (never uploaded) |
 | `agents/` | AI agent prompts (deep-reader, architect, section-writer, auditor, synthesizer) |
 | `references/` | API documentation for integrations |
-
 ---
 
 ## Troubleshooting
@@ -187,6 +188,6 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 ## Critical Guarantees
 
 1. **No fabricated citations** — Every claim verified against your sources
-2. **No invented page numbers** — Exact quotes confirmed via RAG bypass + Zotero
+2. **No invented page numbers** — Exact quotes confirmed via Zotero or local source reads
 3. **Your voice** — Every paragraph checked against your style fingerprint
 5. **Your data stays local** — Past articles are never uploaded anywhere

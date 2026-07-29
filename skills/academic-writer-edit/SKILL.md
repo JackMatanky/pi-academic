@@ -1,7 +1,7 @@
 ---
 name: academic-writer-edit
 description: "Edit a previously written article — revise sections, fix citations, adjust tone, restructure arguments, or rewrite passages. Use when revising an article that's already drafted — multiple sections, restructuring, or major changes."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_assemble_docx_json
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -26,6 +26,10 @@ If it returns `ok: false`: "Run `/skill:academic-writer-init` first."
 Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-writer/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-writer/` here if the profile was missing — `init`/`setup` own first creation.
 
 Print fingerprint summary to confirm it's loaded.
+### Voice Source Hierarchy
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
 
 ---
 
@@ -43,19 +47,34 @@ Parse the article into sections and paragraphs. Identify all footnotes/citations
 
 ---
 
+## Mandatory Edit Router (Step 0)
+
+Before choosing an edit mode, ask the researcher:
+> "Are you editing the **whole article** or **one specific section**?"
+
+1. **If Whole Article**: Proceed to "Understand the Edit Request" across all sections.
+2. **If One Specific Section**:
+   - Ask: "Which section? (Provide section title, number, or paste the text)."
+   - Scope all subsequent edits, section-writer spawns, and auditing strictly to that target section (plus adjacent section context for transition/repetition checks).
+---
+
 ## Load the Source Registry (citation-verification prerequisite)
 
-The auditor's Check D verifies every citation field (year, journal, publisher, title spelling) against `.academic-writer/sources.json`. The edit pipeline depends on this registry being present and current for the article being edited.
+Citation verification checks bibliographic metadata against the article's source snapshot.
+
+**Search Order for Source Snapshots:**
+1. **Article-local snapshot (Primary)**: `articles/<slug>.sources.json` and `articles/<slug>.bibliography.bib` (via `academic_writer_snapshot_citations`).
+2. **Current-run cache (Fallback)**: `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
+3. **Local Sources Ingest**: For unindexed local files, call `academic_writer_ingest_sources` to index `.academic-writer/sources/`.
 
 ```bash
-cat .academic-writer/sources.json 2>/dev/null || echo "MISSING"
+cat articles/<slug>.sources.json 2>/dev/null || cat .academic-writer/sources.json 2>/dev/null || echo "MISSING"
 ```
 
-- **If `sources.json` is missing**, or **if it does not represent this article's sources** (the works cited in the article's footnotes aren't in the registry — i.e., it's stale because the deep-reader overwrites it per write run), tell the researcher:
-  > "I don't have a current source registry for this article, so citation verification (Check D) will be limited — I can only verify against RAG/Zotero reads, not against confirmed bibliographic metadata. Want me to re-run the deep-reader on this article's sources first so edits get full citation verification?"
-- If the researcher agrees, **use the `subagent` tool to spawn the `deep-reader` subagent** on this article's cited sources before proceeding, so it rewrites `.academic-writer/sources.json`.
-- If the researcher declines, proceed but warn that Check D will be skipped for any citation whose source isn't in the registry.
-
+- **If no snapshot is found**, tell the researcher:
+  > "I don't have a current source registry for this article, so citation verification (Check D) will be limited — I can verify against Zotero/local source reads, but not against confirmed bibliographic metadata. Want me to re-run the deep-reader on this article's sources first?"
+- If the researcher agrees, spawn the `deep-reader` subagent on the cited sources so it writes the article snapshot and `.academic-writer/sources.json`.
+- If the researcher declines, proceed but warn that Check D will be skipped for unindexed sources.
 ---
 
 ## Understand the Edit Request
@@ -72,8 +91,16 @@ Ask:
 
 ---
 
-## Edit Modes
+## Existing-Draft Audit Mode (Default Strategy)
 
+When auditing or revising an existing draft:
+1. **Preserve Paragraphs by Default**: Treat original paragraphs as valid prose unless an edit or audit failure requires changes.
+2. **Spawn Auditor per Paragraph**: Run an `auditor` subagent on each paragraph to verify citations and anti-AI/quality guidelines.
+3. **Selective Rewriting**: Keep original paragraph text intact if the auditor returns `PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
+
+---
+
+## Edit Modes
 ### Mode A: Section-Level Edit
 
 **Use the `subagent` tool to spawn a `section-writer` subagent** for each section being revised. The section-writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit).
@@ -170,9 +197,7 @@ After edits are applied:
 
 **Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. If `ok` is false, stop, set the run state to `failed`, and report the exact missing/wrong-mode citation details.
 
-**`inline-parenthetical` (unchanged):** the same DOCX generation as write-article Step 9b — JSON schema → `academic_writer_generate_docx`.
-
-**Citeproc mode:** keep edited body `[@citeKey, p. N]` markers verbatim, resolve `RESOLVED_CSL_PATH` first with `academic_writer_resolve_csl`, then call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, `formats: ["docx"]`, and `csl: RESOLVED_CSL_PATH`. Do not add citeproc YAML frontmatter to `$MD_PATH`; the export tool passes bibliography and CSL directly to Pandoc.
+**`inline-parenthetical` (unchanged):** Call `academic_writer_assemble_docx_json` to build intermediate DOCX JSON deterministically (preserving footnotes, RTL settings, and section hierarchy). Do NOT hand-craft raw model-written DOCX JSON. Then pass the assembled JSON path to `academic_writer_generate_docx`.
 
 Same current limitation as write-article Step 9b: this path does not apply `generate-docx.py`'s Hebrew RTL post-processing. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 

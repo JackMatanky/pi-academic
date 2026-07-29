@@ -1,6 +1,6 @@
 # Academic Writer — Pi Package
 
-AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` — plus PDF, HTML, ODT, LaTeX, and EPUB via Pandoc, with CSL-based citation rendering from a real Zotero-sourced `bibliography.bib` (popular style aliases, Zotero/CSL repository styles, or custom `.csl` files).
+AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` — plus PDF, HTML, ODT, LaTeX, and EPUB via Pandoc, with CSL-based citation rendering from a real Zotero- or local-source `bibliography.bib` (popular style aliases, Zotero/CSL repository styles, or custom `.csl` files).
 
 ---
 
@@ -121,17 +121,19 @@ All integrations are optional. Choose which to enable during `/skill:academic-wr
 
 | Tool | What it does | Setup |
 |------|-------------|-------|
-| **Zotero** | Reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
+| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero | Put files in `.academic-writer/sources/`; Academic Writer ingests them with `academic_writer_ingest_sources` and generates citekeys/BibTeX. |
+| **Zotero** | Preferred reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
 | **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config |
+| **Sefaria** | Optional Judaic primary text lookup and verse context expansion | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools: true`); no credentials go in `.academic-writer/profile.md`. |
 | **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
-**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and `.academic-writer/bibliography.bib` supplies the Zotero metadata. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
+**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and article-local `articles/<slug>.bibliography.bib` is used first, falling back to `.academic-writer/bibliography.bib`. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
 
-**Scoped libraries:** During setup or `/skill:academic-writer-update-tools`, you can set a default Zotero collection and/or NotebookLM notebook for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
+**Scoped libraries:** During setup or `/skill:academic-writer-update-tools`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
 
-**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. Local Zotero and NotebookLM setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
+**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. Local Zotero, NotebookLM, and Sefaria setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
 ```json
 {
@@ -145,6 +147,10 @@ This package doesn't hardcode a specific model provider for prose drafting — p
     },
     "notebooklm-mcp": {
       "command": "notebooklm-mcp",
+      "directTools": true
+    },
+    "sefaria": {
+      "command": "sefaria-mcp",
       "directTools": true
     }
   }
@@ -165,8 +171,9 @@ your-research-folder/
 ├── .voice/                     ← Voice-subsystem working state (fingerprint, interview transcripts, audit)
 └── .academic-writer/
     ├── profile.md               ← Your profile (auto-created)
-    ├── sources.json             ← Indexed source registry (includes citeKey for Zotero-backed sources)
-    ├── bibliography.bib         ← BibTeX export of your Zotero sources for citeproc articles
+    ├── sources/                 ← Optional local PDFs/DOCX/MD/TXT sources
+    ├── sources.json             ← Current-run source registry/cache
+    ├── bibliography.bib         ← Current-run BibTeX cache; articles keep frozen copies beside each draft
     ├── csl/                     ← Cached/downloaded or custom CSL files for citeproc export
     ├── research-brief.md        ← Output from /skill:academic-writer-ideate
     ├── agent-memory/            ← Per-agent persistent notes

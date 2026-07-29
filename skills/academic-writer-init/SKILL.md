@@ -1,7 +1,7 @@
 ---
 name: academic-writer-init
 description: "First-time setup for the Academic Writer. Configures researcher profile, analyzes writing style from past articles, and indexes research sources. Use on first install or when redoing onboarding from scratch."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_ingest_sources
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -17,7 +17,7 @@ Personalized onboarding that creates your researcher profile, detects available 
 | 1. Integrations | Auto-detect tools, let you choose | `tools` config |
 | 2. Profile | Field, language, citation style | Core profile |
 | 3. Style Analysis | Read past articles, build fingerprint | `styleFingerprint` + `articleStructure` |
-| 4. Sources | Index Zotero library | `sources` array |
+| 4. Sources | Index Zotero or local source folder | `sources` array |
 
 ---
 
@@ -26,7 +26,7 @@ Personalized onboarding that creates your researcher profile, detects available 
 Run silently before saying anything:
 
 ```bash
-mkdir -p past-articles .academic-writer .academic-writer/logs
+mkdir -p past-articles .academic-writer .academic-writer/sources .academic-writer/logs
 # If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
 ```
 
@@ -75,7 +75,7 @@ Then greet the user:
 
 Per-tool detection commands, numbered-list prompts, and port-fallback logic: see `references/integration-setup.md`.
 
-After running detection (parallel batch), store the tool selection as the `tools` object for Phase 4.
+After running detection (parallel batch), store the tool selection as the `tools` object for Phase 4. Zotero is preferred but optional; Sefaria is optional and saved as `tools.sefaria` only when selected/detected.
 
 ---
 
@@ -319,7 +319,7 @@ The user is not required to run Stage 2. They can start writing immediately with
 
 ## Phase 3: Research Sources
 
-**If Zotero is enabled:**
+**If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.academic-writer/sources/` with `academic_writer_ingest_sources`:**
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "Let's index your research library. Have you added sources to Zotero yet?"

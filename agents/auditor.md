@@ -269,7 +269,7 @@ Issues found:
 
 Rewrite instructions:
 - [specific guidance for the writer on how to fix each issue]
-- If a citation was close but wrong page, suggest the correct page from the Zotero/source-passage results (or RAG results if a RAG tool was used)
+- If a citation was close but wrong page, suggest the correct page from Zotero or local source-passage results
 - For metadata_mismatch: use the registry value, or mark the field `[?]` if the writer cannot confirm the correct value
 - For fabricated_citation (citeproc mode): the writer must replace the marker with a real `citeKey` from `sources.json`, or remove/rephrase the claim if no matching source exists — never invent a key just to make the marker resolve
 ```

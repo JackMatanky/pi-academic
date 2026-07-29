@@ -13,9 +13,13 @@ import {
 import { resolveResourcePath } from "./resources.js";
 import {
   articlePaths,
+  assembleDocxJson,
   buildHealth,
+  citationAssetPaths,
   extractDocument,
+  ingestSources,
   listProjectFiles,
+  snapshotCitationAssets,
 } from "./project.js";
 import { buildStatus } from "./status.js";
 
@@ -185,12 +189,14 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       const text = [
         `Academic Writer status: ${status.ok ? "profile found" : "profile missing"}`,
         `Sources: ${sourceCount}`,
+        `Local source files: ${status.sourceDocuments.count}`,
         `Articles: ${status.articles.count}`,
         `Past articles: ${status.pastArticles.count}`,
         `Active runs: ${activeRuns}`,
         `Last run: ${lastRun}`,
         `Zotero scope: ${zoteroScope}`,
         `NotebookLM scope: ${notebookScope}`,
+        `Sefaria: ${status.tools.sefaria?.enabled ? "enabled" : "disabled"}`,
       ].join("\n");
       return textResult(text, status);
     },
@@ -207,9 +213,11 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       const text = [
         `Profile: ${health.profile.exists ? "found" : "missing"}`,
         `Sources: ${health.sources.count}`,
+        `Local source files: ${health.sourceDocuments.count}`,
         `Runs active: ${health.runs.active.length}`,
         `Pandoc: ${health.commands.pandoc ? "installed" : "missing"}`,
         `PDF engine: ${health.commands.xelatex || health.commands.tectonic ? "installed" : "missing"}`,
+        `Sefaria MCP: ${health.commands.sefariaMcp ? "installed" : "not detected"}`,
       ].join("\n");
       return textResult(text, health);
     },
@@ -365,6 +373,31 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "academic_writer_ingest_sources",
+    label: "Academic Writer Ingest Sources",
+    description:
+      "Ingest PDF, DOCX, Markdown, or text files from .academic-writer/sources/ or explicit paths. Generates local source records, citekeys, sources.json, and bibliography.bib without requiring Zotero.",
+    parameters: Type.Object({
+      paths: Type.Optional(
+        Type.Array(Type.String({ minLength: 1 }), {
+          description:
+            "Optional project-relative or absolute source files. If omitted, ingests supported files in .academic-writer/sources/.",
+        }),
+      ),
+    }),
+    execute: async (_id, params, signal, _onUpdate, ctx) => {
+      const paths = Array.isArray(params.paths)
+        ? params.paths.map((path) => String(path))
+        : undefined;
+      const result = await ingestSources(ctx.cwd, paths, signal);
+      const text = result.errors.length
+        ? `Ingested ${result.count} source(s); ${result.errors.length} failed.`
+        : `Ingested ${result.count} source(s).`;
+      return textResult(text, result);
+    },
+  });
+
+  pi.registerTool({
     name: "academic_writer_resolve_csl",
     label: "Academic Writer Resolve CSL",
     description:
@@ -457,6 +490,26 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "academic_writer_snapshot_citations",
+    label: "Academic Writer Snapshot Citations",
+    description:
+      "Freeze the current project citation cache beside an article as articles/<slug>.sources.json and articles/<slug>.bibliography.bib.",
+    parameters: Type.Object({
+      article: Type.String({
+        minLength: 1,
+        description: "Markdown article path, usually articles/<slug>.md.",
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const result = snapshotCitationAssets(ctx.cwd, String(params.article));
+      const text = result.ok
+        ? `Citation snapshot written: ${result.sources}, ${result.bibliography}`
+        : `Citation snapshot incomplete: missing ${result.missing.join(", ")}`;
+      return textResult(text, result);
+    },
+  });
+
+  pi.registerTool({
     name: "academic_writer_export_article",
     label: "Academic Writer Export Article",
     description:
@@ -528,14 +581,19 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           error?: string;
         }> = [];
         const citeproc = citationStyle !== "inline-parenthetical";
+        const localAssets = citationAssetPaths(article);
+        const bibliography =
+          typeof params.bibliography === "string"
+            ? params.bibliography
+            : existsSync(join(ctx.cwd, localAssets.bibliography))
+              ? localAssets.bibliography
+              : ".academic-writer/bibliography.bib";
         for (const format of formats) {
           const output = exportOutputPath(article, format);
           const args = [article];
           if (citeproc) {
             args.push("--citeproc", "--fail-if-warnings");
-            args.push(
-              `--bibliography=${typeof params.bibliography === "string" ? params.bibliography : ".academic-writer/bibliography.bib"}`,
-            );
+            args.push(`--bibliography=${bibliography}`);
             if (typeof params.csl === "string")
               args.push(`--csl=${params.csl}`);
           }
@@ -560,7 +618,12 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
               : `${result.format}: failed - ${result.error}`,
           )
           .join("\n");
-        return textResult(text, { ok, audit, results });
+        return textResult(text, {
+          ok,
+          audit,
+          bibliography: citeproc ? bibliography : null,
+          results,
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return textResult(`Export failed: ${message}`, {
@@ -568,6 +631,62 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           error: message,
         });
       }
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_assemble_docx_json",
+    label: "Academic Writer Assemble DOCX JSON",
+    description:
+      "Deterministically assemble generate-docx.py JSON from an article markdown file. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
+    parameters: Type.Object({
+      input: Type.String({
+        minLength: 1,
+        description: "Markdown article path.",
+      }),
+      output: Type.String({
+        minLength: 1,
+        description: "JSON output path for academic_writer_generate_docx.",
+      }),
+      title: Type.Optional(Type.String({ minLength: 1 })),
+      targetLanguage: Type.Optional(Type.String({ minLength: 1 })),
+      formatJson: Type.Optional(
+        Type.String({
+          description:
+            "Optional JSON object merged into the generate-docx.py format field.",
+        }),
+      ),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const format =
+        typeof params.formatJson === "string"
+          ? jsonObject(params.formatJson)
+          : null;
+      if (typeof params.formatJson === "string" && !format) {
+        return textResult(
+          "DOCX JSON assembly failed: formatJson must be an object",
+          {
+            ok: false,
+          },
+        );
+      }
+      const result = assembleDocxJson(
+        ctx.cwd,
+        String(params.input),
+        String(params.output),
+        {
+          title: typeof params.title === "string" ? params.title : undefined,
+          targetLanguage:
+            typeof params.targetLanguage === "string"
+              ? params.targetLanguage
+              : undefined,
+          format: format ?? undefined,
+        },
+      );
+      const text = result.ok
+        ? `Assembled ${result.output}: ${result.sections} section(s), ${result.totalWords} word(s).`
+        : `DOCX JSON assembly failed: ${result.error}`;
+      return textResult(text, result);
     },
   });
 

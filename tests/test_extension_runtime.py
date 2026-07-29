@@ -69,6 +69,17 @@ class TestExtensionRuntime(unittest.TestCase):
                   article: "articles/ok.md",
                   citationStyle: "chicago"
                 }});
+                const snapshot = await call("academic_writer_snapshot_citations", {{
+                  article: "articles/ok.md"
+                }});
+                const assembled = await call("academic_writer_assemble_docx_json", {{
+                  input: "articles/ok.md",
+                  output: ".academic-writer/runs/ok.docx.json",
+                  targetLanguage: "English"
+                }});
+                const ingested = await call("academic_writer_ingest_sources", {{
+                  paths: [".academic-writer/sources/local.md"]
+                }});
                 console.log(JSON.stringify({{
                   names: [...tools.keys()].sort(),
                   status,
@@ -80,7 +91,10 @@ class TestExtensionRuntime(unittest.TestCase):
                   files,
                   extracted,
                   resource,
-                  audit
+                  audit,
+                  snapshot,
+                  assembled,
+                  ingested
                 }}));
                 """
             ),
@@ -179,6 +193,10 @@ class TestExtensionRuntime(unittest.TestCase):
                 json.dumps({"runId": "r1", "status": "running", "title": "Smoke"}),
                 encoding="utf-8",
             )
+            (helper / "sources").mkdir()
+            (helper / "sources" / "local.md").write_text(
+                "# Local Source 2024\n\nSource text.", encoding="utf-8"
+            )
             (root / "articles" / "ok.md").write_text(
                 "Text [@smith2020, p. 4].",
                 encoding="utf-8",
@@ -189,9 +207,13 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertIn("academic_writer_status", data["names"])
         self.assertIn("academic_writer_read_resource", data["names"])
         self.assertIn("academic_writer_audit_citations", data["names"])
+        self.assertIn("academic_writer_ingest_sources", data["names"])
+        self.assertIn("academic_writer_snapshot_citations", data["names"])
+        self.assertIn("academic_writer_assemble_docx_json", data["names"])
         self.assertIn("academic_writer_migrate_profile", data["names"])
         self.assertTrue(data["status"]["details"]["ok"])
         self.assertEqual(data["status"]["details"]["sources"]["count"], 1)
+        self.assertEqual(data["status"]["details"]["sourceDocuments"]["count"], 1)
         self.assertEqual(data["status"]["details"]["articles"]["count"], 1)
         self.assertEqual(data["status"]["details"]["runs"]["active"][0]["runId"], "r1")
         self.assertIn("auditor.md", data["status"]["details"]["agents"])
@@ -217,6 +239,10 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertEqual(
             data["paths"]["details"]["markdown"], "articles/smoke-test-חיבור.md"
         )
+        self.assertEqual(
+            data["paths"]["details"]["sources"],
+            "articles/smoke-test-חיבור.sources.json",
+        )
         self.assertEqual(data["files"]["details"]["files"][0]["path"], "articles/ok.md")
         self.assertEqual(
             data["extracted"]["content"][0]["text"], "Text [@smith2020, p. 4]."
@@ -225,8 +251,18 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertEqual(
             json.loads(data["resource"]["content"][0]["text"]), {"sentinel": True}
         )
+        self.assertEqual(
+            data["ingested"]["details"]["sources"][0]["sourceType"], "local-file"
+        )
         self.assertTrue(data["audit"]["details"]["ok"])
         self.assertEqual(data["audit"]["details"]["citationKeys"], ["smith2020"])
+        self.assertTrue(data["snapshot"]["details"]["ok"])
+        self.assertEqual(
+            data["snapshot"]["details"]["sources"], "articles/ok.sources.json"
+        )
+        self.assertTrue(data["assembled"]["details"]["ok"])
+        self.assertEqual(data["assembled"]["details"]["sections"], 1)
+        self.assertEqual(data["ingested"]["details"]["count"], 1)
 
     def test_export_passes_citeproc_options_to_pandoc(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -242,6 +278,12 @@ class TestExtensionRuntime(unittest.TestCase):
             )
             (helper / "bibliography.bib").write_text(
                 "@book{smith2020, title={Book}}\n", encoding="utf-8"
+            )
+            (root / "articles" / "ok.sources.json").write_text(
+                json.dumps([{"citeKey": "smith2020"}]), encoding="utf-8"
+            )
+            (root / "articles" / "ok.bibliography.bib").write_text(
+                "@book{smith2020, title={Local Book}}\n", encoding="utf-8"
             )
             log = root / "pandoc.args"
             bin_dir = root / "bin"
@@ -274,7 +316,10 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertTrue(data["details"]["ok"])
             self.assertIn("--citeproc", args)
             self.assertIn("--fail-if-warnings", args)
-            self.assertIn("--bibliography=.academic-writer/bibliography.bib", args)
+            self.assertIn("--bibliography=articles/ok.bibliography.bib", args)
+            self.assertEqual(
+                data["details"]["bibliography"], "articles/ok.bibliography.bib"
+            )
             self.assertIn("--csl=style.csl", args)
 
     def test_docx_extraction_prefers_pandoc_citations(self):

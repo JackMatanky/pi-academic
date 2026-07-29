@@ -16,6 +16,10 @@ Call `academic_writer_get_profile`.
 If it returns `ok: false`, tell the researcher to run `/skill:academic-writer-init` first.
 
 Use the returned `styleFingerprint` and `analyzedArticles` list (if present).
+### Voice Source Hierarchy
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object, updated by this skill).
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
 
 ## Step 1: Scan for New Articles
 

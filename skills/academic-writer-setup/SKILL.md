@@ -50,6 +50,7 @@ Run ALL detection commands in **one parallel batch**:
 
 - **Zotero**: call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise.
 - **NotebookLM**: call `notebook_list()`; DETECTED if it returns without an error, NOT_DETECTED otherwise. Also check `command -v nlm`, `command -v notebooklm-mcp`, and `nlm login --check` so you can distinguish missing install/auth from missing MCP config.
+- **Sefaria**: check whether bare `get_text` / `search` tools are available; DETECTED only if present. Also check `command -v sefaria-mcp`.
 
 MongoDB Agent Skills is auto-configured silently — do not show it to the user.
 
@@ -157,6 +158,15 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Auth:    nlm login
 >    Config:  standard MCP config (.mcp.json or ~/.config/mcp/mcp.json)
 >    Needs:   settings.toolPrefix="none" + directTools=true
+>    ```
+> 3. **Sefaria** — ✓ Detected / ✗ Not found
+>    ```
+>    Sefaria
+>    ───────
+>    Type:  MCP server with bare get_text/search tools
+>    What:  Judaic primary text context expansion
+>    Config: standard MCP config, no secrets in profile
+>    Needs: settings.toolPrefix="none" + directTools=true
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
 

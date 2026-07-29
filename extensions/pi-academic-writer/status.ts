@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { PACKAGE_ROOT } from "../lib/paths.js";
 import { loadProfile } from "../lib/profile.js";
 import { summarizeRuns, type RunSummary } from "../lib/runs.js";
 import type { ToolConfig } from "../lib/types.js";
+
+const SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
 /** Existence metadata for project-local Academic Writer files. */
 interface FileState {
@@ -22,6 +24,7 @@ export interface AcademicWriterStatus {
   profile: FileState;
   voice: FileState;
   sources: FileState & { count: number };
+  sourceDocuments: DirectoryState;
   bibliography: FileState;
   articles: DirectoryState;
   pastArticles: DirectoryState;
@@ -94,6 +97,11 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
     profile,
     voice,
     sources,
+    sourceDocuments: directoryState(
+      projectRoot,
+      ".academic-writer/sources",
+      (entry) => SOURCE_EXTENSIONS.has(extname(entry).toLowerCase()),
+    ),
     bibliography,
     articles: directoryState(projectRoot, "articles", (entry) =>
       entry.endsWith(".md"),

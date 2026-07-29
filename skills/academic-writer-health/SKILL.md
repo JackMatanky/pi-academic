@@ -1,7 +1,7 @@
 ---
 name: academic-writer-health
 description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
-allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents academic_writer_status academic_writer_health
+allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents academic_writer_status academic_writer_health academic_writer_ingest_sources academic_writer_snapshot_citations
 metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
@@ -65,6 +65,25 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
 Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global MCP config or command interpolation for Zotero web/API credentials.
 
 ---
+## 4. Local Sources Folder & Citation Snapshots
+
+Use `academic_writer_status` / `academic_writer_health`; do not call `academic_writer_ingest_sources` during health checks because it writes cache files.
+Report:
+- Local source folder present? ✓/✗
+- Local source files count
+- Citation snapshot search priority: `articles/<slug>.sources.json` (Primary) -> `.academic-writer/sources.json` (Fallback)
+
+---
+
+## 5. Sefaria Context Integration
+
+**Skip if `tools.sefaria.enabled` is false.** Report as "Disabled (enable with `/skill:academic-writer-update-tools`)".
+
+If `tools.sefaria.enabled` is true, check if bare Sefaria tools (`get_text`, `search`) are available in the runtime toolset.
+Report:
+- Sefaria integration enabled? ✓/✗
+- Bare Sefaria MCP tools available? ✓/✗
+- If error/missing: warn that biblical context expansion will be limited.
 
 ## 6. NotebookLM
 
@@ -154,8 +173,10 @@ Show a clean summary table:
 > | Style Fingerprint | ✓ Expanded / ⚠ Flat / ✗ Missing | [N] dimensions |
 > | Past Articles | ✓ [N] files / ✗ Empty | PDF: [n], DOCX: [n] |
 > | Zotero | ✓ Connected / ✗ Error / — Disabled | [N] items |
+> | Local Sources | ✓ Ready / — None | [N] local source files in `.academic-writer/sources/` |
 > | NotebookLM | ✓ Connected / ✗ Not found / — Disabled | [N] notebooks |
-> | Pandoc / Export | ✓ Ready / ⚠ PDF unavailable / ✗ Not found | Pandoc: [status], XeTeX: [status], CSL: [resolved/missing/literal] |
+> | Sefaria | ✓ Connected / ✗ Tools missing / — Disabled | Text & search tools |
+> | Pandoc / Export | ✓ Ready / ⚠ PDF unavailable / ✗ Not found | Pandoc: [status], XeTeX: [status], Tectonic: [status], CSL: [resolved/missing/literal] |
 > | Agent Files | ✓ All present / ✗ Missing [list] | 5/5 |
 >
 > **Overall: [N]/[total] checks passed**

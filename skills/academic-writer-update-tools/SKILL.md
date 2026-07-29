@@ -28,6 +28,8 @@ Call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_
 
 **2. NotebookLM** (`notebooklm`)
 Call `notebook_list()`; DETECTED if it returns without an error, NOT_DETECTED otherwise. Also check `command -v nlm`, `command -v notebooklm-mcp`, and `nlm login --check` so you can distinguish missing install/auth from missing MCP config.
+**3. Sefaria** (`sefaria`)
+Check if bare Sefaria tools (`get_text`, `search`) exist in the environment toolset. DETECTED if present, NOT_DETECTED otherwise.
 
 ## Present Current State
 
@@ -37,9 +39,9 @@ Show a table with current status and detection:
 >
 > | # | Tool | Currently | Detected | Scope |
 > |---|------|-----------|----------|-------|
-> | 1 | Zotero | ✓ Enabled / ✗ Disabled | ✓ / ✗ | collection name/key, or "all library" |
-> | 2 | NotebookLM | ✓ Enabled / ✗ Disabled | ✓ / ✗ | notebook name/id, or "all notebooks" |
->
+| 1 | Zotero | ✓ Enabled / ✗ Disabled | ✓ / ✗ | collection name/key, or "all library" |
+| 2 | NotebookLM | ✓ Enabled / ✗ Disabled | ✓ / ✗ | notebook name/id, or "all notebooks" |
+| 3 | Sefaria | ✓ Enabled / ✗ Disabled | ✓ / ✗ | Judaic primary text & search |
 > What would you like to change? You can:
 > - **Enable** a tool by number or name (I'll help install if not detected)
 > - **Disable** a tool by number or name
@@ -87,7 +89,8 @@ Replace `TOOL_CONFIG` with the actual selections, e.g.:
 ```json
 {
   "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" } },
-  "notebooklm": { "enabled": true, "mode": "mcp-config", "notebook": { "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" } }
+  "notebooklm": { "enabled": true, "mode": "mcp-config", "notebook": { "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" } },
+  "sefaria": { "enabled": true, "mode": "mcp-config" }
 }
 ```
 

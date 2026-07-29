@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_assemble_docx_json
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -14,6 +14,10 @@ You are an academic writing assistant for a Humanities researcher.
 
 Call `academic_writer_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
 
+**Voice Source Hierarchy:**
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
 ## Load Profile
 
 Start by calling `academic_writer_get_profile`.
@@ -47,9 +51,10 @@ Pass the full `styleFingerprint` object to every agent that writes or reviews te
 
 Read the `tools` object from the profile. Throughout this workflow, **only use tools that are enabled**, and honor any configured scope:
 
-- **Zotero** (`tools.zotero.enabled`) — If `tools.zotero.collection.key` is set, source listing/selection should start from that collection; otherwise use the library. If disabled, skip Zotero tool calls and use any available sources from the profile's `sources` array instead.
-- **NotebookLM** (`tools.notebooklm.enabled`) — If `tools.notebooklm.notebook.id` is set, query that notebook first; otherwise list/query relevant notebooks. NotebookLM is supplementary — it does not replace Vectorless/Zotero for citation verification.
-
+- **Zotero** (`tools.zotero.enabled`) — Zotero is preferred when enabled. If `tools.zotero.collection.key` is set, source listing/selection starts from that collection; otherwise use the library.
+- **Local Folder Sources** — Check `.academic-writer/sources/` for local PDFs, DOCX, TXT, or MD source files. Call `academic_writer_ingest_sources` to index local files into the source workflow.
+- **Profile / Manual Sources** — If Zotero is disabled and no local files exist, use the profile `sources` array or manual researcher description.
+- **NotebookLM** (`tools.notebooklm.enabled`) — Supplementary context only; not a primary citation source.
 If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
 
 ---
@@ -114,11 +119,12 @@ Store the draft text as `userDraftText` regardless of which option is chosen. If
 ### Step 2: Source Selection
 
 
-**If Zotero is enabled**, enrich the configured collection, or all items if no collection is set, then list them:
-
-If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)`. Otherwise call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items.
-
-**If Zotero is NOT enabled**, use the `sources` array from the profile (indexed during init) to present available sources. If the sources array is empty, ask the researcher to describe their sources manually.
+**Source Selection Procedure:**
+1. **Zotero (Preferred)**: If `tools.zotero.enabled` is true:
+    - If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` to retrieve items from the specified collection.
+    - Otherwise, call `zotero_get_collections()` + `zotero_get_collection_items()` to list all library items.
+2. **Local Folder Sources**: Call `academic_writer_ingest_sources` to discover and ingest local PDFs, DOCX, TXT, or MD files stored under `.academic-writer/sources/`.
+3. **Fallback**: Use profile's `sources` array or manual user input if no Zotero/local sources exist.
 
 Present them clearly and ask:
 > "Which of these sources should I focus on? You can name them by number, by title, or say 'all'."
@@ -145,7 +151,7 @@ Before spawning the deep-reader, directly query NotebookLM for the article subje
 
 Pass the NotebookLM summary as additional context to the deep-reader agent prompt in Step 3.
 
-**Important:** NotebookLM answers are AI-synthesized context. All citations must still be verified via Zotero or RAG — never cite NotebookLM output directly.
+**Important:** NotebookLM answers are AI-synthesized context. All citations must still be verified via Zotero or ingested local sources — never cite NotebookLM output directly. (Note: RAG semantic vector search is a future TODO).
 
 ---
 
@@ -155,8 +161,11 @@ Pass the NotebookLM summary as additional context to the deep-reader agent promp
 **Use the `subagent` tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
 
 The deep-reader runs:
-- **Step 1**: Read source content from Zotero
-- **Step 1b**: Extract structured bibliographic metadata per source and write `.academic-writer/sources.json`. This registry is the ONLY trusted source for citation metadata in Step 7. Fields the deep-reader cannot confirm are marked `null` with `extractionConfidence: "low"` — never guessed.
+- **Step 1**: Read source content from Zotero (if enabled) and local ingested sources in `.academic-writer/sources/` (via `academic_writer_ingest_sources`)
+- **Step 1b**: Extract structured bibliographic metadata per source and create citation snapshot assets.
+  - **Primary Article Snapshot**: Write `articles/<slug>.sources.json` and `articles/<slug>.bibliography.bib` (via `academic_writer_snapshot_citations`).
+  - **Current-Run Cache**: Update `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` as current-run cache/fallback.
+  - This registry is the ONLY trusted source for citation metadata in Step 7.
 - **Step 2**: Query NotebookLM notebooks (if enabled) for thematic context
 
 
@@ -376,8 +385,8 @@ Branch by `citationStyle` using the loaded `citation_export_contract`.
 
 ##### `inline-parenthetical`
 
-Write the article data to a JSON file, then call `academic_writer_generate_docx` with that JSON and `$DOCX_PATH`. The JSON must preserve native Word footnotes via `sections[].paragraphs[].footnotes[]`, `format`, `isRtl`, and `totalWords` as before.
-
+Call `academic_writer_assemble_docx_json` to build the intermediate DOCX JSON deterministically (preserving native Word footnotes via `sections[].paragraphs[].footnotes[]`, `format`, `isRtl`, and `totalWords`). Do NOT attempt to hand-craft or emit raw model-written DOCX JSON.
+Then call `academic_writer_generate_docx` with the assembled JSON path and `$DOCX_PATH`.
 ##### Citeproc mode
 
 Call `academic_writer_export_article` with `article: MD_PATH`, the active `citationStyle`, `formats: ["docx"]`, and `csl: RESOLVED_CSL_PATH`.

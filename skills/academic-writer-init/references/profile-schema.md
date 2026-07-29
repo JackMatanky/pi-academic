@@ -42,6 +42,10 @@ updatedAt: ISO_TIMESTAMP
     "enabled": false,
     "mode": "mcp-config",
     "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" }
+  },
+  "sefaria": {
+    "enabled": false,
+    "mode": "mcp-config"
   }
 }
 ```
@@ -125,3 +129,9 @@ Run via voice-miner agent. Dimensions span 8 categories (A–I):
 28. Conclusion conventions (opening pattern, elements, restatement?, implications?, closing pattern, typical length)
 29. Paragraph formula (topic sentence style, evidence presentation, analysis type, closing move, full sequence)
 30. Section transition patterns (bridging style, transitional paragraphs?, explicit signposting?)
+
+## Voice Source Hierarchy
+
+1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` JSON object). Extracted by `/skill:academic-writer-init` or `/skill:academic-writer-learn` and stored in the profile.
+2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root. Loaded via `voice_profile_load` as human prose instructions for `section-writer`.
+3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is a temporary mining output and is **NOT** a runtime source of truth.

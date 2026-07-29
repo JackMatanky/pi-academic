@@ -1,13 +1,15 @@
 ---
 name: deep-reader
-description: "Use to explore Zotero source documents and map available evidence, arguments, and gaps before any thesis is proposed. NOT for writing or editing — read-only source exploration only. Exception — the only permitted writes are the bibliographic source registry at .academic-writer/sources.json and the derived BibTeX bibliography at .academic-writer/bibliography.bib."
-tools: read, write, grep, find, bash, mcp:zotero
+description: "Use to explore Zotero and local source documents and map available evidence, arguments, and gaps before any thesis is proposed. NOT for writing or editing — read-only source exploration only. Exception — the permitted writes are the article citation snapshots (articles/<slug>.sources.json and articles/<slug>.bibliography.bib) and current-run cache files (.academic-writer/sources.json and .academic-writer/bibliography.bib)."
+tools: read, write, grep, find, bash, academic_writer_ingest_sources, academic_writer_snapshot_citations, mcp:zotero
 permission:
   "*": allow
   write:
     "*": deny
     ".academic-writer/sources.json": allow
     ".academic-writer/bibliography.bib": allow
+    "articles/*.sources.json": allow
+    "articles/*.bibliography.bib": allow
   bash:
     "*": ask
     "cat *": allow
@@ -18,7 +20,7 @@ permission:
 
 ## READ-ONLY ENFORCEMENT
 
-**You are strictly read-only, with TWO exceptions.** You MUST NOT create, edit, or modify any file EXCEPT for writing the structured bibliographic source registry to `.academic-writer/sources.json` and the derived BibTeX bibliography to `.academic-writer/bibliography.bib` (both in Step 1b below). Never use Edit or MultiEdit. Your job is to read, analyze, and emit the source registry + bibliography + structured summary.
+**You are strictly read-only, with ONE exception.** You MUST NOT create, edit, or modify any file EXCEPT for writing the structured bibliographic source registry and BibTeX bibliography to article-local snapshots (`articles/<slug>.sources.json`, `articles/<slug>.bibliography.bib`) and current-run cache files (`.academic-writer/sources.json`, `.academic-writer/bibliography.bib`). Never use Edit or MultiEdit.
 
 ## Agent Memory
 
@@ -44,15 +46,15 @@ Read each selected source deeply and query it for the article subject. The goal 
 
 ---
 
-### Step 1: Get Source Content from Zotero
+### Step 1: Get Source Content from Zotero / Local Folder Sources
 
-For each selected source ID, read its full content. **Run all reads in parallel:**
+**If Zotero is enabled**: read full content from selected Zotero items.
+**If local folder sources exist in `.academic-writer/sources/`**: call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD source files.
 
+**Run all reads in parallel:**
 ```bash
 zotero_get_item_fulltext(item_key="DOC_ID_1")
 zotero_get_item_fulltext(item_key="DOC_ID_2")
-zotero_get_pdf_outline(item_key="DOC_ID_1")
-zotero_get_pdf_outline(item_key="DOC_ID_2")
 ```
 
 #### Untrusted source-text quarantine (mandatory)
@@ -125,24 +127,11 @@ For each returned BibTeX string, parse the citekey from its opening line with th
 
 Keep every successfully-fetched BibTeX entry string in memory; you assemble them into `bibliography.bib` right after writing `sources.json` below.
 
-Write the array of records — now including `citeKey` — to `.academic-writer/sources.json` using the Write tool:
-
-```
-Write .academic-writer/sources.json with the JSON array of source records
-```
-
-This file overwrites any previous registry — the current article run is the source of truth.
+Write the array of records — now including `citeKey` — to article-local snapshot `articles/<slug>.sources.json` (via `academic_writer_snapshot_citations` or direct write) AND update `.academic-writer/sources.json` as current-run cache.
 
 #### Assemble and write the bibliography
 
-Concatenate every successfully-fetched BibTeX entry (one per source, in the order sources were processed) into a single file and write it with the Write tool:
-
-```
-Write .academic-writer/bibliography.bib with the concatenated BibTeX entries
-```
-
-This file overwrites any previous bibliography — the same current-run-is-source-of-truth lifecycle as `sources.json`. Sources with no Zotero item key (and therefore no `citeKey`) contribute no entry and are simply absent from the file.
-
+Concatenate every successfully-fetched BibTeX entry into article-local snapshot `articles/<slug>.bibliography.bib` AND update `.academic-writer/bibliography.bib` as current-run cache.
 Log completion:
 
 ---
@@ -206,26 +195,13 @@ Log the queries run and how many results each returned.
 
 ### Step 1e: Sefaria Context Expansion
 
-**Run this when the assignment references specific biblical or rabbinic verses.**
+**GATING REQUIREMENT:** Skip this step entirely if `tools.sefaria.enabled` is false OR if bare Sefaria tools (`get_text`, `search`) are not present in your runtime toolset. Mention bare Sefaria tools ONLY when `tools.sefaria.enabled` is true AND the bare tools are present in your available tools.
 
-For every biblical verse mentioned in the assignment or retrieved from Zotero:
-
-1. **Fetch surrounding context** — retrieve at minimum ±3 verses before and after the target verse. If the chapter is short (≤20 verses), retrieve the entire chapter:
-
-If a Sefaria MCP server is configured, its tools register by bare name (same `directTools`/`toolPrefix: "none"` convention as `zotero`), so call it directly — no `mcp:`/`mcp__` prefix:
-```
-# Example: target verse is Esther 4:14
-# Fetch the full immediate context: Esther 4:11-17 (3 before, 3 after)
-get_text("Esther 4:11-17")
-# If chapter is short, get the whole chapter:
-get_text("Esther 4")
-```
-
-2. **Purpose:** The surrounding verses often contain lexical parallels, contrasting phrasing, or rhetorical structures that secondary sources point to but don't quote in full. Having the full context lets you identify whether a scholarly claim about "the verse" is really about a broader unit.
-
-3. **Record the context** in your summary under a "PRIMARY TEXT CONTEXT" section — this is NOT citable as a secondary source, but it informs the deep read and prevents the section-writer from misquoting or truncating a verse.
-
-4. **Skip if** Sefaria tools are not enabled in the profile (`tools.sefaria.enabled == false`).
+When `tools.sefaria.enabled` is true and Sefaria tools are available:
+1. **Fetch surrounding context** — retrieve at minimum ±3 verses before and after the target verse.
+   ```
+   get_text("Esther 4:11-17")
+   ```
 
 ---
 

@@ -2,10 +2,13 @@ import { execFile } from "node:child_process";
 import {
   constants,
   accessSync,
+  copyFileSync,
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
 import {
   basename,
@@ -19,12 +22,15 @@ import { promisify } from "node:util";
 import { buildStatus, type AcademicWriterStatus } from "./status.js";
 
 const execFileAsync = promisify(execFile);
+const SUPPORTED_SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
 export interface ArticlePaths {
   slug: string;
   markdown: string;
   docx: string;
   json: string;
+  sources: string;
+  bibliography: string;
 }
 
 export interface ProjectFile {
@@ -45,6 +51,54 @@ export interface ExtractedDocument {
   ok: boolean;
   path: string;
   text: string;
+  error?: string;
+}
+
+export interface LocalSourceRecord {
+  sourceId: string;
+  citeKey: string;
+  sourceType: "local-file";
+  path: string;
+  fileType: string;
+  author: null;
+  workTitle: string;
+  year: string | null;
+  extractionConfidence: {
+    author: "low";
+    workTitle: "medium";
+    year: "medium" | "low";
+  };
+  extractionNotes: string;
+}
+
+export interface SourceIngestionResult {
+  ok: boolean;
+  sourceDirectory: string;
+  sourcesPath: string;
+  bibliographyPath: string;
+  count: number;
+  sources: LocalSourceRecord[];
+  errors: Array<{ path: string; error: string }>;
+}
+
+export interface CitationAssetPaths {
+  sources: string;
+  bibliography: string;
+}
+
+export interface CitationSnapshotResult extends CitationAssetPaths {
+  ok: boolean;
+  copied: string[];
+  missing: string[];
+}
+
+export interface DocxAssemblyResult {
+  ok: boolean;
+  input: string;
+  output: string;
+  title: string;
+  totalWords: number;
+  sections: number;
   error?: string;
 }
 
@@ -72,6 +126,17 @@ function compactSlug(value: string): string {
   return slug || "article";
 }
 
+function citeKeyBase(value: string): string {
+  return (
+    value
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "source"
+  ).slice(0, 48);
+}
+
 /** Builds one deterministic article slug and output path set. */
 export function articlePaths(subject: string): ArticlePaths {
   const slug = compactSlug(subject);
@@ -80,6 +145,16 @@ export function articlePaths(subject: string): ArticlePaths {
     markdown: `articles/${slug}.md`,
     docx: `articles/${slug}.docx`,
     json: `.academic-writer/runs/${slug}.docx.json`,
+    sources: `articles/${slug}.sources.json`,
+    bibliography: `articles/${slug}.bibliography.bib`,
+  };
+}
+
+export function citationAssetPaths(article: string): CitationAssetPaths {
+  const base = article.replace(/\.[^.\/]+$/, "");
+  return {
+    sources: `${base}.sources.json`,
+    bibliography: `${base}.bibliography.bib`,
   };
 }
 
@@ -189,6 +264,269 @@ export async function extractDocument(
   }
 }
 
+function firstContentLine(text: string): string | null {
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.replace(/^#+\s*/, "").trim();
+    if (line) return line.slice(0, 140);
+  }
+  return null;
+}
+
+function extractYear(value: string): string | null {
+  const match = /\b(1[5-9]\d{2}|20\d{2})\b/.exec(value);
+  return match?.[1] ?? null;
+}
+
+function bibtexValue(value: string): string {
+  return value.replace(/[{}]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function uniqueCiteKey(base: string, used: Set<string>): string {
+  let candidate = base;
+  let suffix = 2;
+  while (used.has(candidate)) {
+    candidate = `${base}_${suffix}`;
+    suffix += 1;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function sourceRecordFromDocument(
+  projectRoot: string,
+  document: ExtractedDocument,
+  usedKeys: Set<string>,
+): LocalSourceRecord {
+  const title =
+    firstContentLine(document.text) ??
+    basename(document.path, extname(document.path));
+  const year = extractYear(`${document.path}\n${document.text.slice(0, 4000)}`);
+  const citeKey = uniqueCiteKey(
+    citeKeyBase(`${title} ${year ?? ""}`),
+    usedKeys,
+  );
+  return {
+    sourceId: `local:${citeKey}`,
+    citeKey,
+    sourceType: "local-file",
+    path: document.path,
+    fileType: extname(document.path).toLowerCase().replace(/^\./, "") || "text",
+    author: null,
+    workTitle: title,
+    year,
+    extractionConfidence: {
+      author: "low",
+      workTitle: "medium",
+      year: year ? "medium" : "low",
+    },
+    extractionNotes: `Generated from local project source ${toRelative(projectRoot, resolveInputPath(projectRoot, document.path))}; verify missing metadata before publication.`,
+  };
+}
+
+function sourceBibtex(record: LocalSourceRecord): string {
+  const fields = [
+    `  title = {${bibtexValue(record.workTitle)}}`,
+    `  howpublished = {Local file: ${bibtexValue(record.path)}}`,
+  ];
+  if (record.year) fields.push(`  year = {${record.year}}`);
+  return `@misc{${record.citeKey},\n${fields.join(",\n")}\n}\n`;
+}
+
+function sourceInputs(projectRoot: string, paths?: string[]): string[] {
+  if (paths && paths.length > 0) return paths;
+  const sourceDir = join(projectRoot, ".academic-writer", "sources");
+  if (!existsSync(sourceDir)) return [];
+  return readdirSync(sourceDir)
+    .filter((entry) =>
+      SUPPORTED_SOURCE_EXTENSIONS.has(extname(entry).toLowerCase()),
+    )
+    .sort()
+    .map((entry) => join(".academic-writer", "sources", entry));
+}
+
+export async function ingestSources(
+  projectRoot: string,
+  paths?: string[],
+  signal?: AbortSignal,
+): Promise<SourceIngestionResult> {
+  const sourceDirectory = ".academic-writer/sources";
+  const sourcesPath = ".academic-writer/sources.json";
+  const bibliographyPath = ".academic-writer/bibliography.bib";
+  mkdirSync(join(projectRoot, sourceDirectory), { recursive: true });
+  const usedKeys = new Set<string>();
+  const sources: LocalSourceRecord[] = [];
+  const errors: Array<{ path: string; error: string }> = [];
+
+  for (const input of sourceInputs(projectRoot, paths)) {
+    const ext = extname(input).toLowerCase();
+    if (!SUPPORTED_SOURCE_EXTENSIONS.has(ext)) {
+      errors.push({
+        path: input,
+        error: `Unsupported file type: ${ext || "(none)"}`,
+      });
+      continue;
+    }
+    const extracted = await extractDocument(projectRoot, input, signal);
+    if (!extracted.ok) {
+      errors.push({
+        path: extracted.path,
+        error: extracted.error ?? "Extraction failed",
+      });
+      continue;
+    }
+    sources.push(sourceRecordFromDocument(projectRoot, extracted, usedKeys));
+  }
+
+  mkdirSync(join(projectRoot, ".academic-writer"), { recursive: true });
+  writeFileSync(
+    join(projectRoot, sourcesPath),
+    `${JSON.stringify(sources, null, 2)}\n`,
+    "utf-8",
+  );
+  writeFileSync(
+    join(projectRoot, bibliographyPath),
+    sources.map(sourceBibtex).join("\n"),
+    "utf-8",
+  );
+  return {
+    ok: errors.length === 0,
+    sourceDirectory,
+    sourcesPath,
+    bibliographyPath,
+    count: sources.length,
+    sources,
+    errors,
+  };
+}
+
+export function snapshotCitationAssets(
+  projectRoot: string,
+  article: string,
+): CitationSnapshotResult {
+  const local = citationAssetPaths(article);
+  const pairs = [
+    [".academic-writer/sources.json", local.sources],
+    [".academic-writer/bibliography.bib", local.bibliography],
+  ] as const;
+  const copied: string[] = [];
+  const missing: string[] = [];
+  mkdirSync(join(projectRoot, "articles"), { recursive: true });
+  for (const [from, to] of pairs) {
+    const source = join(projectRoot, from);
+    if (!existsSync(source)) {
+      missing.push(from);
+      continue;
+    }
+    copyFileSync(source, join(projectRoot, to));
+    copied.push(to);
+  }
+  return { ok: missing.length === 0, ...local, copied, missing };
+}
+
+function countWords(text: string): number {
+  const matches = text.trim().match(/[\p{L}\p{N}]+/gu);
+  return matches?.length ?? 0;
+}
+
+function parseMarkdownArticle(
+  markdown: string,
+  targetLanguage?: string,
+  titleOverride?: string,
+): Record<string, unknown> {
+  const lines = markdown.split(/\r?\n/);
+  const titleLine = lines.find((line) => line.startsWith("# "));
+  const title =
+    titleOverride ?? titleLine?.replace(/^#\s+/, "").trim() ?? "Untitled";
+  const thesisLine = lines.find((line) => /^\*[^*].+\*$/.test(line.trim()));
+  const sections: Array<{ title: string; paragraphs: string[] }> = [];
+  let current = { title: "Body", paragraphs: [] as string[] };
+  let buffer: string[] = [];
+  const flush = () => {
+    const paragraph = buffer.join("\n").trim();
+    if (
+      paragraph &&
+      !paragraph.startsWith("#") &&
+      paragraph !== thesisLine?.trim()
+    ) {
+      current.paragraphs.push(paragraph);
+    }
+    buffer = [];
+  };
+  for (const line of lines) {
+    if (line.startsWith("# ")) continue;
+    if (line.startsWith("## ")) {
+      flush();
+      if (current.paragraphs.length > 0 || sections.length > 0)
+        sections.push(current);
+      current = { title: line.replace(/^##\s+/, "").trim(), paragraphs: [] };
+      continue;
+    }
+    if (line.trim() === "") {
+      flush();
+      continue;
+    }
+    buffer.push(line);
+  }
+  flush();
+  if (current.paragraphs.length > 0 || sections.length === 0)
+    sections.push(current);
+  const isRtl = (targetLanguage ?? "Hebrew").toLowerCase().startsWith("he");
+  return {
+    title,
+    thesis: thesisLine?.trim().replace(/^\*|\*$/g, "") ?? null,
+    sections,
+    format: { isRtl },
+    totalWords: countWords(markdown),
+  };
+}
+
+export function assembleDocxJson(
+  projectRoot: string,
+  input: string,
+  output: string,
+  options: {
+    title?: string;
+    targetLanguage?: string;
+    format?: Record<string, unknown>;
+  },
+): DocxAssemblyResult {
+  try {
+    const inputPath = resolveInputPath(projectRoot, input);
+    const markdown = readFileSync(inputPath, "utf-8");
+    const data = parseMarkdownArticle(
+      markdown,
+      options.targetLanguage,
+      options.title,
+    );
+    data.format = {
+      ...(data.format as Record<string, unknown>),
+      ...(options.format ?? {}),
+    };
+    const outputPath = resolveInputPath(projectRoot, output);
+    mkdirSync(resolve(outputPath, ".."), { recursive: true });
+    writeFileSync(outputPath, `${JSON.stringify(data, null, 2)}\n`, "utf-8");
+    return {
+      ok: true,
+      input,
+      output,
+      title: String(data.title),
+      totalWords: Number(data.totalWords),
+      sections: Array.isArray(data.sections) ? data.sections.length : 0,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      input,
+      output,
+      title: "",
+      totalWords: 0,
+      sections: 0,
+      error: message,
+    };
+  }
+}
+
 function commandExists(command: string): boolean {
   for (const dir of (process.env.PATH ?? "").split(":")) {
     if (!dir) continue;
@@ -212,6 +550,8 @@ export function buildHealth(projectRoot: string): HealthStatus {
       tectonic: commandExists("tectonic"),
       zoteroMcp: commandExists("zotero-mcp"),
       notebooklm: commandExists("nlm"),
+      notebooklmMcp: commandExists("notebooklm-mcp"),
+      sefariaMcp: commandExists("sefaria-mcp"),
     },
   };
 }
