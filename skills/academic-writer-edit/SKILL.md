@@ -123,7 +123,7 @@ If the researcher wants tone that differs from their fingerprint (e.g., "make th
    - Logical gaps between sections
 
 2. **Use the `subagent` tool to spawn research subagents in parallel** to find additional evidence. Call the `subagent` tool multiple times in a single response:
-   - If `tools.zotero.enabled`: one subagent for Zotero document reads
+   - If `tools.zotero.enabled`: one subagent for Zotero document reads, passing `tools.zotero.collection` when configured so searches stay in the project collection
 
 3. Draft new evidence integration and re-run citation audit
 

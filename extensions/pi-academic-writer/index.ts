@@ -172,6 +172,16 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       const lastRun = status.runs.last
         ? `${status.runs.last.status}: ${status.runs.last.title ?? status.runs.last.runId}`
         : "none";
+      const zoteroScope = status.tools.zotero?.enabled
+        ? (status.tools.zotero.collection?.name ??
+          status.tools.zotero.collection?.key ??
+          "all library")
+        : "disabled";
+      const notebookScope = status.tools.notebooklm?.enabled
+        ? (status.tools.notebooklm.notebook?.name ??
+          status.tools.notebooklm.notebook?.id ??
+          "all notebooks")
+        : "disabled";
       const text = [
         `Academic Writer status: ${status.ok ? "profile found" : "profile missing"}`,
         `Sources: ${sourceCount}`,
@@ -179,6 +189,8 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         `Past articles: ${status.pastArticles.count}`,
         `Active runs: ${activeRuns}`,
         `Last run: ${lastRun}`,
+        `Zotero scope: ${zoteroScope}`,
+        `NotebookLM scope: ${notebookScope}`,
       ].join("\n");
       return textResult(text, status);
     },

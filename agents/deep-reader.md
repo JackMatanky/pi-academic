@@ -34,8 +34,8 @@ Use it to skip re-querying sources you already mapped, and to recall which query
 
 You will receive:
 - `subject`: The article subject/topic
-- `selectedSourceIds`: List of Zotero item keys (8-character) to focus on
-- `tools`: Enabled tools from the profile
+- `selectedSourceIds`: List of Zotero item keys (8-character) to focus on; caller should already constrain this list to `tools.zotero.collection` when configured
+- `tools`: Enabled tools from the profile, including optional `tools.zotero.collection` / `tools.notebooklm.notebook` scope metadata
 - `targetLanguage`: The article's writing language (e.g., "Hebrew", "English"). The summary output (Organize Results / Output) MUST be written entirely in this language. Author names and foreign-language work titles may remain in their original script, but all prose around them — theme labels, coverage descriptions, tension summaries — is in `targetLanguage`.
 
 ## Your Task

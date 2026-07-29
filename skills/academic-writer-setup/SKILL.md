@@ -197,6 +197,12 @@ If NotebookLM is selected but `notebook_list()` is unavailable:
   ```
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `notebooklm-mcp` block unless the JSON is simple enough to update safely.
 
+If Zotero is enabled and detected, call `zotero_get_collections()` and ask whether to use all library items or one default collection for Academic Writer. If they choose a collection, save `tools.zotero.collection` as `{ "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }`.
+
+If NotebookLM is enabled and detected, call `notebook_list()` and ask whether to use all notebooks or one default notebook for Academic Writer. If they choose one, save `tools.notebooklm.notebook` as `{ "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" }`.
+
+Store only collection/notebook identifiers and display names in the profile. Never store API keys, library credentials, or NotebookLM auth tokens.
+
 ---
 
 ## Phase 3: Style Fingerprint (Optional)
@@ -255,8 +261,8 @@ updatedAt: ISO_TIMESTAMP
 
 ```json
 {
-  "zotero": { "enabled": true, "mode": "local" },
-  "notebooklm": { "enabled": false }
+  "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "optional Zotero collection key", "name": "optional display name" } },
+  "notebooklm": { "enabled": false, "mode": "mcp-config", "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" } }
 }
 ` ` `
 

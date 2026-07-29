@@ -61,7 +61,7 @@ Present the brainstorm:
 
 ## Step 3: Gap Analysis
 
-If Zotero is enabled, scan the researcher's library by calling `zotero_get_recent(limit=100)`.
+If Zotero is enabled, scan `tools.zotero.collection` when configured; otherwise scan the researcher's library by calling `zotero_get_recent(limit=100)` or listing collection items.
 
 For each source, check its metadata against the topic:
 - What has been written about this topic in the researcher's sources?

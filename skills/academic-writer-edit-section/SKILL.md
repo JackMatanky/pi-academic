@@ -82,7 +82,7 @@ Pass as prompt: the section (title, current text, edit instructions, suggested s
 
 If the researcher wants to expand with new evidence, **first use the `subagent` tool to spawn research subagents in parallel** — call the `subagent` tool multiple times in a single response — each call executes independently and pi runs sibling tool calls from one assistant message concurrently by default, matching the existing parallel-subagent pattern with zero behavior change:
 - One subagent for RAG queries on the expansion topic
-- One subagent for Zotero reads for relevant documents
+- One subagent for Zotero reads for relevant documents, scoped to `tools.zotero.collection` when configured
 
 Then feed results to the section-writer.
 

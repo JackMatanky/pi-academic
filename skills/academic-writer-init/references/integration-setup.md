@@ -75,4 +75,6 @@ Wait for the researcher's reply and match it against the option number, label te
 **Rules:**
 - Pre-check options that were detected.
 - If a tool is not detected and the researcher selects it, show the setup URL and walk them through installation/configuration. For Zotero and NotebookLM, installation/authentication and MCP registration (`.mcp.json`/global MCP config with `toolPrefix: "none"` + `directTools: true`) are separate checks; complete both before marking either detected.
-- Store final selection as the `tools` object (used in Phase 4). Store only enabled/disabled intent and mode labels — never credentials.
+- For enabled Zotero, call `zotero_get_collections()` and ask whether to use **all library items** or one default collection. If they choose a collection, save `tools.zotero.collection` as `{ "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }`.
+- For enabled NotebookLM, call `notebook_list()` and ask whether to use **all notebooks** or one default notebook. If they choose one, save `tools.notebooklm.notebook` as `{ "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" }`.
+- Store final selection as the `tools` object (used in Phase 4). Store only enabled/disabled intent, mode labels, and optional collection/notebook identifiers — never credentials.

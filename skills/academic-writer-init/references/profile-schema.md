@@ -33,8 +33,16 @@ updatedAt: ISO_TIMESTAMP
 
 ```json
 {
-  "zotero": { "enabled": true, "mode": "local" },
-  "notebooklm": { "enabled": false }
+  "zotero": {
+    "enabled": true,
+    "mode": "mcp-config",
+    "collection": { "key": "optional Zotero collection key", "name": "optional display name" }
+  },
+  "notebooklm": {
+    "enabled": false,
+    "mode": "mcp-config",
+    "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" }
+  }
 }
 ```
 

@@ -42,7 +42,8 @@ This walks you through:
 
 | Tool | What it does |
 |------|-------------|
-| **Zotero** | Reference manager — your source PDFs and research materials |
+| **Zotero** | Reference manager — your source PDFs and research materials; can be scoped to one collection |
+| **NotebookLM** | AI source Q&A / audio / study guides; can be scoped to one notebook |
 
 ---
 
@@ -166,7 +167,7 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 
 | Path | Purpose |
 |------|---------|
-| `.academic-writer/profile.md` | Your researcher profile (field, style, tools, sources) |
+| `.academic-writer/profile.md` | Your researcher profile (field, style, tools, optional Zotero collection / NotebookLM notebook, sources) |
 | `.academic-writer/bibliography.bib` | BibTeX export of your Zotero sources for citeproc articles |
 | `past-articles/` | Your published papers for style analysis (never uploaded) |
 | `agents/` | AI agent prompts (deep-reader, architect, section-writer, auditor, synthesizer) |

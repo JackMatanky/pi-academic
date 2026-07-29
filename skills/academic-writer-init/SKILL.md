@@ -323,11 +323,12 @@ The user is not required to run Stage 2. They can start writing immediately with
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "Let's index your research library. Have you added sources to Zotero yet?"
-> 1. **Yes, index my sources now** — I'll enrich and index everything in your Zotero library.
+> 1. **Yes, index my sources now** — I'll enrich and index the configured Zotero collection, or the whole library if no collection was selected.
 >    ```
 >    Source Indexing
 >    ───────────────
->    → Lists all items in your library
+>    → Uses tools.zotero.collection when set
+>    → Otherwise lists all items in your library
 >    → Runs zotero_get_item_metadata(format="json") on each
 >       (extracts title, author, TOC)
 >    → Saves minimal metadata to profile
@@ -342,9 +343,9 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
-If **"Yes"**: list and enrich all items:
+If **"Yes"**: list and enrich the configured scope:
 
-Call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items (or `zotero_get_recent()` for a flat recent-items view).
+If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` and enrich only those items. Otherwise call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items (or `zotero_get_recent()` for a flat recent-items view).
 
 For each item ID, call `zotero_get_item_metadata(format="json")`.
 
@@ -378,8 +379,8 @@ updatedAt: ISO_TIMESTAMP
 
 ```json
 {
-  "zotero": { "enabled": true, "mode": "local" },
-  "notebooklm": { "enabled": false }
+  "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "optional Zotero collection key", "name": "optional display name" } },
+  "notebooklm": { "enabled": false, "mode": "mcp-config", "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" } }
 }
 ` ` `
 

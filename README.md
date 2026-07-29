@@ -129,6 +129,8 @@ This package doesn't hardcode a specific model provider for prose drafting — p
 
 **Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and `.academic-writer/bibliography.bib` supplies the Zotero metadata. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
 
+**Scoped libraries:** During setup or `/skill:academic-writer-update-tools`, you can set a default Zotero collection and/or NotebookLM notebook for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
+
 **MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. Local Zotero and NotebookLM setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
 ```json

@@ -90,6 +90,20 @@ function buildDashboardLines(
   lines.push(
     `║  Tools: ${(tools.length > 0 ? tools.join(", ") : "None").substring(0, 38).padEnd(38)}║`,
   );
+  if (profile.tools?.zotero?.enabled && profile.tools.zotero.collection) {
+    const scope =
+      profile.tools.zotero.collection.name ??
+      profile.tools.zotero.collection.key ??
+      "configured";
+    lines.push(`║  Zotero collection: ${scope.substring(0, 29).padEnd(29)}║`);
+  }
+  if (profile.tools?.notebooklm?.enabled && profile.tools.notebooklm.notebook) {
+    const scope =
+      profile.tools.notebooklm.notebook.name ??
+      profile.tools.notebooklm.notebook.id ??
+      "configured";
+    lines.push(`║  NotebookLM: ${scope.substring(0, 36).padEnd(36)}║`);
+  }
 
   const runs = runSummary(projectDir);
   lines.push(`║  Active runs: ${String(runs.active).padEnd(32)}║`);

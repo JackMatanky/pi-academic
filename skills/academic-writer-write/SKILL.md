@@ -45,10 +45,10 @@ Pass the full `styleFingerprint` object to every agent that writes or reviews te
 
 ### Tool Awareness
 
-Read the `tools` object from the profile. Throughout this workflow, **only use tools that are enabled**:
+Read the `tools` object from the profile. Throughout this workflow, **only use tools that are enabled**, and honor any configured scope:
 
-- **Zotero** (`tools.zotero.enabled`) — If disabled, skip Zotero tool calls. Source listing/selection steps should use any available sources from the profile's `sources` array instead.
-- **NotebookLM** (`tools.notebooklm.enabled`) — If disabled, skip notebook queries and AI summaries. NotebookLM is supplementary — it does not replace Vectorless/Zotero for citation verification.
+- **Zotero** (`tools.zotero.enabled`) — If `tools.zotero.collection.key` is set, source listing/selection should start from that collection; otherwise use the library. If disabled, skip Zotero tool calls and use any available sources from the profile's `sources` array instead.
+- **NotebookLM** (`tools.notebooklm.enabled`) — If `tools.notebooklm.notebook.id` is set, query that notebook first; otherwise list/query relevant notebooks. NotebookLM is supplementary — it does not replace Vectorless/Zotero for citation verification.
 
 If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
 
@@ -114,9 +114,9 @@ Store the draft text as `userDraftText` regardless of which option is chosen. If
 ### Step 2: Source Selection
 
 
-**If Zotero is enabled**, enrich all items then list them:
+**If Zotero is enabled**, enrich the configured collection, or all items if no collection is set, then list them:
 
-Call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items.
+If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)`. Otherwise call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items.
 
 **If Zotero is NOT enabled**, use the `sources` array from the profile (indexed during init) to present available sources. If the sources array is empty, ask the researcher to describe their sources manually.
 
@@ -133,9 +133,9 @@ After researcher confirms selection, log:
 
 Before spawning the deep-reader, directly query NotebookLM for the article subject using MCP tools:
 
-1. **List available notebooks** using the `notebook_list` MCP tool (no parameters needed).
+1. **Choose notebook scope**: if `tools.notebooklm.notebook.id` is set, use that notebook. Otherwise list available notebooks with `notebook_list` and choose relevant notebooks.
 
-2. **Query each relevant notebook** for the article subject using the `notebook_query` MCP tool:
+2. **Query the scoped notebook(s)** for the article subject using the `notebook_query` MCP tool:
    - Query: "What key arguments, evidence, and sources do you have about [SUBJECT]?"
 
 3. **Show a brief summary** to the researcher:

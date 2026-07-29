@@ -12,11 +12,20 @@ export interface ProfileData {
   analyzedArticles?: string[];
 }
 
+/** Optional project-specific integration scope saved in the profile. */
+export interface IntegrationScope {
+  id?: string;
+  key?: string;
+  name?: string;
+}
+
 /** User-configured integration metadata from the profile. */
 export interface ToolConfig {
   enabled: boolean;
   path?: string;
   mode?: string;
+  collection?: IntegrationScope;
+  notebook?: IntegrationScope;
 }
 
 /** Structured author voice profile mined from past articles. */

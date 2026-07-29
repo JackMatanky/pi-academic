@@ -466,6 +466,8 @@ class TestMcpWiring(unittest.TestCase):
         self.assertIn("notebook_list", docs)
         self.assertIn("notebooklm-mcp", docs)
         self.assertIn(".mcp.json", docs)
+        self.assertIn("tools.zotero.collection", docs)
+        self.assertIn("tools.notebooklm.notebook", docs)
 
     def test_no_bundled_mcp_server_dir(self):
         # A bundled second-model-provider MCP server (the original design's

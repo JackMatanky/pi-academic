@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { PACKAGE_ROOT } from "../lib/paths.js";
+import { loadProfile } from "../lib/profile.js";
 import { summarizeRuns, type RunSummary } from "../lib/runs.js";
+import type { ToolConfig } from "../lib/types.js";
 
 /** Existence metadata for project-local Academic Writer files. */
 interface FileState {
@@ -24,6 +26,7 @@ export interface AcademicWriterStatus {
   articles: DirectoryState;
   pastArticles: DirectoryState;
   runs: RunSummary;
+  tools: Record<string, ToolConfig>;
   agents: string[];
 }
 
@@ -85,6 +88,7 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
   const agents = readdirSync(agentsDir)
     .filter((entry) => entry.endsWith(".md"))
     .sort();
+  const tools = loadProfile(projectRoot)?.tools ?? {};
   return {
     ok: profile.exists,
     profile,
@@ -100,6 +104,7 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
       (entry) => !entry.startsWith("."),
     ),
     runs: summarizeRuns(projectRoot),
+    tools,
     agents,
   };
 }

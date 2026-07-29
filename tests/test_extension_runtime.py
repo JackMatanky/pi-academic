@@ -138,7 +138,31 @@ class TestExtensionRuntime(unittest.TestCase):
             (helper / "runs").mkdir(parents=True)
             (root / "articles").mkdir()
             (helper / "profile.md").write_text(
-                "---\nfieldOfStudy: History\n---\n", encoding="utf-8"
+                textwrap.dedent(
+                    """
+                    ---
+                    fieldOfStudy: History
+                    ---
+
+                    ## Tools
+
+                    ```json
+                    {
+                      "zotero": {
+                        "enabled": true,
+                        "mode": "mcp-config",
+                        "collection": { "key": "COLL1234", "name": "Dissertation" }
+                      },
+                      "notebooklm": {
+                        "enabled": true,
+                        "mode": "mcp-config",
+                        "notebook": { "id": "nb-1", "name": "Chapter Notebook" }
+                      }
+                    }
+                    ```
+                    """
+                ),
+                encoding="utf-8",
             )
             (helper / "thresholds.json").write_text(
                 '{"sentinel": true}\n', encoding="utf-8"
@@ -171,6 +195,16 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertEqual(data["status"]["details"]["articles"]["count"], 1)
         self.assertEqual(data["status"]["details"]["runs"]["active"][0]["runId"], "r1")
         self.assertIn("auditor.md", data["status"]["details"]["agents"])
+        self.assertEqual(
+            data["status"]["details"]["tools"]["zotero"]["collection"]["key"],
+            "COLL1234",
+        )
+        self.assertIn(
+            "Zotero scope: Dissertation", data["status"]["content"][0]["text"]
+        )
+        self.assertIn(
+            "NotebookLM scope: Chapter Notebook", data["status"]["content"][0]["text"]
+        )
         self.assertFalse(data["migration"]["details"]["migrated"])
         self.assertEqual(
             data["migration"]["details"]["reason"], "profile already exists"

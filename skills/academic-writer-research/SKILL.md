@@ -48,9 +48,9 @@ Based on the question and enabled tools, spawn ALL applicable agents **at the sa
 
 1. **RAG subagent**: Pass as prompt the question, questionType, sourceIds. This subagent runs multi-mode RAG queries (mix + local + bypass as needed).
 
-2. **Zotero subagent** (if `tools.zotero.enabled`): Pass as prompt the question, questionType, sourceIds. This subagent searches and reads Zotero documents directly.
+2. **Zotero subagent** (if `tools.zotero.enabled`): Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. This subagent searches/reads Zotero documents directly, constrained to that collection when present.
 
-3. **NotebookLM subagent** (if `tools.notebooklm.enabled`): Query existing notebooks or create a temporary research notebook. Use the `notebook_query` MCP tool for AI-powered Q&A against indexed sources. NotebookLM excels at synthesizing across multiple sources and identifying connections that keyword search may miss.
+3. **NotebookLM subagent** (if `tools.notebooklm.enabled`): Pass `tools.notebooklm.notebook` if configured. Query that notebook first; otherwise query existing notebooks or create a temporary research notebook. Use the `notebook_query` MCP tool for AI-powered Q&A against indexed sources. NotebookLM excels at synthesizing across multiple sources and identifying connections that keyword search may miss.
 
 Each subagent runs independently and returns its findings.
 
@@ -76,7 +76,7 @@ The RAG subagent should:
 
 The Zotero subagent should:
 
-1. **Search** across all sources: `zotero_search_items(query="QUERY")` (or `zotero_semantic_search` for topic queries)
+1. **Search** the configured Zotero collection if `tools.zotero.collection.key` is present; otherwise search across all sources: `zotero_search_items(query="QUERY")` (or `zotero_semantic_search` for topic queries). If the MCP search tool cannot accept a collection filter, list collection items first and only read matching item keys from that list.
 2. **Read relevant documents** for full passages: `zotero_get_item_fulltext(item_key="DOC_ID")`
 3. **Verify page numbers** when exact citations are needed: `zotero_read_pdf_pages(item_key="DOC_ID", start_page=..., end_page=...)`
 4. **Return full text passages** with document ID, title, and page numbers
@@ -85,7 +85,7 @@ The Zotero subagent should:
 
 The NotebookLM subagent should:
 
-1. **List existing notebooks**: Use `notebook_list` MCP tool to find relevant notebooks
+1. **Choose notebook scope**: use `tools.notebooklm.notebook` when present; otherwise use `notebook_list` to find relevant notebooks.
 2. **Query notebooks**: Use `notebook_query` MCP tool with the research question for AI-powered Q&A
 3. **Cross-reference**: NotebookLM answers are AI-synthesized — always cross-reference key claims against Zotero/RAG results for citation accuracy
 4. **Return findings** with notebook name and any source references NotebookLM provides

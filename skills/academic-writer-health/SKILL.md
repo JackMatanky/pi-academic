@@ -43,6 +43,7 @@ Report:
 - If project `.mcp.json` has a `zotero` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers.zotero.directTools` is `true`? ✓/✗
 - MCP server connected? ✓/✗
 - Number of items in library
+- Configured collection scope: `tools.zotero.collection.name/key` or "all library"
 - If error: show the error message
 
 If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend configuring the standard MCP `zotero` server. For local Zotero, the safe project-local `.mcp.json` block is:
@@ -78,6 +79,7 @@ Report:
 - If project `.mcp.json` has a `notebooklm-mcp` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers["notebooklm-mcp"].directTools` is `true`? ✓/✗
 - Authenticated? ✓/✗
 - MCP can list notebooks? ✓/✗ (and count)
+- Configured notebook scope: `tools.notebooklm.notebook.name/id` or "all notebooks"
 - If error: show the error message
 
 **If CLI not installed**, show this setup guide:
