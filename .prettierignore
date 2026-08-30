@@ -3,6 +3,7 @@ extensions/node_modules/
 .venv/
 .ruff_cache/
 .pytest_cache/
+.rumdl_cache/
 .aw-runtime-*/
 .academic-writer/
 .voice/

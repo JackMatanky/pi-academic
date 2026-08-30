@@ -660,7 +660,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
               : ".academic-writer/bibliography.bib";
         for (const format of formats) {
           const output = exportOutputPath(article, format);
-          const args = [article];
+          const args = ["--from", "pandoc-markdown", article];
           if (citeproc) {
             args.push("--citeproc", "--fail-if-warnings");
             args.push(`--bibliography=${bibliography}`);

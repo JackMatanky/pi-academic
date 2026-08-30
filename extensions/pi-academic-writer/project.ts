@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import {
   constants,
   accessSync,
@@ -176,6 +176,7 @@ export interface DocxAssemblyResult {
  */
 export interface HealthStatus extends AcademicWriterStatus {
   commands: Record<string, boolean>;
+  pandocVersion: string | null;
 }
 
 /**
@@ -829,5 +830,19 @@ export function buildHealth(projectRoot: string): HealthStatus {
       notebooklmMcp: commandExists("notebooklm-mcp"),
       sefariaMcp: commandExists("sefaria-mcp"),
     },
+    pandocVersion: (() => {
+      if (!commandExists("pandoc")) return null;
+      try {
+        const out = execFileSync("pandoc", ["--version"], {
+          encoding: "utf-8",
+          timeout: 5_000,
+        });
+        const first = out.split("\n")[0] ?? "";
+        const m = first.match(/pandoc\s+([\d.]+)/);
+        return m?.[1] ?? null;
+      } catch {
+        return null;
+      }
+    })(),
   };
 }

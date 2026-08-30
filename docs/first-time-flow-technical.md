@@ -250,6 +250,7 @@ Cognetivy (cognetivy CLI) ──→ ALL steps log events ───────�
 ```
 
 **Parallelism rules:**
+
 - Section-writers: ALL spawn in a single response (parallel)
 - Auditors: One per paragraph within each section-writer (sequential)
 - Everything else: Sequential (each waits for previous to complete)
@@ -304,14 +305,14 @@ Cognetivy (cognetivy CLI) ──→ ALL steps log events ───────�
 
 ## Error States & Recovery
 
-| State | Cause | Recovery |
-|-------|-------|----------|
-| No profile | Never ran setup | Run `npx academic-writer-setup` then `/academic-writer-init` |
-| Empty past-articles/ | No papers provided | Add 5-10 PDFs/DOCX, re-run init |
-| Zotero not authenticated | CLI installed but not logged in | `ck auth logout && ck auth login` |
-| Cognetivy not initialized | CLI installed but no workspace | `timeout 5 cognetivy init --workspace-only` in project dir |
-| Citation audit fails 3x | Source doesn't contain claimed info | Paragraph flagged for researcher review |
-| Style fingerprint is flat/old | Old init format | Re-run `/academic-writer-init` |
+| State                         | Cause                               | Recovery                                                     |
+| ----------------------------- | ----------------------------------- | ------------------------------------------------------------ |
+| No profile                    | Never ran setup                     | Run `npx academic-writer-setup` then `/academic-writer-init` |
+| Empty past-articles/          | No papers provided                  | Add 5-10 PDFs/DOCX, re-run init                              |
+| Zotero not authenticated      | CLI installed but not logged in     | `ck auth logout && ck auth login`                            |
+| Cognetivy not initialized     | CLI installed but no workspace      | `timeout 5 cognetivy init --workspace-only` in project dir   |
+| Citation audit fails 3x       | Source doesn't contain claimed info | Paragraph flagged for researcher review                      |
+| Style fingerprint is flat/old | Old init format                     | Re-run `/academic-writer-init`                               |
 
 ---
 
@@ -338,5 +339,5 @@ Cognetivy (cognetivy CLI) ──→ ALL steps log events ───────�
 ```
 
 All agents use YAML frontmatter (`name`, `description`, `tools`, `model: opus`).
-All skills use YAML frontmatter (`name`, `description`, `user-invocable: true`).
+All skills use YAML frontmatter (`name`, `description`, `allowed-tools`, `metadata`).
 Skills invoke agents via explicit `Agent tool` language — not prose-style references.
