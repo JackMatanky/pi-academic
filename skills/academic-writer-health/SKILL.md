@@ -164,6 +164,24 @@ Report:
 
 ---
 
+## 7b. Markdown Lint (rumdl) — optional
+
+Use `academic_writer_health` command flags for rumdl availability. This check is informational — rumdl is optional and never blocks export or writing.
+
+Report:
+
+- rumdl installed? ✓/✗ (optional — powers pre-export markdown lint for `articles/*.md`)
+- `.rumdl.toml` config present? ✓/✗
+
+**If rumdl is not installed**, show this setup guide (only if the researcher asks, or in verbose mode):
+
+> **How to set up rumdl (optional):**
+>
+> 1. Install: `cargo install rumdl` or see https://rumdl.dev/installation/
+> 2. Re-run `/skill:academic-writer-health` to verify.
+
+---
+
 ## 8. Agent Files
 
 Use `academic_writer_status` details for packaged agent filenames. Call `academic_writer_list_agents` only if you need the plain-text list.
@@ -186,6 +204,7 @@ Show a clean summary table:
 > | NotebookLM        | ✓ Connected / ✗ Not found / — Disabled     | [N] notebooks                                                                          |
 > | Sefaria           | ✓ Connected / ✗ Tools missing / — Disabled | Text & search tools                                                                    |
 > | Pandoc / Export   | ✓ Ready / ⚠ PDF unavailable / ✗ Not found  | Pandoc: [status], XeTeX: [status], Tectonic: [status], CSL: [resolved/missing/literal] |
+> | Rumdl / Lint      | ✓ Installed / — Not found (optional)       | `.rumdl.toml`: ✓/✗                                                                     |
 > | Agent Files       | ✓ All present / ✗ Missing [list]           | 10/10                                                                                  |
 >
 > **Overall: [N]/[total] checks passed**

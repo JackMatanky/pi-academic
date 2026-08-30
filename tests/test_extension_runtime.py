@@ -448,6 +448,39 @@ class TestExtensionRuntime(unittest.TestCase):
         )
         self.assertEqual(data["profile"]["details"]["profile"]["citationStyle"], "apa")
 
+    def test_health_includes_rumdl_field(self):
+        """Assert health tool returns rumdl detection field.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / ".academic-writer"
+            profile_dir.mkdir()
+            (root / "articles").mkdir()
+            (root / "articles" / "ok.md").write_text(
+                "Text [@smith2020].", encoding="utf-8"
+            )
+            (profile_dir / "profile.json").write_text(
+                json.dumps(
+                    {
+                        "fieldOfStudy": "Literature",
+                        "citationStyle": "apa",
+                        "abstractLanguages": ["English"],
+                        "tools": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            data = self.run_tools(root)
+
+        health = data["health"]["details"]
+        self.assertIn("rumdl", health)
+        self.assertIsInstance(health["rumdl"], bool)
+
 
 if __name__ == "__main__":
     unittest.main()

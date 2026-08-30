@@ -1,0 +1,16 @@
+# academic-writer: pandoc-flavored markdown lint config
+# Only articles/ contains pandoc-processed markdown.
+# Docs: https://rumdl.dev/flavors/
+
+# Lint only articles — the only pandoc target in this project
+include = ["articles/**/*.md"]
+
+[per-file-flavor]
+"articles/*.md" = "pandoc"
+
+[global]
+# Academic articles use long paragraphs — line-length is irrelevant
+MD013 = false
+
+# Pandoc fenced divs (:::) trigger this rule incorrectly
+MD032 = false

@@ -2,12 +2,12 @@
 name: academic-writer-export
 description: "Convert a finished article to additional document formats (PDF, HTML, ODT, LaTeX, EPUB) via pandoc. Use when the researcher wants to convert a finished article to PDF, HTML, ODT, LaTeX, or EPUB — after /skill:academic-writer-write or /skill:academic-writer-edit has produced articles/<slug>.md."
 allowed-tools: bash read write find academic_writer_read_resource academic_writer_get_profile academic_writer_health academic_writer_list_project_files academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article
-metadata: {author: "Yotam Fromm", version: "0.2.24"}
+metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
 # Academic Writer — Export
 
-Convert an already-written `articles/<slug>.md` into additional formats using [pandoc](https://pandoc.org). This skill never produces `.docx` — that format is owned by the write/edit pipeline's own Step 9b (`generate-docx.py` for `inline-parenthetical` articles, or a direct `pandoc --citeproc` docx run for citeproc-mode articles). This skill is for every *other* format the researcher wants to share or archive the piece in.
+Convert an already-written `articles/<slug>.md` into additional formats using [pandoc](https://pandoc.org). This skill never produces `.docx` — that format is owned by the write/edit pipeline's own Step 9b (`generate-docx.py` for `inline-parenthetical` articles, or a direct `pandoc --citeproc` docx run for citeproc-mode articles). This skill is for every _other_ format the researcher wants to share or archive the piece in.
 
 ---
 
@@ -45,6 +45,7 @@ Resolve `SLUG` and `MD_PATH` from the chosen file (`articles/<slug>.md` → `SLU
 ## 3. Ask which format(s)
 
 Ask (multi-select):
+
 > "Which format(s) do you want? PDF, HTML, ODT, LaTeX, EPUB — pick one or more."
 
 ---
@@ -52,6 +53,7 @@ Ask (multi-select):
 ## 4. Check PDF engine (only needed for PDF)
 
 If PDF was requested, use `academic_writer_health` command flags to select `PDF_ENGINE`:
+
 - If `commands.xelatex` is true, use `PDF_ENGINE=xelatex` to preserve the existing Hebrew-safe default.
 - Else if `commands.tectonic` is true, use `PDF_ENGINE=tectonic`.
 - If both are installed and the researcher explicitly asked for Tectonic, use `PDF_ENGINE=tectonic`.
@@ -59,6 +61,7 @@ If PDF was requested, use `academic_writer_health` command flags to select `PDF_
 If both engines are missing, skip the PDF conversion and tell the researcher clearly:
 
 > "PDF export needs a Unicode-capable TeX engine: either XeTeX (`xelatex`) or Tectonic (`tectonic`). The default `pdflatex` engine can't render Hebrew script. I'll export your other requested format(s) now; to enable PDF:
+>
 > - **Tectonic**: install from https://tectonic-typesetting.github.io/ or your package manager (for example `brew install tectonic`)
 > - **XeLaTeX/macOS**: `brew install --cask basictex && sudo tlmgr install collection-xetex`
 > - **other platforms**: install Tectonic or any TeX distribution from https://pandoc.org/installing.html, then ensure `tectonic` or `xelatex` is on your `PATH`."
@@ -67,11 +70,24 @@ Proceed with the other requested formats regardless (HTML/ODT/LaTeX/EPUB have no
 
 ---
 
+## 4b. Markdown lint (optional)
+
+If rumdl is installed (`rumdl` is true from health), run:
+
+    rumdl check MD_PATH --fail-on warning --no-cache 2>&1
+
+- **Exit 0**: no issues — proceed.
+- **Exit non-zero**: report the lint warnings but **do not block export**. Tell the researcher:
+  > "rumdl found markdown issue(s) in your article. The export will proceed, but you may want to fix these first: [output]"
+
+---
+
 ## 4a. Deterministic citation audit and conversion
 
 If the active `citationStyle` is citeproc mode (anything except `inline-parenthetical`), resolve the CSL first with `academic_writer_resolve_csl`. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`; use `download: true`.
 
 Call `academic_writer_export_article` with:
+
 - `article: MD_PATH`
 - `citationStyle: citationStyle` from `academic_writer_get_profile` (`inline-parenthetical` if unavailable)
 - `formats: requested formats`, excluding PDF if no supported engine is installed
@@ -87,6 +103,7 @@ Call `academic_writer_export_article` with:
 List exactly which files were written:
 
 > **Export complete.** Files written to `articles/`:
+>
 > - `articles/<slug>.html`
 > - `articles/<slug>.odt`
 > - `articles/<slug>.epub`

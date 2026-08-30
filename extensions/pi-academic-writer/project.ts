@@ -177,6 +177,7 @@ export interface DocxAssemblyResult {
 export interface HealthStatus extends AcademicWriterStatus {
   commands: Record<string, boolean>;
   pandocVersion: string | null;
+  rumdl: boolean;
 }
 
 /**
@@ -830,6 +831,7 @@ export function buildHealth(projectRoot: string): HealthStatus {
       notebooklmMcp: commandExists("notebooklm-mcp"),
       sefariaMcp: commandExists("sefaria-mcp"),
     },
+    rumdl: commandExists("rumdl"),
     pandocVersion: (() => {
       if (!commandExists("pandoc")) return null;
       try {
