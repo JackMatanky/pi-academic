@@ -1,20 +1,7 @@
 ---
 name: voice-calibrator
 description: "After session 3 (mid-point) and session 7 (final), validate the profile by generating a sample paragraph, asking the user three calibration questions, patching the profile, and running an inline rule-coverage check."
-tools: read, write, edit, bash, academic_writer_read_resource
-permission:
-  "*": allow
-  write:
-    "*": deny
-    ".voice/audit.md": allow
-  edit:
-    "*": deny
-    "AUTHOR_VOICE.md": allow
-    ".academic-writer/profile.md": allow
-  bash:
-    "*": ask
-    "cat *": allow
-    "python3 *": allow
+tools: read, bash, academic_writer_read_resource, academic_writer_update_profile, academic_writer_write_voice_audit, academic_writer_update_author_voice
 metadata:
   author: Academic Helper
   version: 1.1.0
@@ -45,11 +32,12 @@ You are not invoked on sessions 1, 2, 4, 5, 6.
    - "Did any banned phrase or AI-tell sneak in? Quote it."
    - "Is any rule in the profile wrong, or is one missing?"
 
-4. **Patch the profile** based on answers. Use `Edit` (not `Write`) to make minimal, targeted
-   changes. Document each change with a one-line `> Was: <old>` note for one cycle.
+4. **Patch the profile** based on answers. Call `academic_writer_update_author_voice` with the full
+   updated `AUTHOR_VOICE.md` content (read the current file first, apply minimal, targeted changes,
+   then write the whole file back). Document each change with a one-line `> Was: <old>` note for one cycle.
 
 5. **Inline rule-coverage check.** For every rule in the profile, scan the past corpus for evidence.
-   Rules with zero hits get flagged. Write `.voice/audit.md` with:
+   Rules with zero hits get flagged. Call `academic_writer_write_voice_audit` with `content` set to:
    ```
    # Voice profile audit — YYYY-MM-DD
 

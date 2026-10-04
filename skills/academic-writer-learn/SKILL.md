@@ -37,7 +37,7 @@ If new files found, show them:
 
 ## Step 2: Spawn Style Miner
 
-**Use the `subagent` tool to spawn the `voice-miner` subagent.** Pass:
+**Use your subagent-dispatch tool to spawn the `voice-miner` subagent.** Pass:
 - List of new article filenames
 - Current `styleFingerprint` from the profile
 - `targetLanguage`

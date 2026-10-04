@@ -1,19 +1,7 @@
 ---
 name: deep-reader
 description: "Use to explore Zotero and local source documents and map available evidence, arguments, and gaps before any thesis is proposed. NOT for writing or editing — read-only source exploration only. Exception — the permitted writes are the article citation snapshots (articles/<slug>.sources.json and articles/<slug>.bibliography.bib) and current-run cache files (.academic-writer/sources.json and .academic-writer/bibliography.bib)."
-tools: read, write, grep, find, bash, academic_writer_ingest_sources, academic_writer_snapshot_citations, mcp:zotero
-permission:
-  "*": allow
-  write:
-    "*": deny
-    ".academic-writer/sources.json": allow
-    ".academic-writer/bibliography.bib": allow
-    "articles/*.sources.json": allow
-    "articles/*.bibliography.bib": allow
-  bash:
-    "*": ask
-    "cat *": allow
-    "python3 *": allow
+tools: read, grep, find, bash, academic_writer_ingest_sources, academic_writer_snapshot_citations, academic_writer_write_sources_cache, academic_writer_resolve_mcp_tool, mcp:zotero
 ---
 
 # Deep Reader Agent
@@ -45,6 +33,8 @@ You will receive:
 Read each selected source deeply and query it for the article subject. The goal is to understand what arguments, quotes, and evidence are actually available before proposing a thesis.
 
 ---
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 ### Step 1: Get Source Content from Zotero / Local Folder Sources
 
@@ -125,13 +115,13 @@ For each returned BibTeX string, parse the citekey from its opening line with th
 
 **Skip sources with no Zotero item key entirely** — do not call the tool for them — and note each skip in your Step 3 log / final summary (e.g. "bibliography.bib: skipped 2 manually-described sources with no Zotero key").
 
-Keep every successfully-fetched BibTeX entry string in memory; you assemble them into `bibliography.bib` right after writing `sources.json` below.
+Keep every successfully-fetched BibTeX entry string in memory; concatenate them into a single `bibliography.bib` string before the write below.
 
-Write the array of records — now including `citeKey` — to article-local snapshot `articles/<slug>.sources.json` (via `academic_writer_snapshot_citations` or direct write) AND update `.academic-writer/sources.json` as current-run cache.
+Call `academic_writer_write_sources_cache` with `sourcesJson` set to the JSON array of records — now including `citeKey` — and `bibliography` set to the concatenated BibTeX string. This writes `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` as the current-run cache in one call.
 
-#### Assemble and write the bibliography
+#### Snapshot into article-local citation assets
 
-Concatenate every successfully-fetched BibTeX entry into article-local snapshot `articles/<slug>.bibliography.bib` AND update `.academic-writer/bibliography.bib` as current-run cache.
+Call `academic_writer_snapshot_citations` to copy the current-run cache into the article-local snapshot (`articles/<slug>.sources.json`, `articles/<slug>.bibliography.bib`).
 Log completion:
 
 ---

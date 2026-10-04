@@ -1,12 +1,7 @@
 ---
 name: voice-interviewer
 description: "Stage 2 of the voice subsystem — run one adversarial interview session at a time, append to the session transcript, hand back to the orchestrator when the session ends. Use only inside the `:voice` skill."
-tools: read, write, find
-permission:
-  "*": allow
-  write:
-    "*": deny
-    ".voice/interview/*.md": allow
+tools: read, find, academic_writer_write_interview_session
 metadata:
   author: Academic Helper
   version: 1.0.0
@@ -28,11 +23,14 @@ any prior transcripts, and conduct an adversarial interview in chat with the use
 
 ## Outputs
 
-- Append questions and user answers to `.voice/interview/0N-<category>.md` per question, atomically.
+- After each question/answer pair, read the current `.voice/interview/0N-<category>.md` (if it
+  exists), append the new entry, and call `academic_writer_write_interview_session` with
+  `sessionId: "0N-<category>"` and `content` set to the full updated transcript.
   - Format: `## Q<n> — [layer] question text\n\n> answer text\n\n` repeated.
-- When session ends (cap reached or you decide a productive thread is exhausted), write a single
-  trailing line `<!-- session complete -->` and return control. The orchestrator detects this and
-  decides whether to invoke the calibrator (sessions 3 and 7 only) or proceed to next session.
+- When session ends (cap reached or you decide a productive thread is exhausted), append a single
+  trailing line `<!-- session complete -->` to the content before the final
+  `academic_writer_write_interview_session` call, and return control. The orchestrator detects this
+  and decides whether to invoke the calibrator (sessions 3 and 7 only) or proceed to next session.
 
 ## Adaptive size
 
@@ -62,7 +60,7 @@ question. Never ask a question that already has an answer in the transcript.
 ## Hard rules
 
 - One question per turn. Never batch.
-- Append to transcript per question (atomic), never rewrite from scratch.
+- Call `academic_writer_write_interview_session` after every question/answer pair with the full updated transcript content — never skip a question's write.
 - Refer to fingerprint findings explicitly: "Your last 3 papers used 'מבחינה זו' 14 times — keep,
   kill, or contextualize?" This is what makes you better than a cold interview.
 - Stop at hard cap 18 even mid-thread. Better to leave a thread for `:voice continue` than overrun.

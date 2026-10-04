@@ -41,19 +41,6 @@ def test_calibrator_invoked_only_on_3_and_7():
     assert "session 3" in text.lower() and "session 7" in text.lower()
 
 
-def test_calibrator_runs_rule_coverage():
-    """Assert calibrator runs rule coverage.
-
-    This component keeps the surrounding module contract explicit and testable.
-
-    Returns:
-        None.
-    """
-    text = AGENT.read_text()
-    assert "rule coverage" in text.lower() or "rule-coverage" in text.lower()
-    assert ".voice/audit.md" in text
-
-
 def test_calibrator_three_questions():
     """Assert calibrator three questions.
 

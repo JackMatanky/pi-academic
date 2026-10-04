@@ -15,11 +15,15 @@ import {
   articlePaths,
   assembleDocxJson,
   buildHealth,
+  candidateMcpToolNames,
   citationAssetPaths,
   extractDocument,
   ingestSources,
   listProjectFiles,
   snapshotCitationAssets,
+  writeEvidenceOwnership,
+  writeProjectTextFile,
+  writeSourcesCache,
 } from "./project.js";
 import { buildStatus } from "./status.js";
 
@@ -97,6 +101,23 @@ function jsonObject(value: string): Record<string, unknown> | null {
       !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parses a JSON array string, rejecting objects and primitive values.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw value to parse or normalize.
+ * @returns The typed result described by this helper contract.
+ */
+function jsonArray(value: string): unknown[] | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -819,6 +840,186 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       const original = String(params.text ?? "");
       const fixed = fixTypography(original);
       return textResult(fixed, { ok: true, changed: fixed !== original });
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_resolve_mcp_tool",
+    label: "Academic Writer Resolve MCP Tool",
+    description:
+      "Resolve the live callable name for a bare MCP tool (e.g. zotero_get_item_fulltext, notebook_list, get_text) across harnesses. Call once per logical tool name per agent run, cache the returned live_name, and call that tool with the arguments documented for the logical name elsewhere in this skill/agent. Returns live_name: null when no matching tool is connected.",
+    parameters: Type.Object({
+      logical_name: Type.String({
+        minLength: 1,
+        description:
+          "Bare MCP tool name as documented in this package's skills/agents, e.g. zotero_get_item_fulltext.",
+      }),
+    }),
+    execute: async (_id, params) => {
+      const logicalName = String(params.logical_name ?? "");
+      const live = new Set(pi.getActiveTools());
+      if (live.has(logicalName)) {
+        return textResult(logicalName, { ok: true, live_name: logicalName });
+      }
+      const candidate = candidateMcpToolNames(logicalName).find((name) =>
+        live.has(name),
+      );
+      if (candidate) {
+        return textResult(candidate, { ok: true, live_name: candidate });
+      }
+      return textResult(
+        `No connected tool resolves "${logicalName}". Check MCP server configuration.`,
+        { ok: false, live_name: null },
+      );
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_write_evidence_ownership",
+    label: "Academic Writer Write Evidence Ownership",
+    description:
+      "Write .academic-writer/evidence-ownership.json (thesisAnchor + evidenceOwners) from a JSON object string. The architect agent's only path to persist evidence ownership without a generic write grant.",
+    parameters: Type.Object({
+      json: Type.String({
+        minLength: 2,
+        description: "JSON object with thesisAnchor and evidenceOwners fields.",
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const data = jsonObject(String(params.json ?? ""));
+      if (!data) {
+        return textResult(
+          "Evidence ownership write failed: json must be a JSON object",
+          { ok: false },
+        );
+      }
+      const result = writeEvidenceOwnership(ctx.cwd, data);
+      return textResult(`Evidence ownership written: ${result.path}`, result);
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_write_sources_cache",
+    label: "Academic Writer Write Sources Cache",
+    description:
+      "Write the current-run .academic-writer/sources.json and .academic-writer/bibliography.bib from deep-reader's extracted records. Call before academic_writer_snapshot_citations.",
+    parameters: Type.Object({
+      sourcesJson: Type.String({
+        minLength: 2,
+        description:
+          "JSON array of source records (see deep-reader source-record schema).",
+      }),
+      bibliography: Type.String({
+        description:
+          "Concatenated BibTeX entries for the current run; may be empty.",
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const sources = jsonArray(String(params.sourcesJson ?? ""));
+      if (!sources) {
+        return textResult(
+          "Sources cache write failed: sourcesJson must be a JSON array",
+          { ok: false },
+        );
+      }
+      const result = writeSourcesCache(
+        ctx.cwd,
+        sources,
+        String(params.bibliography ?? ""),
+      );
+      return textResult(
+        `Sources cache written: ${result.sourcesPath}, ${result.bibliographyPath}`,
+        result,
+      );
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_write_voice_audit",
+    label: "Academic Writer Write Voice Audit",
+    description:
+      "Write .voice/audit.md. The voice-calibrator agent's only path to persist its calibration report without a generic write grant.",
+    parameters: Type.Object({
+      content: Type.String({
+        description: "Full audit report markdown content.",
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const result = writeProjectTextFile(
+        ctx.cwd,
+        ".voice/audit.md",
+        String(params.content ?? ""),
+      );
+      return textResult(`Voice audit written: ${result.path}`, result);
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_update_author_voice",
+    label: "Academic Writer Update Author Voice",
+    description:
+      "Overwrite AUTHOR_VOICE.md with the given content. Used by voice-calibrator and voice-distiller instead of a generic write/edit grant.",
+    parameters: Type.Object({
+      content: Type.String({ description: "Full AUTHOR_VOICE.md content." }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const result = writeProjectTextFile(
+        ctx.cwd,
+        "AUTHOR_VOICE.md",
+        String(params.content ?? ""),
+      );
+      return textResult(`AUTHOR_VOICE.md updated: ${result.path}`, result);
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_write_interview_session",
+    label: "Academic Writer Write Interview Session",
+    description:
+      "Write .voice/interview/<sessionId>.md. The voice-interviewer agent's only path to persist a session transcript without a generic write grant. sessionId must match ^[a-zA-Z0-9_-]+$.",
+    parameters: Type.Object({
+      sessionId: Type.String({
+        minLength: 1,
+        description: "Session identifier, e.g. session-3.",
+      }),
+      content: Type.String({
+        description: "Full session transcript markdown content.",
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const sessionId = String(params.sessionId ?? "");
+      if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+        return textResult(
+          "Interview session write failed: sessionId must match ^[a-zA-Z0-9_-]+$",
+          { ok: false },
+        );
+      }
+      const result = writeProjectTextFile(
+        ctx.cwd,
+        `.voice/interview/${sessionId}.md`,
+        String(params.content ?? ""),
+      );
+      return textResult(`Interview session written: ${result.path}`, result);
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_write_voice_fingerprint",
+    label: "Academic Writer Write Voice Fingerprint",
+    description:
+      "Write .voice/fingerprint.md. The voice-miner agent's only path to persist its style fingerprint without a generic write grant.",
+    parameters: Type.Object({
+      content: Type.String({
+        description: "Full fingerprint markdown content.",
+      }),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const result = writeProjectTextFile(
+        ctx.cwd,
+        ".voice/fingerprint.md",
+        String(params.content ?? ""),
+      );
+      return textResult(`Voice fingerprint written: ${result.path}`, result);
     },
   });
 }

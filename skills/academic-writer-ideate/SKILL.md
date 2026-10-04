@@ -1,7 +1,7 @@
 ---
 name: academic-writer-ideate
 description: "Guided research ideation — brainstorm research questions using 5W1H, gap analysis, and structured framing. Outputs a research brief that feeds into /skill:academic-writer-write. Use when you have a vague topic and need help framing a research question."
-allowed-tools: bash read write find grep academic_writer_get_profile
+allowed-tools: bash read write find grep academic_writer_get_profile academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -60,6 +60,8 @@ Present the brainstorm:
 ---
 
 ## Step 3: Gap Analysis
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 If Zotero is enabled, scan `tools.zotero.collection` when configured; otherwise scan the researcher's library by calling `zotero_get_recent(limit=100)` or listing collection items.
 

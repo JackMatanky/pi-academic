@@ -2,11 +2,6 @@
 name: proofreader
 description: "Mechanical proofreading (הגהה) for a single academic article — finds typos, punctuation, spacing, Hebrew typography, and obvious grammar/agreement errors at four levels (letter / word / sentence / idea). Suggestion-only — returns a structured change list; never edits files and never rewrites prose for style or voice. Spawned by the proofread skill. NOT for tone, register, restructuring, or argument changes — those belong to section-writer / edit."
 tools: read, grep, find
-permission:
-  "*": allow
-  write: deny
-  edit: deny
-  bash: deny
 ---
 
 # Proofreader Agent (מגיה)

@@ -39,6 +39,15 @@ pi install git:github.com/JackMatanky/academic-writer
 
 Pi prompts you to trust the project on first run — see [Project Trust](https://pi.dev/docs/latest/settings#project-trust).
 
+**Under oh-my-pi (OMP):** `omp install` does not support direct git-URL installs — clone the repo first, then install from the local path:
+
+```bash
+git clone https://github.com/JackMatanky/academic-writer
+omp install ./academic-writer
+```
+
+Three of the four `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) are unnecessary under OMP — it ships native equivalents (`task` subagent dispatch, native MCP discovery, native `web_search`). Only `@earendil-works/pi-coding-agent`'s types matter there, and only for local type-checking.
+
 ### 3. Initialize Your Profile
 
 ```

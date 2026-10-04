@@ -20,9 +20,20 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "omp": {
+    "extensions": [
+      "./extensions/pi-academic-writer/index.ts",
+      "./extensions/lifecycle/index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ],
+    "image": "./assets/pi-academic-writer.svg"
+  },
   "pi": {
     "extensions": [
-      "./extensions"
+      "./extensions/pi-academic-writer/index.ts",
+      "./extensions/lifecycle/index.ts"
     ],
     "skills": [
       "./skills"

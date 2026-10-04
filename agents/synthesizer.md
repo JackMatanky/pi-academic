@@ -2,14 +2,6 @@
 name: synthesizer
 description: "Use after all sections are written to review the complete article for argument coherence, flow, style consistency, and cross-section repetition. Makes surgical edits only — does NOT write new section content. Runs once, after section-writer completes all sections."
 tools: read, grep, find, bash, academic_writer_read_resource
-permission:
-  "*": allow
-  write: deny
-  edit: deny
-  bash:
-    "*": ask
-    "cat *": allow
-    "python3 *": allow
 ---
 
 # Synthesizer Agent

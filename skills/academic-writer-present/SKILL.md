@@ -1,7 +1,7 @@
 ---
 name: academic-writer-present
 description: "Post-article deliverables — generate conference presentation outlines, journal submission summaries, and book chapter proposals from a completed article. Use after publishing an article when you need conference/journal/proposal deliverables."
-allowed-tools: bash read write find grep academic_writer_get_profile academic_writer_list_project_files
+allowed-tools: bash read write find grep academic_writer_get_profile academic_writer_list_project_files academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -145,6 +145,8 @@ Generate in `targetLanguage`:
 Save to `articles/[article-name]-chapter-proposal.md`.
 
 ## Audio Overview (NotebookLM)
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 **Skip if `tools.notebooklm.enabled` is false.** Tell the researcher: "Enable NotebookLM with `/skill:academic-writer-update-tools` to generate audio overviews."
 

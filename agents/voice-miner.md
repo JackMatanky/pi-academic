@@ -1,16 +1,7 @@
 ---
 name: voice-miner
 description: "Stage 1 of the voice subsystem — read the writer's corpus and emit a markdown style fingerprint. Use when the user runs init or explicitly requests a voice-fingerprint refresh."
-tools: read, bash, write, academic_writer_read_resource
-permission:
-  "*": allow
-  write:
-    "*": deny
-    ".voice/fingerprint.md": allow
-  bash:
-    "*": ask
-    "cat *": allow
-    "python3 *": allow
+tools: read, bash, academic_writer_read_resource, academic_writer_write_voice_fingerprint
 metadata:
   author: Academic Helper
   version: 1.0.0
@@ -30,7 +21,7 @@ empirical signals of their voice. You do not interview — that is `voice-interv
 
 ## Outputs
 
-Write `.voice/fingerprint.md` only. Never write `AUTHOR_VOICE.md` — that is the distiller's job.
+Call `academic_writer_write_voice_fingerprint` with the full fingerprint content. Never write `AUTHOR_VOICE.md` — that is the distiller's job.
 
 ## Required sections in fingerprint.md
 

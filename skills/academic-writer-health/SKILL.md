@@ -1,7 +1,7 @@
 ---
 name: academic-writer-health
 description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
-allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents academic_writer_status academic_writer_health academic_writer_ingest_sources academic_writer_snapshot_citations
+allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents academic_writer_status academic_writer_health academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_resolve_mcp_tool
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
@@ -36,6 +36,8 @@ Use `academic_writer_status`/`academic_writer_health` details. If empty: "Add 5�
 
 Use `academic_writer_health` for the `zotero-mcp` binary check. If a project `.mcp.json` exists and needs debugging, read it with the Read tool; do not parse credentials or copy secrets into the report.
 
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+
 Then call `zotero_get_recent(limit=20)` to probe live MCP connectivity.
 
 Report:
@@ -63,6 +65,8 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
   }
 }
 ```
+
+Under oh-my-pi, this `settings`/`directTools` configuration is not read; oh-my-pi always exposes MCP tools as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` locates automatically — no additional MCP config changes are needed there.
 
 Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global MCP config or command interpolation for Zotero web/API credentials.
 

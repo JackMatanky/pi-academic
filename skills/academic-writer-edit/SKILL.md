@@ -103,15 +103,15 @@ When auditing or revising an existing draft:
 ## Edit Modes
 ### Mode A: Section-Level Edit
 
-**Use the `subagent` tool to spawn a `section-writer` subagent** for each section being revised. The section-writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit).
+**Use your subagent-dispatch tool to spawn a `section-writer` subagent** for each section being revised. The section-writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit).
 
 Pass as prompt: the section (with current text + edit instructions), sectionIndex, thesis, styleFingerprint, citationStyle, tools, priorSectionTexts.
 
-For multiple sections being edited, **call the `subagent` tool multiple times in a single response — each call executes independently and pi runs sibling tool calls from one assistant message concurrently by default, matching the existing parallel-subagent pattern with zero behavior change — one call per section — so all section-writers run in parallel**.
+For multiple sections being edited, **spawn one `section-writer` per section in parallel**: under OMP, one `task` call with a `tasks` entry per section; under pi, sibling `subagent` calls in one response.
 
 ### Mode B: Citation Fix
 
-**Use the `subagent` tool to spawn `auditor` subagents in parallel** — one per section that needs citation work. Call the `subagent` tool multiple times in a single response.
+**Use your subagent-dispatch tool to spawn `auditor` subagents in parallel** — one per section that needs citation work. Under OMP, batch them in one `task` call; under pi, issue sibling `subagent` calls.
 
 Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
 
@@ -125,7 +125,7 @@ Re-read the `styleFingerprint`. For each paragraph being adjusted:
 2. Apply the requested tone change while keeping fingerprint compliance
 3. Use `representativeExcerpts` as style targets
 4. Run Hebrew grammar check if applicable
-5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use the `subagent` tool to spawn an `auditor` subagent** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `VERDICT: PASS` — exactly as Modes A/B/E do. If the auditor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
+5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `auditor` subagent** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `VERDICT: PASS` — exactly as Modes A/B/E do. If the auditor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
 
 If the researcher wants tone that differs from their fingerprint (e.g., "make this more polemical even though my usual style is measured"), note the deviation and apply it as a conscious choice.
 
@@ -139,7 +139,7 @@ If the researcher wants tone that differs from their fingerprint (e.g., "make th
 2. Let the researcher reorder, split, merge, add, or remove sections
 3. For new sections, **spawn a section-writer subagent** with full pipeline
 4. For merged sections, combine text and run synthesis on the merged result
-5. After restructuring, **use the `subagent` tool to spawn the `synthesizer` subagent** to fix transitions. Pass as prompt: allSections, thesis, styleFingerprint, tools.
+5. After restructuring, **use your subagent-dispatch tool to spawn the `synthesizer` subagent** to fix transitions. Pass as prompt: allSections, thesis, styleFingerprint, tools.
 
 ### Mode E: Strengthen Argument
 
@@ -149,20 +149,20 @@ If the researcher wants tone that differs from their fingerprint (e.g., "make th
    - Missing counterargument engagement
    - Logical gaps between sections
 
-2. **Use the `subagent` tool to spawn research subagents in parallel** to find additional evidence. Call the `subagent` tool multiple times in a single response:
+2. **Spawn research subagents in parallel** to find additional evidence (one batched `task` call under OMP; sibling `subagent` calls under pi):
    - If `tools.zotero.enabled`: one subagent for Zotero document reads, passing `tools.zotero.collection` when configured so searches stay in the project collection
 
 3. Draft new evidence integration and re-run citation audit
 
 ### Mode F: Cut / Expand
 
-**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, **use the `subagent` tool to spawn an `auditor` subagent** (revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `VERDICT: PASS` — exactly as Modes A/B/E do. If rejected, restore/fix the citation and re-audit before finalizing.
+**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, **use your subagent-dispatch tool to spawn an `auditor` subagent** (revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `VERDICT: PASS` — exactly as Modes A/B/E do. If rejected, restore/fix the citation and re-audit before finalizing.
 
 **Expand:** Spawn research subagents to find additional material, then spawn section-writer for the expanded passages. The section-writer already runs the auditor hard gate on every paragraph it produces (including any cited sentences it rewrites), so the expand path is covered by the section-writer pipeline.
 
 ### Mode G: Full Review
 
-**Use the `subagent` tool to spawn the `synthesizer` subagent** on the complete article. Pass as prompt: allSections, thesis, styleFingerprint, tools.
+**Use your subagent-dispatch tool to spawn the `synthesizer` subagent** on the complete article. Pass as prompt: allSections, thesis, styleFingerprint, tools.
 
 This runs:
 1. Argument coherence review

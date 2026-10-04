@@ -12,6 +12,7 @@ import {
 } from "node:fs";
 import {
   basename,
+  dirname,
   extname,
   isAbsolute,
   join,
@@ -847,4 +848,109 @@ export function buildHealth(projectRoot: string): HealthStatus {
       }
     })(),
   };
+}
+
+/**
+ * Writes UTF-8 text to a project-relative path, creating parent directories as needed.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param relativePath - Project-relative output path.
+ * @param content - Text content to write.
+ * @returns The typed result described by this helper contract.
+ */
+export function writeProjectTextFile(
+  projectRoot: string,
+  relativePath: string,
+  content: string,
+): { ok: true; path: string } {
+  const target = join(projectRoot, relativePath);
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, content, "utf-8");
+  return { ok: true, path: relativePath };
+}
+
+/**
+ * Writes `.academic-writer/evidence-ownership.json` from a thesis/evidence-owner payload.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param data - Evidence ownership payload to serialize.
+ * @returns The typed result described by this helper contract.
+ */
+export function writeEvidenceOwnership(
+  projectRoot: string,
+  data: Record<string, unknown>,
+): { ok: true; path: string } {
+  const path = ".academic-writer/evidence-ownership.json";
+  writeProjectTextFile(projectRoot, path, `${JSON.stringify(data, null, 2)}\n`);
+  return { ok: true, path };
+}
+
+/**
+ * Writes the current-run sources cache and bibliography from extracted source records.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param sources - Source registry records to serialize.
+ * @param bibliography - Concatenated BibTeX entries.
+ * @returns The typed result described by this helper contract.
+ */
+export function writeSourcesCache(
+  projectRoot: string,
+  sources: unknown[],
+  bibliography: string,
+): { ok: true; sourcesPath: string; bibliographyPath: string; count: number } {
+  const sourcesPath = ".academic-writer/sources.json";
+  const bibliographyPath = ".academic-writer/bibliography.bib";
+  writeProjectTextFile(
+    projectRoot,
+    sourcesPath,
+    `${JSON.stringify(sources, null, 2)}\n`,
+  );
+  writeProjectTextFile(projectRoot, bibliographyPath, bibliography);
+  return { ok: true, sourcesPath, bibliographyPath, count: sources.length };
+}
+
+/** Known MCP server config keys this package's skills/agents scaffold into `.mcp.json`. */
+export const KNOWN_MCP_SERVERS = ["zotero", "notebooklm-mcp", "sefaria"];
+
+/**
+ * Sanitizes one MCP server/tool name part per oh-my-pi's tool-bridge naming algorithm.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param value - Raw server or tool name part to sanitize.
+ * @returns The typed result described by this helper contract.
+ */
+function sanitizeMcpNamePart(value: string): string {
+  const cleaned = value
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+  return cleaned || "part";
+}
+
+/**
+ * Builds candidate oh-my-pi MCP tool names for a bare logical tool name across known servers.
+ *
+ * @remarks
+ * Provides a typed helper boundary for Academic Writer extension code.
+ * @param logicalName - Bare MCP tool name as documented in this package's skills/agents.
+ * @returns The typed result described by this helper contract.
+ */
+export function candidateMcpToolNames(logicalName: string): string[] {
+  return KNOWN_MCP_SERVERS.map((server) => {
+    const sanitizedServer = sanitizeMcpNamePart(server);
+    const sanitizedTool = sanitizeMcpNamePart(logicalName);
+    const prefix = `${sanitizedServer}_`;
+    const suffix = sanitizedTool.startsWith(prefix)
+      ? sanitizedTool.slice(prefix.length)
+      : sanitizedTool;
+    return `mcp__${sanitizedServer}_${suffix}`;
+  });
 }

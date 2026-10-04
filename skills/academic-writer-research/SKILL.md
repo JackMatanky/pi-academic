@@ -1,7 +1,7 @@
 ---
 name: academic-writer-research
 description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources
+allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -40,11 +40,14 @@ Accept any of these forms:
 
 **Speed is critical.** Spawn subagents in parallel to query all enabled tools simultaneously. Do NOT query tools sequentially.
 
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+
+
 ### Determine which subagents to launch
 
 Based on the question and enabled tools, spawn ALL applicable agents **at the same time**:
 
-**Use the `subagent` tool to spawn subagents in parallel — call the `subagent` tool multiple times in a single response — each call executes independently and pi runs sibling tool calls from one assistant message concurrently by default, matching the existing parallel-subagent pattern with zero behavior change:**
+**Spawn independent research subagents in parallel** — under OMP, put them in one `task` call’s `tasks` array; under pi, issue sibling `subagent` calls in one response:
 1. **Local Folder Source Ingest**: Call `academic_writer_ingest_sources` to index any local files under `.academic-writer/sources/`.
 
 2. **Zotero subagent** (if `tools.zotero.enabled`): Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. Preferred for searching/reading Zotero documents.

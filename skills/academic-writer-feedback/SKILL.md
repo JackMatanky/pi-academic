@@ -134,7 +134,7 @@ If the change touches the style fingerprint broadly, consider spawning the `voic
 
 > The voice-miner can re-scan `past-articles/` and recompute the fingerprint. Use it when the feedback is "the voice was generically off" rather than a specific dimension.
 
-Spawn via the `subagent` tool with `agent: \"voice-miner\"` if applicable.
+Spawn via your subagent-dispatch tool with `agent: \"voice-miner\"` if applicable.
 
 ### C. Pattern reference update
 

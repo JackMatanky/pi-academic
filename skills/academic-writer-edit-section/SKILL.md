@@ -75,18 +75,18 @@ Common edit types:
 
 ### For rewrites / expansions / new paragraphs:
 
-**Use the `subagent` tool to spawn a `section-writer` subagent** with the full pipeline (draft → style compliance → Hebrew grammar → repetition check → citation audit).
+**Use your subagent-dispatch tool to spawn a `section-writer` subagent** with the full pipeline (draft → style compliance → Hebrew grammar → repetition check → citation audit).
 
 Pass as prompt: the section (title, current text, edit instructions, suggested sources), sectionIndex, thesis, styleFingerprint, citationStyle, tools, priorSectionTexts (text of adjacent sections for repetition awareness).
 
-If the researcher wants to expand with new evidence, **first use the `subagent` tool to spawn research subagents in parallel** — call the `subagent` tool multiple times in a single response — each call executes independently and pi runs sibling tool calls from one assistant message concurrently by default, matching the existing parallel-subagent pattern with zero behavior change:
+If the researcher wants to expand with new evidence, **first spawn research subagents in parallel** — under OMP, put the independent jobs in one `task` call’s `tasks` array; under pi, issue sibling `subagent` calls in one response:
 - One subagent for Zotero or local source reads (`.academic-writer/sources/` via `academic_writer_ingest_sources`), scoped to `tools.zotero.collection` when configured (Note: RAG semantic vector search is a future TODO)
 
 Then feed results to the section-writer.
 
 ### For citation fixes:
 
-**Use the `subagent` tool to spawn an `auditor` subagent** for each paragraph. Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
+**Use your subagent-dispatch tool to spawn an `auditor` subagent** for each paragraph. Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
 
 Apply fixes, re-audit until all pass.
 

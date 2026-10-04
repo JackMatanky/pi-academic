@@ -1,16 +1,7 @@
 ---
 name: architect
 description: "Use to generate thesis options (Mode A), a structured article outline (Mode B), or — when passed `mode: ownership-only` — only the evidence-ownership.json file from the user's existing draft (Mode C). Runs AFTER deep-reader completes, BEFORE any section writing begins. NOT for writing prose or verifying citations."
-tools: read, write, grep, find, bash
-permission:
-  "*": allow
-  write:
-    "*": deny
-    ".academic-writer/evidence-ownership.json": allow
-  bash:
-    "*": ask
-    "python3 *": allow
-    "cat *": allow
+tools: read, grep, find, bash, academic_writer_write_evidence_ownership
 ---
 
 # Architect Agent
@@ -204,9 +195,9 @@ Assignment rules:
 - Evidence that appears in only one section does not need an entry.
 - `claimsRegistry` starts empty. Section-writers append claim records as they complete paragraphs.
 
-Write the file with the Write tool:
+Call `academic_writer_write_evidence_ownership` with `json` set to the JSON above:
 ```
-Write .academic-writer/evidence-ownership.json with the JSON above
+academic_writer_write_evidence_ownership(json: "<the JSON object above, serialized>")
 ```
 
 ## Mode C: Ownership-Only (triggered by `mode: ownership-only`)
@@ -231,7 +222,7 @@ When the write skill spawns you with `mode: ownership-only`, the user's existing
    - All other draft sections that reference the same evidence go into `backRefSections`.
    - Evidence appearing in only one section needs no entry.
 
-4. **Write `evidence-ownership.json`** using the Write tool, with the exact schema used in Mode B:
+4. **Write `evidence-ownership.json`** by calling `academic_writer_write_evidence_ownership` with `json` set to the exact schema used in Mode B:
 
 ```json
 {

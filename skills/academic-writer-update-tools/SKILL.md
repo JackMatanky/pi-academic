@@ -1,7 +1,7 @@
 ---
 name: academic-writer-update-tools
 description: "Add, remove, or reconfigure integrations (Zotero, NotebookLM). Use when adding/removing integrations after initial setup."
-allowed-tools: bash read write edit find grep academic_writer_get_profile academic_writer_update_profile
+allowed-tools: bash read write edit find grep academic_writer_get_profile academic_writer_update_profile academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -23,6 +23,8 @@ Use the returned `tools` object. If the profile has no `tools` key (JSON profile
 Run detection for every tool in the registry, regardless of current status:
 
 **1. Zotero** (`zotero`)
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 Call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise. Also check `command -v zotero-mcp` so you can distinguish "server binary missing" from "binary installed but no MCP config / Zotero desktop unavailable." Academic Writer reads Zotero through standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json`) and expects the `zotero` server to expose bare direct tools (`settings.toolPrefix: "none"` and `mcpServers.zotero.directTools: true`).
 

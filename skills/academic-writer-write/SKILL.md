@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_assemble_docx_json
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_assemble_docx_json academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -118,6 +118,8 @@ Store the draft text as `userDraftText` regardless of which option is chosen. If
 
 ### Step 2: Source Selection
 
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+
 
 **Source Selection Procedure:**
 1. **Zotero (Preferred)**: If `tools.zotero.enabled` is true:
@@ -159,7 +161,7 @@ Pass the NotebookLM summary as additional context to the deep-reader agent promp
 ### Step 3: Deep Read
 
 
-**Use the `subagent` tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
+**Use your subagent-dispatch tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
 
 The deep-reader runs:
 - **Step 1**: Read source content from Zotero (if enabled) and local ingested sources in `.academic-writer/sources/` (via `academic_writer_ingest_sources`)
@@ -179,7 +181,7 @@ After receiving the deep-reader result, mark node complete:
 ### Step 4: Thesis Proposal
 
 
-**Use the `subagent` tool to spawn the `architect` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
+**Use your subagent-dispatch tool to spawn the `architect` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
 
 
 After receiving the architect result, mark node complete:
@@ -201,7 +203,7 @@ After the researcher picks a thesis, log thesis approval:
 
 **If the researcher chose "Expand my draft" in the draft detection step (`userDraftAsOutline = true`):**
 
-- Do NOT skip the architect entirely. The outline comes from the user's draft, but the architect is still the sole writer of `.academic-writer/evidence-ownership.json` — and without it the per-paragraph thesis-drift guard and the cross-section evidence-dedup both silently no-op. **Use the `subagent` tool to spawn the `architect` subagent in a lightweight "ownership-only" mode**: pass `userDraftText`, the deep-read results / `sources.json`, and `targetLanguage`, and instruct it to produce ONLY `evidence-ownership.json` (the `thesisAnchor` derived from the draft plus the `evidenceOwners` assignment for shared evidence) — it must NOT generate a new outline or thesis options, since those come from the user's draft.
+- Do NOT skip the architect entirely. The outline comes from the user's draft, but the architect is still the sole writer of `.academic-writer/evidence-ownership.json` — and without it the per-paragraph thesis-drift guard and the cross-section evidence-dedup both silently no-op. **Use your subagent-dispatch tool to spawn the `architect` subagent in a lightweight "ownership-only" mode**: pass `userDraftText`, the deep-read results / `sources.json`, and `targetLanguage`, and instruct it to produce ONLY `evidence-ownership.json` (the `thesisAnchor` derived from the draft plus the `evidenceOwners` assignment for shared evidence) — it must NOT generate a new outline or thesis options, since those come from the user's draft.
 - Parse `userDraftText` into sections: use the user's existing section headings and paragraph structure as the outline
 - Present the extracted outline to the researcher:
   > "Using your draft structure:
@@ -214,7 +216,7 @@ After the researcher picks a thesis, log thesis approval:
 **If no draft (normal flow):**
 
 
-**Use the `subagent` tool to spawn the `architect` subagent again** with the approved thesis, deep read results, targetWordCount, and targetLanguage.
+**Use your subagent-dispatch tool to spawn the `architect` subagent again** with the approved thesis, deep read results, targetWordCount, and targetLanguage.
 
 The architect runs in Mode B:
 - Produces the outline (titles, roles, suggested sources, word counts, paragraph counts) in `targetLanguage`
@@ -254,10 +256,10 @@ The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, ci
 
 ### Step 6: Parallel Section Writing + Auditing
 
-**CRITICAL: Use the `subagent` tool to spawn one `section-writer` subagent per section. Call the `subagent` tool multiple times in a single response — one call per section — so all sections write in parallel.**
+**CRITICAL: Spawn one `section-writer` per section in parallel. Under OMP, send one `task` call with one `tasks` entry per section; under pi, issue sibling `subagent` calls in one response.**
 
 
-For each section in the approved outline, the `subagent` tool prompt must include:
+For each section in the approved outline, your subagent-dispatch tool prompt must include:
 - `section`: the section spec (title, description, argument role, suggested sources, paragraph count)
 - `sectionIndex`: the section number
 - `totalSections`: total section count
@@ -287,7 +289,7 @@ After receiving each section-writer result, mark node complete:
 
 Once all sections are approved, log the spawn event:
 
-**Use the `subagent` tool to spawn the `synthesizer` subagent.** Pass the following as the prompt:
+**Use your subagent-dispatch tool to spawn the `synthesizer` subagent.** Pass the following as the prompt:
 - All completed section texts
 - The thesis statement
 - The complete styleFingerprint object

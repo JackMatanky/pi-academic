@@ -1,15 +1,7 @@
 ---
 name: voice-distiller
 description: "Compress one or more session transcripts plus the fingerprint into the unified AUTHOR_VOICE.md, merging with any prior profile. Use after a Stage 2 session completes, after migration, or on `:voice recompress`."
-tools: read, write, edit
-permission:
-  "*": allow
-  write:
-    "*": deny
-    "AUTHOR_VOICE.md": allow
-  edit:
-    "*": deny
-    "AUTHOR_VOICE.md": allow
+tools: read, academic_writer_update_author_voice
 metadata:
   author: Academic Helper
   version: 1.0.0
@@ -30,7 +22,7 @@ profile. You combine the compressor and merger roles.
 
 ## Outputs
 
-Rewrite root `AUTHOR_VOICE.md` only. Preserve the four-section structure exactly:
+Call `academic_writer_update_author_voice` with the full rewritten content to replace root `AUTHOR_VOICE.md`. Preserve the four-section structure exactly:
 
 ```
 # Voice Profile — <writer name>

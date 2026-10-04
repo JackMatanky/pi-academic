@@ -1,7 +1,7 @@
 ---
 name: academic-writer-setup
 description: "First-time setup for Academic Writer — creates researcher profile, detects integrations, analyzes writing style from past articles. Use for a quick onboarding (faster than init); does not include source indexing."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -43,6 +43,8 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 ---
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 ## Phase 1: Detect Integrations
 
@@ -190,6 +192,9 @@ If Zotero is selected but not detected:
     }
   }
   ```
+
+Under oh-my-pi, this `settings`/`directTools` configuration is not read; oh-my-pi always exposes MCP tools as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` locates automatically — no additional MCP config changes are needed there.
+
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `zotero` block unless the JSON is simple enough to update safely. Do not write API keys into a project file; Zotero web/API credentials belong in user-global MCP config or command interpolation.
 - After any MCP server block is added for the first time (yours or the researcher's), tell the researcher to restart Pi before re-probing: direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable until the new session starts.
 
@@ -207,6 +212,9 @@ If NotebookLM is selected but `notebook_list()` is unavailable:
     }
   }
   ```
+
+Under oh-my-pi, this `settings`/`directTools` configuration is not read; oh-my-pi always exposes MCP tools as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` locates automatically — no additional MCP config changes are needed there.
+
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `notebooklm-mcp` block unless the JSON is simple enough to update safely.
 
 If Zotero is enabled and detected, call `zotero_get_collections()` and ask whether to use all library items or one default collection for Academic Writer. If they choose a collection, save `tools.zotero.collection` as `{ "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }`.

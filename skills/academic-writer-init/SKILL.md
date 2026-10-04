@@ -1,7 +1,7 @@
 ---
 name: academic-writer-init
 description: "First-time setup for the Academic Writer. Configures researcher profile, analyzes writing style from past articles, and indexes research sources. Use on first install or when redoing onboarding from scratch."
-allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_ingest_sources
+allowed-tools: bash read write find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_ingest_sources academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -273,6 +273,8 @@ Wait for their reply and match it against the options (accept the option number,
 Call `academic_writer_list_project_files` with `kind: "past_articles"` and use the returned file list.
 
 **Step 1: Computational extraction** — Run the voice-miner subagent on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its returned metrics directly in the confirmation step below; do not write `/tmp` metrics files.
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 First fetch the **shared Hebrew baseline** from Zotero (book *Hebrew Linguistic Reference*, mirrored on GitHub at [JackMatanky/hebrew-linguistics-data](https://github.com/JackMatanky/hebrew-linguistics-data); the same book is read by the `hebrew-book-producer` plugin so both share one source of truth):
 
