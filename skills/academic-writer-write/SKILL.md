@@ -122,7 +122,8 @@ Store the draft text as `userDraftText` regardless of which option is chosen. If
 **Source Selection Procedure:**
 1. **Zotero (Preferred)**: If `tools.zotero.enabled` is true:
     - If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` to retrieve items from the specified collection.
-    - Otherwise, call `zotero_get_collections()` + `zotero_get_collection_items()` to list all library items.
+    - Otherwise, call `zotero_get_collections()` first, then `zotero_get_collection_items(collection_key=KEY)` for the relevant collection(s) to list library items.
+    - `zotero_get_collection_items` returns 50 items per call; when its response reports more items than were shown, follow the `Pass offset=N` hint until the full list is retrieved.
 2. **Local Folder Sources**: Call `academic_writer_ingest_sources` to discover and ingest local PDFs, DOCX, TXT, or MD files stored under `.academic-writer/sources/`.
 3. **Fallback**: Use profile's `sources` array or manual user input if no Zotero/local sources exist.
 

@@ -51,7 +51,7 @@ Based on the question and enabled tools, spawn ALL applicable agents **at the sa
 
 3. **NotebookLM subagent** (if `tools.notebooklm.enabled`): Pass `tools.notebooklm.notebook` if configured. Query that notebook for supplementary context using `notebook_query`.
 
-*(Note: Vectorless RAG semantic vector search is a future TODO item and is not active in current tool runs.)*
+*(Note: The package's own RAG vector-search pipeline is a future TODO and is not active in current tool runs. Zotero's `zotero_semantic_search` is a separate, optional upstream tool — see the Zotero instructions below.)*
 Each subagent runs independently and returns its findings.
 
 ### Local Folder Sources Instructions
@@ -61,7 +61,7 @@ Call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD fil
 
 The Zotero subagent should:
 
-1. **Search** the configured Zotero collection if `tools.zotero.collection.key` is present; otherwise search across all sources: `zotero_search_items(query="QUERY")` (or `zotero_semantic_search` for topic queries). If the MCP search tool cannot accept a collection filter, list collection items first and only read matching item keys from that list.
+1. **Search** — if `tools.zotero.collection.key` is present, scope the search natively: `zotero_search_items(query="QUERY", collection_key=COLLECTION_KEY)`. Otherwise search all sources with `zotero_search_items(query="QUERY")`, which falls back to simplified/semantic matching on its own when keyword search finds nothing. Optional, for pure topic/concept queries: `zotero_semantic_search(query="QUERY")` — it requires the optional `[semantic]` extra (`pip install "zotero-mcp-server[semantic]"`) and a populated index; check readiness with `zotero_get_search_database_status` and rebuild with `zotero_update_search_database`. If it reports the extra is missing, skip it and rely on `zotero_search_items`.
 2. **Read relevant documents** for full passages: `zotero_get_item_fulltext(item_key="DOC_ID")`
 3. **Verify page numbers** when exact citations are needed: `zotero_read_pdf_pages(item_key="DOC_ID", start_page=..., end_page=...)`
 4. **Return full text passages** with document ID, title, and page numbers

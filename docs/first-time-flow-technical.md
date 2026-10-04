@@ -40,7 +40,7 @@ npx academic-writer-setup       (interactive CLI — runs in terminal, no Claude
     |    Present to user → user reviews and corrects
     v
 [Step 4] If candlekeep.enabled:
-    |        User uploads sources: add items via the Zotero desktop app or `zotero_add_by_doi`/`zotero_add_from_file` <file>
+    |        User uploads sources: add items via the Zotero desktop app or `zotero_add_item` <file>
     |        Enrich all: Zotero tools enrich <id> (per item)
     |        Build sources[] array (id, title, type)
     |    Else:

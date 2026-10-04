@@ -66,6 +66,8 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
 
 Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global MCP config or command interpolation for Zotero web/API credentials.
 
+Direct MCP tools are cached at startup: after `.mcp.json` or global MCP config is created or changed for the first time, ask the researcher to restart Pi and re-run the probe — `zotero_get_recent` stays unavailable for the rest of the current session otherwise.
+
 ---
 
 ## 4. Local Sources Folder & Citation Snapshots

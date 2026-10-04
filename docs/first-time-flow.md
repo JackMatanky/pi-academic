@@ -89,7 +89,7 @@ Claude reads your papers and builds a **Style Fingerprint** — a detailed profi
 **You review the fingerprint** and can correct anything before it's saved.
 
 If you enabled Zotero, Claude also helps you index your research sources:
-- Upload your source PDFs: `add items via the Zotero desktop app or `zotero_add_by_doi`/`zotero_add_from_file` your-source.pdf`
+- Upload your source PDFs: add items via the Zotero desktop app, or call `zotero_add_item(source="your-source.pdf")` (the source type is detected automatically)
 - The system enriches each document (extracts title, author, table of contents)
 
 When done, your profile is complete. Run `/academic-writer` whenever you're ready to write.

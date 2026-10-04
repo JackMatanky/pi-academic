@@ -890,5 +890,180 @@ class TestNoStaleClaudeCodeArtifacts(unittest.TestCase):
                     )
 
 
+class TestZoteroMcpCompatibility(unittest.TestCase):
+    """Test cases covering ZoteroMcpCompatibility.
+
+    This class groups related assertions or helpers for the surrounding module.
+    """
+
+    # zotero-mcp (54yyyu) merged `zotero_add_by_doi`/`zotero_add_from_file` and
+    # the other `zotero_add_by_*` variants into `zotero_add_item` in 0.9.0 and
+    # ships no back-compat aliases; the documented `pip install
+    # zotero-mcp-server` resolves to >=0.9, so any file still naming the old
+    # tools tells the researcher to call tools that do not exist.
+    def test_no_removed_zotero_add_tool_names(self):
+        """Assert no removed zotero add tool names.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        pattern = re.compile(
+            r"zotero_add_by_doi|zotero_add_from_file|zotero_add_by_url|"
+            r"zotero_add_by_isbn|zotero_add_by_bibtex|zotero_add_by_csl_json",
+        )
+        paths = ["README.md", "AGENTS.md"]
+        for d in ["skills", "agents", "docs"]:
+            if not os.path.isdir(d):
+                continue
+            for root, _, files in os.walk(d):
+                paths.extend(os.path.join(root, f) for f in files if f.endswith(".md"))
+        for path in paths:
+            matches = pattern.findall(_read(path))
+            self.assertEqual(
+                matches,
+                [],
+                f"Found zotero-mcp tool removed upstream in 0.9.0 in {path}: {matches}",
+            )
+
+    # The research skill offered `zotero_semantic_search` while a note in the
+    # same skill said semantic vector search "is not active", and hedged that
+    # the search tool might not accept a collection filter. Upstream
+    # `zotero_search_items` takes `collection_key` directly, and the optional
+    # semantic tool needs the `[semantic]` extra plus a populated index --
+    # neither was mentioned, so the recommendation dead-ends on a base install.
+    def test_research_skill_zotero_search_guidance(self):
+        """Assert research skill zotero search guidance is current.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        content = _read("skills/academic-writer-research/SKILL.md")
+        self.assertNotIn(
+            "cannot accept a collection filter",
+            content,
+            "zotero_search_items accepts collection_key natively — drop the hedge",
+        )
+        self.assertIn(
+            "collection_key=COLLECTION_KEY",
+            content,
+            "collection scope must be passed as collection_key",
+        )
+        self.assertIn(
+            "zotero-mcp-server[semantic]",
+            content,
+            "zotero_semantic_search needs the optional [semantic] extra documented",
+        )
+        self.assertIn(
+            "zotero_get_search_database_status",
+            content,
+            "semantic search readiness must be checked before it is recommended",
+        )
+        self.assertNotIn(
+            "Vectorless RAG",
+            content,
+            "'not active' note contradicts the same skill offering zotero_semantic_search",
+        )
+
+    # `zotero_get_collection_items` requires `collection_key` and returns 50
+    # items per call (the response names the `Pass offset=N` continuation);
+    # both skills called it with no arguments and never mentioned paging, so a
+    # collection over 50 items was listed only partially and a literal bare
+    # call would fail schema validation.
+    def test_collection_listing_skills_pass_key_and_page(self):
+        """Assert collection listing skills pass key and page.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        for path in [
+            "skills/academic-writer-write/SKILL.md",
+            "skills/academic-writer-init/SKILL.md",
+        ]:
+            content = _read(path)
+            self.assertNotIn(
+                "zotero_get_collection_items()",
+                content,
+                f"{path} calls zotero_get_collection_items without required collection_key",
+            )
+            self.assertIn(
+                "offset",
+                content,
+                f"{path} never mentions paging past the 50-item default limit",
+            )
+
+    # pi-mcp-adapter caches direct MCP tool metadata at startup (see the
+    # pi-subagents README), so a `.mcp.json` written during first-time setup
+    # does not expose `zotero_get_recent` until Pi restarts. Every skill that
+    # scaffolds MCP config must say so, or the probe right after a correct
+    # setup reports NOT_DETECTED and the researcher is sent to reinstall.
+    def test_mcp_config_skills_note_pi_restart(self):
+        """Assert mcp config skills note pi restart.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        for path in [
+            "skills/academic-writer-health/SKILL.md",
+            "skills/academic-writer-setup/SKILL.md",
+            "skills/academic-writer-init/references/integration-setup.md",
+        ]:
+            content = _read(path)
+            self.assertIn(
+                "restart Pi",
+                content,
+                f"{path} scaffolds MCP config but never mentions restarting Pi",
+            )
+
+    # Setup is where install commands live; `zotero_semantic_search` silently
+    # degrades to an install hint on a base `zotero-mcp-server` install, so the
+    # optional extra belongs next to the install guidance.
+    def test_setup_skill_documents_optional_semantic_extra(self):
+        """Assert setup skill documents optional semantic extra.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        content = _read("skills/academic-writer-setup/SKILL.md")
+        self.assertIn(
+            "zotero-mcp-server[semantic]",
+            content,
+            "setup never mentions the [semantic] extra zotero_semantic_search requires",
+        )
+
+    # `mcp:zotero` grants the whole server, and upstream's mutation tools
+    # (`zotero_add_item`, `zotero_update_item`, ...) are core -- no
+    # `ZOTERO_MCP_TOOLSETS` value removes them -- so an agent that must stay
+    # read-only has to be granted single tools with `mcp:zotero/<tool>`.
+    def test_agents_md_whole_server_grant_includes_write_tools(self):
+        """Assert agents md documents whole server grant write tools.
+
+        This component keeps the surrounding module contract explicit and testable.
+
+        Returns:
+            None.
+        """
+        content = _read("AGENTS.md")
+        self.assertIn(
+            "mcp:zotero/",
+            content,
+            "AGENTS.md must document the per-tool read-only grant form",
+        )
+        self.assertIn(
+            "write tools",
+            content,
+            "AGENTS.md must warn that mcp:zotero exposes upstream write tools",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

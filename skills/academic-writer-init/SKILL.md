@@ -345,7 +345,7 @@ Wait for their reply and match it against the options (accept the option number,
 
 If **"Yes"**: list and enrich the configured scope:
 
-If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` and enrich only those items. Otherwise call `zotero_get_collections()` + `zotero_get_collection_items()` to list all items (or `zotero_get_recent()` for a flat recent-items view).
+If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` and enrich only those items. Otherwise call `zotero_get_collections()` first, then `zotero_get_collection_items(collection_key=KEY)` per collection to list all items (or `zotero_get_recent(limit=100)` for a flat recent-items view). `zotero_get_collection_items` pages at 50 items per call — when its response reports more items, follow the `Pass offset=N` hint until the listing is complete.
 
 For each item ID, call `zotero_get_item_metadata(format="json")`.
 
