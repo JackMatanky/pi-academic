@@ -1,0 +1,28 @@
+---
+name: academic-setup
+description: >-
+  Set up or maintain the Academic Writer profile and integrations. Use when doing first-time onboarding,
+  quick or full setup, source indexing, changing the research field, or adding/removing integrations.
+allowed-tools: bash read write edit find grep academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_update_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_ingest_sources academic_writer_resolve_mcp_tool
+metadata: {author: "Yotam Fromm", version: "0.3.0"}
+---
+
+# Academic Writer setup and profile maintenance
+
+This is one entrypoint with four explicit modes. Before changing anything, call `academic_writer_get_profile` when available and determine whether a profile already exists. If the request does not identify a mode, ask one concise question rather than silently choosing the extent of setup.
+
+## Route by requested task
+
+- **First-time or full setup / redo onboarding:** read `references/full-onboarding.md` and follow it. This route configures the researcher profile, citation style and style fingerprint, and offers source indexing as described there.
+- **Quick setup:** read `references/quick-onboarding.md` and follow it. This is the shorter profile/integration route; it must not be presented as full source indexing or full fingerprint analysis.
+- **Change research field:** read `references/profile-field.md` and follow it. Update only the field, preserving unrelated profile values.
+- **Add, remove, or reconfigure integrations:** read `references/integration-maintenance.md` and follow it. Never put secrets in profile/project-tracked files; preserve existing MCP configuration unless the researcher explicitly approves a safe change.
+
+Load `references/profile-schema.md` and `references/integration-setup.md` when the selected path requires their schema or integration details. These references are supporting contracts, not separate commands.
+
+## Safety and completion
+
+- Keep profile creation/setup separate from maintenance of an existing profile; honor each selected route’s preconditions.
+- A requested integration change is not permission to change unrelated profile fields or existing MCP configuration.
+- Preserve cancellation, confirmation, and error recovery behavior in the selected reference. Report what was completed and any setup step still requiring researcher action; do not claim a tool is configured based only on a package being installed.
+- Never duplicate, overwrite, or silently migrate existing profile or MCP artifacts outside the selected route’s explicit behavior.

@@ -1034,7 +1034,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_write_voice_audit",
     label: "Academic Writer Write Voice Audit",
     description:
-      "Write .voice/audit.md. The voice-calibrator agent's only path to persist its calibration report without a generic write grant.",
+      "Write .voice/audit.md. The voice-facilitator agent's only path to persist its calibration report without a generic write grant.",
     parameters: Type.Object({
       content: Type.String({
         description: "Full audit report markdown content.",
@@ -1054,7 +1054,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_update_author_voice",
     label: "Academic Writer Update Author Voice",
     description:
-      "Overwrite AUTHOR_VOICE.md with the given content. Used by voice-calibrator and voice-distiller instead of a generic write/edit grant.",
+      "Overwrite AUTHOR_VOICE.md with the given content. Used by voice-facilitator and voice-profile-builder instead of a generic write/edit grant.",
     parameters: Type.Object({
       content: Type.String({ description: "Full AUTHOR_VOICE.md content." }),
     }),
@@ -1072,7 +1072,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_write_interview_session",
     label: "Academic Writer Write Interview Session",
     description:
-      "Write .voice/interview/<sessionId>.md. The voice-interviewer agent's only path to persist a session transcript without a generic write grant. sessionId must match ^[a-zA-Z0-9_-]+$.",
+      "Write .voice/interview/<sessionId>.md. The voice-facilitator agent's only path to persist a session transcript without a generic write grant. sessionId must match ^[a-zA-Z0-9_-]+$.",
     parameters: Type.Object({
       sessionId: Type.String({
         minLength: 1,
@@ -1103,7 +1103,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_write_voice_fingerprint",
     label: "Academic Writer Write Voice Fingerprint",
     description:
-      "Write .voice/fingerprint.md. The voice-miner agent's only path to persist its style fingerprint without a generic write grant.",
+      "Write .voice/fingerprint.md. The voice-profile-builder agent's only path to persist its style fingerprint without a generic write grant.",
     parameters: Type.Object({
       content: Type.String({
         description: "Full fingerprint markdown content.",

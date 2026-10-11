@@ -50,7 +50,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-review",
+        "academic-review",
         "references",
         "scorecard.json",
       );
@@ -58,7 +58,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-write",
+        "academic-write",
         "references",
         "style-fingerprint-rubric.md",
       );
@@ -67,7 +67,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-write",
+        "academic-write",
         "references",
         `anti-ai-patterns-${lang}.md`,
       );
@@ -76,7 +76,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-write",
+        "academic-write",
         "references",
         "voice-profile-load.md",
       );
@@ -84,7 +84,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-write",
+        "academic-write",
         "references",
         "run-state-contract.md",
       );
@@ -92,7 +92,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-write",
+        "academic-write",
         "references",
         "citation-export-contract.md",
       );
@@ -100,7 +100,7 @@ export function resolveResourcePath(
       return join(
         PACKAGE_ROOT,
         "skills",
-        "academic-writer-review",
+        "academic-review",
         "references",
         "citation-review-gate.md",
       );

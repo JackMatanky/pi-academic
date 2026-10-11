@@ -1,0 +1,339 @@
+<!-- Consolidated mode guidance for full-onboarding.md. -->
+
+# Academic Writer — Initialization Wizard
+
+Personalized onboarding that creates your researcher profile, detects available integrations, analyzes your writing style, and indexes your research sources.
+
+## The Five Phases
+
+| Phase | What | Output |
+|-------|------|--------|
+| 0. Preflight | Create folders, detect existing profile | Workspace ready |
+| 1. Integrations | Auto-detect tools, let you choose | `tools` config |
+| 2. Profile | Field, language, citation style | Core profile |
+| 3. Style Analysis | Read past articles, build fingerprint | `styleFingerprint` + `articleStructure` |
+| 4. Sources | Index Zotero or local source folder | `sources` array |
+
+---
+
+## Phase 0: Preflight
+
+Run silently before saying anything:
+
+```bash
+mkdir -p past-articles .academic-writer .academic-writer/sources .academic-writer/logs
+# If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
+```
+
+If `.academic-writer/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
+
+Profile schema and file format: see `references/profile-schema.md`.
+
+Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
+
+**If it returns `ok: true`**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "You already have an Academic Writer profile. What would you like to do?"
+>
+> 1. **Update my profile** — Keep existing data, modify selected fields only.
+>
+>    ```text
+>    Update Mode
+>    ───────────
+>    ✓ Field of study preserved
+>    ✓ Style fingerprint preserved
+>    ✓ Sources preserved
+>    → Re-run only the steps you choose
+>    ```
+>
+> 2. **Start fresh** — Delete the current profile and rebuild from scratch.
+>
+>    ```text
+>    Fresh Start
+>    ───────────
+>    ⚠ Existing profile will be replaced
+>    ⚠ Style fingerprint will be cleared
+>    ⚠ Sources will be cleared
+>    → Walk through all 4 phases again
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+If **Update**, ask which phases to re-run (multiSelect: true) with options: "Integrations", "Profile (field/language/citation)", "Style Analysis", "Sources". Run only selected phases, then save.
+
+Then greet the user:
+> "Welcome to Academic Writer! I'll walk you through setup in a few steps.
+>
+> Your workspace folders are ready:
+>
+> - **`past-articles/`** — drop 5–10 of your published papers here (PDF or DOCX) so I can learn your writing style
+> - `.academic-writer/` — your profile (auto-managed)
+>
+> Let's start."
+
+---
+
+## Phase 1: Integration Detection
+
+Per-tool detection commands, numbered-list prompts, and port-fallback logic: see `references/integration-setup.md`.
+
+After running detection (parallel batch), store the tool selection as the `tools` object for Phase 4. Zotero is preferred but optional; Sefaria is optional and saved as `tools.sefaria` only when selected/detected.
+
+---
+
+## Phase 2: Researcher Profile
+
+### Step 1 of 4 — Field of Study
+
+Ask the researcher, as a free-text prompt (no fixed options — record whatever they say):
+> "What is your field of study and area of specialization?"
+
+Show examples below the question:
+> "The more specific, the better. Examples:
+>
+> - *Early Modern Jewish Philosophy*
+> - *Talmudic Literature and Rabbinic Thought*
+> - *Medieval Hebrew Poetry*
+> - *Biblical Studies — Pentateuch*"
+
+Record the free-text answer as `fieldOfStudy`.
+
+---
+
+### Step 2 of 4 — Article Language
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "What language will you write your articles in?"
+>
+> 1. **Hebrew** — Right-to-left, David font, inline-parenthetical citations recommended.
+>
+>    ```text
+>    Hebrew Mode
+>    ───────────
+>    Direction:  RTL
+>    Font:       David 11pt
+>    Citations:  (מחבר, כותרת, עמ' N) in running text
+>    Purity:     Foreign terms must be transliterated
+>    ```
+>
+> 2. **English** — Left-to-right, Times New Roman, citeproc/CSL citations supported.
+>
+>    ```text
+>    English Mode
+>    ────────────
+>    Direction:  LTR
+>    Font:       Times New Roman 12pt
+>    Citations:  Any CSL style (popular alias, Zotero/CSL style id, URL, or custom .csl)
+>    ```
+>
+> 3. **Other** — You'll specify the language name.
+>
+>    ```text
+>    Other Language
+>    ──────────────
+>    → You'll type the language name
+>    → RTL/LTR detected from language
+>    → Citation style: your choice
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+Store as `targetLanguage`. If "Other", ask for the language name with a follow-up question.
+
+---
+
+### Step 3 of 4 — Citation Style
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Which citation style do you use in your academic work?"
+>
+> 1. **Inline Parenthetical (Recommended for Hebrew)** — (Author, Title, Page) in running text — no footnotes required.
+>
+>    ```text
+>    Inline Parenthetical
+>    ────────────────────
+>    Example:
+>      כפי שטוען לוי (לוי, משנת הנפש, עמ' 42), הרעיון
+>      המרכזי הוא...
+>
+>    When to use:
+>      ✓ Hebrew articles
+>      ✓ Short citation format
+>      ✓ Dense citation density
+>    ```
+>
+> 2. **Popular citeproc style** — Pick a common style; Academic Writer downloads/caches it from Zotero/CSL on first use.
+>
+>    ```text
+>    Popular CSL aliases
+>    ───────────────────
+>      apa                  → APA 7th edition
+>      mla                  → MLA 9th edition
+>      chicago              → Chicago 18 notes + bibliography
+>      chicago-author-date  → Chicago 18 author-date
+>      turabian             → Turabian notes + bibliography
+>      harvard              → Harvard Cite Them Right
+>      ieee                 → IEEE
+>      nature               → Nature
+>      vancouver            → Vancouver
+>      ama                  → American Medical Association
+>      apsa                 → American Political Science Association
+>      asa                  → American Sociological Association
+>      mhra                 → Modern Humanities Research Association
+>      elsevier-harvard     → Elsevier Harvard
+>
+>    If none match, choose option 3 or 4.
+>    ```
+>
+> 3. **Zotero/CSL repository style** — Use a style id from <https://www.zotero.org/styles> or <https://github.com/citation-style-language/styles>.
+>
+>    ```text
+>    Zotero/CSL Repository
+>    ─────────────────────
+>    Example ids:
+>      chicago-author-date
+>      nature
+>      modern-humanities-research-association
+>
+>    Academic Writer downloads/caches the .csl file to .academic-writer/csl/
+>    ```
+>
+> 4. **Custom CSL file** — Use a `.csl` file you provide.
+>
+>    ```text
+>    Custom CSL
+>    ──────────
+>    Example paths:
+>      .academic-writer/csl/my-journal.csl
+>      /Users/me/styles/my-journal.csl
+>
+>    Best for: journal-specific or edited CSL files.
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+Map selection:
+
+- Inline → `citationStyle: inline-parenthetical`
+- Popular alias → `citationStyle: STYLE_ALIAS` (e.g. `chicago`, `mla`, `apa`, `chicago-author-date`)
+- Zotero/CSL repository style → `citationStyle: STYLE_ID` (e.g. `nature`) and store the same value under `outputFormatPreferences.csl`
+- Custom CSL file → `citationStyle: custom-csl` and store the path under `outputFormatPreferences.cslPath`
+
+For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
+
+If validation fails, show the error and ask for a different alias, style id, URL, or `.csl` path. Do not continue with an unresolved CSL style.
+
+---
+
+### Step 3b of 4 — Abstract Languages
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Do your articles need abstracts? Some journals require dual-language abstracts."
+>
+> 1. **Primary language only** — Abstract in the article's language only.
+>
+>    ```text
+>    Single Abstract
+>    ───────────────
+>    Abstract in: [targetLanguage]
+>    Common for: Most journals
+>    ```
+>
+> 2. **Hebrew + English** — Dual-language abstracts — common for Israeli journals.
+>
+>    ```text
+>    Dual Abstract
+>    ─────────────
+>    Abstracts in: Hebrew + English
+>    Common for: Israeli journals,
+>                academic theses
+>    ```
+>
+> 3. **No abstract needed** — Skip abstract generation.
+>
+>    ```text
+>    No Abstract
+>    ───────────
+>    Abstracts will not be generated.
+>    You can enable later with
+>    /skill:academic-setup (Update)
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+Store as `abstractLanguages` array:
+
+- Primary only → `["Hebrew"]` (or whatever `targetLanguage` is)
+- Hebrew + English → `["Hebrew", "English"]`
+- No abstract → `[]`
+
+---
+
+### Step 4 of 4 — Writing Style
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "To write articles that sound like you, I need to analyze your past work. Have you added papers to the past-articles/ folder?"
+>
+> 1. **Yes, my papers are ready** — Analyze them now to extract your writing fingerprint.
+>
+>    ```text
+>    Style Analysis
+>    ──────────────
+>    → Reads PDF and DOCX files in past-articles/
+>    → Analyzes 25 style dimensions:
+>       sentence length, structure, vocabulary,
+>       paragraph patterns, transitions, citations,
+>       rhetorical moves, tone, intro/conclusion style
+>    → Shows you the fingerprint before saving
+>    → You can correct anything before it's stored
+>    ```
+>
+> 2. **Skip for now** — Profile will be saved without a style fingerprint. Articles will use generic academic style.
+>
+>    ```text
+>    Skip Style Analysis
+>    ───────────────────
+>    ⚠ Articles won't match your voice yet
+>    → Add papers to past-articles/ anytime
+>    → Re-run: /skill:academic-setup
+>       (choose 'Update' → 'Style Analysis')
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+**If "Yes, my papers are ready"**, run:
+
+Call `academic_writer_list_project_files` with `kind: "past_articles"` and use the returned file list.
+
+**Step 1: Computational extraction** — Run the voice-profile-builder subagent on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its returned metrics directly in the confirmation step below; do not write `/tmp` metrics files.
+
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+
+First fetch the **shared Hebrew baseline** from Zotero (book *Hebrew Linguistic Reference*, mirrored on GitHub at [JackMatanky/hebrew-linguistics-data](https://github.com/JackMatanky/hebrew-linguistics-data); the same book is read by the `hebrew-book-producer` plugin so both share one source of truth):
+
+```bash
+mkdir -p .ctx
+```
+
+Call `zotero_get_item_fulltext(item_key="cmomjonvy0fdmk30zwef79c48")` and use the Write tool to save the returned text to `.ctx/hebrew-linguistic-reference.md`.
+
+The extractor reads the baseline JSON code block embedded in the `08-style-fingerprint-baseline` chapter of the cached markdown, so there is no separate JSON file in the plugin's `references/` folder.
+
+This gives you 30+ numerical metrics (sentence length, passive voice, transitions, etc.) and contrastive scores showing what's distinctive about this researcher vs. baseline academic Hebrew.
+
+**Step 2: Text extraction for qualitative analysis** — For each file, call `academic_writer_extract_document` with that file path and use the returned text.
+
+**Step 3: Qualitative analysis** — Read the text and computational metrics. Analyze across the qualitative dimensions (C–I below) that the script cannot compute: paragraph formula, tone, rhetorical patterns, templates, representative excerpts.
+
+Show the combined fingerprint summary (computational + qualitative) and confirm before saving:
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Here's the writing fingerprint I extracted. Is this accurate?"
+>
+> 1. **Looks good — save it** — Profile will be saved with this fingerprint.
+> 2. **I'd like to adjust some things** — Tell me what to change and I'll update before saving.
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+…
+
+…
+> | Tools enabled | [list] |

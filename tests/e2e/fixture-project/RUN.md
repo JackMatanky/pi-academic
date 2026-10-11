@@ -22,7 +22,7 @@ Pinned inputs for a deterministic smoke test of the write pipeline.
 
 ## Run
 
-`/skill:academic-writer-write` — `section-writer` runs the 8-skill pipeline
+`/skill:academic-write` — `section-writer` runs the 8-skill pipeline
 (draft → style → grammar → academic language → language purity → anti-AI →
 repetition → citation audit) per paragraph. The auditor gates each paragraph;
 `synthesizer` does the cross-section pass.

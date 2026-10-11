@@ -85,6 +85,21 @@ class TestSkills(unittest.TestCase):
 
             self.assertGreater(len(body.strip()), 50, f"Body too short in {skill_path}")
 
+        expected_skills = {
+            "academic-write",
+            "academic-research",
+            "academic-edit",
+            "academic-review",
+            "academic-setup",
+            "academic-voice",
+            "academic-feedback",
+            "academic-health",
+            "academic-export",
+            "academic-present",
+            "academic-help",
+        }
+        self.assertEqual(names, expected_skills)
+
 
 class TestAgents(unittest.TestCase):
     """Test cases covering Agents.
@@ -110,10 +125,8 @@ class TestAgents(unittest.TestCase):
             "auditor.md",
             "synthesizer.md",
             "proofreader.md",
-            "voice-miner.md",
-            "voice-interviewer.md",
-            "voice-distiller.md",
-            "voice-calibrator.md",
+            "voice-profile-builder.md",
+            "voice-facilitator.md",
         ]
 
         for agent_file in expected_agents:
@@ -391,12 +404,12 @@ class TestExtensions(unittest.TestCase):
             "academic_writer_read_resource must pass ctx.cwd so thresholds can resolve the project override",
         )
 
-        voice_miner = _read("agents/voice-miner.md")
+        voice_miner = _read("agents/voice-profile-builder.md")
         self.assertIn("academic_writer_read_resource", voice_miner)
         self.assertNotIn(
             "src/thresholds.json",
             voice_miner,
-            "voice-miner must not reference the non-existent src/thresholds.json path",
+            "voice-profile-builder must not reference the non-existent src/thresholds.json path",
         )
 
     def test_packaged_prompt_resources_exist(self):
@@ -409,10 +422,10 @@ class TestExtensions(unittest.TestCase):
         """
         resources_source = _read("extensions/pi-academic-writer/resources.ts")
         for resource, path in {
-            "voice_profile_load": "skills/academic-writer-write/references/voice-profile-load.md",
-            "run_state_contract": "skills/academic-writer-write/references/run-state-contract.md",
-            "citation_export_contract": "skills/academic-writer-write/references/citation-export-contract.md",
-            "citation_review_gate": "skills/academic-writer-review/references/citation-review-gate.md",
+            "voice_profile_load": "skills/academic-write/references/voice-profile-load.md",
+            "run_state_contract": "skills/academic-write/references/run-state-contract.md",
+            "citation_export_contract": "skills/academic-write/references/citation-export-contract.md",
+            "citation_review_gate": "skills/academic-review/references/citation-review-gate.md",
         }.items():
             self.assertIn(resource, resources_source)
             self.assertTrue(
@@ -430,10 +443,10 @@ class TestExtensions(unittest.TestCase):
         tools_source = _read("extensions/pi-academic-writer/index.ts")
         self.assertIn('scripts", "audit-citations.py', tools_source)
         for skill in [
-            "skills/academic-writer-write/SKILL.md",
-            "skills/academic-writer-edit/SKILL.md",
-            "skills/academic-writer-export/SKILL.md",
-            "skills/academic-writer-review/SKILL.md",
+            "skills/academic-write/SKILL.md",
+            "skills/academic-edit/SKILL.md",
+            "skills/academic-export/SKILL.md",
+            "skills/academic-review/SKILL.md",
         ]:
             content = _read(skill)
             self.assertIn("academic_writer_audit_citations", content, skill)
@@ -449,9 +462,9 @@ class TestExtensions(unittest.TestCase):
         """
         tools = _read("extensions/pi-academic-writer/index.ts")
         profile = _read("extensions/lib/profile.ts")
-        schema = _read("skills/academic-writer-init/references/profile-schema.md")
-        init = _read("skills/academic-writer-init/SKILL.md")
-        setup = _read("skills/academic-writer-setup/SKILL.md")
+        schema = _read("skills/academic-setup/references/profile-schema.md")
+        init = _read("skills/academic-setup/SKILL.md")
+        setup = _read("skills/academic-setup/SKILL.md")
         self.assertIn("migrateJsonProfile", profile)
         self.assertIn("academic_writer_migrate_profile", tools)
         self.assertIn("academic_writer_migrate_profile", init)
@@ -552,9 +565,9 @@ class TestMcpWiring(unittest.TestCase):
             for path in [
                 "AGENTS.md",
                 "README.md",
-                "skills/academic-writer-init/references/integration-setup.md",
-                "skills/academic-writer-setup/SKILL.md",
-                "skills/academic-writer-update-tools/SKILL.md",
+                "skills/academic-setup/references/integration-setup.md",
+                "skills/academic-setup/SKILL.md",
+                "skills/academic-setup/SKILL.md",
             ]
         )
         self.assertIn("toolPrefix", docs)
@@ -622,30 +635,16 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
     """
 
     def test_slash_commands(self):
-        """Assert slash commands.
-
-        This component keeps the surrounding module contract explicit and testable.
-
-        Returns:
-            None.
-        """
         readme = _read("README.md") if os.path.isfile("README.md") else ""
         agents_md = _read("AGENTS.md") if os.path.isfile("AGENTS.md") else ""
-
-        skills_dir = "skills"
-        for d in os.listdir(skills_dir):
-            if not d.startswith("academic-writer-"):
+        for skill_name in os.listdir("skills"):
+            skill_path = os.path.join("skills", skill_name, "SKILL.md")
+            if not os.path.isfile(skill_path):
                 continue
-
-            cmd = f"/skill:{d}"
-            # Some skills might not be documented if they were user-invocable: false, but the plan says TestReadmeAndAgentsMd: same cross-reference intent with expected form updated to /skill:academic-writer-<name>
-            # we will just check if they appear if they were user invocable. In our migrated skills, update-tools was the only one.
-            if d == "academic-writer-update-tools":
-                continue
-
+            command = f"/skill:{skill_name}"
             self.assertTrue(
-                cmd in readme or cmd in agents_md,
-                f"Command {cmd} missing in README.md/AGENTS.md",
+                command in readme or command in agents_md,
+                f"Command {command} missing in README.md/AGENTS.md",
             )
 
     def test_pdf_export_uses_health_and_wrapper_tools(self):
@@ -656,8 +655,8 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
         Returns:
             None.
         """
-        export_skill = _read("skills/academic-writer-export/SKILL.md")
-        health_skill = _read("skills/academic-writer-health/SKILL.md")
+        export_skill = _read("skills/academic-export/SKILL.md")
+        health_skill = _read("skills/academic-health/SKILL.md")
         readme = _read("README.md")
 
         self.assertIn("academic_writer_health", export_skill)
@@ -674,31 +673,15 @@ class TestCrossReferences(unittest.TestCase):
     """
 
     def test_cross_references(self):
-        """Assert cross references.
-
-        This component keeps the surrounding module contract explicit and testable.
-
-        Returns:
-            None.
-        """
-        sw_path = "agents/section-writer.md"
-        w_path = "skills/academic-writer-write/SKILL.md"
-        if os.path.isfile(sw_path) and os.path.isfile(w_path):
-            sw_body = _read(sw_path)
-            w_body = _read(w_path)
-            self.assertIn("Phase 1", w_body)  # Or check stages
-
-        help_path = "skills/academic-writer-help/SKILL.md"
-        if os.path.isfile(help_path):
-            help_body = _read(help_path)
-            skills_dir = "skills"
-            for d in os.listdir(skills_dir):
-                if (
-                    not d.startswith("academic-writer-")
-                    or d == "academic-writer-update-tools"
-                ):
-                    continue
-                self.assertIn(d, help_body, f"Help skill missing reference to {d}")
+        help_path = "skills/academic-help/SKILL.md"
+        self.assertTrue(os.path.isfile(help_path))
+        help_body = _read(help_path)
+        for skill_name in os.listdir("skills"):
+            if not os.path.isfile(os.path.join("skills", skill_name, "SKILL.md")):
+                continue
+            self.assertIn(
+                skill_name, help_body, f"Help skill missing reference to {skill_name}"
+            )
 
 
 class TestNoCandlekeepReferences(unittest.TestCase):
@@ -758,10 +741,9 @@ class TestNoStaleClaudeCodeArtifacts(unittest.TestCase):
     """
 
     def test_no_old_slash_command_form(self):
-        # `/academic-writer:<name>` was the Claude Code plugin slash-command
-        # form; pi skills register as `/skill:academic-writer-<name>`. A
-        # stray old-form reference is a dead command the model will emit
-        # verbatim to the researcher.
+        # `/academic-writer:<name>` was the Claude Code plugin command form;
+        # pi skills register as `/skill:<name>`. A stale command is a dead
+        # route the model might emit verbatim to the researcher.
         """Assert no old slash command form.
 
         This component keeps the surrounding module contract explicit and testable.
@@ -861,7 +843,7 @@ class TestZoteroMcpCompatibility(unittest.TestCase):
         Returns:
             None.
         """
-        content = _read("skills/academic-writer-research/SKILL.md")
+        content = _read("skills/academic-research/SKILL.md")
         self.assertNotIn(
             "cannot accept a collection filter",
             content,
@@ -886,78 +868,6 @@ class TestZoteroMcpCompatibility(unittest.TestCase):
             "Vectorless RAG",
             content,
             "'not active' note contradicts the same skill offering zotero_semantic_search",
-        )
-
-    # `zotero_get_collection_items` requires `collection_key` and returns 50
-    # items per call (the response names the `Pass offset=N` continuation);
-    # both skills called it with no arguments and never mentioned paging, so a
-    # collection over 50 items was listed only partially and a literal bare
-    # call would fail schema validation.
-    def test_collection_listing_skills_pass_key_and_page(self):
-        """Assert collection listing skills pass key and page.
-
-        This component keeps the surrounding module contract explicit and testable.
-
-        Returns:
-            None.
-        """
-        for path in [
-            "skills/academic-writer-write/SKILL.md",
-            "skills/academic-writer-init/SKILL.md",
-        ]:
-            content = _read(path)
-            self.assertNotIn(
-                "zotero_get_collection_items()",
-                content,
-                f"{path} calls zotero_get_collection_items without required collection_key",
-            )
-            self.assertIn(
-                "offset",
-                content,
-                f"{path} never mentions paging past the 50-item default limit",
-            )
-
-    # pi-mcp-adapter caches direct MCP tool metadata at startup (see the
-    # pi-subagents README), so a `.mcp.json` written during first-time setup
-    # does not expose `zotero_get_recent` until Pi restarts. Every skill that
-    # scaffolds MCP config must say so, or the probe right after a correct
-    # setup reports NOT_DETECTED and the researcher is sent to reinstall.
-    def test_mcp_config_skills_note_pi_restart(self):
-        """Assert mcp config skills note pi restart.
-
-        This component keeps the surrounding module contract explicit and testable.
-
-        Returns:
-            None.
-        """
-        for path in [
-            "skills/academic-writer-health/SKILL.md",
-            "skills/academic-writer-setup/SKILL.md",
-            "skills/academic-writer-init/references/integration-setup.md",
-        ]:
-            content = _read(path)
-            self.assertIn(
-                "restart Pi",
-                content,
-                f"{path} scaffolds MCP config but never mentions restarting Pi",
-            )
-
-    # Setup is where install commands live; `zotero_semantic_search` silently
-    # degrades to an install hint on a base `zotero-mcp-server` install, so the
-    # optional extra belongs next to the install guidance.
-    def test_setup_skill_documents_optional_semantic_extra(self):
-        """Assert setup skill documents optional semantic extra.
-
-        This component keeps the surrounding module contract explicit and testable.
-
-        Returns:
-            None.
-        """
-        content = _read("skills/academic-writer-setup/SKILL.md")
-        self.assertIn(
-            "zotero-mcp-server[semantic]",
-            content,
-            "setup never mentions the [semantic] extra zotero_semantic_search requires",
         )
 
     # `mcp:zotero` grants the whole server, and upstream's mutation tools

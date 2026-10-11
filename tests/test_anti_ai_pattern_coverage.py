@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-REF = Path("skills/academic-writer-write/references/anti-ai-patterns-hebrew.md")
+REF = Path("skills/academic-write/references/anti-ai-patterns-hebrew.md")
 
 
 def test_section_A_blocks_mibchinat_paragraph_opener():

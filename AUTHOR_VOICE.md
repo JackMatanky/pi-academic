@@ -1,20 +1,20 @@
 > Updated <YYYY-MM-DD> by <plugin>
-> Status: empty (run `/skill:academic-writer-init` to seed Stage 1, then `/skill:academic-writer-voice` for Stage 2)
+> Status: empty (run `/skill:academic-setup` to seed Stage 1, then `/skill:academic-voice` for Stage 2)
 
 # Voice Profile — <writer name>
 
 ## Core voice (cross-project)
 
-_Empty. Populated by Stage 1 miner and Stage 2 interview._
+*Empty. Populated by Stage 1 corpus analysis and Stage 2 interview.*
 
 ## Terminology
 
-_Empty._
+*Empty.*
 
 ## Academic-specific
 
-_Empty._
+*Empty.*
 
 ## Non-fiction-book-specific
 
-_Empty._
+*Empty.*

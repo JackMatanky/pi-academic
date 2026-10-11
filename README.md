@@ -51,7 +51,7 @@ Three of the four `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-
 ### 3. Initialize Your Profile
 
 ```text
-/skill:academic-writer-init
+/skill:academic-setup
 ```
 
 One-time setup. You'll be asked for:
@@ -66,13 +66,13 @@ Your profile is saved to `.academic-writer/profile.md` and loaded automatically.
 ### 4. Write Your First Article
 
 ```text
-/skill:academic-writer-write
+/skill:academic-write
 ```
 
 ### 5. Export to Other Formats (optional)
 
 ```text
-/skill:academic-writer-export
+/skill:academic-export
 ```
 
 Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after the deterministic citation audit passes.
@@ -110,34 +110,25 @@ The writing workflow uses source-linked research notes and an article-specific a
 
 ## Commands
 
-Skills are model-invoked by default — natural-language triggering is primary. `/skill:academic-writer-<name>` is the explicit fallback.
+Skills are directly invocable; use natural-language requests or these commands:
 
-| Command                               | What it does                                                                 |
-| ------------------------------------- | ---------------------------------------------------------------------------- |
-| `/skill:academic-writer-write`        | Write a new article                                                          |
-| `/skill:academic-writer-init`         | Full onboarding: profile, citation style, style fingerprint, source indexing |
-| `/skill:academic-writer-setup`        | Quick onboarding (profile + integrations only)                               |
-| `/skill:academic-writer-ideate`       | Brainstorm research questions with 5W1H and gap analysis                     |
-| `/skill:academic-writer-learn`        | Scan new past articles and update your style fingerprint                     |
-| `/skill:academic-writer-voice`        | Deepen your voice profile with a 7-session adversarial interview             |
-| `/skill:academic-writer-review`       | Score a completed article on 6 quality dimensions                            |
-| `/skill:academic-writer-proofread`    | Mechanical הגהה pass — fixes typos/punctuation/grammar with a change report  |
-| `/skill:academic-writer-present`      | Generate conference outlines, journal abstracts, book chapter proposals      |
-| `/skill:academic-writer-research`     | Research a topic using your indexed sources                                  |
-| `/skill:academic-writer-edit`         | Edit a previously written article                                            |
-| `/skill:academic-writer-edit-section` | Quick edit of a single section                                               |
-| `/skill:academic-writer-feedback`     | Apply free-form feedback to an article or your profile                       |
-| `/skill:academic-writer-update-field` | Change your field of study                                                   |
-| `/skill:academic-writer-update-tools` | Add or remove integrations                                                   |
-| `/skill:academic-writer-export`       | Convert an article to PDF/HTML/ODT/LaTeX/EPUB                                |
-| `/skill:academic-writer-health`       | Check all integrations and profile status                                    |
-| `/skill:academic-writer-help`         | Show package info                                                            |
-
----
+| Command | Purpose |
+|---|---|
+| `/skill:academic-write` | Frame a research question or write a new article |
+| `/skill:academic-research` | Investigate a topic or fact-check sources without starting an article |
+| `/skill:academic-edit` | Edit an article, including one-section and structural-edit modes |
+| `/skill:academic-review` | Substantive review or mechanical proofread mode |
+| `/skill:academic-setup` | Quick/full onboarding, profile-field updates, or integration maintenance |
+| `/skill:academic-voice` | Refresh corpus-derived style or interview, calibrate, audit, and recompress voice profile |
+| `/skill:academic-feedback` | Apply researcher feedback to article and profile patterns |
+| `/skill:academic-health` | Diagnose profile, integrations, source index, and export readiness |
+| `/skill:academic-export` | Export a finished article to additional formats |
+| `/skill:academic-present` | Create presentation and submission deliverables |
+| `/skill:academic-help` | Explore commands and package workflows |
 
 ## Integrations
 
-All integrations are optional. Choose which to enable during `/skill:academic-writer-init`.
+All integrations are optional. Choose which to enable during `/skill:academic-setup`.
 
 | Tool              | What it does                                                                                             | Setup                                                                                                                                                                                                                                |
 | ----------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -151,7 +142,7 @@ This package doesn't hardcode a specific model provider for prose drafting — p
 
 **Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and article-local `articles/<slug>.bibliography.bib` is used first, falling back to `.academic-writer/bibliography.bib`. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
 
-**Scoped libraries:** During setup or `/skill:academic-writer-update-tools`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
+**Scoped libraries:** During setup or `/skill:academic-setup`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
 
 **MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. Local Zotero, NotebookLM, and Sefaria setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
@@ -195,7 +186,7 @@ your-research-folder/
     ├── sources.json             ← Current-run source registry/cache
     ├── bibliography.bib         ← Current-run BibTeX cache; articles keep frozen copies beside each draft
     ├── csl/                     ← Cached/downloaded or custom CSL files for citeproc export
-    ├── research-brief.md        ← Output from /skill:academic-writer-ideate
+    ├── research-brief.md        ← Output from /skill:academic-write
     ├── agent-memory/            ← Per-agent persistent notes
     ├── runs/                    ← Active/last run state shown in the dashboard
     └── logs/                    ← Session logs
@@ -205,7 +196,7 @@ your-research-folder/
 
 ## Troubleshooting
 
-**"No profile found"** — run `/skill:academic-writer-init` first.
+**"No profile found"** — run `/skill:academic-setup` first.
 
 **"Zotero not detected"** — install the server and make sure a `zotero` MCP server is configured:
 
@@ -230,7 +221,7 @@ brew install --cask basictex
 sudo tlmgr install collection-xetex
 ```
 
-HTML/ODT/LaTeX/EPUB export via `/skill:academic-writer-export` don't need this — only PDF does (the default `pdflatex` engine cannot render Hebrew script; use Tectonic or XeLaTeX).
+HTML/ODT/LaTeX/EPUB export via `/skill:academic-export` don't need this — only PDF does (the default `pdflatex` engine cannot render Hebrew script; use Tectonic or XeLaTeX).
 
 **Package behaves strangely after an update** — reinstall it:
 

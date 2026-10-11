@@ -186,14 +186,14 @@ function buildDashboardLines(
   );
   if (unanalyzed > 0) {
     lines.push(`║  New past articles: ${String(unanalyzed).padEnd(27)}║`);
-    lines.push("║  → Run /skill:academic-writer-voice to update style    ║");
+    lines.push("║  → Run /skill:academic-voice to update style    ║");
   }
 
   lines.push("╠══════════════════════════════════════════════════╣");
-  lines.push("║  /skill:academic-writer-write    — Write new article   ║");
-  lines.push("║  /skill:academic-writer-ideate   — Brainstorm ideas    ║");
-  lines.push("║  /skill:academic-writer-research — Investigate a topic ║");
-  lines.push("║  /skill:academic-writer-health   — Check integrations  ║");
+  lines.push("║  /skill:academic-write          — Write / frame  ║");
+  lines.push("║  /skill:academic-edit           — Edit articles  ║");
+  lines.push("║  /skill:academic-research       — Research topic ║");
+  lines.push("║  /skill:academic-health         — Check project  ║");
   lines.push("╚══════════════════════════════════════════════════╝");
   return lines;
 }
