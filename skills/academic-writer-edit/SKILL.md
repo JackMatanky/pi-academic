@@ -47,6 +47,11 @@ Ask the researcher:
 For `.docx`, markdown, PDF, or text files, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction fails, stop and report the tool's error.
 
 Parse the article into sections and paragraphs. Identify all footnotes/citations.
+## Make scope visible before editing
+
+Classify the request as **local** (prose, citation, or style within existing argument) or **structural** (argument, evidence, section order, or outline). If unclear, ask one concise scope question before changing content. For local work, name the selected paragraphs/writing units and what will remain unchanged; do not rebuild the outline or refresh snapshots unless a required evidence/argument change makes it necessary. For structural work, present the proposed outline change and exact affected sections/units and obtain approval before refreshing article assets or dispatching rewrites. Regenerate only affected units and preserve untouched prose, headings, and citation assets.
+
+For migration, show the draft mapping and unmapped paragraphs. Migration does not alter source Markdown, approve an outline, or trigger section rewrites; ask which units, if any, the researcher wants changed. If any operation fails, report what failed, the authoritative artifact, whether article text changed, and one concrete recovery action. Preserve artifacts on migration conflict; stop drafting if either snapshot fails.
 
 ## Structured Edit Gate
 

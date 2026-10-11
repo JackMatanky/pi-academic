@@ -129,6 +129,18 @@ Call `academic_writer_write_sources_cache` with `sourcesJson` set to the JSON ar
 
 #### Candidate source notes
 
+### Present candidate findings as evidence cards
+
+For each saved candidate that is relevant to the research question, present a compact card in the final researcher-facing summary:
+
+- **Kind:** exact quotation, paraphrase/summary, or researcher analysis/question.
+- **Material:** exact quoted wording verbatim, or clearly labeled paraphrase/summary; keep researcher interpretation separate from source text.
+- **Source:** title and stable identity when available.
+- **Location:** the available human-readable locator.
+- **Why it may matter:** optional relevance note, clearly marked as interpretation.
+
+Omit unavailable values, but label missing source identity or location as unresolved; never infer either. Candidate themes and relevance are suggestions, not source conclusions. NotebookLM-only results and unresolved identities may be shown as leads but are not source-backed cards. Save eligible findings as unchecked candidate notes only; do not mark them verified.
+
 After writing the source cache, call academic_writer_write_research_notes({notesJson}) with a serialized array of selected candidate quotation, paraphrase, and summary notes. Each includes kind, coreStatement, sourceRef matching the stable sourceId in the current registry, researcherNote, tags, and anchor.locator.display.
 
 - For local files copy sourceFingerprint from the source registry into the anchor; for Zotero include it only when a stable digest was supplied. Do not invent identity or fingerprints.
@@ -231,6 +243,8 @@ If a NotebookLM MCP tool IS available and the researcher has existing NotebookLM
 ---
 
 ## Organize Results
+
+Describe gaps as “not found in the material searched” and name the scope searched; do not infer that a topic or perspective is absent from a source or literature solely from a failed search. Separate directly observed source positions from cross-source themes, tensions, counterpositions, or possible missing perspectives; label synthesis and proposed connections as provisional for researcher judgment.
 
 From the retrieved content, identify:
 

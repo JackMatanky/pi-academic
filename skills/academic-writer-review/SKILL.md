@@ -44,6 +44,7 @@ If the audit returns `ok: false`, score Citation Completeness as failing, report
 The 6-dimension scorecard is defined in `references/scorecard.json` (machine-readable, versioned). At the start of every review, call `academic_writer_read_resource` with `name: scorecard`.
 
 For each dimension:
+
 1. Score 0–10 against the listed `criteria`.
 2. Sum the dimension scores.
 3. Compare to `scoring.passThreshold` (default 40). Below threshold → researcher review required.
@@ -58,7 +59,7 @@ Load linking words for Academic Conventions (dimension 6) by calling `academic_w
 
 Present the results as a clear scorecard:
 
-```
+```text
 ╔══════════════════════════════════════════════════════╗
 ║              ARTICLE REVIEW SCORECARD               ║
 ╠══════════════════════════════════════════════════════╣
@@ -88,6 +89,7 @@ Present the results as a clear scorecard:
 ```
 
 **Grade thresholds:**
+
 - 50–60: Excellent — ready for submission
 - 40–49: Good — minor improvements recommended
 - 30–39: Needs Work — specific issues to address
@@ -95,13 +97,19 @@ Present the results as a clear scorecard:
 
 ## Detailed Findings
 
+## Reverse-outline diagnostics (read-only)
+
+After evaluating the draft, inspect its actual paragraphs or meaningful writing units. For each, summarize its apparent role or claim, evidence used, and explanation or link to the thesis. Note repetition, factual claims without evident support, missing explanation between evidence and claim, and abrupt progression as questions for the researcher—not automatic verdicts. Base this only on the article as read; this report must not modify article text, citations, notes, outline, snapshots, or run state. Keep this diagnostic distinct from the scorecard and citation audit.
+
 After the scorecard, list specific issues found:
 
 > **Issues to address:**
+>
 > 1. [Dimension] — [specific issue and location]
 > 2. ...
 >
 > **Strengths:**
+>
 > 1. [Dimension] — [what works well]
 > 2. ...
 
@@ -111,10 +119,10 @@ If the score is below 40, warn the researcher:
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 > "The article scored NN/60 on self-review. Some issues were found. How would you like to proceed?"
+>
 > 1. **Continue to DOCX output** — Generate the document as-is. You can edit later.
 > 2. **Show me the issues** — Review the detailed findings before proceeding.
 > 3. **Run edits first** — Address the issues before generating the final document.
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If score is 40+, show the scorecard and continue to DOCX output automatically.
-

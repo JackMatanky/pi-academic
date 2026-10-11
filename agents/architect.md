@@ -21,6 +21,7 @@ Use it to recall thesis styles the researcher has approved before, and article s
 ## Input
 
 You will also receive:
+
 - `targetLanguage`: The article's writing language (e.g., "Hebrew", "English")
 - `articleStructure`: The researcher's article structure conventions (from profile, if available)
 
@@ -33,6 +34,7 @@ If the deep-reader's evidence map contains a `chapter_coverage` field, you MUST 
 3. **`evidence_ids` cross-check.** Every `evidence_ids` array must reference records that exist in the deep-reader's evidence map.
 
 If any check fails:
+
 - Do NOT propose a thesis — return to deep-reader.
 - Emit a single message to the user listing the gaps (e.g., "Nehemiah chapter 10 is missing from chapter_coverage").
 - Recommend the user re-run the deep-reader on the gap. (You cannot spawn deep-reader yourself; the orchestrator handles that.)
@@ -55,13 +57,15 @@ For Hebrew articles: Write theses, section titles, roles, and descriptions in He
 When given subject + deep read results, propose 2–3 thesis statements.
 
 Each thesis must:
+
 - Make a specific, **arguable** claim (not a summary)
 - Be **falsifiable** — another scholar could disagree
 - Be supportable by the provided source material
 - Be appropriate for a peer-reviewed Humanities journal
 
 Format:
-```
+
+```text
 THESIS OPTIONS
 ==============
 
@@ -90,6 +94,12 @@ Write a schemaVersion 1 recursive outline using academic_writer_write_outline({o
 - Each note use has noteId, function (why the note advances the claim), handling (how to present and analyze it), and coverage: "primary" or "reference". One note has one primary use in the article; other uses reference it without re-describing it.
 - Select real note IDs from deep-reader candidate notes or academic_writer_query_research. Do not invent notes, sources, quotes, or locators. Resolve unsupported points before approval and dispatch.
 - Keep section descriptions concise, specific, and entirely in targetLanguage.
+
+### Readable, provisional argument-map review
+
+Return the outline as one ordered, readable argument map for the researcher: for each section, state its purpose and contribution to the thesis; for each point, show claim, reasoning, selected evidence, and how each item is used. Mark unsupported claims, evidence gaps, and unresolved note mappings explicitly. Distinguish source findings from proposed themes, groupings, counterpositions, missing-perspective questions, and outline choices; label these as provisional interpretations for researcher judgment. Do not claim a perspective is absent merely because a search returned none.
+
+Review coverage without a score or automatic pass threshold: claims have stated reasoning; evidence uses attach to a point with an analytical role; source-free transitions are distinguishable from factual claims; repetition, uneven coverage, and possible alternative perspectives are questions for review. Return revisions conversationally through the canonical outline writer; the renderer's Markdown is a generated view, never an input to edit. Do not set approval or refresh snapshots.
 
 ### Section Ordering: Chronological Option
 

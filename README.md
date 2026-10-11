@@ -7,7 +7,7 @@ AI-first academic writing assistant for Humanities researchers. Writes rigorousl
 ## What It Does
 
 - **Writes in your voice** — analyzes your past articles to extract your style, then applies it to new work
-- **Guided workflow** — subject → sources → thesis → outline → write → review → export
+- **Guided workflow** — Sources → Evidence cards → Argument → Draft → Review and revise; return to reading or reshape the argument as needed
 - **Parallel processing** — all sections written simultaneously for speed
 - **Citation-verified** — every claim checked against your source library; nothing fabricated
 - **Anti-AI filter** — every paragraph scored on 5 dimensions to eliminate generic AI writing patterns
@@ -81,22 +81,16 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 
 ## Writing Workflow
 
-**You do (conversational):**
+**The workflow follows the researcher's decisions:**
 
-1. Describe the topic
-2. Select relevant sources
-3. Review the deep-read summary
-4. Choose a thesis (2–3 options)
-5. Refine the outline together
-6. Approve
+1. **Sources:** choose relevant local files and, optionally, Zotero materials.
+2. **Evidence cards:** review exact source-backed quotations, paraphrases, or summaries; correct or exclude each item. Candidates remain unverified until explicitly confirmed.
+3. **Argument:** review a readable outline showing each section's purpose and each point's claim, reasoning, and evidence role. Approve the thesis and outline before the article's evidence snapshots are frozen.
+4. **Draft:** sections are written from those frozen, article-specific evidence bundles. Later source additions do not silently change them.
+5. **Review and revise:** review citation-audit results and a reverse outline of paragraph roles, evidence, and explanation. Return to sources or revise the argument when needed; edits preserve unrequested text.
 
-**Package does (automated):**
-
-7. Writes all sections in parallel — each paragraph through an 8-step pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit)
-8. Synthesizes for coherence and style
-9. Generates the תקציר (abstract)
-10. Runs 6-dimension self-review scorecard
-11. Exports as `.docx`
+Local files work without Zotero; Zotero is optional and preferred when enabled. Structured notes, canonical outline data, and article-local snapshots remain internal sources of truth.
+Review presents a read-only reverse outline of actual paragraph roles, evidence, and explanation, with tentative prompts about repetition, support, missing analysis, or abrupt transitions. It is a discussion aid, not an automatic verdict or persisted rewrite.
 
 ---
 

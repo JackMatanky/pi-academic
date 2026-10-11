@@ -167,6 +167,10 @@ After synthesis revisions, run a **dedicated cross-section repetition pass**.
 
 Log completion:
 
+## Reverse-outline report (diagnostic only)
+
+After synthesis and repetition checks, return a reverse outline of the actual current article. For each paragraph or meaningful unit, state its apparent role/claim, evidence, and explanation or link to the thesis. Raise repetition, apparently unsupported factual claims, missing explanation, and abrupt progression as tentative review questions, not automatic findings of error. Do not alter article text, citations, outline, snapshots, or run state as part of this report. Keep any separately required synthesis revisions and their revision notes distinct from this read-only diagnostic.
+
 ---
 
 ## Output

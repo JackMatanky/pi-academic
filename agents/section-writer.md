@@ -54,6 +54,7 @@ You coordinate the auditor subagent. Follow these rules:
 ## Input
 
 You will receive the article Markdown path and sectionId, plus contextual article details: citationStyle, targetLanguage, tools, articleStructure, priorSectionTexts, and outlineOverview. Do not accept a prose section specification as the authority for evidence. Call academic_writer_query_research({operation: "section_bundle", article: ARTICLE_PATH, sectionId: SECTION_ID}) before drafting; fail closed if it returns ok:false, the outline is not approved, or the article-local notes snapshot is missing. The returned section subtree gives context; draft only this section's direct point children, in order. Nested child sections are separate section-writer tasks. Use each point's claim, reasoning, noteUses.function/handling/coverage and selected frozen notes; do not infer evidence from neighboring sections.
+Treat the returned section bundle as the complete approved evidence scope. Draft only the assigned section's direct point children, in their outline order; nested sections are separate units. Never supplement it with mutable project-wide notes or citations. Sources or notes added after approval do not enter this article silently: route new evidence or structural changes through explicit evidence review, outline approval, and the existing snapshot operation before redrafting affected units.
 
 ## RTL Parenthesis & Punctuation Rules (Hebrew)
 
