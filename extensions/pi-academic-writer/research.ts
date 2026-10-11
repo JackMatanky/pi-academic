@@ -176,8 +176,13 @@ function parseNote(x: unknown): Note {
   if (!["unchecked", "verified", "stale"].includes(String(rv.state)))
     throw Error("Invalid review state");
   const createdAt = str(n.createdAt, "createdAt");
-  if (!Number.isFinite(Date.parse(createdAt)))
-    throw Error("createdAt must be ISO-8601");
+  if (
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+      createdAt,
+    ) ||
+    !Number.isFinite(Date.parse(createdAt))
+  )
+    throw Error("createdAt must be ISO-8601 date-time");
   return {
     id: str(n.id, "id"),
     kind: kind as Note["kind"],
@@ -207,7 +212,7 @@ function fresh(n: Note, src: Array<Record<string, unknown>>): Note {
     nfp = n.anchor?.sourceFingerprint;
   if (s.sourceType === "local-file" && !fp)
     throw Error("Source registry fingerprint is missing");
-  return fp && nfp && fp !== nfp ? { ...n, review: { state: "stale" } } : n;
+  return fp && fp !== nfp ? { ...n, review: { state: "stale" } } : n;
 }
 export function writeResearchNotes(root: string, input: unknown[]): Note[] {
   const old = library(root),
@@ -257,7 +262,12 @@ export function reviewResearchNotes(
   save(noteFile(root), { schemaVersion: 1, notes: updated });
   return updated.filter((n) => set.has(n.id));
 }
-function validateOutline(value: unknown, ns: Note[]): Outline {
+function validateOutline(
+  value: unknown,
+  ns: Note[],
+  sourceRegistry?: Array<Record<string, unknown>>,
+  allowMigratedUnmapped = false,
+): Outline {
   const d = obj(value, "outline");
   strict(
     d,
@@ -349,8 +359,14 @@ function validateOutline(value: unknown, ns: Note[]): Outline {
         draftText =
           n.draftText === undefined ? undefined : str(n.draftText, "draftText");
       if (!claim || !reasoning) {
-        if (d.status !== "draft" || !draftText)
-          throw Error("Point needs claim and reasoning");
+        if (
+          claim ||
+          reasoning ||
+          !allowMigratedUnmapped ||
+          d.status !== "draft" ||
+          !draftText
+        )
+          throw Error("Claim/reasoning-free points are migration-only drafts");
         unmapped = true;
       }
       const noteUses = arr(n.noteUses, "noteUses").map((v) => {
@@ -360,11 +376,17 @@ function validateOutline(value: unknown, ns: Note[]): Outline {
           coverage = u.coverage;
         if (coverage !== "primary" && coverage !== "reference")
           throw Error("Invalid coverage");
-        const note = ns.find((x) => x.id === nid);
-        if (!note) {
+        const note = ns.find((x) => x.id === nid),
+          currentNote =
+            note && sourceRegistry ? fresh(note, sourceRegistry) : note;
+        if (!currentNote) {
           unresolved = true;
           if (d.status === "approved") throw Error("Unknown note: " + nid);
-        } else if (note.review.state !== "verified") {
+        } else if (
+          !["quotation", "paraphrase", "summary"].includes(currentNote.kind)
+        ) {
+          throw Error("Non-citable note kind used as outline evidence: " + nid);
+        } else if (currentNote.review.state !== "verified") {
           unresolved = true;
           if (d.status === "approved") throw Error("Note not verified: " + nid);
         }
@@ -422,7 +444,42 @@ function frozenPath(r: string, a: string): string {
   return join(r, "articles", slug(a) + ".notes.json");
 }
 export function writeOutline(r: string, x: unknown): Outline {
-  const o = validateOutline(x, library(r));
+  const d = obj(x, "outline"),
+    ns = library(r),
+    registry = d.status === "approved" ? sources(r) : undefined,
+    o = validateOutline(x, ns, registry, true);
+  const collectUnmapped = (outline: Outline): Point[] => {
+    const found: Point[] = [];
+    const walk = (items: Array<Section | Point>) =>
+      items.forEach((node) =>
+        node.kind === "section"
+          ? walk(node.items)
+          : node.role === "unmapped"
+            ? found.push(node)
+            : undefined,
+      );
+    walk(outline.items);
+    return found;
+  };
+  const unmapped = collectUnmapped(o);
+  if (unmapped.length) {
+    const path = outlinePath(r, o.article.slug);
+    if (!existsSync(path))
+      throw Error("Unmapped points can only come from article migration");
+    const previous = validateOutline(read(path), ns, undefined, true);
+    const previousUnmapped = collectUnmapped(previous);
+    if (previous.status !== "draft" || !previousUnmapped.length)
+      throw Error("Unmapped points can only come from article migration");
+    for (const point of unmapped)
+      if (
+        !previousUnmapped.some(
+          (old) => JSON.stringify(old) === JSON.stringify(point),
+        )
+      )
+        throw Error(
+          "Unmapped points must be preserved from the migrated draft",
+        );
+  }
   save(outlinePath(r, o.article.slug), o);
   return o;
 }
@@ -432,14 +489,20 @@ function getOutline(r: string, a: string): Outline {
   const value = read(p);
   const raw = obj(value, "outline");
   let notes = library(r);
-  const snapshot = frozenPath(r, a);
-  if (raw.status === "approved" && existsSync(snapshot)) {
+  const snapshot = frozenPath(r, a),
+    hasSnapshot = raw.status === "approved" && existsSync(snapshot);
+  if (hasSnapshot) {
     notes = arr(
       obj(read(snapshot), "notes snapshot").notes,
       "snapshot notes",
     ).map(parseNote);
   }
-  return validateOutline(value, notes);
+  return validateOutline(
+    value,
+    notes,
+    raw.status === "approved" && !hasSnapshot ? sources(r) : undefined,
+    true,
+  );
 }
 export function renderOutline(r: string, a: string): string {
   const o = getOutline(r, a),
@@ -630,9 +693,9 @@ export function migrateArticleOutline(
   let pending: string[] = [],
     seq = 0;
   const flush = () => {
-    const text = pending.join("\n").trim();
+    const text = pending.join("\n");
     pending = [];
-    if (text) {
+    if (text.trim()) {
       const point: Point = {
         id: "unmapped-" + ++seq,
         kind: "point",

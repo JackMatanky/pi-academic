@@ -920,12 +920,45 @@ export function writeSourcesCache(
   sources: unknown[],
   bibliography: string,
 ): { ok: true; sourcesPath: string; bibliographyPath: string; count: number } {
+  const normalizedSources = sources.map((value) => {
+    if (typeof value !== "object" || value === null || Array.isArray(value))
+      throw Error("Each source cache record must be an object");
+    const source = value as Record<string, unknown>;
+    if (source.sourceType === "zotero") {
+      const libraryId =
+          typeof source.libraryId === "string" && source.libraryId.trim()
+            ? source.libraryId
+            : undefined,
+        itemKey =
+          typeof source.itemKey === "string" && source.itemKey.trim()
+            ? source.itemKey
+            : undefined;
+      if (libraryId && itemKey) {
+        const sourceId = `zotero:${libraryId}:${itemKey}`;
+        if (source.sourceId != null && source.sourceId !== sourceId)
+          throw Error("Zotero sourceId must match libraryId and itemKey");
+        return { ...source, sourceId };
+      }
+      if (source.sourceId != null)
+        throw Error("Zotero sourceId requires confirmed libraryId and itemKey");
+      return { ...source, sourceId: null };
+    }
+    if (source.sourceType === "local-file") {
+      if (
+        typeof source.sourceFingerprint !== "string" ||
+        source.sourceId !== `local:${source.sourceFingerprint}`
+      )
+        throw Error("Local sourceId must match its sourceFingerprint");
+      return source;
+    }
+    throw Error("Source record needs sourceType zotero or local-file");
+  });
   const sourcesPath = ".academic-writer/sources.json";
   const bibliographyPath = ".academic-writer/bibliography.bib";
   writeProjectTextFile(
     projectRoot,
     sourcesPath,
-    `${JSON.stringify(sources, null, 2)}\n`,
+    `${JSON.stringify(normalizedSources, null, 2)}\n`,
   );
   writeProjectTextFile(projectRoot, bibliographyPath, bibliography);
   return { ok: true, sourcesPath, bibliographyPath, count: sources.length };

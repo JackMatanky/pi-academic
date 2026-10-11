@@ -104,11 +104,11 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 
 The writing workflow uses source-linked research notes and an article-specific argument map rather than a separate evidence-ownership registry:
 
-- `academic_writer_ingest_sources` extracts PDF, DOCX, Markdown, and text files under `.academic-writer/sources/`. Local source identity is derived from a SHA-256 fingerprint of file content; PDF text remains associated with its zero-based page index. Zotero remains optional.
-- `academic_writer_write_research_notes` stores atomic source-backed notes in `.academic-writer/research-notes.json`; each can carry a passage quote, human-readable locator, tags, and a review state. Notes must be explicitly verified before they can support an approved outline.
+- `academic_writer_ingest_sources` extracts PDF, DOCX, Markdown, and text files under `.academic-writer/sources/`. Local source identity is derived from a SHA-256 fingerprint of file content; PDF text remains associated with its zero-based page index. Zotero remains optional. Zotero source IDs use `zotero:<libraryId>:<itemKey>`; local evidence notes bind to the ingested content fingerprint.
+- `academic_writer_write_research_notes` stores atomic source-backed notes in `.academic-writer/research-notes.json`; each can carry a passage quote, human-readable locator, tags, and a review state. Only verified quotation, paraphrase, and synthesis notes may support an approved outline; analysis, question, and idea notes are never citation evidence.
 - `academic_writer_write_outline` validates the recursive argument map in `articles/<slug>.outline.json`: sections explain their contribution to the thesis; argument points identify claims, reasoning, and explicit primary/reference note uses. A note has one primary use in an article; further uses are references.
 - After approval, `academic_writer_snapshot_notes` freezes the outline's selected verified evidence in `articles/<slug>.notes.json`. `academic_writer_query_research` returns a section bundle from that frozen snapshot, so later edits to the project note library do not rewrite an article's evidence base.
-- `academic_writer_render_outline` produces a generated `articles/<slug>.outline.md` view. Edit the JSON source of truth, not the generated Markdown. `academic_writer_migrate_article_outline` creates a draft map from an existing article without changing the article text.
+- `academic_writer_render_outline` produces a generated `articles/<slug>.outline.md` view. Edit the JSON source of truth, not the generated Markdown. `academic_writer_migrate_article_outline` creates a draft map from an existing article without changing the article text; only migration may create claim/reasoning-free `unmapped` points containing preserved draft text.
 
 `academic_writer_review_research_notes` is an explicit researcher review action. Unchecked, stale, missing, or unmapped evidence cannot pass outline approval.
 

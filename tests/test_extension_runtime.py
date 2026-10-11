@@ -554,6 +554,42 @@ class TestExtensionRuntime(unittest.TestCase):
                 {"outlineJson": json.dumps(outline)},
             )
             self.assertTrue(saved_outline["details"]["ok"])
+            reference_only = json.loads(json.dumps(outline))
+            reference_only["items"][0]["items"][0]["noteUses"][0]["coverage"] = (
+                "reference"
+            )
+            rejected_reference = self.call_tool(
+                root,
+                "academic_writer_write_outline",
+                {"outlineJson": json.dumps(reference_only)},
+            )
+            self.assertFalse(rejected_reference["details"]["ok"])
+            self.assertIn(
+                "requires primary use", rejected_reference["details"]["error"]
+            )
+
+            duplicate_primary = json.loads(json.dumps(outline))
+            duplicate_primary["items"][0]["items"].append(
+                {
+                    "id": "point-duplicate",
+                    "kind": "point",
+                    "role": "argument",
+                    "claim": "Repeated claim",
+                    "reasoning": "Repeated evidence must not be primary twice",
+                    "noteUses": json.loads(
+                        json.dumps(
+                            duplicate_primary["items"][0]["items"][0]["noteUses"]
+                        )
+                    ),
+                }
+            )
+            rejected_duplicate = self.call_tool(
+                root,
+                "academic_writer_write_outline",
+                {"outlineJson": json.dumps(duplicate_primary)},
+            )
+            self.assertFalse(rejected_duplicate["details"]["ok"])
+            self.assertIn("Duplicate primary", rejected_duplicate["details"]["error"])
             self.assertTrue(
                 self.call_tool(
                     root,
@@ -568,6 +604,7 @@ class TestExtensionRuntime(unittest.TestCase):
                     {"article": "articles/essay.md"},
                 )["details"]["ok"]
             )
+            frozen_notes = (root / "articles" / "essay.notes.json").read_bytes()
             unchanged = self.call_tool(
                 root,
                 "academic_writer_write_research_notes",
@@ -597,6 +634,16 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertTrue(bundle["details"]["ok"])
             self.assertEqual(
                 bundle["details"]["value"]["notes"][0]["coreStatement"], "Evidence"
+            )
+            failed_snapshot = self.call_tool(
+                root,
+                "academic_writer_snapshot_notes",
+                {"article": "articles/essay.md"},
+            )
+            self.assertFalse(failed_snapshot["details"]["ok"])
+            self.assertEqual(
+                (root / "articles" / "essay.notes.json").read_bytes(),
+                frozen_notes,
             )
 
     def test_ingest_uses_content_identity_and_marks_changed_notes_stale(self):
@@ -691,9 +738,543 @@ class TestExtensionRuntime(unittest.TestCase):
                 root, "academic_writer_ingest_sources", {"paths": [str(source)]}
             )
             record = result["details"]["sources"][0]
+            repeated = self.call_tool(
+                root, "academic_writer_ingest_sources", {"paths": [str(source)]}
+            )["details"]["sources"][0]
+            self.assertEqual(repeated["sourceId"], record["sourceId"])
+            self.assertEqual(repeated["sourceFingerprint"], record["sourceFingerprint"])
+            self.assertEqual(
+                [page["pdfPageIndex"] for page in repeated["pages"]], [0, 1]
+            )
             self.assertEqual([page["pdfPageIndex"] for page in record["pages"]], [0, 1])
             self.assertIn("FIRST PAGE MARKER", record["pages"][0]["text"])
             self.assertIn("SECOND PAGE MARKER", record["pages"][1]["text"])
+
+    def test_local_source_version_and_non_citable_outline_guards(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".academic-writer"
+            state.mkdir()
+            fingerprint = "sha256:current"
+            source_id = "local:" + fingerprint
+            (state / "sources.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "sourceId": source_id,
+                            "sourceType": "local-file",
+                            "sourceFingerprint": fingerprint,
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            missing_fingerprint = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {
+                    "notesJson": json.dumps(
+                        [
+                            {
+                                "id": "unbound-paraphrase",
+                                "kind": "paraphrase",
+                                "coreStatement": "Paraphrased claim",
+                                "sourceRef": source_id,
+                                "researcherNote": "Researcher-authored paraphrase",
+                            }
+                        ]
+                    )
+                },
+            )
+            self.assertEqual(
+                missing_fingerprint["details"]["value"][0]["review"]["state"],
+                "stale",
+            )
+            verified = self.call_tool(
+                root,
+                "academic_writer_review_research_notes",
+                {"noteIds": ["unbound-paraphrase"], "state": "verified"},
+            )
+            self.assertEqual(
+                verified["details"]["value"][0]["review"]["state"], "stale"
+            )
+
+            analysis = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {
+                    "notesJson": json.dumps(
+                        [
+                            {
+                                "id": "analysis-only",
+                                "kind": "analysis",
+                                "coreStatement": "Researcher interpretation",
+                            }
+                        ]
+                    )
+                },
+            )
+            self.assertTrue(analysis["details"]["ok"])
+            self.call_tool(
+                root,
+                "academic_writer_review_research_notes",
+                {"noteIds": ["analysis-only"], "state": "verified"},
+            )
+            outline = {
+                "schemaVersion": 1,
+                "article": {
+                    "slug": "analysis-test",
+                    "title": "Analysis Test",
+                    "targetLanguage": "English",
+                    "citationStyle": "apa",
+                },
+                "researchQuestion": "Question?",
+                "thesis": {"text": "Thesis", "status": "approved"},
+                "status": "approved",
+                "items": [
+                    {
+                        "id": "section",
+                        "kind": "section",
+                        "title": "Argument",
+                        "purpose": "Purpose",
+                        "thesisContribution": "Contribution",
+                        "items": [
+                            {
+                                "id": "point",
+                                "kind": "point",
+                                "role": "argument",
+                                "claim": "Claim",
+                                "reasoning": "Reasoning",
+                                "noteUses": [
+                                    {
+                                        "noteId": "analysis-only",
+                                        "function": "supports",
+                                        "handling": "analyze",
+                                        "coverage": "primary",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+            rejected = self.call_tool(
+                root,
+                "academic_writer_write_outline",
+                {"outlineJson": json.dumps(outline)},
+            )
+            self.assertFalse(rejected["details"]["ok"])
+            self.assertIn("Non-citable note kind", rejected["details"]["error"])
+            self.assertFalse(
+                (root / "articles" / "analysis-test.outline.json").exists()
+            )
+
+    def test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".academic-writer"
+            state.mkdir()
+            source_file = state / "sources.json"
+            bibliography_file = state / "bibliography.bib"
+            source_file.write_text("original sources\n", encoding="utf-8")
+            bibliography_file.write_text("original bibliography\n", encoding="utf-8")
+            params = {
+                "sourcesJson": json.dumps(
+                    [
+                        {
+                            "sourceType": "zotero",
+                            "sourceId": "zotero:wrong:key",
+                            "libraryId": "library",
+                            "itemKey": "key",
+                        }
+                    ]
+                ),
+                "bibliography": "@book{new, title={New}}",
+            }
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.call_tool(root, "academic_writer_write_sources_cache", params)
+            self.assertEqual(
+                source_file.read_text(encoding="utf-8"), "original sources\n"
+            )
+            self.assertEqual(
+                bibliography_file.read_text(encoding="utf-8"), "original bibliography\n"
+            )
+            valid_params = {
+                "sourcesJson": json.dumps(
+                    [
+                        {
+                            "sourceType": "zotero",
+                            "sourceId": None,
+                            "libraryId": "library",
+                            "itemKey": "key",
+                        }
+                    ]
+                ),
+                "bibliography": "@book{new, title={New}}",
+            }
+            self.call_tool(root, "academic_writer_write_sources_cache", valid_params)
+            self.assertEqual(
+                json.loads(source_file.read_text(encoding="utf-8"))[0]["sourceId"],
+                "zotero:library:key",
+            )
+            self.assertEqual(
+                bibliography_file.read_text(encoding="utf-8"),
+                valid_params["bibliography"],
+            )
+
+    def test_approved_snapshots_preserve_both_citation_modes(self):
+        for style, citation in (
+            ("inline-parenthetical", "(Augustine, Confessions XI, 14)"),
+            ("apa", "[@augConfessions, p. 14]"),
+        ):
+            with self.subTest(style=style), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                state = root / ".academic-writer"
+                articles = root / "articles"
+                state.mkdir()
+                articles.mkdir()
+                source_id = "zotero:fixture:ABC12345"
+                sources = [
+                    {
+                        "sourceId": source_id,
+                        "sourceType": "zotero",
+                        "libraryId": "fixture",
+                        "itemKey": "ABC12345",
+                        "citeKey": "augConfessions",
+                        "sourceFingerprint": None,
+                    }
+                ]
+                bibliography = "@book{augConfessions, title={Confessions}}\n"
+                (state / "sources.json").write_text(
+                    json.dumps(sources), encoding="utf-8"
+                )
+                (state / "bibliography.bib").write_text(bibliography, encoding="utf-8")
+                article = articles / "essay.md"
+                article_text = (
+                    f"# Essay\n\nThe claim remains interpretive {citation}.\n"
+                )
+                article.write_text(article_text, encoding="utf-8")
+                note = self.call_tool(
+                    root,
+                    "academic_writer_write_research_notes",
+                    {
+                        "notesJson": json.dumps(
+                            [
+                                {
+                                    "id": "evidence",
+                                    "kind": "quotation",
+                                    "coreStatement": "Evidence claim",
+                                    "sourceRef": source_id,
+                                    "anchor": {
+                                        "locator": {"display": "Confessions XI, 14"},
+                                        "textQuote": {"exact": "Exact source words"},
+                                    },
+                                }
+                            ]
+                        )
+                    },
+                )
+                self.assertTrue(note["details"]["ok"])
+                self.call_tool(
+                    root,
+                    "academic_writer_review_research_notes",
+                    {"noteIds": ["evidence"], "state": "verified"},
+                )
+                outline = {
+                    "schemaVersion": 1,
+                    "article": {
+                        "slug": "essay",
+                        "title": "Essay",
+                        "targetLanguage": "English",
+                        "citationStyle": style,
+                    },
+                    "researchQuestion": "Question?",
+                    "thesis": {"text": "Thesis", "status": "approved"},
+                    "status": "approved",
+                    "items": [
+                        {
+                            "id": "section",
+                            "kind": "section",
+                            "title": "Argument",
+                            "purpose": "Purpose",
+                            "thesisContribution": "Contribution",
+                            "items": [
+                                {
+                                    "id": "point",
+                                    "kind": "point",
+                                    "role": "argument",
+                                    "claim": "Claim",
+                                    "reasoning": "Reasoning",
+                                    "noteUses": [
+                                        {
+                                            "noteId": "evidence",
+                                            "function": "supports",
+                                            "handling": "analyze",
+                                            "coverage": "primary",
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+                saved = self.call_tool(
+                    root,
+                    "academic_writer_write_outline",
+                    {"outlineJson": json.dumps(outline)},
+                )
+                self.assertTrue(saved["details"]["ok"])
+                rendered = self.call_tool(
+                    root,
+                    "academic_writer_render_outline",
+                    {"article": "articles/essay.md"},
+                )
+                self.assertTrue(rendered["details"]["ok"])
+                citations = self.call_tool(
+                    root,
+                    "academic_writer_snapshot_citations",
+                    {"article": "articles/essay.md"},
+                )
+                self.assertTrue(citations["details"]["ok"])
+                notes = self.call_tool(
+                    root,
+                    "academic_writer_snapshot_notes",
+                    {"article": "articles/essay.md"},
+                )
+                self.assertTrue(notes["details"]["ok"])
+                audit = self.call_tool(
+                    root,
+                    "academic_writer_audit_citations",
+                    {"article": "articles/essay.md", "citationStyle": style},
+                )
+                self.assertTrue(audit["details"]["ok"])
+                bundle = self.call_tool(
+                    root,
+                    "academic_writer_query_research",
+                    {
+                        "operation": "section_bundle",
+                        "article": "articles/essay.md",
+                        "sectionId": "section",
+                    },
+                )
+                self.assertTrue(bundle["details"]["ok"])
+                self.assertEqual(
+                    bundle["details"]["value"]["notes"][0]["id"], "evidence"
+                )
+                self.assertEqual(article.read_text(encoding="utf-8"), article_text)
+                self.assertEqual(
+                    json.loads(
+                        (articles / "essay.sources.json").read_text(encoding="utf-8")
+                    ),
+                    sources,
+                )
+                self.assertEqual(
+                    (articles / "essay.bibliography.bib").read_text(encoding="utf-8"),
+                    bibliography,
+                )
+                self.assertEqual(
+                    json.loads(
+                        (articles / "essay.notes.json").read_text(encoding="utf-8")
+                    )["notes"][0]["id"],
+                    "evidence",
+                )
+
+    def test_query_operations_caps_and_recursive_render_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".academic-writer"
+            state.mkdir()
+            (state / "sources.json").write_text(
+                json.dumps(
+                    [{"sourceId": "zotero:library:item", "sourceType": "zotero"}]
+                ),
+                encoding="utf-8",
+            )
+            notes = [
+                {
+                    "id": "source-note",
+                    "kind": "paraphrase",
+                    "coreStatement": "Source-linked finding",
+                    "researcherNote": "Researcher paraphrase",
+                    "sourceRef": "zotero:library:item",
+                    "tags": ["common"],
+                },
+                *[
+                    {
+                        "id": f"idea-{index}",
+                        "kind": "idea",
+                        "coreStatement": f"Idea {index}",
+                        "tags": ["common"],
+                    }
+                    for index in range(105)
+                ],
+            ]
+            saved = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {"notesJson": json.dumps(notes)},
+            )
+            self.assertTrue(saved["details"]["ok"])
+            self.assertFalse(
+                self.call_tool(
+                    root,
+                    "academic_writer_write_research_notes",
+                    {
+                        "notesJson": json.dumps(
+                            [
+                                {
+                                    "id": "invalid-date",
+                                    "kind": "idea",
+                                    "coreStatement": "Invalid timestamp",
+                                    "createdAt": "March 4, 2024",
+                                }
+                            ]
+                        )
+                    },
+                )["details"]["ok"]
+            )
+            for params, expected in (
+                ({"operation": "note_by_id", "noteId": "source-note"}, "source-note"),
+                (
+                    {"operation": "notes_by_source", "sourceId": "zotero:library:item"},
+                    ["source-note"],
+                ),
+            ):
+                result = self.call_tool(root, "academic_writer_query_research", params)
+                self.assertTrue(result["details"]["ok"])
+                value = result["details"]["value"]
+                self.assertEqual(
+                    value["id"]
+                    if isinstance(value, dict)
+                    else [n["id"] for n in value],
+                    expected,
+                )
+            default_list = self.call_tool(
+                root,
+                "academic_writer_query_research",
+                {"operation": "notes_by_tag", "tag": "common"},
+            )
+            capped = self.call_tool(
+                root,
+                "academic_writer_query_research",
+                {"operation": "notes_by_tag", "tag": "common", "limit": 101},
+            )
+            self.assertEqual(len(default_list["details"]["value"]), 20)
+            self.assertEqual(len(capped["details"]["value"]), 100)
+            self.assertFalse(
+                self.call_tool(
+                    root,
+                    "academic_writer_query_research",
+                    {
+                        "operation": "note_by_id",
+                        "noteId": "source-note",
+                        "tag": "common",
+                    },
+                )["details"]["ok"]
+            )
+            self.assertFalse(
+                self.call_tool(
+                    root,
+                    "academic_writer_query_research",
+                    {"operation": "notes_by_source"},
+                )["details"]["ok"]
+            )
+
+            tree = {
+                "schemaVersion": 1,
+                "article": {
+                    "slug": "tree",
+                    "title": "Tree",
+                    "targetLanguage": "English",
+                    "citationStyle": "apa",
+                },
+                "researchQuestion": "Question?",
+                "thesis": {"text": "Thesis", "status": "proposed"},
+                "status": "draft",
+                "items": [
+                    {
+                        "id": "outer",
+                        "kind": "section",
+                        "title": "Outer",
+                        "purpose": "P",
+                        "thesisContribution": "C",
+                        "items": [
+                            {
+                                "id": "inner",
+                                "kind": "section",
+                                "title": "Inner",
+                                "purpose": "P",
+                                "thesisContribution": "C",
+                                "items": [
+                                    {
+                                        "id": "deep",
+                                        "kind": "section",
+                                        "title": "Deep",
+                                        "purpose": "P",
+                                        "thesisContribution": "C",
+                                        "items": [],
+                                    }
+                                ],
+                            },
+                            {
+                                "id": "inner-two",
+                                "kind": "section",
+                                "title": "Inner Two",
+                                "purpose": "P",
+                                "thesisContribution": "C",
+                                "items": [],
+                            },
+                        ],
+                    },
+                    {
+                        "id": "outer-two",
+                        "kind": "section",
+                        "title": "Outer Two",
+                        "purpose": "P",
+                        "thesisContribution": "C",
+                        "items": [],
+                    },
+                ],
+            }
+            self.assertTrue(
+                self.call_tool(
+                    root,
+                    "academic_writer_write_outline",
+                    {"outlineJson": json.dumps(tree)},
+                )["details"]["ok"]
+            )
+            rendered = self.call_tool(
+                root, "academic_writer_render_outline", {"article": "articles/tree.md"}
+            )
+            self.assertTrue(rendered["details"]["ok"])
+            headings = [
+                line
+                for line in (root / "articles" / "tree.outline.md")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.startswith("#")
+            ]
+            self.assertEqual(
+                headings,
+                [
+                    "# Tree",
+                    "## 1. Outer",
+                    "### 1. Inner",
+                    "#### 1. Deep",
+                    "### 2. Inner Two",
+                    "## 2. Outer Two",
+                ],
+            )
+            summary = self.call_tool(
+                root,
+                "academic_writer_query_research",
+                {"operation": "outline_summary", "article": "articles/tree.md"},
+            )
+            self.assertTrue(summary["details"]["ok"])
+            self.assertEqual(
+                [section["id"] for section in summary["details"]["value"]["sections"]],
+                ["outer", "inner", "deep", "inner-two", "outer-two"],
+            )
 
     def test_e2e_fixture_outline_uses_frozen_notes(self):
         root = Path("tests/e2e/fixture-project").resolve()
@@ -718,13 +1299,16 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertEqual(values["directPoints"][0]["id"], "soul-times")
         self.assertEqual(values["notes"][0]["id"], "note-aug-soul")
         self.assertEqual(values["notes"][0]["review"]["state"], "verified")
+        self.assertEqual(
+            values["notes"][0]["sourceRef"], "zotero:fixture-library:CFN11AAA"
+        )
 
     def test_outline_migration_preserves_markdown_and_conflicts(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             articles = root / "articles"
             articles.mkdir()
-            markdown = "Intro paragraph\n\n# Main\n\nFirst body paragraph.\n\n## Nested\n\nSecond body paragraph.\n"
+            markdown = "Intro paragraph\n\n# Main\n\n  First body paragraph.  \n\n## Nested\n\nSecond body paragraph.\n"
             article = articles / "old-article.md"
             article.write_text(markdown, encoding="utf-8")
             migrated = self.call_tool(
@@ -738,11 +1322,35 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertEqual(article.read_text(encoding="utf-8"), markdown)
             self.assertEqual(outline["items"][0]["draftText"], "Intro paragraph")
             self.assertEqual(
-                outline["items"][1]["items"][0]["draftText"], "First body paragraph."
+                outline["items"][1]["items"][0]["draftText"],
+                "  First body paragraph.  ",
             )
             self.assertEqual(
                 outline["items"][1]["items"][1]["items"][0]["draftText"],
                 "Second body paragraph.",
+            )
+            forged = json.loads(json.dumps(outline))
+            forged["article"]["slug"] = "forged"
+            self.assertFalse(
+                self.call_tool(
+                    root,
+                    "academic_writer_write_outline",
+                    {"outlineJson": json.dumps(forged)},
+                )["details"]["ok"]
+            )
+            self.assertTrue(
+                self.call_tool(
+                    root,
+                    "academic_writer_write_outline",
+                    {"outlineJson": json.dumps(outline)},
+                )["details"]["ok"]
+            )
+            self.assertTrue(
+                self.call_tool(
+                    root,
+                    "academic_writer_render_outline",
+                    {"article": "articles/old-article.md"},
+                )["details"]["ok"]
             )
             conflict = self.call_tool(
                 root,

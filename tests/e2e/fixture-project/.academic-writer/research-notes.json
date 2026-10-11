@@ -5,7 +5,7 @@
       "id": "note-aug-question",
       "kind": "quotation",
       "coreStatement": "Augustine frames time as intelligible in private reflection but difficult to explain publicly.",
-      "sourceRef": "aug-confessions-bk11",
+      "sourceRef": "zotero:fixture-library:CFN11AAA",
       "anchor": {
         "locator": {
           "display": "Confessions XI, 14"
@@ -28,7 +28,7 @@
       "id": "note-aug-soul",
       "kind": "quotation",
       "coreStatement": "Past, present, and future exist as present realities in the soul.",
-      "sourceRef": "aug-confessions-bk11",
+      "sourceRef": "zotero:fixture-library:CFN11AAA",
       "anchor": {
         "locator": {
           "display": "Confessions XI, 20"
@@ -51,7 +51,7 @@
       "id": "note-ricoeur-narrative",
       "kind": "quotation",
       "coreStatement": "Ricoeur treats Augustine's time aporia as a starting point for understanding temporality through narrative.",
-      "sourceRef": "ricoeur-time-narrative",
+      "sourceRef": "zotero:fixture-library:RICNAR01",
       "anchor": {
         "locator": {
           "display": "Time and Narrative, vol. 1, p. 7"
