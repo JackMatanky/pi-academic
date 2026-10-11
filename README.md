@@ -50,11 +50,12 @@ Three of the four `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-
 
 ### 3. Initialize Your Profile
 
-```
+```text
 /skill:academic-writer-init
 ```
 
 One-time setup. You'll be asked for:
+
 - Your field of study
 - Citation style (Inline Parenthetical, popular aliases such as APA/MLA/Chicago, a Zotero/CSL style id, or a custom `.csl` file)
 - 5–10 past articles for style analysis (place them in `past-articles/`)
@@ -64,13 +65,13 @@ Your profile is saved to `.academic-writer/profile.md` and loaded automatically.
 
 ### 4. Write Your First Article
 
-```
+```text
 /skill:academic-writer-write
 ```
 
 ### 5. Export to Other Formats (optional)
 
-```
+```text
 /skill:academic-writer-export
 ```
 
@@ -81,6 +82,7 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 ## Writing Workflow
 
 **You do (conversational):**
+
 1. Describe the topic
 2. Select relevant sources
 3. Review the deep-read summary
@@ -89,6 +91,7 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 6. Approve
 
 **Package does (automated):**
+
 7. Writes all sections in parallel — each paragraph through an 8-step pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit)
 8. Synthesizes for coherence and style
 9. Generates the תקציר (abstract)
@@ -97,30 +100,44 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 
 ---
 
+## Research Notes and Outlines
+
+The writing workflow uses source-linked research notes and an article-specific argument map rather than a separate evidence-ownership registry:
+
+- `academic_writer_ingest_sources` extracts PDF, DOCX, Markdown, and text files under `.academic-writer/sources/`. Local source identity is derived from a SHA-256 fingerprint of file content; PDF text remains associated with its zero-based page index. Zotero remains optional.
+- `academic_writer_write_research_notes` stores atomic source-backed notes in `.academic-writer/research-notes.json`; each can carry a passage quote, human-readable locator, tags, and a review state. Notes must be explicitly verified before they can support an approved outline.
+- `academic_writer_write_outline` validates the recursive argument map in `articles/<slug>.outline.json`: sections explain their contribution to the thesis; argument points identify claims, reasoning, and explicit primary/reference note uses. A note has one primary use in an article; further uses are references.
+- After approval, `academic_writer_snapshot_notes` freezes the outline's selected verified evidence in `articles/<slug>.notes.json`. `academic_writer_query_research` returns a section bundle from that frozen snapshot, so later edits to the project note library do not rewrite an article's evidence base.
+- `academic_writer_render_outline` produces a generated `articles/<slug>.outline.md` view. Edit the JSON source of truth, not the generated Markdown. `academic_writer_migrate_article_outline` creates a draft map from an existing article without changing the article text.
+
+`academic_writer_review_research_notes` is an explicit researcher review action. Unchecked, stale, missing, or unmapped evidence cannot pass outline approval.
+
+---
+
 ## Commands
 
 Skills are model-invoked by default — natural-language triggering is primary. `/skill:academic-writer-<name>` is the explicit fallback.
 
-| Command | What it does |
-|---------|-------------|
-| `/skill:academic-writer-write` | Write a new article |
-| `/skill:academic-writer-init` | Full onboarding: profile, citation style, style fingerprint, source indexing |
-| `/skill:academic-writer-setup` | Quick onboarding (profile + integrations only) |
-| `/skill:academic-writer-ideate` | Brainstorm research questions with 5W1H and gap analysis |
-| `/skill:academic-writer-learn` | Scan new past articles and update your style fingerprint |
-| `/skill:academic-writer-voice` | Deepen your voice profile with a 7-session adversarial interview |
-| `/skill:academic-writer-review` | Score a completed article on 6 quality dimensions |
-| `/skill:academic-writer-proofread` | Mechanical הגהה pass — fixes typos/punctuation/grammar with a change report |
-| `/skill:academic-writer-present` | Generate conference outlines, journal abstracts, book chapter proposals |
-| `/skill:academic-writer-research` | Research a topic using your indexed sources |
-| `/skill:academic-writer-edit` | Edit a previously written article |
-| `/skill:academic-writer-edit-section` | Quick edit of a single section |
-| `/skill:academic-writer-feedback` | Apply free-form feedback to an article or your profile |
-| `/skill:academic-writer-update-field` | Change your field of study |
-| `/skill:academic-writer-update-tools` | Add or remove integrations |
-| `/skill:academic-writer-export` | Convert an article to PDF/HTML/ODT/LaTeX/EPUB |
-| `/skill:academic-writer-health` | Check all integrations and profile status |
-| `/skill:academic-writer-help` | Show package info |
+| Command                               | What it does                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| `/skill:academic-writer-write`        | Write a new article                                                          |
+| `/skill:academic-writer-init`         | Full onboarding: profile, citation style, style fingerprint, source indexing |
+| `/skill:academic-writer-setup`        | Quick onboarding (profile + integrations only)                               |
+| `/skill:academic-writer-ideate`       | Brainstorm research questions with 5W1H and gap analysis                     |
+| `/skill:academic-writer-learn`        | Scan new past articles and update your style fingerprint                     |
+| `/skill:academic-writer-voice`        | Deepen your voice profile with a 7-session adversarial interview             |
+| `/skill:academic-writer-review`       | Score a completed article on 6 quality dimensions                            |
+| `/skill:academic-writer-proofread`    | Mechanical הגהה pass — fixes typos/punctuation/grammar with a change report  |
+| `/skill:academic-writer-present`      | Generate conference outlines, journal abstracts, book chapter proposals      |
+| `/skill:academic-writer-research`     | Research a topic using your indexed sources                                  |
+| `/skill:academic-writer-edit`         | Edit a previously written article                                            |
+| `/skill:academic-writer-edit-section` | Quick edit of a single section                                               |
+| `/skill:academic-writer-feedback`     | Apply free-form feedback to an article or your profile                       |
+| `/skill:academic-writer-update-field` | Change your field of study                                                   |
+| `/skill:academic-writer-update-tools` | Add or remove integrations                                                   |
+| `/skill:academic-writer-export`       | Convert an article to PDF/HTML/ODT/LaTeX/EPUB                                |
+| `/skill:academic-writer-health`       | Check all integrations and profile status                                    |
+| `/skill:academic-writer-help`         | Show package info                                                            |
 
 ---
 
@@ -128,13 +145,13 @@ Skills are model-invoked by default — natural-language triggering is primary. 
 
 All integrations are optional. Choose which to enable during `/skill:academic-writer-init`.
 
-| Tool | What it does | Setup |
-|------|-------------|-------|
-| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero | Put files in `.academic-writer/sources/`; Academic Writer ingests them with `academic_writer_ingest_sources` and generates citekeys/BibTeX. |
-| **Zotero** | Preferred reference manager for source PDFs (local library or web API) | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`) |
-| **NotebookLM** | AI-powered source Q&A, audio overviews, study guides | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config |
-| **Sefaria** | Optional Judaic primary text lookup and verse context expansion | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools: true`); no credentials go in `.academic-writer/profile.md`. |
-| **Pandoc** | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
+| Tool              | What it does                                                                                             | Setup                                                                                                                                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero                                               | Put files in `.academic-writer/sources/`; Academic Writer ingests them with `academic_writer_ingest_sources` and generates citekeys/BibTeX.                                                                                          |
+| **Zotero**        | Preferred reference manager for source PDFs (local library or web API)                                   | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`)                          |
+| **NotebookLM**    | AI-powered source Q&A, audio overviews, study guides                                                     | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config                      |
+| **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                                          | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools: true`); no credentials go in `.academic-writer/profile.md`.                                                                               |
+| **Pandoc**        | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
@@ -172,7 +189,7 @@ For Zotero web/API mode, keep secrets in user-global MCP config (`~/.config/mcp/
 
 ## File Structure (Your Project)
 
-```
+```text
 your-research-folder/
 ├── past-articles/              ← Drop your published papers here (PDFs or DOCXs)
 ├── articles/                   ← Output Markdown, DOCX, and exports
@@ -197,26 +214,32 @@ your-research-folder/
 **"No profile found"** — run `/skill:academic-writer-init` first.
 
 **"Zotero not detected"** — install the server and make sure a `zotero` MCP server is configured:
+
 ```bash
 pip install zotero-mcp-server
 ```
+
 For local Zotero, add the `.mcp.json` snippet from the Integrations section. Zotero desktop must be running with the local API enabled (Settings → Advanced). The `zotero` server must expose direct bare tools (`settings.toolPrefix: "none"` plus `directTools: true`) because the package calls tools like `zotero_get_recent` directly.
 
 **Articles won't export to .docx** — install the Python dependency:
+
 ```bash
 pip install python-docx
 ```
 
 **PDF export fails / "xelatex not found" or "tectonic not found"** — install one supported PDF engine:
+
 ```bash
 brew install tectonic
 # or:
 brew install --cask basictex
 sudo tlmgr install collection-xetex
 ```
+
 HTML/ODT/LaTeX/EPUB export via `/skill:academic-writer-export` don't need this — only PDF does (the default `pdflatex` engine cannot render Hebrew script; use Tectonic or XeLaTeX).
 
 **Package behaves strangely after an update** — reinstall it:
+
 ```bash
 pi remove git:github.com/JackMatanky/academic-writer
 pi install git:github.com/JackMatanky/academic-writer
@@ -259,6 +282,7 @@ uv run python -m pytest tests/                  # full test suite
 This is a fork of [yodem/academic-writer](https://github.com/yodem/academic-writer) by Yotam Fromm — the original Claude Code plugin this package is built on. All core skills, agents, and the citation-verification pipeline originate there; this fork converts the distribution to a [pi package](https://pi.dev/docs/latest/packages) and replaces the Candlekeep integration with Zotero MCP.
 
 The pi conversion depends on three community pi packages by [Nico Bailon](https://github.com/nicobailon), without which this package's subagent, MCP, and web-search architecture would not be possible:
+
 - [pi-subagents](https://github.com/nicobailon/pi-subagents) — subagent orchestration, replacing Claude Code's `Agent`/Task tool and `agents/*.md` loading.
 - [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) — MCP server wiring, replacing `plugin.json`'s `mcpServers` key.
 - [pi-web-access](https://github.com/nicobailon/pi-web-access) — the `web_search` tool used by the citation auditor's external-verification check.

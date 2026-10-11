@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "article": {
+    "slug": "augustine-time",
+    "title": "תפיסת הזמן אצל אוגוסטינוס וההד שלה אצל ריקר",
+    "targetLanguage": "Hebrew",
+    "citationStyle": "inline-parenthetical"
+  },
+  "notes": [
+    {
+      "id": "note-aug-question",
+      "kind": "quotation",
+      "coreStatement": "Augustine frames time as intelligible in private reflection but difficult to explain publicly.",
+      "sourceRef": "aug-confessions-bk11",
+      "anchor": {
+        "locator": {
+          "display": "Confessions XI, 14"
+        },
+        "textQuote": {
+          "exact": "מהו אפוא הזמן? אם איש אינו שואל אותי, אני יודע; אם ברצוני להסביר זאת לשואל, אינני יודע."
+        }
+      },
+      "researcherNote": "Synthesis: The aporia establishes the conceptual problem that motivates the essay's account of inward time.",
+      "tags": ["time", "aporia"],
+      "review": {
+        "state": "verified"
+      },
+      "createdAt": "2026-10-11T00:00:00.000Z"
+    },
+    {
+      "id": "note-aug-soul",
+      "kind": "quotation",
+      "coreStatement": "Past, present, and future exist as present realities in the soul.",
+      "sourceRef": "aug-confessions-bk11",
+      "anchor": {
+        "locator": {
+          "display": "Confessions XI, 20"
+        },
+        "textQuote": {
+          "exact": "שלושה זמנים הם: הווה של עבר, הווה של הווה, והווה של עתיד; שלושתם קיימים בנפש, ובמקום אחר אינני רואה אותם."
+        }
+      },
+      "researcherNote": "Synthesis: This formulation relocates temporal experience into the soul's present acts of memory, attention, and expectation.",
+      "tags": ["time", "soul"],
+      "review": {
+        "state": "verified"
+      },
+      "createdAt": "2026-10-11T00:00:00.000Z"
+    },
+    {
+      "id": "note-ricoeur-narrative",
+      "kind": "quotation",
+      "coreStatement": "Ricoeur treats Augustine's time aporia as a starting point for understanding temporality through narrative.",
+      "sourceRef": "ricoeur-time-narrative",
+      "anchor": {
+        "locator": {
+          "display": "Time and Narrative, vol. 1, p. 7"
+        },
+        "textQuote": {
+          "exact": "האפוריה האוגוסטינית של הזמן אינה כשל אלא נקודת מוצא: היא חושפת את הזמן כחוויה נפשית הניתנת לתפיסה רק דרך הסיפר."
+        }
+      },
+      "researcherNote": "Synthesis: Ricoeur extends rather than resolves Augustine's aporia by making narrative a mediation of lived time.",
+      "tags": ["narrative", "time"],
+      "review": {
+        "state": "verified"
+      },
+      "createdAt": "2026-10-11T00:00:00.000Z"
+    }
+  ]
+}

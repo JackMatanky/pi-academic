@@ -12,6 +12,15 @@ import {
 } from "../lib/profile.js";
 import { resolveResourcePath } from "./resources.js";
 import {
+  migrateArticleOutline,
+  queryResearch,
+  renderOutline,
+  reviewResearchNotes,
+  snapshotNotes,
+  writeOutline,
+  writeResearchNotes,
+} from "./research.js";
+import {
   articlePaths,
   assembleDocxJson,
   buildHealth,
@@ -21,7 +30,6 @@ import {
   ingestSources,
   listProjectFiles,
   snapshotCitationAssets,
-  writeEvidenceOwnership,
   writeProjectTextFile,
   writeSourcesCache,
 } from "./project.js";
@@ -874,30 +882,118 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     },
   });
 
-  pi.registerTool({
-    name: "academic_writer_write_evidence_ownership",
-    label: "Academic Writer Write Evidence Ownership",
-    description:
-      "Write .academic-writer/evidence-ownership.json (thesisAnchor + evidenceOwners) from a JSON object string. The architect agent's only path to persist evidence ownership without a generic write grant.",
-    parameters: Type.Object({
-      json: Type.String({
-        minLength: 2,
-        description: "JSON object with thesisAnchor and evidenceOwners fields.",
-      }),
-    }),
-    execute: async (_id, params, _signal, _onUpdate, ctx) => {
-      const data = jsonObject(String(params.json ?? ""));
-      if (!data) {
-        return textResult(
-          "Evidence ownership write failed: json must be a JSON object",
-          { ok: false },
-        );
-      }
-      const result = writeEvidenceOwnership(ctx.cwd, data);
-      return textResult(`Evidence ownership written: ${result.path}`, result);
+  const researchTool = (
+    name: string,
+    label: string,
+    description: string,
+    parameters: ReturnType<typeof Type.Object>,
+    run: (params: Record<string, unknown>, cwd: string) => unknown,
+  ) =>
+    pi.registerTool({
+      name,
+      label,
+      description,
+      parameters,
+      execute: async (_id, params, _signal, _onUpdate, ctx) => {
+        try {
+          const value = run(params as Record<string, unknown>, ctx.cwd);
+          return textResult(JSON.stringify(value), { ok: true, value });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          return textResult(message, { ok: false, error: message });
+        }
+      },
+    });
+  researchTool(
+    "academic_writer_write_research_notes",
+    "Write Research Notes",
+    "Validate and merge note upserts into the project research-notes library.",
+    Type.Object({ notesJson: Type.String({ minLength: 2 }) }),
+    (p, cwd) => {
+      const input = jsonArray(String(p.notesJson));
+      if (!input) throw Error("notesJson must be a JSON array");
+      return writeResearchNotes(cwd, input);
     },
-  });
-
+  );
+  researchTool(
+    "academic_writer_review_research_notes",
+    "Review Research Notes",
+    "Mark selected notes verified or unchecked after researcher confirmation.",
+    Type.Object({
+      noteIds: Type.Array(Type.String()),
+      state: Type.Union([Type.Literal("unchecked"), Type.Literal("verified")]),
+    }),
+    (p, cwd) =>
+      reviewResearchNotes(
+        cwd,
+        p.noteIds as string[],
+        p.state as "unchecked" | "verified",
+      ),
+  );
+  researchTool(
+    "academic_writer_write_outline",
+    "Write Article Outline",
+    "Validate and save canonical recursive article outline JSON.",
+    Type.Object({ outlineJson: Type.String({ minLength: 2 }) }),
+    (p, cwd) => {
+      const input = jsonObject(String(p.outlineJson));
+      if (!input) throw Error("outlineJson must be a JSON object");
+      return writeOutline(cwd, input);
+    },
+  );
+  researchTool(
+    "academic_writer_render_outline",
+    "Render Article Outline",
+    "Render generated Markdown from the canonical outline JSON.",
+    Type.Object({ article: Type.String({ minLength: 1 }) }),
+    (p, cwd) => ({ path: renderOutline(cwd, String(p.article)) }),
+  );
+  researchTool(
+    "academic_writer_snapshot_notes",
+    "Snapshot Article Notes",
+    "Freeze only outline-selected notes after outline approval.",
+    Type.Object({ article: Type.String({ minLength: 1 }) }),
+    (p, cwd) => ({ path: snapshotNotes(cwd, String(p.article)) }),
+  );
+  researchTool(
+    "academic_writer_query_research",
+    "Query Research Notes",
+    "Retrieve fixed-scope research note and outline bundles.",
+    Type.Object({
+      operation: Type.Union([
+        Type.Literal("section_bundle"),
+        Type.Literal("note_by_id"),
+        Type.Literal("notes_by_source"),
+        Type.Literal("notes_by_tag"),
+        Type.Literal("outline_summary"),
+      ]),
+      article: Type.Optional(Type.String()),
+      sectionId: Type.Optional(Type.String()),
+      noteId: Type.Optional(Type.String()),
+      sourceId: Type.Optional(Type.String()),
+      tag: Type.Optional(Type.String()),
+      limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+    }),
+    (p, cwd) => queryResearch(cwd, p as Parameters<typeof queryResearch>[1]),
+  );
+  researchTool(
+    "academic_writer_migrate_article_outline",
+    "Migrate Article Outline",
+    "Convert existing Markdown headings and paragraphs into a draft-only outline without changing the article.",
+    Type.Object({
+      article: Type.String({ minLength: 1 }),
+      title: Type.Optional(Type.String()),
+      targetLanguage: Type.Optional(Type.String()),
+      citationStyle: Type.Optional(Type.String()),
+    }),
+    (p, cwd) =>
+      migrateArticleOutline(cwd, String(p.article), {
+        title: p.title as string | undefined,
+        targetLanguage: p.targetLanguage as string | undefined,
+        citationStyle: p.citationStyle as string | undefined,
+      }),
+  );
   pi.registerTool({
     name: "academic_writer_write_sources_cache",
     label: "Academic Writer Write Sources Cache",

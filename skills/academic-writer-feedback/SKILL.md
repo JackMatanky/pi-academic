@@ -10,6 +10,7 @@ metadata: {author: "Yotam Fromm", version: "0.2.23"}
 You capture what the researcher thinks of a finished article and convert each piece of feedback into a **targeted change**: to the article, to her profile, to the plugin's pattern references, or to the feedback log that future sessions read.
 
 **This is not a free-form chat.** Your job is:
+
 1. Identify the article she's giving feedback on.
 2. Collect feedback through a structured interview (one topic at a time).
 3. Classify every item into one of the five action categories below.
@@ -31,9 +32,11 @@ Never summarize feedback without acting on it.
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
 ### Voice Source Hierarchy
+
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
 2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
 3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
+
 ## Load Profile
 
 Call `academic_writer_get_profile`.
@@ -53,7 +56,8 @@ If multiple `.md` files exist, present the most recent ones as options plus an "
 
 Once chosen, load the artifacts:
 
-Read the chosen article with the Read tool. Also read article-local citation registry `articles/<slug>.sources.json` first, falling back to `.academic-writer/sources.json` when absent. Read `.academic-writer/evidence-ownership.json` when present; treat missing files as `[]` and `{}` respectively.
+Read the chosen article with the Read tool. Read `articles/<slug>.outline.json` for its canonical thesis and argument map when present. For evidence context, prefer the frozen `articles/<slug>.sources.json` citation registry and `articles/<slug>.notes.json` note snapshot; use `.academic-writer/sources.json` and `.academic-writer/research-notes.json` only when no article-local asset exists. Treat a present article snapshot as authoritative; do not use mutable project data to rewrite the article's evidence record.
+
 ## Phase 2 — Structured Interview
 
 Walk the researcher through four topic blocks, one at a time. For each block, present the question with its numbered options below. **Do not** ask all four blocks at once.
@@ -63,6 +67,7 @@ Walk the researcher through four topic blocks, one at a time. For each block, pr
 > "How did the article's structure feel? (outline, section distribution, intro/conclusion conventions)"
 
 Options:
+
 - "Structure was good" — skip to next block
 - "Section distribution was off" — ask which sections felt wrong and how she'd redistribute
 - "Intro/conclusion conventions missed the mark" — ask what she expected
@@ -73,6 +78,7 @@ Options:
 > "How did the written prose feel? (voice match, verbosity, repetition, rhythm)"
 
 Options:
+
 - "Prose was good" — skip
 - "Didn't match my voice" — ask which sections/paragraphs felt off and what her voice sounds like there
 - "Too verbose / too repetitive" — ask for specific examples; if she names phrases ("I suggest that…", "I do not address here…"), these are candidates for Category C pattern-cap adjustments
@@ -84,6 +90,7 @@ Options:
 > "Were the citations correct? (author, title, year, journal, page accuracy)"
 
 Options:
+
 - "All citations were correct" — skip
 - "Some citations had wrong metadata" — ask which citation(s), which field is wrong, and what the correct value is. Each one is a Category D source registry fix.
 - "Some claims weren't cited" — Category A article edit
@@ -124,6 +131,7 @@ Use `Edit` on `articles/<slug>.md`. Prefer the narrowest surgical edit. For larg
 ### B. Profile update
 
 Use `Edit` on `.academic-writer/profile.md`. Common fields:
+
 - `paragraphStructure.length.mean` / `.stdev` — paragraph length preferences
 - `toneAndVoice.descriptors` — voice adjustments
 - `preferences.typography` — e.g., "never use em-dashes"
@@ -139,12 +147,14 @@ Spawn via your subagent-dispatch tool with `agent: \"voice-miner\"` if applicabl
 ### C. Pattern reference update
 
 Resolve the language-specific pattern reference with `academic_writer_read_resource`:
+
 ```text
 Call academic_writer_read_resource with name: anti_ai_patterns, language: LANG_LOWER, includePath: true.
 Use the returned RESOURCE_PATH as REF_FILE.
 ```
 
 Use `Edit` on `$REF_FILE` to:
+
 - Lower a pattern's per-article cap (e.g., "I suggest that…" from 3 to 2)
 - Add a new pattern row to the appropriate table (Formulaic Hedging / Author-Voice / Meta-Scholarship / Inflated Transitions / Inflated Language / Structural Tells)
 - Add a new before/after example if the researcher gave concrete examples
@@ -158,6 +168,7 @@ If the reference file doesn't exist for this language, create it by mirroring th
 Read `.academic-writer/sources.json`, find the entry matching the author + work title the researcher named, update the incorrect field, and set that field's `extractionConfidence` to `"high"` (the researcher has verified it manually). Write back with the Write tool.
 
 Example:
+
 ```json
 {
   "sourceId": "cohen_2018_title",
@@ -176,13 +187,15 @@ Also: if the article text itself contains the wrong year inline, fix it with `Ed
 For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log AND to session memory.
 
 Feedback log path:
-```
+
+```text
 .academic-writer/feedback/YYYY-MM-DD-<article-slug>.md
 ```
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
 For session memory (persistent preferences, project-local — never `$HOME`), write a `feedback_*.md` file to `.academic-writer/memory/` only for items that represent **persistent preferences** worth carrying across sessions — not one-off fixes. Examples worth a memory entry:
+
 - "Never use em-dashes anywhere"
 - "Abstracts should always be both Hebrew and English"
 - "For Bible articles, always cite the Hebrew chapter/verse first, then the English translation"
@@ -213,6 +226,7 @@ Always write the per-article feedback log (Phase 4.E path), even if every item w
 Then show a summary to the researcher:
 
 > "Feedback processed.
+>
 > - Applied: N items (A: N, B: N, C: N, D: N, E: N)
 > - Deferred: N items (logged to `.academic-writer/feedback/<file>.md`)
 > - Memory entries added: N
@@ -234,6 +248,7 @@ When the researcher provides a reviewer report (peer review comments, editor dec
    - Execute corresponding edits directly on the manuscript (`articles/<slug>.md`).
    - Pass updated paragraphs through `section-writer`/`auditor` pipeline to preserve voice fingerprint and citation integrity.
 4. **Summary Output**: Present the generated response matrix location and list of revised manuscript sections.
+
 ## Rules
 
 - **Never silently batch changes.** Every applied change must be confirmed by the researcher in Phase 3, and every applied change must be reflected either in the summary or the feedback log.

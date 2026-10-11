@@ -1,7 +1,7 @@
 ---
 name: academic-writer-write
 description: "Write a new academic article. Conversational pipeline: subject → sources → deep read → thesis → outline → write → audit → .docx. Use when starting a new article from scratch — subject, sources, thesis, outline, draft."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_assemble_docx_json academic_writer_resolve_mcp_tool
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_migrate_article_outline academic_writer_assemble_docx_json academic_writer_resolve_mcp_tool
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -108,10 +108,10 @@ If a draft is detected, ask (a conversational ask):
 - Header: "Draft detected"
 - Question: "I see you've shared a draft/outline. How would you like to proceed?"
 - Options:
-  - "Expand my draft using sources" — use their structure as the approved outline; skip the architect's outline generation (Step 5); pass their draft text to each section-writer as the starting point to expand and anchor in sources
+  - "Expand my draft using sources" — preserve pasted draft as research input; have the architect map its structure and evidence into draft recursive JSON, not an approved outline. Existing Markdown articles route to edit/migration.
   - "Use my draft as context, propose a new structure" — treat their draft as research input for the architect; run the full thesis+outline flow normally
 
-Store the draft text as `userDraftText` regardless of which option is chosen. If the researcher chose "Expand my draft", set `userDraftAsOutline = true`.
+Store the draft text as userDraftText regardless of choice. If they chose expansion, set userDraftAsOutline for the draft-mapping branch; it is never an approval flag.
 
 
 ---
@@ -163,13 +163,7 @@ Pass the NotebookLM summary as additional context to the deep-reader agent promp
 
 **Use your subagent-dispatch tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
 
-The deep-reader runs:
-- **Step 1**: Read source content from Zotero (if enabled) and local ingested sources in `.academic-writer/sources/` (via `academic_writer_ingest_sources`)
-- **Step 1b**: Extract structured bibliographic metadata per source and create citation snapshot assets.
-  - **Primary Article Snapshot**: Write `articles/<slug>.sources.json` and `articles/<slug>.bibliography.bib` (via `academic_writer_snapshot_citations`).
-  - **Current-Run Cache**: Update `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` as current-run cache/fallback.
-  - This registry is the ONLY trusted source for citation metadata in Step 7.
-- **Step 2**: Query NotebookLM notebooks (if enabled) for thematic context
+The deep-reader reads original Zotero/local sources, writes current-run .academic-writer/sources.json and .academic-writer/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
 
 
 Wait for the deep-reader to return retrieved passages before continuing to Step 4. Confirm `.academic-writer/sources.json` exists.
@@ -199,40 +193,17 @@ After the researcher picks a thesis, log thesis approval:
 
 ---
 
-### Step 5: Outline + Approval
+### Step 5: Recursive Outline, Researcher Review, and Freeze
 
-**If the researcher chose "Expand my draft" in the draft detection step (`userDraftAsOutline = true`):**
+For pasted drafts to expand, pass the text and structure to the architect with the approved thesis and deep-read note IDs; it maps arguments into a draft recursive outline. Do not treat pasted prose as an approved outline. Existing on-disk article Markdown routes to edit/migration.
 
-- Do NOT skip the architect entirely. The outline comes from the user's draft, but the architect is still the sole writer of `.academic-writer/evidence-ownership.json` — and without it the per-paragraph thesis-drift guard and the cross-section evidence-dedup both silently no-op. **Use your subagent-dispatch tool to spawn the `architect` subagent in a lightweight "ownership-only" mode**: pass `userDraftText`, the deep-read results / `sources.json`, and `targetLanguage`, and instruct it to produce ONLY `evidence-ownership.json` (the `thesisAnchor` derived from the draft plus the `evidenceOwners` assignment for shared evidence) — it must NOT generate a new outline or thesis options, since those come from the user's draft.
-- Parse `userDraftText` into sections: use the user's existing section headings and paragraph structure as the outline
-- Present the extracted outline to the researcher:
-  > "Using your draft structure:
-  > [list extracted sections]
-  > Each section-writer will expand these using source material. Confirm or adjust."
-- Get approval, then proceed directly to Step 6 (ingestion sync) and Step 7 (section-writers)
-- Pass `userDraftText` sections as `userDraftParagraphs` in each section-writer's prompt, so agents expand existing content rather than writing from scratch
-- Log outline approval:
+Otherwise spawn the architect in Mode B with approved thesis, deep read, note IDs, article slug/title from academic_writer_article_paths, targetWordCount, citationStyle and targetLanguage. It calls academic_writer_write_outline with schemaVersion 1, researchQuestion, thesis, status: "draft", ordered nested sections and direct points. Each point has a claim, reasoning and noteUses with function, handling and primary/reference coverage. Do not proceed on prose outline alone.
 
-**If no draft (normal flow):**
+Call academic_writer_render_outline({article: MD_PATH}) to generate articles/<slug>.outline.md from canonical JSON. Present the generated Markdown with nested argument points, evidence handling and unresolved gaps. Iterate JSON through academic_writer_write_outline, rerender, and present the changed outline; never parse generated Markdown back into JSON.
 
+Before approval, show the researcher each selected source-backed note’s exact quotation or researcher-authored paraphrase/summary, original source and locator. Ask for explicit confirmation of each note and use; silence, a generic “looks good,” and NotebookLM-only findings are not verification. Only then call academic_writer_review_research_notes({noteIds, state: "verified"}) for confirmed notes. Resolve rejected/unchecked/stale notes and point mapping before dispatch.
 
-**Use your subagent-dispatch tool to spawn the `architect` subagent again** with the approved thesis, deep read results, targetWordCount, and targetLanguage.
-
-The architect runs in Mode B:
-- Produces the outline (titles, roles, suggested sources, word counts, paragraph counts) in `targetLanguage`
-- Writes `.academic-writer/evidence-ownership.json` — for every evidence anchor (source, passage, dataset) appearing in more than one section, assigns exactly ONE section as the owner of the full description. Other sections must back-reference.
-- Enforces a conciseness budget: body-section descriptions ≤ 2 sentences, intro/conclusion ≤ 3 sentences, no 5+ word phrase repeated across descriptions.
-
-
-After receiving the architect result, mark node complete:
-
-Present the outline and invite refinement:
-> "Here's my proposed structure:
-> [outline sections with titles and roles]
->
-> What would you change? Add, remove, or reorder sections?"
-
-Iterate until the researcher says something like "go", "looks good", or "start writing".
+After explicit approval of the thesis and complete rendered outline, call academic_writer_write_outline to set thesis.status and outline status to "approved", then rerender. Call academic_writer_snapshot_citations({article: MD_PATH}) and academic_writer_snapshot_notes({article: MD_PATH}) at this post-approval boundary. Both must succeed before dispatch; on failure stop and repair/seek approval rather than drafting from mutable caches. No subsequent current-run source addition may enter this article context. Use frozen article-local .sources.json, .bibliography.bib, and .notes.json for writing and audit; note anchors are retrieval leads, never proof. Log approval and asset paths.
 
 
 ---
@@ -254,32 +225,13 @@ The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, ci
 
 ## PHASE 2: AUTONOMOUS (Steps 6–9, fully automatic)
 
-### Step 6: Parallel Section Writing + Auditing
+### Step 6: Recursive Section Writing + Auditing
 
-**CRITICAL: Spawn one `section-writer` per section in parallel. Under OMP, send one `task` call with one `tasks` entry per section; under pi, issue sibling `subagent` calls in one response.**
+Traverse the approved JSON outline in ordered depth-first tree order. Spawn one section-writer task for each section with direct point children; nested child sections are separate drafting units; heading-only sections produce no task. Parallelize independent units through one batched task call (OMP) or sibling subagent calls (pi). Assemble prose under headings in the original tree order.
 
+Pass only MD_PATH, sectionId, and contextual details: citationStyle, targetLanguage, articleStructure, enabled tools, targetWordCount, priorSectionTexts and outlineOverview. The writer calls academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}) for its approved subtree and selected frozen notes; it writes direct point children only. Do not pass mutable project notes, registry, or pasted section specs as substitutes.
 
-For each section in the approved outline, your subagent-dispatch tool prompt must include:
-- `section`: the section spec (title, description, argument role, suggested sources, paragraph count)
-- `sectionIndex`: the section number
-- `totalSections`: total section count
-- `thesis`: the article thesis
-- `articleStructure`: the researcher's structure conventions
-- `citationStyle`: from the profile
-- `targetLanguage`: from the profile
-- `targetWordCount`: the requested article length (so each section is sized proportionally)
-- `tools`: the enabled tools
-- `priorSectionTexts`: text of all previously completed sections (for repetition awareness)
-- `outlineOverview`: full outline titles and roles
-- `userDraftParagraphs`: (if `userDraftAsOutline = true`) the user's draft text for this section — agents expand this rather than writing from scratch
-
-**NOTE:** Do NOT pass `styleFingerprint`, `linkingWords`, `sourcesRegistry`, or `evidenceOwnership` in the prompt — section-writer agents load all four directly from disk to reduce context size:
-- Fingerprint from `.academic-writer/profile.md`
-- Linking words from `academic_writer_read_resource` with `name: words`
-- Source registry from `.academic-writer/sources.json` (deep-reader output)
-- Evidence ownership map from `.academic-writer/evidence-ownership.json` (architect output)
-
-Each section-writer handles a **per-paragraph 8-skill pipeline** internally — in order: Draft → Style Compliance → Hebrew Grammar → Academic Language → Language Purity → Anti-AI → Repetition Check → Citation Audit (logged per paragraph as `section_N_p_M_<skill>`). The authoritative contract for that pipeline — exact skill behavior, the 220-word ceiling, the `thresholds.json`-driven anti-AI gate, and the auditor hard gate (Citation Audit / Skill 8) — lives in the `section-writer` agent definition (`src/agents/section-writer.md`). Do not duplicate or override it here; the orchestrator only spawns section-writers and waits for their results.
+Each section-writer runs the eight-skill paragraph pipeline and auditor hard gate. The auditor independently verifies original sources using note IDs and locators only as leads. Stop on a missing/invalid bundle; never bypass the pipeline with inline body writing.
 
 After receiving each section-writer result, mark node complete:
 

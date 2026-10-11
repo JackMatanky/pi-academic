@@ -125,7 +125,7 @@ Scan the entire article for **embedded foreign language text** that survived per
 5. Strengthen topic sentences that don't clearly advance the thesis
 6. Remove or condense redundant passages
 7. Flag (don't fix) any gaps that require new source material
-8. NEVER rewrite full paragraphs — make surgical edits only. **EXCEPT for evidence consolidation:** when the same source/evidence (same tablet, passage, dataset, artifact) is fully re-described in two or more body sections, keep the full description in the section where the evidence does the most argumentative work (consult `articles/<slug>.sources.json` or `.academic-writer/evidence-ownership.json` if present — the `ownerSectionIndex` names the intended owner) and reduce the other occurrences to a back-reference (e.g., "as discussed in Section II above"). This is the ONLY condition under which you may rewrite more than a sentence at a time.
+8. NEVER rewrite full paragraphs — make surgical edits only. **EXCEPT for evidence consolidation:** when the same source is fully re-described in multiple body sections, keep the full description where it does the most argumentative work (the approved outline’s primary note use identifies this point) and reduce other occurrences to a brief reference without changing citations. This is the ONLY condition under which you may rewrite more than a sentence at a time.
 9. NEVER change or remove any citation — citations are locked
 
 Log synthesis completion:
@@ -143,7 +143,7 @@ After synthesis revisions, run a **dedicated cross-section repetition pass**.
 2. **Cross-section phrase repetition** (5+ words in more than one section)
 3. **Opening sentence patterns** (no two sections start with same structure)
 4. **Transition phrase reuse** (max 2x per article)
-5. **Evidence reuse** (same source for same purpose) — if the same evidence is described in full in two or more sections, consolidate per Process rule #8. Consult `.academic-writer/evidence-ownership.json` to decide which section owns the full description.
+5. **Evidence reuse** — if the same evidence is described in full in multiple sections, consolidate per Process rule #8 using the approved outline’s primary/reference note uses and the article-local notes snapshot; never read project-wide ownership data.
 6. **Formulaic pattern caps (Sole Owner)**: You are the sole agent that enforces full-article formulaic pattern caps across sections. Call `academic_writer_read_resource` with `name: anti_ai_patterns` and `language: targetLanguage_lower`. For each named pattern with a per-article cap (e.g., "I do not address here…" capped at 2; "I suggest that…" capped at 3), count occurrences across the whole article. For any pattern exceeding its cap, rewrite the overflow instances (convert to direct statement, remove the hedging, or vary the phrasing). The cap is authoritative.
 7. **Abstract/intro/section-opener deduplication** — Compare the first sentence of every body section against sentences in the abstract and the introduction (first paragraph of Section I). If any body-section opener shares 5+ content words with an abstract/intro sentence, rewrite the body-section opener to advance the argument rather than restate the thesis. Thesis is stated once in the abstract and once in the introduction; body-section openers must do new work.
 

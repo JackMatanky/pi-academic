@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "article": {
+    "slug": "augustine-time",
+    "title": "תפיסת הזמן אצל אוגוסטינוס וההד שלה אצל ריקר",
+    "targetLanguage": "Hebrew",
+    "citationStyle": "inline-parenthetical"
+  },
+  "researchQuestion": "כיצד מעביר אוגוסטינוס את שאלת הזמן מן המישור הקוסמולוגי למישור הנפשי, וכיצד מרחיב ריקר מהלך זה באמצעות הסיפר?",
+  "thesis": {
+    "text": "האפוריה של אוגוסטינוס ביחס לזמן אינה כישלון פילוסופי אלא העתקה מכוונת של שאלת הזמן מן המישור הקוסמולוגי אל המישור הנפשי, מהלך שהניב את תפיסת הזמן כחוויה תודעתית.",
+    "status": "approved"
+  },
+  "status": "approved",
+  "items": [
+    {
+      "id": "intro",
+      "kind": "section",
+      "title": "מבוא — הצגת אפוריית הזמן והתזה",
+      "purpose": "להציג את קושי הגדרת הזמן ואת מהלך המאמר.",
+      "thesisContribution": "ממסגר את האפוריה כנקודת מוצא פורייה ולא ככישלון.",
+      "items": [
+        {
+          "id": "intro-aporia",
+          "kind": "point",
+          "role": "argument",
+          "claim": "הקושי להסביר את הזמן חושף בעיה פילוסופית ממשית.",
+          "reasoning": "הפער בין ידיעה אינטואיטיבית לבין הסבר לאחר מנסח את האפוריה שהמאמר יעקוב אחריה.",
+          "noteUses": [
+            {
+              "noteId": "note-aug-question",
+              "function": "establishes the central problem",
+              "handling": "quote and analyze",
+              "coverage": "primary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "augustine",
+      "kind": "section",
+      "title": "הזמן כחוויה נפשית אצל אוגוסטינוס",
+      "purpose": "להראות כיצד ניתוח הזמנים ממקם את חווייתם בנפש.",
+      "thesisContribution": "מבסס את ההעברה מן הקוסמולוגי אל התודעתי.",
+      "items": [
+        {
+          "id": "soul-times",
+          "kind": "point",
+          "role": "interpretation",
+          "claim": "שלושת הזמנים מתקיימים בנפש כהווה של זיכרון, קשב וציפייה.",
+          "reasoning": "תלותם בפעולות נפשיות מסבירה את הזמן כחוויה ולא כעצם קוסמי נגיש במישרין.",
+          "noteUses": [
+            {
+              "noteId": "note-aug-soul",
+              "function": "supports the account of inward time",
+              "handling": "paraphrase and interpret",
+              "coverage": "primary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ricoeur",
+      "kind": "section",
+      "title": "סיכום — ההד אצל ריקר והרחבת ההשלכות",
+      "purpose": "לקשור בין אפוריית אוגוסטינוס לתיווך הסיפורי של הזמן אצל ריקר.",
+      "thesisContribution": "מראה את המשך חיי המהלך האוגוסטיני בתיאוריה של הסיפר.",
+      "items": [
+        {
+          "id": "narrative",
+          "kind": "point",
+          "role": "synthesis",
+          "claim": "ריקר ממשיך את האפוריה בכך שהוא מציע את הסיפר כתיווך לחוויית הזמן.",
+          "reasoning": "הסיפור אינו מבטל את המתח אלא מאפשר להבין כיצד זמן נחווה ונעשה מובן.",
+          "noteUses": [
+            {
+              "noteId": "note-ricoeur-narrative",
+              "function": "supports the extension from aporia to narrative",
+              "handling": "quote and interpret",
+              "coverage": "primary"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

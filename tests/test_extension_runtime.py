@@ -261,6 +261,17 @@ class TestExtensionRuntime(unittest.TestCase):
         self.assertIn("academic_writer_snapshot_citations", data["names"])
         self.assertIn("academic_writer_assemble_docx_json", data["names"])
         self.assertIn("academic_writer_migrate_profile", data["names"])
+        for name in (
+            "academic_writer_write_research_notes",
+            "academic_writer_review_research_notes",
+            "academic_writer_write_outline",
+            "academic_writer_render_outline",
+            "academic_writer_snapshot_notes",
+            "academic_writer_query_research",
+            "academic_writer_migrate_article_outline",
+        ):
+            self.assertIn(name, data["names"])
+        self.assertNotIn("academic_writer_write_evidence_ownership", data["names"])
         self.assertTrue(data["status"]["details"]["ok"])
         self.assertEqual(data["status"]["details"]["sources"]["count"], 1)
         self.assertEqual(data["status"]["details"]["sourceDocuments"]["count"], 1)
@@ -447,6 +458,298 @@ class TestExtensionRuntime(unittest.TestCase):
             data["profile"]["details"]["profile"]["fieldOfStudy"], "Literature"
         )
         self.assertEqual(data["profile"]["details"]["profile"]["citationStyle"], "apa")
+
+    def test_research_notes_outline_and_frozen_bundle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".academic-writer"
+            state.mkdir()
+            (root / "articles").mkdir()
+            fingerprint = "sha256:fixture"
+            source_id = "local:" + fingerprint
+            (state / "sources.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "sourceId": source_id,
+                            "sourceType": "local-file",
+                            "sourceFingerprint": fingerprint,
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            written = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {
+                    "notesJson": json.dumps(
+                        [
+                            {
+                                "kind": "quotation",
+                                "coreStatement": "Evidence",
+                                "sourceRef": source_id,
+                                "anchor": {
+                                    "locator": {"display": "PDF p. 3"},
+                                    "pdfPageIndex": 2,
+                                    "textQuote": {"exact": "Exact words"},
+                                    "sourceFingerprint": fingerprint,
+                                },
+                                "tags": ["argument"],
+                            }
+                        ]
+                    )
+                },
+            )
+            self.assertTrue(written["details"]["ok"])
+            note = written["details"]["value"][0]
+            self.assertEqual(note["review"]["state"], "unchecked")
+            reviewed = self.call_tool(
+                root,
+                "academic_writer_review_research_notes",
+                {"noteIds": [note["id"]], "state": "verified"},
+            )
+            self.assertTrue(reviewed["details"]["ok"])
+            outline = {
+                "schemaVersion": 1,
+                "article": {
+                    "slug": "essay",
+                    "title": "Essay",
+                    "targetLanguage": "English",
+                    "citationStyle": "apa",
+                },
+                "researchQuestion": "Question?",
+                "thesis": {"text": "Claim", "status": "approved"},
+                "status": "approved",
+                "items": [
+                    {
+                        "id": "section-1",
+                        "kind": "section",
+                        "title": "Argument",
+                        "purpose": "Establish the claim",
+                        "thesisContribution": "Supports thesis",
+                        "items": [
+                            {
+                                "id": "point-1",
+                                "kind": "point",
+                                "role": "argument",
+                                "claim": "Claim",
+                                "reasoning": "Reasoning",
+                                "noteUses": [
+                                    {
+                                        "noteId": note["id"],
+                                        "function": "supports",
+                                        "handling": "analyze",
+                                        "coverage": "primary",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+            saved_outline = self.call_tool(
+                root,
+                "academic_writer_write_outline",
+                {"outlineJson": json.dumps(outline)},
+            )
+            self.assertTrue(saved_outline["details"]["ok"])
+            self.assertTrue(
+                self.call_tool(
+                    root,
+                    "academic_writer_render_outline",
+                    {"article": "articles/essay.md"},
+                )["details"]["ok"]
+            )
+            self.assertTrue(
+                self.call_tool(
+                    root,
+                    "academic_writer_snapshot_notes",
+                    {"article": "articles/essay.md"},
+                )["details"]["ok"]
+            )
+            unchanged = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {"notesJson": json.dumps([note])},
+            )
+            self.assertEqual(
+                unchanged["details"]["value"][0]["review"]["state"], "verified"
+            )
+            changed = {**note, "coreStatement": "Changed in project library"}
+            update = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {"notesJson": json.dumps([changed])},
+            )
+            self.assertEqual(
+                update["details"]["value"][0]["review"]["state"], "unchecked"
+            )
+            bundle = self.call_tool(
+                root,
+                "academic_writer_query_research",
+                {
+                    "operation": "section_bundle",
+                    "article": "articles/essay.md",
+                    "sectionId": "section-1",
+                },
+            )
+            self.assertTrue(bundle["details"]["ok"])
+            self.assertEqual(
+                bundle["details"]["value"]["notes"][0]["coreStatement"], "Evidence"
+            )
+
+    def test_ingest_uses_content_identity_and_marks_changed_notes_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / ".academic-writer" / "sources"
+            source_dir.mkdir(parents=True)
+            source = source_dir / "local.txt"
+            source.write_text("First version", encoding="utf-8")
+            first = self.call_tool(
+                root, "academic_writer_ingest_sources", {"paths": [str(source)]}
+            )["details"]
+            record = first["sources"][0]
+            self.assertEqual(record["sourceId"], "local:" + record["sourceFingerprint"])
+            self.assertRegex(record["sourceFingerprint"], r"^sha256:[0-9a-f]{64}$")
+            note = self.call_tool(
+                root,
+                "academic_writer_write_research_notes",
+                {
+                    "notesJson": json.dumps(
+                        [
+                            {
+                                "kind": "paraphrase",
+                                "coreStatement": "Researcher paraphrase",
+                                "researcherNote": "I rewrote the source idea",
+                                "sourceRef": record["sourceId"],
+                            }
+                        ]
+                    )
+                },
+            )["details"]["value"][0]
+            self.call_tool(
+                root, "academic_writer_ingest_sources", {"paths": [str(source)]}
+            )
+            unchanged = json.loads(
+                (root / ".academic-writer" / "sources.json").read_text(encoding="utf-8")
+            )[0]
+            self.assertEqual(unchanged["sourceId"], record["sourceId"])
+            source.write_text("Second, changed version", encoding="utf-8")
+            changed = self.call_tool(
+                root, "academic_writer_ingest_sources", {"paths": [str(source)]}
+            )["details"]["sources"][0]
+            self.assertNotEqual(changed["sourceId"], record["sourceId"])
+            saved = json.loads(
+                (root / ".academic-writer" / "research-notes.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(saved["notes"][0]["id"], note["id"])
+            self.assertEqual(saved["notes"][0]["review"]["state"], "stale")
+
+    def test_pdf_ingest_preserves_zero_based_page_boundaries(self):
+        def make_pdf():
+            first = b"BT /F1 12 Tf 25 250 Td (FIRST PAGE MARKER) Tj ET"
+            second = b"BT /F1 12 Tf 25 250 Td (SECOND PAGE MARKER) Tj ET"
+            objects = [
+                b"<< /Type /Catalog /Pages 2 0 R >>",
+                b"<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+                b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R >>",
+                b"<< /Length "
+                + str(len(first)).encode()
+                + b" >>\nstream\n"
+                + first
+                + b"\nendstream",
+                b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>",
+                b"<< /Length "
+                + str(len(second)).encode()
+                + b" >>\nstream\n"
+                + second
+                + b"\nendstream",
+                b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            ]
+            data = bytearray(b"%PDF-1.4\n")
+            offsets = [0]
+            for number, body in enumerate(objects, 1):
+                offsets.append(len(data))
+                data.extend(f"{number} 0 obj\n".encode() + body + b"\nendobj\n")
+            xref = len(data)
+            data.extend(f"xref\n0 {len(offsets)}\n0000000000 65535 f \n".encode())
+            for offset in offsets[1:]:
+                data.extend(f"{offset:010d} 00000 n \n".encode())
+            data.extend(
+                f"trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+            )
+            return bytes(data)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "two-pages.pdf"
+            source.write_bytes(make_pdf())
+            result = self.call_tool(
+                root, "academic_writer_ingest_sources", {"paths": [str(source)]}
+            )
+            record = result["details"]["sources"][0]
+            self.assertEqual([page["pdfPageIndex"] for page in record["pages"]], [0, 1])
+            self.assertIn("FIRST PAGE MARKER", record["pages"][0]["text"])
+            self.assertIn("SECOND PAGE MARKER", record["pages"][1]["text"])
+
+    def test_e2e_fixture_outline_uses_frozen_notes(self):
+        root = Path("tests/e2e/fixture-project").resolve()
+        summary = self.call_tool(
+            root,
+            "academic_writer_query_research",
+            {"operation": "outline_summary", "article": "articles/augustine-time.md"},
+        )
+        self.assertTrue(summary["details"]["ok"])
+        self.assertEqual(summary["details"]["value"]["status"], "approved")
+        bundle = self.call_tool(
+            root,
+            "academic_writer_query_research",
+            {
+                "operation": "section_bundle",
+                "article": "articles/augustine-time.md",
+                "sectionId": "augustine",
+            },
+        )
+        self.assertTrue(bundle["details"]["ok"])
+        values = bundle["details"]["value"]
+        self.assertEqual(values["directPoints"][0]["id"], "soul-times")
+        self.assertEqual(values["notes"][0]["id"], "note-aug-soul")
+        self.assertEqual(values["notes"][0]["review"]["state"], "verified")
+
+    def test_outline_migration_preserves_markdown_and_conflicts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            articles = root / "articles"
+            articles.mkdir()
+            markdown = "Intro paragraph\n\n# Main\n\nFirst body paragraph.\n\n## Nested\n\nSecond body paragraph.\n"
+            article = articles / "old-article.md"
+            article.write_text(markdown, encoding="utf-8")
+            migrated = self.call_tool(
+                root,
+                "academic_writer_migrate_article_outline",
+                {"article": "articles/old-article.md"},
+            )
+            self.assertTrue(migrated["details"]["ok"])
+            outline = migrated["details"]["value"]
+            self.assertEqual(outline["status"], "draft")
+            self.assertEqual(article.read_text(encoding="utf-8"), markdown)
+            self.assertEqual(outline["items"][0]["draftText"], "Intro paragraph")
+            self.assertEqual(
+                outline["items"][1]["items"][0]["draftText"], "First body paragraph."
+            )
+            self.assertEqual(
+                outline["items"][1]["items"][1]["items"][0]["draftText"],
+                "Second body paragraph.",
+            )
+            conflict = self.call_tool(
+                root,
+                "academic_writer_migrate_article_outline",
+                {"article": "articles/old-article.md"},
+            )
+            self.assertFalse(conflict["details"]["ok"])
 
     def test_health_includes_rumdl_field(self):
         """Assert health tool returns rumdl detection field.

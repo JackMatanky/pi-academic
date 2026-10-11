@@ -1,4 +1,5 @@
 import { execFile, execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   constants,
   accessSync,
@@ -20,6 +21,7 @@ import {
   resolve,
 } from "node:path";
 import { promisify } from "node:util";
+import { markResearchNotesStale } from "./research.js";
 import { buildStatus, type AcademicWriterStatus } from "./status.js";
 
 /**
@@ -50,6 +52,9 @@ export interface ArticlePaths {
   json: string;
   sources: string;
   bibliography: string;
+  outlineJson: string;
+  outlineMarkdown: string;
+  notesSnapshot: string;
 }
 
 /**
@@ -88,6 +93,7 @@ export interface ExtractedDocument {
   ok: boolean;
   path: string;
   text: string;
+  pages?: Array<{ pdfPageIndex: number; text: string }>;
   error?: string;
 }
 
@@ -99,6 +105,7 @@ export interface ExtractedDocument {
  */
 export interface LocalSourceRecord {
   sourceId: string;
+  sourceFingerprint: string;
   citeKey: string;
   sourceType: "local-file";
   path: string;
@@ -112,6 +119,7 @@ export interface LocalSourceRecord {
     year: "medium" | "low";
   };
   extractionNotes: string;
+  pages?: Array<{ pdfPageIndex: number; text: string }>;
 }
 
 /**
@@ -263,6 +271,9 @@ export function articlePaths(subject: string): ArticlePaths {
     json: `.academic-writer/runs/${slug}.docx.json`,
     sources: `articles/${slug}.sources.json`,
     bibliography: `articles/${slug}.bibliography.bib`,
+    outlineJson: "articles/" + slug + ".outline.json",
+    outlineMarkdown: "articles/" + slug + ".outline.md",
+    notesSnapshot: "articles/" + slug + ".notes.json",
   };
 }
 
@@ -406,12 +417,27 @@ export async function extractDocument(
       return { ok: true, path: relPath, text };
     }
     if (ext === ".pdf") {
-      const text = await extractWithPython(
-        "import sys, pdfplumber; pdf=pdfplumber.open(sys.argv[1]); print('\\n\\n'.join(t for t in (p.extract_text() for p in pdf.pages) if t))",
-        path,
-        signal,
+      const { stdout } = await execFileAsync(
+        "python3",
+        [
+          "-c",
+          "import sys,json,pdfplumber; pdf=pdfplumber.open(sys.argv[1]); print(json.dumps([p.extract_text() or '' for p in pdf.pages]))",
+          path,
+        ],
+        { signal },
       );
-      return { ok: true, path: relPath, text };
+      const pages = (JSON.parse(stdout) as string[]).map(
+        (text, pdfPageIndex) => ({ pdfPageIndex, text }),
+      );
+      return {
+        ok: true,
+        path: relPath,
+        text: pages
+          .map((page) => page.text)
+          .filter(Boolean)
+          .join("\n\n"),
+        pages,
+      };
     }
     return {
       ok: false,
@@ -501,6 +527,11 @@ function sourceRecordFromDocument(
   document: ExtractedDocument,
   usedKeys: Set<string>,
 ): LocalSourceRecord {
+  const sourceFingerprint =
+    "sha256:" +
+    createHash("sha256")
+      .update(readFileSync(resolveInputPath(projectRoot, document.path)))
+      .digest("hex");
   const title =
     firstContentLine(document.text) ??
     basename(document.path, extname(document.path));
@@ -510,7 +541,8 @@ function sourceRecordFromDocument(
     usedKeys,
   );
   return {
-    sourceId: `local:${citeKey}`,
+    sourceId: "local:" + sourceFingerprint,
+    sourceFingerprint,
     citeKey,
     sourceType: "local-file",
     path: document.path,
@@ -524,6 +556,7 @@ function sourceRecordFromDocument(
       year: year ? "medium" : "low",
     },
     extractionNotes: `Generated from local project source ${toRelative(projectRoot, resolveInputPath(projectRoot, document.path))}; verify missing metadata before publication.`,
+    ...(document.pages ? { pages: document.pages } : {}),
   };
 }
 
@@ -619,6 +652,7 @@ export async function ingestSources(
     sources.map(sourceBibtex).join("\n"),
     "utf-8",
   );
+  markResearchNotesStale(projectRoot, sources);
   return {
     ok: errors.length === 0,
     sourceDirectory,
@@ -869,24 +903,6 @@ export function writeProjectTextFile(
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, content, "utf-8");
   return { ok: true, path: relativePath };
-}
-
-/**
- * Writes `.academic-writer/evidence-ownership.json` from a thesis/evidence-owner payload.
- *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
- * @param projectRoot - Absolute project root used to resolve project-relative files.
- * @param data - Evidence ownership payload to serialize.
- * @returns The typed result described by this helper contract.
- */
-export function writeEvidenceOwnership(
-  projectRoot: string,
-  data: Record<string, unknown>,
-): { ok: true; path: string } {
-  const path = ".academic-writer/evidence-ownership.json";
-  writeProjectTextFile(projectRoot, path, `${JSON.stringify(data, null, 2)}\n`);
-  return { ok: true, path };
 }
 
 /**
