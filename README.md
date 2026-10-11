@@ -1,6 +1,6 @@
 # Academic Writer — Pi Package
 
-AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as `.docx` — plus PDF, HTML, ODT, LaTeX, and EPUB via Pandoc, with CSL-based citation rendering from a real Zotero- or local-source `bibliography.bib` (popular style aliases, Zotero/CSL repository styles, or custom `.csl` files).
+AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as DOCX, ODT, LaTeX, or PDF via Pandoc, with CSL-based citation rendering from a real Zotero- or local-source `bibliography.bib` (popular style aliases, Zotero/CSL repository styles, or custom `.csl` files).
 
 ---
 
@@ -75,9 +75,20 @@ Your profile is saved to `.academic-writer/profile.md` and loaded automatically.
 /skill:academic-export
 ```
 
-Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after the deterministic citation audit passes.
+Converts an audited article to DOCX, ODT, LaTeX (`.tex`), or PDF; project-local style packages configure document appearance independently from CSL citation style.
 
 ---
+
+### Project-local document styles
+
+Appearance is independent of author voice and CSL citations. Set the profile's `outputFormatPreferences.stylePackage` to a directory name under `.academic-writer/styles/`; each package has a matching version-1 `design.json` and optional native assets. The shipped starter lives in `templates/document-styles/academic-default/`; `academic_writer_style_package` with `action: "install-starter"` copies it into the project and never overwrites an existing package.
+
+`design.json` defines page size/orientation/margins and component properties for title/subtitle, abstract, body, six heading levels, block quotes, footnotes, bibliography, tables, captions, headers/footers, page numbers, and code. Properties you omit are merged from the shipped starter. Supported properties are limited to font family/size, emphasis, alignment, color/shading, spacing/line spacing, indents, keep-with-next, page breaks, and table borders/cell padding. Each format applies what it can: `academic_writer_export_article` and `academic_writer_style_package` report every property you changed that a format cannot express (for example ODT table borders, LaTeX table header rows, and LaTeX heading level six) instead of dropping it silently. Components left at the starter's values never produce warnings.
+LaTeX follows Pandoc's emitted heading levels (level six is omitted), and any explicitly selected font must be installed and discoverable by the PDF TeX engine; a missing font falls back to the TeX default. These are renderer/toolchain limits, not silent style fallbacks.
+
+Optional format assets use relative package-local paths: `formats.docx.referenceDocument` and `formats.odt.referenceDocument` point to native reference files; `formats.latex.template`, `formats.latex.preamble`, `formats.pdf.template`, and `formats.pdf.preamble` point to TeX files. PDF uses PDF-specific TeX assets first, then shared LaTeX assets; `formats.pdf.engine` may select `xelatex` or `tectonic`. Native references are authoritative for their format and validated at export. An invalid package fails that format rather than silently dropping styling. Export supports DOCX, ODT, LaTeX, and PDF only; PDF requires an installed TeX engine.
+
+Run `/skill:academic-setup` to select or install a package (the starter ships with editable native Word, LibreOffice, and LaTeX files under `native/`) and `/skill:academic-export` to choose outputs or make a one-export package override. The `academic_writer_generate_docx` generator, which writes real Word footnotes and right-to-left text for literal-citation articles, uses the same profile package. `academic_writer_style_package` lists, installs the starter, and validates a package for every format, reporting what each format cannot express.
 
 ## Writing Workflow
 
@@ -152,7 +163,7 @@ All integrations are optional. Choose which to enable during `/skill:academic-se
 | **Zotero**        | Preferred reference manager for source PDFs (local library or web API)                                   | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`)                          |
 | **NotebookLM**    | AI-powered source Q&A, audio overviews, study guides                                                     | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config                      |
 | **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                                          | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools: true`); no credentials go in `.academic-writer/profile.md`.                                                                               |
-| **Pandoc**        | Multi-format export (PDF/HTML/ODT/LaTeX/EPUB) and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
+| **Pandoc**        | DOCX/ODT/LaTeX/PDF export and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
 
@@ -204,6 +215,7 @@ your-research-folder/
     ├── csl/                     ← Cached/downloaded or custom CSL files for citeproc export
     ├── research-brief.md        ← Output from /skill:academic-write
     ├── agent-memory/            ← Per-agent persistent notes
+    ├── styles/                  ← Project-local document style packages
     ├── runs/                    ← Active/last run state shown in the dashboard
     └── logs/                    ← Session logs
 ```
@@ -222,11 +234,7 @@ pip install zotero-mcp-server
 
 For local Zotero, add the `.mcp.json` snippet from the Integrations section. Zotero desktop must be running with the local API enabled (Settings → Advanced). The `zotero` server must expose direct bare tools (`settings.toolPrefix: "none"` plus `directTools: true`) because the package calls tools like `zotero_get_recent` directly.
 
-**Articles won't export to .docx** — install the Python dependency:
-
-```bash
-pip install python-docx
-```
+**Articles won't export to .docx / .odt** — install [Pandoc](https://pandoc.org) (`brew install pandoc`). Every DOCX, ODT, LaTeX, and PDF export, and the literal-citation DOCX generator, run through it.
 
 **PDF export fails / "xelatex not found" or "tectonic not found"** — install one supported PDF engine:
 
@@ -237,7 +245,7 @@ brew install --cask basictex
 sudo tlmgr install collection-xetex
 ```
 
-HTML/ODT/LaTeX/EPUB export via `/skill:academic-export` don't need this — only PDF does (the default `pdflatex` engine cannot render Hebrew script; use Tectonic or XeLaTeX).
+ODT/LaTeX export via `/skill:academic-export` needs Pandoc; PDF also needs a Unicode-capable TeX engine (use Tectonic or XeLaTeX). DOCX uses the selected reference style package on both export paths.
 
 **Package behaves strangely after an update** — reinstall it:
 
@@ -258,7 +266,7 @@ With [mise](https://mise.jdx.dev) (recommended — pins the toolchain, manages t
 mise install           # provisions Node/uv/Python/hk/taplo, npm-installs both trees, uv-syncs pyproject.toml
 mise run fmt           # format Python, TS/JS, JSON/YAML, and TOML
 mise run lint          # formatting checks + ruff + strict TS
-mise run test          # full test suite
+mise run test          # TypeScript tests, then pytest
 mise run ci            # lint + test
 mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 ```
@@ -266,12 +274,13 @@ mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 Without mise:
 
 ```bash
-npm install && npm --prefix extensions install  # dev tooling only — peerDependencies aren't wired as active Pi extensions here
-uv sync                                          # python-docx, lxml, pdfplumber, pytest, pyyaml, ruff
+npm install && npm --prefix extensions install  # runtime deps (fflate, @xmldom/xmldom, unpdf) and dev tooling — peerDependencies aren't wired as active Pi extensions here
+uv sync                                          # pytest, pyyaml, ruff (no Python runtime dependencies)
 npx prettier --check "**/*.{ts,js,json,yml,yaml}"
 uv run ruff check --select E9,F63,F7,F82 .
 npm run typecheck                                # strict TS check on extensions/
-uv run python -m pytest tests/                  # full test suite
+npm --prefix extensions run test                 # TypeScript tests (needs pandoc; PDF test needs xelatex or tectonic)
+uv run python -m pytest tests/                  # pytest suite
 ```
 
 **Versioning is automatic.** Every push to `main` triggers CI that bumps the patch version in `package.json`, tags the release, and creates a GitHub Release. Do not bump versions manually.
@@ -290,7 +299,7 @@ The pi conversion depends on three community pi packages by [Nico Bailon](https:
 
 Source-library access is provided by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) (54yyyu), replacing the original Candlekeep integration.
 
-Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files. `scripts/resolve-csl.py` downloads and caches styles from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), maps popular aliases to canonical style ids, and resolves custom `.csl` paths or direct `.csl` URLs.
+Multi-format export and citation-style rendering use [Pandoc](https://pandoc.org) and CSL style files. The CSL resolver downloads and caches styles from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), maps popular aliases to canonical style ids, and resolves custom `.csl` paths or direct `.csl` URLs.
 
 ---
 

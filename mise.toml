@@ -55,9 +55,9 @@ run = [
 ]
 
 [tasks.test]
-description = "Run the Python test suite"
+description = "Run the TypeScript and Python test suites"
 alias = "t"
-run = "uv run python -m pytest tests/"
+run = ["npm --prefix extensions run test", "uv run python -m pytest tests/"]
 
 [tasks.typecheck]
 description = "Strict TypeScript check on extensions/"

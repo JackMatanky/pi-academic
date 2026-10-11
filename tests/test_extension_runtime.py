@@ -42,7 +42,7 @@ class TestExtensionRuntime(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        for directory in ["agents", "scripts", "skills"]:
+        for directory in ["agents", "skills", "templates"]:
             shutil.copytree(directory, cls.build_root / directory)
         shutil.copy2("thresholds.json", cls.build_root / "thresholds.json")
 
@@ -424,7 +424,7 @@ class TestExtensionRuntime(unittest.TestCase):
                 {
                     "article": "articles/ok.md",
                     "citationStyle": "chicago",
-                    "formats": ["html"],
+                    "formats": ["docx"],
                     "csl": "style.csl",
                 },
                 env,
@@ -450,7 +450,7 @@ class TestExtensionRuntime(unittest.TestCase):
                 {
                     "article": "articles/ok.md",
                     "citationStyle": "chicago",
-                    "formats": ["html"],
+                    "formats": ["docx"],
                     "csl": "style.csl",
                 },
                 no_output_env,

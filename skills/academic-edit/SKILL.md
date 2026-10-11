@@ -221,7 +221,7 @@ After edits are applied:
 
 **`inline-parenthetical` (unchanged):** Call `academic_writer_assemble_docx_json` to build intermediate DOCX JSON deterministically (preserving footnotes, RTL settings, and section hierarchy). Do NOT hand-craft raw model-written DOCX JSON. Then pass the assembled JSON path to `academic_writer_generate_docx`.
 
-Same current limitation as write-article Step 9b: this path does not apply `generate-docx.py`'s Hebrew RTL post-processing. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
+Same current limitation as write-article Step 9b: the citeproc export path (`academic_writer_export_article`) does not set right-to-left document direction. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 
 ---
 

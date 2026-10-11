@@ -4,7 +4,8 @@ Citation mode is selected only by `citationStyle`.
 
 ## Literal mode
 
-`citationStyle: inline-parenthetical` means literal styled citation text. Keep inline citations exactly as written in markdown. Do not add YAML citeproc frontmatter. DOCX output uses `academic_writer_generate_docx` with the article JSON schema and the packaged `generate-docx.py` path so Hebrew RTL/footnotes are handled deterministically.
+`citationStyle: inline-parenthetical` means literal styled citation text. Keep inline citations exactly as written in markdown. Do not add YAML citeproc frontmatter. DOCX output uses `academic_writer_generate_docx` with the article JSON schema; it builds the document with Pandoc, so real Word footnotes and right-to-left text (`format.isRtl`) are handled deterministically.
+The profile's optional `outputFormatPreferences.stylePackage` selects a project-local appearance package. It is independent of `citationStyle` and CSL, and the same package is used by the literal-mode DOCX generator. Do not change the profile setting to create a one-export override; use `academic_writer_export_article.stylePackage` only when requested.
 
 Before DOCX/export, call `academic_writer_audit_citations` with the markdown article path and `citationStyle: inline-parenthetical`. The audit must pass. A Pandoc marker such as `[@key]` in literal mode is a hard failure.
 
@@ -53,6 +54,7 @@ Every other `citationStyle` value is citeproc mode. Body citations must be Pando
 Resolve the active CSL reference with `academic_writer_resolve_csl` using the profile's custom value when present (`outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or `citation.csl`), otherwise `citationStyle`. Use `download: true`.
 
 Rules:
+
 - Keep the markdown body clean; do not add citeproc YAML frontmatter just for export.
 - `bibliography` is always `.academic-writer/bibliography.bib`.
 - Pass the resolved CSL path as `csl` to `academic_writer_export_article`.
@@ -61,4 +63,4 @@ Rules:
 
 Before Pandoc DOCX/export, call `academic_writer_audit_citations` with the markdown article path and the actual `citationStyle`. The audit must pass: every marker key must exist in both `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
 
-Citeproc DOCX/export uses `academic_writer_export_article`, which passes `--citeproc`, `--bibliography`, `--csl`, and `--fail-if-warnings` to Pandoc. This path does not apply `generate-docx.py` Hebrew RTL post-processing; warn Hebrew users that manual RTL adjustment may be needed unless their CSL/template handles it.
+Citeproc DOCX/export uses `academic_writer_export_article`, which passes `--citeproc`, `--bibliography`, `--csl`, and `--fail-if-warnings` to Pandoc. This path does not set right-to-left document direction; warn Hebrew users that manual RTL adjustment may be needed unless their CSL/template handles it.

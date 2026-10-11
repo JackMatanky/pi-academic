@@ -252,6 +252,12 @@ Store only collection/notebook identifiers and display names in the profile. Nev
 
 ---
 
+## Phase 2b: Document Appearance
+
+Follow `references/document-style.md` and store the result as `outputFormatPreferences.stylePackage` (leave unset for the shipped default).
+
+---
+
 ## Phase 3: Style Fingerprint (Optional)
 
 Check for past articles:

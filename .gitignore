@@ -1,6 +1,8 @@
 # Hook build artifacts (extensions/ typecheck sandbox — see extensions/package.json)
 extensions/dist/
 extensions/node_modules/
+.aw-ts-test/
+.aw-runtime-*/
 
 # Runtime directories
 past-articles/

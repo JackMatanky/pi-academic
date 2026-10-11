@@ -53,5 +53,10 @@
   },
   "devDependencies": {
     "prettier": "^3.9.6"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.12",
+    "fflate": "^0.8.3",
+    "unpdf": "^1.8.1"
   }
 }

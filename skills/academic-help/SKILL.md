@@ -91,7 +91,7 @@ When you run `/skill:academic-write`, you go through a conversational pipeline:
    - **Repetition Check** — No repeated words, phrases, or arguments
    - **Citation Audit** — Every footnote verified against sources (hard gate)
 8. **Synthesis** — Final coherence review + full-article style compliance
-9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.academic-writer/bibliography.bib` (popular alias, Zotero/CSL style id, URL, or custom `.csl`) — run `/skill:academic-export` afterward for PDF/HTML/ODT/LaTeX/EPUB; PDF supports `xelatex` or `tectonic`
+9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.academic-writer/bibliography.bib` (popular alias, Zotero/CSL style id, URL, or custom `.csl`) — export DOCX, ODT, LaTeX (`.tex`), or PDF; PDF supports `xelatex` or `tectonic`
 
 ---
 

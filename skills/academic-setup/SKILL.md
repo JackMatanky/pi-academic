@@ -20,6 +20,10 @@ This is one entrypoint with four explicit modes. Before changing anything, call 
 
 Load `references/profile-schema.md` and `references/integration-setup.md` when the selected path requires their schema or integration details. These references are supporting contracts, not separate commands.
 
+## Document appearance
+
+Offer three choices during profile setup, following `references/document-style.md`: keep the shipped default behavior (no package selected), install the `academic-default` starter with `academic_writer_style_package` (`action: "install-starter"`: `design.json` plus editable native Word, LibreOffice, and LaTeX files under `native/`), or register an existing package under `.academic-writer/styles/<name>/`. A package requires a matching version-1 `design.json`; format-native reference documents/templates are optional and must remain inside the package. LaTeX/PDF template and preamble paths are relative `.tex` paths. Never overwrite an existing package. Validate every package with `academic_writer_style_package` (`action: "validate"`) before saving `outputFormatPreferences.stylePackage`; report the errors and warnings it returns rather than silently falling back.
+
 ## Safety and completion
 
 - Keep profile creation/setup separate from maintenance of an existing profile; honor each selected route’s preconditions.

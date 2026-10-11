@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "rm -rf ../.aw-ts-test && tsc --noEmit false --allowImportingTsExtensions false --outDir ../.aw-ts-test/extensions && cp -R ../templates ../.aw-ts-test/templates && node --test \"../.aw-ts-test/extensions/tests/*.test.js\""
   },
   "keywords": [],
   "author": "",

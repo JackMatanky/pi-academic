@@ -318,11 +318,19 @@ class TestExtensions(unittest.TestCase):
         Returns:
             None.
         """
-        resolver = _read("scripts/resolve-csl.py")
-        self.assertIn("ZOTERO_STYLE_BASE", resolver)
-        self.assertIn("POPULAR_STYLES", resolver)
-        self.assertFalse(
-            os.path.exists("scripts/lib/csl"),
+        bundled = [
+            os.path.join(root, name)
+            for root, dirs, names in os.walk(".")
+            if not any(
+                part in {"node_modules", ".venv", ".git", ".aw-ts-test"}
+                for part in root.split(os.sep)
+            )
+            for name in names
+            if name.endswith(".csl")
+        ]
+        self.assertEqual(
+            bundled,
+            [],
             "CSL files should be downloaded into .academic-writer/csl/, not bundled in the package",
         )
 
@@ -449,8 +457,10 @@ class TestExtensions(unittest.TestCase):
         Returns:
             None.
         """
-        tools_source = _read("extensions/pi-academic-writer/index.ts")
-        self.assertIn('scripts", "audit-citations.py', tools_source)
+        self.assertTrue(
+            os.path.isfile("extensions/pi-academic-writer/citation-audit.ts"),
+            "citation audit must ship as TypeScript",
+        )
         for skill in [
             "skills/academic-write/SKILL.md",
             "skills/academic-edit/SKILL.md",
@@ -669,7 +679,6 @@ class TestReadmeAndAgentsMd(unittest.TestCase):
         readme = _read("README.md")
 
         self.assertIn("academic_writer_health", export_skill)
-        self.assertIn("PDF_ENGINE=tectonic", export_skill)
         self.assertIn("academic_writer_export_article", export_skill)
         self.assertIn("academic_writer_health", health_skill)
         self.assertIn("brew install tectonic", readme)

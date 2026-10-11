@@ -268,6 +268,12 @@ Store as `abstractLanguages` array:
 
 ---
 
+### Step 3d of 4 — Document Appearance
+
+Follow `references/document-style.md` and store the result as `outputFormatPreferences.stylePackage` (leave unset for the shipped default).
+
+---
+
 ### Step 4 of 4 — Writing Style
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):

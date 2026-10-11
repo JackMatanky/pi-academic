@@ -1,8 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { execFile } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { promisify } from "node:util";
 import { Type } from "typebox";
 import { PACKAGE_ROOT } from "../lib/paths.js";
 import { lintProse } from "./prose-lint.js";
@@ -31,35 +29,26 @@ import {
   extractDocument,
   ingestSources,
   listProjectFiles,
+  selectPdfEngine,
   snapshotCitationAssets,
   writeProjectTextFile,
   writeSourcesCache,
 } from "./project.js";
 import { reverseOutline } from "./reverse-outline.js";
 import { buildStatus } from "./status.js";
-
-/**
- * Promisified `execFile` used for package scripts and Pandoc export calls.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
-const execFileAsync = promisify(execFile);
-/**
- * Export formats accepted by `academic_writer_export_article`.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
-const EXPORT_FORMATS = new Set([
-  "docx",
-  "html",
-  "odt",
-  "latex",
-  "tex",
-  "epub",
-  "pdf",
-]);
+import { auditCitations } from "./citation-audit.js";
+import { resolveCslStyle } from "./csl-resolver.js";
+import {
+  checkStylePackage,
+  installStarterPackage,
+  listStylePackages,
+  renderDocumentStyle,
+  withScratchDir,
+  type RenderedStyle,
+} from "./document-style.js";
+import { generateDocx } from "./docx-generator.js";
+import { runPandoc } from "./pandoc.js";
+import { STYLE_FORMATS, type StyleFormat } from "./style-design.js";
 
 /**
  * Formats a plain-text MCP tool response with structured details.
@@ -87,7 +76,7 @@ function textResult(text: string, details: object = {}) {
  */
 function fixTypography(text: string): string {
   let fixed = text;
-  fixed = fixed.replace(/[-\u2014]/g, " - ");
+  fixed = fixed.replace(/\u2014/g, " - ");
   fixed = fixed.replace(/"([^"]{0,200})"/g, "״$1״");
   fixed = fixed.replace(/\u200f+(?=[.,;:)\]\"])/gi, "");
   fixed = fixed.replace(/(?<=[(\[])\u200e+/gi, "");
@@ -150,38 +139,19 @@ function detailCount(details: object, key: string): number {
 }
 
 /**
- * Runs the deterministic citation audit script and returns its JSON payload.
+ * Runs the deterministic citation audit and returns its JSON-shaped result.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param article - Article markdown path, relative to the project root unless absolute.
  * @param citationStyle - Citation mode or citeproc style identifier used by the audit.
  * @param projectRoot - Absolute project root used to resolve project-relative files.
- * @param signal - Optional abort signal forwarded to subprocesses.
- * @returns The typed result described by this helper contract.
+ * @returns The audit details, or `{ ok: false, error }` for an invalid project or article path.
  */
-async function runCitationAudit(
+function runCitationAudit(
   article: string,
   citationStyle: string,
   projectRoot: string,
-  signal?: AbortSignal,
-): Promise<Record<string, unknown>> {
-  const args = [
-    join(PACKAGE_ROOT, "scripts", "audit-citations.py"),
-    article,
-    "--citation-style",
-    citationStyle,
-    "--project-root",
-    projectRoot,
-  ];
-  const { stdout } = await execFileAsync("python3", args, {
-    cwd: projectRoot,
-    signal,
-  });
-  const parsed = JSON.parse(stdout) as unknown;
-  return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-    ? (parsed as Record<string, unknown>)
-    : { ok: false, error: "audit-citations.py returned a non-object result" };
+): Record<string, unknown> {
+  return { ...auditCitations(article, citationStyle, projectRoot) };
 }
 /** Return advisory findings or an explicit skip for unsupported languages. */
 function runProseLint(text: string, language: string): Record<string, unknown> {
@@ -207,6 +177,41 @@ function runProseLint(text: string, language: string): Record<string, unknown> {
 function exportOutputPath(article: string, format: string): string {
   const normalized = format === "latex" ? "tex" : format;
   return `${article.replace(/\.[^.\/]+$/, "")}.${normalized}`;
+}
+
+/** Per-format style details returned by `academic_writer_export_article`. */
+interface StyleSummary {
+  package: string;
+  /** Assets generated from design.json. */
+  generated: string[];
+  /** Native assets used as supplied, by role. */
+  native: Record<string, string>;
+  warnings: string[];
+}
+
+interface ExportResult {
+  format: string;
+  output: string;
+  ok: boolean;
+  exists: boolean;
+  error?: string;
+  engine?: string;
+  style?: StyleSummary;
+}
+
+function summarizeStyle(style: RenderedStyle): StyleSummary {
+  const native: Record<string, string> = {};
+  for (const [role, path] of Object.entries(style.assets)) {
+    if (role !== "engine" && !style.generated.includes(role as never)) {
+      native[role] = path;
+    }
+  }
+  return {
+    package: style.package,
+    generated: style.generated,
+    native,
+    warnings: style.warnings,
+  };
 }
 
 /**
@@ -465,7 +470,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_extract_document",
     label: "Academic Writer Extract Document",
     description:
-      "Extract deterministic plain text from markdown, text, PDF, or DOCX files. Use instead of inline python/docx/pdfplumber shell snippets.",
+      "Extract deterministic plain text from markdown, text, PDF, or DOCX files. Use instead of ad-hoc shell extraction snippets.",
     parameters: Type.Object({
       path: Type.String({ minLength: 1, description: "Document path." }),
     }),
@@ -528,22 +533,13 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         }),
       ),
     }),
-    execute: async (_id, params, signal, _onUpdate, ctx) => {
-      const args = [
-        join(PACKAGE_ROOT, "scripts", "resolve-csl.py"),
-        String(params.style),
-        "--package-root",
-        PACKAGE_ROOT,
-        "--project-root",
-        ctx.cwd,
-      ];
-      if (params.download) args.push("--download");
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
       try {
-        const { stdout } = await execFileAsync("python3", args, {
-          cwd: ctx.cwd,
-          signal,
-        });
-        const path = stdout.trim();
+        const path = await resolveCslStyle(
+          String(params.style),
+          ctx.cwd,
+          params.download === true,
+        );
         return textResult(path, { ok: true, path });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -572,13 +568,12 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           "inline-parenthetical for literal citation mode; any other value means citeproc mode.",
       }),
     }),
-    execute: async (_id, params, signal, _onUpdate, ctx) => {
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
       try {
-        const details = await runCitationAudit(
+        const details = runCitationAudit(
           String(params.article),
           String(params.citationStyle),
           ctx.cwd,
-          signal,
         );
         const ok = details.ok === true;
         const keys = detailCount(details, "citationKeys");
@@ -667,7 +662,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_export_article",
     label: "Academic Writer Export Article",
     description:
-      "Run the mechanical citation audit, then export an audited markdown article to DOCX or other requested formats with Pandoc. Continues other formats when one fails.",
+      "Audit citations and export an article to DOCX, ODT, LaTeX, or PDF with Pandoc, applying the profile style package or an optional per-export override. Continues other formats when one fails.",
     parameters: Type.Object({
       article: Type.String({
         minLength: 1,
@@ -679,7 +674,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           "Profile citationStyle; inline-parenthetical means literal mode.",
       }),
       formats: Type.Array(Type.String({ minLength: 2 }), {
-        description: "Formats: docx, html, odt, latex/tex, epub, pdf.",
+        description: "Formats: docx, odt, latex (.tex), pdf.",
       }),
       csl: Type.Optional(
         Type.String({
@@ -697,7 +692,15 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       ),
       pdfEngine: Type.Optional(
         Type.String({
-          description: "Optional PDF engine: xelatex or tectonic.",
+          description:
+            "Optional PDF engine, e.g. xelatex or tectonic. Defaults to the style package engine, then to whichever of xelatex/tectonic is installed.",
+        }),
+      ),
+      stylePackage: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description:
+            "Style package under .academic-writer/styles/ for this export; overrides the profile's stylePackage.",
         }),
       ),
     }),
@@ -707,35 +710,30 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       const formats = Array.isArray(params.formats)
         ? params.formats
             .map((format) => String(format).toLowerCase())
-            .filter((format) => EXPORT_FORMATS.has(format))
+            .filter((format): format is StyleFormat =>
+              (STYLE_FORMATS as readonly string[]).includes(format),
+            )
         : [];
       if (formats.length === 0) {
         return textResult("Export failed: no supported formats requested", {
           ok: false,
-          supported: [...EXPORT_FORMATS].sort(),
+          supported: [...STYLE_FORMATS],
         });
       }
       try {
-        const audit = await runCitationAudit(
-          article,
-          citationStyle,
-          ctx.cwd,
-          signal,
-        );
+        const audit = runCitationAudit(article, citationStyle, ctx.cwd);
         if (audit.ok !== true) {
           return textResult("Export stopped: citation audit failed", {
             ok: false,
             audit,
           });
         }
-        const results: Array<{
-          format: string;
-          output: string;
-          ok: boolean;
-          exists: boolean;
-          error?: string;
-        }> = [];
+        const results: ExportResult[] = [];
         const citeproc = citationStyle !== "inline-parenthetical";
+        const stylePackage =
+          typeof params.stylePackage === "string"
+            ? params.stylePackage
+            : loadProfile(ctx.cwd)?.outputFormatPreferences?.stylePackage;
         const localAssets = citationAssetPaths(article);
         const bibliography =
           typeof params.bibliography === "string"
@@ -745,56 +743,91 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
               : ".academic-writer/bibliography.bib";
         for (const format of formats) {
           const output = exportOutputPath(article, format);
-          const args = ["--from", "pandoc-markdown", article];
+          const args = ["--from", "markdown", article];
           if (citeproc) {
             args.push("--citeproc", "--fail-if-warnings");
             args.push(`--bibliography=${bibliography}`);
             if (typeof params.csl === "string")
               args.push(`--csl=${params.csl}`);
           }
-          if (format === "pdf" && typeof params.pdfEngine === "string") {
-            args.push(`--pdf-engine=${params.pdfEngine}`);
-          }
-          args.push("-o", output);
-          try {
-            await execFileAsync("pandoc", args, { cwd: ctx.cwd, signal });
-            const exists = existsSync(resolve(ctx.cwd, output));
-            results.push({
-              format,
-              output,
-              ok: exists,
-              exists,
-              ...(!exists
-                ? {
-                    error:
-                      "Pandoc exited successfully but did not create the output file",
+          results.push(
+            await withScratchDir(
+              ctx.cwd,
+              "style-export",
+              async (dir): Promise<ExportResult> => {
+                let style: RenderedStyle | undefined;
+                let engine: string | undefined;
+                const detail = () => ({
+                  ...(engine ? { engine } : {}),
+                  ...(style ? { style: summarizeStyle(style) } : {}),
+                });
+                try {
+                  if (stylePackage) {
+                    style = await renderDocumentStyle(
+                      ctx.cwd,
+                      stylePackage,
+                      format,
+                      dir,
+                      signal,
+                    );
+                    args.push(...style.args);
                   }
-                : {}),
-            });
-          } catch (error) {
-            const message =
-              error instanceof Error ? error.message : String(error);
-            results.push({
-              format,
-              output,
-              ok: false,
-              exists: existsSync(resolve(ctx.cwd, output)),
-              error: message,
-            });
-          }
+                  if (format === "pdf") {
+                    engine =
+                      typeof params.pdfEngine === "string"
+                        ? params.pdfEngine
+                        : (style?.assets.engine ?? selectPdfEngine());
+                    if (engine) args.push(`--pdf-engine=${engine}`);
+                  }
+                  await runPandoc([...args, "-o", output], {
+                    cwd: ctx.cwd,
+                    signal,
+                  });
+                  const exists = existsSync(resolve(ctx.cwd, output));
+                  return {
+                    format,
+                    output,
+                    ok: exists,
+                    exists,
+                    ...detail(),
+                    ...(!exists
+                      ? {
+                          error:
+                            "Pandoc exited successfully but did not create the output file",
+                        }
+                      : {}),
+                  };
+                } catch (error) {
+                  return {
+                    format,
+                    output,
+                    ok: false,
+                    exists: existsSync(resolve(ctx.cwd, output)),
+                    error:
+                      error instanceof Error ? error.message : String(error),
+                    ...detail(),
+                  };
+                }
+              },
+            ),
+          );
         }
         const ok = results.every((result) => result.ok);
         const text = results
-          .map((result) =>
+          .flatMap((result) => [
             result.ok
               ? `${result.format}: wrote ${result.output}`
               : `${result.format}: failed - ${result.error}`,
-          )
+            ...(result.style?.warnings ?? []).map(
+              (warning) => `  warning: ${warning}`,
+            ),
+          ])
           .join("\n");
         return textResult(text, {
           ok,
           audit,
           bibliography: citeproc ? bibliography : null,
+          stylePackage: stylePackage ?? null,
           results,
         });
       } catch (error) {
@@ -811,7 +844,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_assemble_docx_json",
     label: "Academic Writer Assemble DOCX JSON",
     description:
-      "Deterministically assemble generate-docx.py JSON from an article markdown file. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
+      "Deterministically assemble article JSON for academic_writer_generate_docx from an article markdown file. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
     parameters: Type.Object({
       input: Type.String({
         minLength: 1,
@@ -826,7 +859,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       formatJson: Type.Optional(
         Type.String({
           description:
-            "Optional JSON object merged into the generate-docx.py format field.",
+            "Optional JSON object merged into the article JSON format field.",
         }),
       ),
     }),
@@ -867,7 +900,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
     name: "academic_writer_generate_docx",
     label: "Academic Writer Generate DOCX",
     description:
-      "Generate an Academic Writer .docx from the article JSON payload using the packaged DOCX generator.",
+      "Generate an Academic Writer .docx with real footnotes from the article JSON payload, using Pandoc and the profile's style package when one is configured.",
     parameters: Type.Object({
       input: Type.String({
         minLength: 1,
@@ -879,30 +912,120 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
         description:
           "Output .docx path; relative paths resolve from the project root.",
       }),
+      stylePackage: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description:
+            "Style package under .academic-writer/styles/; overrides the profile's stylePackage.",
+        }),
+      ),
     }),
     execute: async (_id, params, signal, _onUpdate, ctx) => {
-      const args = [
-        join(PACKAGE_ROOT, "scripts", "generate-docx.py"),
-        "--input",
-        String(params.input),
-        "--output",
-        String(params.output),
-      ];
+      const stylePackage =
+        typeof params.stylePackage === "string"
+          ? params.stylePackage
+          : loadProfile(ctx.cwd)?.outputFormatPreferences?.stylePackage;
       try {
-        const { stdout, stderr } = await execFileAsync("python3", args, {
-          cwd: ctx.cwd,
-          signal,
-        });
-        const output = [stdout.trim(), stderr.trim()]
-          .filter(Boolean)
-          .join("\n");
-        return textResult(output || `Generated ${params.output}`, {
-          ok: true,
-          output: params.output,
+        const input = String(params.input);
+        const output = String(params.output);
+        const { result, warnings } = stylePackage
+          ? await withScratchDir(ctx.cwd, "style-docx", async (dir) => {
+              const style = await renderDocumentStyle(
+                ctx.cwd,
+                stylePackage,
+                "docx",
+                dir,
+                signal,
+              );
+              return {
+                result: await generateDocx(input, output, ctx.cwd, {
+                  referenceDoc: style.assets.referenceDocument,
+                  signal,
+                }),
+                warnings: style.warnings,
+              };
+            })
+          : {
+              result: await generateDocx(input, output, ctx.cwd, { signal }),
+              warnings: [] as string[],
+            };
+        const text = [
+          `Generated ${result.output}: ${result.sections} section(s), ${result.footnotes} footnote(s).`,
+          ...warnings.map((warning) => `warning: ${warning}`),
+        ].join("\n");
+        return textResult(text, {
+          ...result,
+          stylePackage: stylePackage ?? null,
+          warnings,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return textResult(`DOCX generation failed: ${message}`, {
+          ok: false,
+          error: message,
+        });
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "academic_writer_style_package",
+    label: "Academic Writer Style Package",
+    description:
+      "Manage document style packages under .academic-writer/styles/: list them, install the academic-default starter (design.json plus editable native Word/LibreOffice/LaTeX files), or validate a package for every export format and report what each format cannot express.",
+    parameters: Type.Object({
+      action: Type.Union(
+        [
+          Type.Literal("list"),
+          Type.Literal("install-starter"),
+          Type.Literal("validate"),
+        ],
+        { description: "list, install-starter, or validate." },
+      ),
+      name: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description:
+            "Package name. Required for validate; install-starter defaults to academic-default and refuses to overwrite.",
+        }),
+      ),
+    }),
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      try {
+        if (params.action === "list") {
+          const packages = listStylePackages(ctx.cwd);
+          return textResult(
+            packages.length ? packages.join("\n") : "No style packages found.",
+            { ok: true, packages },
+          );
+        }
+        if (params.action === "install-starter") {
+          const installed = await installStarterPackage(
+            ctx.cwd,
+            typeof params.name === "string" ? params.name : undefined,
+          );
+          return textResult(
+            `Installed ${installed.package}: ${installed.files.join(", ")}`,
+            { ok: true, ...installed },
+          );
+        }
+        if (typeof params.name !== "string") {
+          return textResult("Style validation failed: name is required", {
+            ok: false,
+          });
+        }
+        const check = await checkStylePackage(ctx.cwd, params.name);
+        const text = [
+          check.ok
+            ? `${check.package}: valid for all formats`
+            : `${check.package}: invalid`,
+          ...check.errors.map((e) => `error (${e.format}): ${e.message}`),
+          ...check.warnings.map((w) => `warning: ${w}`),
+        ].join("\n");
+        return textResult(text, check);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return textResult(`Style package action failed: ${message}`, {
           ok: false,
           error: message,
         });

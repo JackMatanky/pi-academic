@@ -58,7 +58,8 @@ updatedAt: ISO_TIMESTAMP
 ```json
 {
   "csl": "optional citeproc style id or popular alias, e.g. nature/chicago-author-date/apa",
-  "cslPath": "optional local .csl path or URL, e.g. .academic-writer/csl/my-journal.csl"
+  "cslPath": "optional local .csl path or URL, e.g. .academic-writer/csl/my-journal.csl",
+  "stylePackage": "optional name of a package under .academic-writer/styles/"
 }
 ```
 

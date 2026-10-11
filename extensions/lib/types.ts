@@ -173,6 +173,7 @@ interface ArticleStructure {
  * Defines the serializable shape shared between extension tools, tests, and prompts.
  */
 interface OutputFormatPreferences {
+  stylePackage?: string;
   font?: string;
   bodySize?: number;
   titleSize?: number;

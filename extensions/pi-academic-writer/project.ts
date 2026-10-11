@@ -21,6 +21,9 @@ import {
   resolve,
 } from "node:path";
 import { promisify } from "node:util";
+import { DOMParser } from "@xmldom/xmldom";
+import { strFromU8, unzipSync } from "fflate";
+import { extractText, getDocumentProxy } from "unpdf";
 import { markResearchNotesStale } from "./research.js";
 import { buildStatus, type AcademicWriterStatus } from "./status.js";
 
@@ -334,25 +337,31 @@ export function listProjectFiles(
   return { kind, dir, count: files.length, files: files.slice(0, limit) };
 }
 
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
 /**
- * Runs a small Python extractor snippet and returns trimmed stdout.
+ * Reads DOCX body text without Pandoc: one blank-line-separated block per paragraph.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
- * @param code - Python source snippet executed for extraction.
- * @param path - File path to read, write, or resolve.
- * @param signal - Optional abort signal forwarded to subprocesses.
- * @returns The typed result described by this helper contract.
+ * @param path - Path of the .docx file.
+ * @returns The paragraph text, or an error when the file is not a DOCX archive.
  */
-async function extractWithPython(
-  code: string,
-  path: string,
-  signal?: AbortSignal,
-): Promise<string> {
-  const { stdout } = await execFileAsync("python3", ["-c", code, path], {
-    signal,
-  });
-  return stdout.trim();
+function extractDocxParagraphs(path: string): string {
+  const entry = unzipSync(readFileSync(path), {
+    filter: (file) => file.name === "word/document.xml",
+  })["word/document.xml"];
+  if (!entry) throw new Error(`Not a DOCX file: ${path}`);
+  const doc = new DOMParser().parseFromString(strFromU8(entry), "text/xml");
+  const paragraphs = doc.getElementsByTagNameNS(WORD_NS, "p");
+  const blocks: string[] = [];
+  for (let i = 0; i < paragraphs.length; i++) {
+    const runs = paragraphs.item(i)?.getElementsByTagNameNS(WORD_NS, "t");
+    let text = "";
+    for (let j = 0; runs && j < runs.length; j++) {
+      text += runs.item(j)?.textContent ?? "";
+    }
+    blocks.push(text);
+  }
+  return blocks.join("\n\n").trim();
 }
 
 /**
@@ -409,26 +418,16 @@ export async function extractDocument(
       const pandocText = await extractDocxWithPandoc(path, signal);
       if (pandocText !== null)
         return { ok: true, path: relPath, text: pandocText };
-      const text = await extractWithPython(
-        "import sys, docx; d=docx.Document(sys.argv[1]); print('\\n\\n'.join(p.text for p in d.paragraphs))",
-        path,
-        signal,
-      );
+      const text = extractDocxParagraphs(path);
       return { ok: true, path: relPath, text };
     }
     if (ext === ".pdf") {
-      const { stdout } = await execFileAsync(
-        "python3",
-        [
-          "-c",
-          "import sys,json,pdfplumber; pdf=pdfplumber.open(sys.argv[1]); print(json.dumps([p.extract_text() or '' for p in pdf.pages]))",
-          path,
-        ],
-        { signal },
-      );
-      const pages = (JSON.parse(stdout) as string[]).map(
-        (text, pdfPageIndex) => ({ pdfPageIndex, text }),
-      );
+      const pdf = await getDocumentProxy(new Uint8Array(readFileSync(path)));
+      const { text: pageTexts } = await extractText(pdf, { mergePages: false });
+      const pages = pageTexts.map((text, pdfPageIndex) => ({
+        pdfPageIndex,
+        text,
+      }));
       return {
         ok: true,
         path: relPath,
@@ -844,6 +843,17 @@ function commandExists(command: string): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Picks the installed PDF engine Pandoc should use when none is configured.
+ *
+ * @returns `xelatex` when installed, else `tectonic`, else undefined (Pandoc's own default).
+ */
+export function selectPdfEngine(): "xelatex" | "tectonic" | undefined {
+  if (commandExists("xelatex")) return "xelatex";
+  if (commandExists("tectonic")) return "tectonic";
+  return undefined;
 }
 
 /**
