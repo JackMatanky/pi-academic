@@ -276,7 +276,8 @@ Without mise:
 ```bash
 npm install && npm --prefix extensions install  # runtime deps (fflate, @xmldom/xmldom, unpdf) and dev tooling — peerDependencies aren't wired as active Pi extensions here
 uv sync                                          # pytest, pyyaml, ruff (no Python runtime dependencies)
-npx prettier --check "**/*.{ts,js,json,yml,yaml}"
+npx oxfmt --check "**/*.{ts,js,json,yml,yaml}"
+npx oxlint extensions                            # Oxlint + anti-slop rules (baseline findings pending)
 uv run ruff check --select E9,F63,F7,F82 .
 npm run typecheck                                # strict TS check on extensions/
 npm --prefix extensions run test                 # TypeScript tests (needs pandoc; PDF test needs xelatex or tectonic)

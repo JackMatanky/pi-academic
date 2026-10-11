@@ -5,7 +5,12 @@ import { diagnoseChapterCoverage } from "./coverage.js";
 type Note = {
   id: string;
   kind:
-    "quotation" | "paraphrase" | "summary" | "analysis" | "question" | "idea";
+    | "quotation"
+    | "paraphrase"
+    | "summary"
+    | "analysis"
+    | "question"
+    | "idea";
   coreStatement: string;
   sourceRef?: string;
   anchor?: {

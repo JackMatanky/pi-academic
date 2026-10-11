@@ -20,7 +20,8 @@ Without mise, the equivalent raw commands:
 - `npm install && npm --prefix extensions install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`, `@earendil-works/pi-coding-agent`, the runtime dependencies (`fflate`, `@xmldom/xmldom`, `unpdf`), plus root/extension dev tooling
 - `uv sync` — `pytest`, `pyyaml`, `ruff` (`dependency-groups.dev`); the package has no Python runtime dependencies
 - `npm --prefix extensions run test` — compile `extensions/` and run the TypeScript tests (needs `pandoc`; the PDF build test also needs `xelatex` or `tectonic` and is skipped without one)
-- `npx prettier --check "**/*.{ts,js,json,yml,yaml}" && uv run ruff check --select E9,F63,F7,F82 .` — raw lint pieces before TS
+- `npx oxfmt --check "**/*.{ts,js,json,yml,yaml}" && uv run ruff check --select E9,F63,F7,F82 .` — raw lint pieces before TS
+- `mise run oxlint` (`oxlint-fix` for autofixes) — Oxlint plus the vendored anti-slop rules in `tools/oxlint/anti-slop/` over `extensions/`; not yet part of `lint` because the baseline still has findings
 - `npm run typecheck` — strict TS check on `extensions/`
 - `uv run python -m pytest tests/` — run the full test suite
 

@@ -34,7 +34,7 @@ run = ["npm install", "npm --prefix extensions install", "uv sync"]
 description = "Format Python, TypeScript, JSON, YAML, and TOML"
 run = [
   "uv run ruff format .",
-  "npx prettier --write \"**/*.{ts,js,json,yml,yaml}\"",
+  "npx oxfmt --write \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo format mise.toml",
 ]
 
@@ -42,9 +42,17 @@ run = [
 description = "Check formatting without changing files"
 run = [
   "uv run ruff format --check .",
-  "npx prettier --check \"**/*.{ts,js,json,yml,yaml}\"",
+  "npx oxfmt --check \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo check mise.toml",
 ]
+
+[tasks.oxlint]
+description = "Oxlint + vendored anti-slop rules over extensions/ (not yet in `lint`: baseline findings unresolved)"
+run = "npx oxlint extensions"
+
+[tasks.oxlint-fix]
+description = "Apply Oxlint autofixes (anti-slop readable-spacing)"
+run = "npx oxlint --fix extensions"
 
 [tasks.lint]
 description = "Lint Python, TypeScript, JSON/YAML formatting, and TOML"
@@ -53,7 +61,6 @@ run = [
   "uv run ruff check --select E9,F63,F7,F82 .",
   "npm run typecheck",
 ]
-
 [tasks.test]
 description = "Run the TypeScript and Python test suites"
 alias = "t"

@@ -68,7 +68,12 @@ export interface ComponentStyle {
 }
 
 type PropKind =
-  "number" | "spacing" | "boolean" | "font" | "color" | "alignment";
+  | "number"
+  | "spacing"
+  | "boolean"
+  | "font"
+  | "color"
+  | "alignment";
 
 const PROP_KINDS: Record<keyof ComponentStyle, PropKind> = {
   fontFamily: "font",

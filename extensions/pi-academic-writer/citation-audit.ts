@@ -31,7 +31,8 @@ export interface CitationAuditDetails {
 
 /** Invalid project/article paths return only an error, as in the Python CLI. */
 export type CitationAuditResult =
-  CitationAuditDetails | { ok: false; error: string };
+  | CitationAuditDetails
+  | { ok: false; error: string };
 
 const markerPattern = /\[((?:[^\[\]]|\\.)*@(?:[^\[\]]|\\.)*)\]/gu;
 const citeKeyPattern = /@([A-Za-z0-9_:.#$%&+?<>~/\-]+)/gu;
