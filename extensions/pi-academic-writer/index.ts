@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 import { PACKAGE_ROOT } from "../lib/paths.js";
@@ -732,6 +732,7 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           format: string;
           output: string;
           ok: boolean;
+          exists: boolean;
           error?: string;
         }> = [];
         const citeproc = citationStyle !== "inline-parenthetical";
@@ -757,11 +758,29 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
           args.push("-o", output);
           try {
             await execFileAsync("pandoc", args, { cwd: ctx.cwd, signal });
-            results.push({ format, output, ok: true });
+            const exists = existsSync(resolve(ctx.cwd, output));
+            results.push({
+              format,
+              output,
+              ok: exists,
+              exists,
+              ...(!exists
+                ? {
+                    error:
+                      "Pandoc exited successfully but did not create the output file",
+                  }
+                : {}),
+            });
           } catch (error) {
             const message =
               error instanceof Error ? error.message : String(error);
-            results.push({ format, output, ok: false, error: message });
+            results.push({
+              format,
+              output,
+              ok: false,
+              exists: existsSync(resolve(ctx.cwd, output)),
+              error: message,
+            });
           }
         }
         const ok = results.every((result) => result.ok);

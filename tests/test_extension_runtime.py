@@ -408,7 +408,7 @@ class TestExtensionRuntime(unittest.TestCase):
             bin_dir.mkdir()
             pandoc = bin_dir / "pandoc"
             pandoc.write_text(
-                '#!/bin/sh\nprintf \'%s\\n\' "$@" > "$PANDOC_LOG"\nexit 0\n',
+                '#!/bin/sh\nprintf \'%s\\n\' "$@" > "$PANDOC_LOG"\nif [ "${PANDOC_NO_OUTPUT:-0}" != "1" ]; then\n  while [ "$#" -gt 1 ]; do\n    if [ "$1" = "-o" ]; then shift; : > "$1"; break; fi\n    shift\n  done\nfi\nexit 0\n',
                 encoding="utf-8",
             )
             pandoc.chmod(0o755)
@@ -431,7 +431,10 @@ class TestExtensionRuntime(unittest.TestCase):
             )
 
             args = log.read_text(encoding="utf-8").splitlines()
-            self.assertTrue(data["details"]["ok"])
+            result = data["details"]["results"][0]
+            self.assertTrue(result["ok"])
+            self.assertTrue(result["exists"])
+            self.assertTrue((root / result["output"]).is_file())
             self.assertIn("--citeproc", args)
             self.assertIn("--fail-if-warnings", args)
             self.assertIn("--bibliography=articles/ok.bibliography.bib", args)
@@ -439,6 +442,24 @@ class TestExtensionRuntime(unittest.TestCase):
                 data["details"]["bibliography"], "articles/ok.bibliography.bib"
             )
             self.assertIn("--csl=style.csl", args)
+            (root / result["output"]).unlink()
+            no_output_env = {**env, "PANDOC_NO_OUTPUT": "1"}
+            missing = self.call_tool(
+                root,
+                "academic_writer_export_article",
+                {
+                    "article": "articles/ok.md",
+                    "citationStyle": "chicago",
+                    "formats": ["html"],
+                    "csl": "style.csl",
+                },
+                no_output_env,
+            )
+            missing_result = missing["details"]["results"][0]
+            self.assertFalse(missing["details"]["ok"])
+            self.assertFalse(missing_result["ok"])
+            self.assertFalse(missing_result["exists"])
+            self.assertIn("did not create", missing_result["error"])
 
     def test_docx_extraction_prefers_pandoc_citations(self):
         """Assert docx extraction prefers pandoc citations.

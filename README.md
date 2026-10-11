@@ -98,6 +98,16 @@ For English prose, the `academic_writer_lint_prose` tool reports deterministic, 
 `academic_writer_reverse_outline({article})` returns exact heading/paragraph units with source line ranges and mechanically detected Pandoc citation markers. Use it as an index for substantive review, not as an automated assessment; the reviewer supplies all role, support, and progression judgments. It ignores fenced code and does not modify the article.
 For cross-book assignments, `academic_writer_diagnose_outline` accepts the deep-reader evidence map as optional `evidenceMapJson`; chapter coverage belongs to that separate map, not the canonical outline schema. It checks the coverage structure, status/reason requirements, evidence-ID resolution, and completeness from chapter 1 through each verified `chapter_counts` boundary. A malformed coverage declaration or missing/invalid chapter count produces an advisory finding; absent coverage remains optional.
 
+### Check ownership and authority
+
+| Check or decision | Status | Authoritative input and caller | Coverage | Consequence |
+|---|---|---|---|---|
+| Research-note eligibility and outline structure/link freshness | Decisive | Research-note library, source identities, canonical article outline; write/review/snapshot tools | Research-note/outline runtime tests | Invalid, unchecked, stale, or unresolved evidence cannot enter an approved snapshot. |
+| Frozen section evidence and citation-key/mode audit | Decisive for recorded structure and citation integrity | Article-local note snapshot, article text, source registry, bibliography; section writer and export | Research-note bundle and citation-audit tests | Export is blocked for failed citation audit; audit does not prove the cited source supports the prose. |
+| Export completion | Decisive per requested format | Pandoc result plus existence of the requested output artifact; export tool | `test_export_passes_citeproc_options_to_pandoc` | A zero-exit process without an output file is reported as failure for that format. |
+| Outline diagnostics, reverse outline, and prose lint | Advisory | Current outline/article text; orchestrator and substantive reviewers | Diagnostic, reverse-outline, and prose-lint tests | Findings guide review; they do not approve or reject the argument or prose. |
+| Claim support, scholarly validity, argument quality, author voice, and researcher approval | Not automated | Original sources, researcher judgment, and contextual agent review | Not established by mechanical tests | Require human/agent evaluation; tool output is not evidence of correctness. |
+
 ---
 
 ## Research Notes and Outlines
