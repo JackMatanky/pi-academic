@@ -96,7 +96,7 @@ For English prose, the `academic_writer_lint_prose` tool reports deterministic, 
 `academic_writer_diagnose_outline` adds read-only advisory checks for required argument fields and note-link resolution/freshness at outline review; it never approves an outline or judges argument quality.
 
 `academic_writer_reverse_outline({article})` returns exact heading/paragraph units with source line ranges and mechanically detected Pandoc citation markers. Use it as an index for substantive review, not as an automated assessment; the reviewer supplies all role, support, and progression judgments. It ignores fenced code and does not modify the article.
-For cross-book assignments, `academic_writer_diagnose_outline` also accepts optional `evidenceMapJson`; it checks the documented chapter-coverage structure, status/reason requirements, evidence-ID resolution, and completeness from chapter 1 through each verified `chapter_counts` boundary. A coverage map without a positive final chapter count is reported as incomplete rather than treated as complete.
+For cross-book assignments, `academic_writer_diagnose_outline` accepts the deep-reader evidence map as optional `evidenceMapJson`; chapter coverage belongs to that separate map, not the canonical outline schema. It checks the coverage structure, status/reason requirements, evidence-ID resolution, and completeness from chapter 1 through each verified `chapter_counts` boundary. A malformed coverage declaration or missing/invalid chapter count produces an advisory finding; absent coverage remains optional.
 
 ---
 

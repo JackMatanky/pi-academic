@@ -1371,6 +1371,45 @@ class TestExtensionRuntime(unittest.TestCase):
             values["notes"][0]["sourceRef"], "zotero:fixture-library:CFN11AAA"
         )
 
+    def test_e2e_fixture_diagnostic_tools_are_read_only(self):
+        source = Path("tests/e2e/fixture-project").resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "fixture"
+            shutil.copytree(source, root)
+            articles = root / "articles"
+            article = articles / "augustine-time.md"
+            article.write_text(
+                "# Review\nA fixture paragraph [@CFN11AAA].\n", encoding="utf-8"
+            )
+            before = {
+                p.relative_to(root): p.read_bytes()
+                for p in root.rglob("*")
+                if p.is_file()
+            }
+
+            diagnosed = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/augustine-time.md"},
+            )["details"]["value"]
+            segmented = self.call_tool(
+                root,
+                "academic_writer_reverse_outline",
+                {"article": "articles/augustine-time.md"},
+            )["details"]["value"]
+
+            after = {
+                p.relative_to(root): p.read_bytes()
+                for p in root.rglob("*")
+                if p.is_file()
+            }
+            self.assertEqual(diagnosed["status"], "advisory")
+            self.assertEqual(segmented["status"], "advisory")
+            self.assertEqual(
+                segmented["units"][0]["text"], "A fixture paragraph [@CFN11AAA]."
+            )
+            self.assertEqual(after, before)
+
     def test_outline_migration_preserves_markdown_and_conflicts(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1585,6 +1624,20 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertIn(
                 "unsupported-chapter-coverage",
                 {f["code"] for f in incomplete["findings"]},
+            )
+            malformed_coverage = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {
+                    "article": "articles/clean.md",
+                    "evidenceMapJson": json.dumps(
+                        {"chapter_coverage": "not-an-object"}
+                    ),
+                },
+            )["details"]["value"]
+            self.assertEqual(malformed_coverage["status"], "advisory")
+            self.assertEqual(
+                malformed_coverage["findings"][0]["path"], "$.chapter_coverage"
             )
             broken_outline = articles / "broken.outline.json"
             broken_outline.write_text("{", encoding="utf-8")

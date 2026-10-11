@@ -358,6 +358,8 @@ class TestExtensions(unittest.TestCase):
         ]:
             self.assertIn(name, tools)
         self.assertIn("academic_writer_diagnose_outline", _read("agents/architect.md"))
+        for path in ["skills/academic-write/SKILL.md", "skills/academic-edit/SKILL.md"]:
+            self.assertIn("academic_writer_diagnose_outline", _read(path))
         self.assertIn("academic_writer_reverse_outline", _read("agents/synthesizer.md"))
         self.assertIn(
             "academic_writer_reverse_outline", _read("skills/academic-review/SKILL.md")
