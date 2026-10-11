@@ -672,6 +672,24 @@ class TestExtensionRuntime(unittest.TestCase):
             self.assertEqual(
                 update["details"]["value"][0]["review"]["state"], "unchecked"
             )
+            unverified = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/essay.md"},
+            )["details"]["value"]
+            self.assertIn(
+                "unverified-note-link", {f["code"] for f in unverified["findings"]}
+            )
+            source_registry = state / "sources.json"
+            changed_registry = json.loads(source_registry.read_text(encoding="utf-8"))
+            changed_registry[0]["sourceFingerprint"] = "sha256:changed"
+            source_registry.write_text(json.dumps(changed_registry), encoding="utf-8")
+            stale = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/essay.md"},
+            )["details"]["value"]
+            self.assertIn("stale-note-link", {f["code"] for f in stale["findings"]})
             bundle = self.call_tool(
                 root,
                 "academic_writer_query_research",
@@ -1441,6 +1459,165 @@ class TestExtensionRuntime(unittest.TestCase):
         health = data["health"]["details"]
         self.assertIn("rumdl", health)
         self.assertIsInstance(health["rumdl"], bool)
+
+    def test_outline_diagnostics_and_reverse_outline_are_read_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            articles = root / "articles"
+            state = root / ".academic-writer"
+            articles.mkdir()
+            state.mkdir()
+            article = "# Intro\nFirst [@citeKey]\ncontinued.\n\n> quoted\n> passage\n\n```python\nnot prose\n```\n\n## Child\nLast paragraph.\n"
+            article_path = articles / "essay.md"
+            outline_path = articles / "essay.outline.json"
+            article_path.write_text(article, encoding="utf-8")
+            outline = {
+                "items": [
+                    {
+                        "id": "point-1",
+                        "kind": "point",
+                        "noteUses": [{"noteId": "missing-note"}],
+                    }
+                ]
+            }
+            outline_path.write_text(json.dumps(outline), encoding="utf-8")
+            before = {p: p.read_bytes() for p in [article_path, outline_path]}
+
+            diagnosed = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/essay.md"},
+            )["details"]["value"]
+            segmented = self.call_tool(
+                root,
+                "academic_writer_reverse_outline",
+                {"article": "articles/essay.md"},
+            )["details"]["value"]
+            escaped = self.call_tool(
+                root, "academic_writer_reverse_outline", {"article": "../outside.md"}
+            )["details"]["value"]
+
+            self.assertEqual(diagnosed["status"], "advisory")
+            self.assertIn(
+                {
+                    "code": "missing-required-field",
+                    "path": "$.items[0].claim",
+                    "nodeId": "point-1",
+                    "explanation": "Point is missing claim.",
+                },
+                diagnosed["findings"],
+            )
+            self.assertEqual(
+                diagnosed["findings"][-1]["code"], "unresolved-note-reference"
+            )
+            self.assertEqual(segmented["status"], "advisory")
+            units = segmented["units"]
+            self.assertEqual(
+                [unit["text"] for unit in units],
+                [
+                    "First [@citeKey]\ncontinued.",
+                    "> quoted\n> passage",
+                    "Last paragraph.",
+                ],
+            )
+            self.assertEqual(
+                (units[0]["startLine"], units[0]["endLine"], units[0]["headingPath"]),
+                (2, 3, ["Intro"]),
+            )
+            self.assertTrue(units[0]["hasCitationMarker"])
+            self.assertFalse(units[1]["hasCitationMarker"])
+            self.assertEqual(units[2]["headingPath"], ["Intro", "Child"])
+            self.assertEqual(units[2]["endLine"], 13)
+            self.assertEqual(escaped["status"], "error")
+            self.assertEqual({p: p.read_bytes() for p in before}, before)
+            clean_outline = articles / "clean.outline.json"
+            clean_outline.write_text(json.dumps({"items": []}), encoding="utf-8")
+            clean = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/clean.md"},
+            )["details"]["value"]
+            self.assertEqual(
+                clean,
+                {"status": "advisory", "artifact": str(clean_outline), "findings": []},
+            )
+            coverage_map = {
+                "chapter_counts": {"Ezra": 3},
+                "chapter_coverage": {
+                    "Ezra": [
+                        {"chapter": 1, "status": "covered", "evidence_ids": ["ev1"]},
+                        {
+                            "chapter": 3,
+                            "status": "skipped-irrelevant",
+                            "reason": "Not relevant",
+                        },
+                    ]
+                },
+                "evidence": [{"id": "ev1"}],
+            }
+            coverage = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {
+                    "article": "articles/clean.md",
+                    "evidenceMapJson": json.dumps(coverage_map),
+                },
+            )["details"]["value"]
+            coverage_codes = {f["code"] for f in coverage["findings"]}
+            self.assertIn("missing-chapter", coverage_codes)
+            self.assertNotIn("unresolved-evidence-id", coverage_codes)
+            missing_boundary = {
+                "chapter_coverage": {
+                    "Ezra": [
+                        {"chapter": 1, "status": "covered", "evidence_ids": ["ev1"]}
+                    ]
+                },
+                "evidence": [{"id": "ev1"}],
+            }
+            incomplete = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {
+                    "article": "articles/clean.md",
+                    "evidenceMapJson": json.dumps(missing_boundary),
+                },
+            )["details"]["value"]
+            self.assertIn(
+                "unsupported-chapter-coverage",
+                {f["code"] for f in incomplete["findings"]},
+            )
+            broken_outline = articles / "broken.outline.json"
+            broken_outline.write_text("{", encoding="utf-8")
+            broken = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/broken.md"},
+            )["details"]["value"]
+            self.assertEqual(broken["status"], "error")
+            self.assertEqual(broken["findings"], [])
+            missing = self.call_tool(
+                root,
+                "academic_writer_diagnose_outline",
+                {"article": "articles/absent.md"},
+            )["details"]["value"]
+            self.assertEqual(missing["status"], "error")
+
+            crlf = articles / "crlf.md"
+            crlf.write_bytes(b"# Heading\r\nExact\r\nsecond line\r\n")
+            exact = self.call_tool(
+                root, "academic_writer_reverse_outline", {"article": "articles/crlf.md"}
+            )["details"]["value"]
+            self.assertEqual(exact["units"][0]["text"], "Exact\r\nsecond line")
+            self.assertEqual(
+                (exact["units"][0]["startLine"], exact["units"][0]["endLine"]), (2, 3)
+            )
+            absent = self.call_tool(
+                root,
+                "academic_writer_reverse_outline",
+                {"article": "articles/absent.md"},
+            )["details"]["value"]
+            self.assertEqual(absent["status"], "error")
+            self.assertEqual(absent["units"], [])
 
 
 if __name__ == "__main__":

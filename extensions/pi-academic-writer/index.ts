@@ -20,6 +20,7 @@ import {
   snapshotNotes,
   writeOutline,
   writeResearchNotes,
+  diagnoseOutline,
 } from "./research.js";
 import {
   articlePaths,
@@ -34,6 +35,7 @@ import {
   writeProjectTextFile,
   writeSourcesCache,
 } from "./project.js";
+import { reverseOutline } from "./reverse-outline.js";
 import { buildStatus } from "./status.js";
 
 /**
@@ -1029,6 +1031,28 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
     }),
     (p, cwd) => queryResearch(cwd, p as Parameters<typeof queryResearch>[1]),
+  );
+  researchTool(
+    "academic_writer_diagnose_outline",
+    "Diagnose Article Outline",
+    "Read-only advisory checks for outline fields and linked note freshness; does not assess argument quality or change approval.",
+    Type.Object({
+      article: Type.String({ minLength: 1 }),
+      evidenceMapJson: Type.Optional(Type.String()),
+    }),
+    (p, cwd) =>
+      diagnoseOutline(
+        cwd,
+        String(p.article),
+        p.evidenceMapJson as string | undefined,
+      ),
+  );
+  researchTool(
+    "academic_writer_reverse_outline",
+    "Reverse Outline Article",
+    "Segment project article Markdown into exact heading/paragraph units as a read-only review index; interpretations remain advisory.",
+    Type.Object({ article: Type.String({ minLength: 1 }) }),
+    (p, cwd) => reverseOutline(cwd, String(p.article)),
   );
   researchTool(
     "academic_writer_migrate_article_outline",

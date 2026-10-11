@@ -87,12 +87,16 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 2. **Evidence cards:** review exact source-backed quotations, paraphrases, or summaries; correct or exclude each item. Candidates remain unverified until explicitly confirmed.
 3. **Argument:** review a readable outline showing each section's purpose and each point's claim, reasoning, and evidence role. Approve the thesis and outline before the article's evidence snapshots are frozen.
 4. **Draft:** sections are written from those frozen, article-specific evidence bundles. Later source additions do not silently change them.
-5. **Review and revise:** review citation-audit results and a reverse outline of paragraph roles, evidence, and explanation. Return to sources or revise the argument when needed; edits preserve unrequested text.
+5. **Review and revise:** review citation-audit results and the `academic_writer_reverse_outline` paragraph index. Return to sources or revise the argument when needed; edits preserve unrequested text.
 
 Local files work without Zotero; Zotero is optional and preferred when enabled. Structured notes, canonical outline data, and article-local snapshots remain internal sources of truth.
-Review presents a read-only reverse outline of actual paragraph roles, evidence, and explanation, with tentative prompts about repetition, support, missing analysis, or abrupt transitions. It is a discussion aid, not an automatic verdict or persisted rewrite.
+Substantive reviewers use those units to infer paragraph roles, evidence, and explanation, and raise repetition, support, missing analysis, or abrupt transitions as tentative questions—not automatic verdicts. The tool itself makes no semantic judgments and does not rewrite or persist results.
 
 For English prose, the `academic_writer_lint_prose` tool reports deterministic, advisory surface-pattern findings for contextual review. It does not rewrite text, judge authorship, or prove quality.
+`academic_writer_diagnose_outline` adds read-only advisory checks for required argument fields and note-link resolution/freshness at outline review; it never approves an outline or judges argument quality.
+
+`academic_writer_reverse_outline({article})` returns exact heading/paragraph units with source line ranges and mechanically detected Pandoc citation markers. Use it as an index for substantive review, not as an automated assessment; the reviewer supplies all role, support, and progression judgments. It ignores fenced code and does not modify the article.
+For cross-book assignments, `academic_writer_diagnose_outline` also accepts optional `evidenceMapJson`; it checks the documented chapter-coverage structure, status/reason requirements, evidence-ID resolution, and completeness from chapter 1 through each verified `chapter_counts` boundary. A coverage map without a positive final chapter count is reported as incomplete rather than treated as complete.
 
 ---
 

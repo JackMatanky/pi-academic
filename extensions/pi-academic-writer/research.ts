@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import { diagnoseChapterCoverage } from "./coverage.js";
 type Note = {
   id: string;
   kind:
@@ -764,4 +765,134 @@ export function markResearchNotesStale(
     return note;
   });
   save(path, { schemaVersion: 1, notes: next });
+}
+export function diagnoseOutline(
+  r: string,
+  a: string,
+  evidenceMapJson?: string,
+): Record<string, unknown> {
+  const path = outlinePath(r, a);
+  try {
+    const raw = read(path) as Record<string, unknown>;
+    const notes = library(r);
+    const registry = sources(r);
+    const byId = new Map(notes.map((note) => [note.id, note]));
+    const findings: Array<{
+      code: string;
+      path: string;
+      nodeId?: string;
+      explanation: string;
+    }> = [];
+    const add = (
+      code: string,
+      at: string,
+      explanation: string,
+      nodeId?: string,
+    ) =>
+      findings.push({
+        code,
+        path: at,
+        ...(nodeId ? { nodeId } : {}),
+        explanation,
+      });
+    const walk = (items: unknown, at: string): void => {
+      if (!Array.isArray(items)) return;
+      items.forEach((value, index) => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) return;
+        const node = value as Record<string, unknown>;
+        const nodePath = `${at}[${index}]`;
+        const id = typeof node.id === "string" ? node.id : undefined;
+        if (node.kind === "section") {
+          for (const field of ["title", "purpose", "thesisContribution"])
+            if (typeof node[field] !== "string" || !node[field])
+              add(
+                "missing-required-field",
+                `${nodePath}.${field}`,
+                `Section is missing ${field}.`,
+                id,
+              );
+          walk(node.items, `${nodePath}.items`);
+        } else if (node.kind === "point") {
+          for (const field of ["role", "claim", "reasoning"])
+            if (typeof node[field] !== "string" || !node[field])
+              add(
+                "missing-required-field",
+                `${nodePath}.${field}`,
+                `Point is missing ${field}.`,
+                id,
+              );
+          if (!Array.isArray(node.noteUses)) {
+            if (node.role !== "transition")
+              add(
+                "missing-note-use",
+                `${nodePath}.noteUses`,
+                "Argument point has no note-use list.",
+                id,
+              );
+            return;
+          }
+          const noteUses = node.noteUses;
+          if (noteUses.length === 0 && node.role !== "transition")
+            add(
+              "missing-note-use",
+              `${nodePath}.noteUses`,
+              "Argument point has no linked evidence note.",
+              id,
+            );
+          noteUses.forEach((use, useIndex) => {
+            if (!use || typeof use !== "object" || Array.isArray(use)) return;
+            const fields = use as Record<string, unknown>;
+            for (const field of ["function", "handling"])
+              if (typeof fields[field] !== "string" || !fields[field])
+                add(
+                  "missing-required-field",
+                  `${nodePath}.noteUses[${useIndex}].${field}`,
+                  `Note use is missing ${field}.`,
+                  id,
+                );
+            const noteId = (use as Record<string, unknown>).noteId;
+            const usePath = `${nodePath}.noteUses[${useIndex}].noteId`;
+            const note =
+              typeof noteId === "string" ? byId.get(noteId) : undefined;
+            if (!note)
+              add(
+                "unresolved-note-reference",
+                usePath,
+                `No research note resolves noteId ${String(noteId)}.`,
+                id,
+              );
+            else {
+              const current = fresh(note, registry);
+              if (current.review.state !== "verified")
+                add(
+                  current.review.state === "stale"
+                    ? "stale-note-link"
+                    : "unverified-note-link",
+                  usePath,
+                  `Linked note ${note.id} is ${current.review.state}.`,
+                  id,
+                );
+            }
+          });
+        }
+      });
+    };
+    walk(raw.items, "$.items");
+    const coverageFindings =
+      evidenceMapJson === undefined
+        ? []
+        : diagnoseChapterCoverage(evidenceMapJson);
+    return {
+      status: "advisory",
+      artifact: path,
+      findings: [...findings, ...coverageFindings],
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      artifact: path,
+      reason: error instanceof Error ? error.message : String(error),
+      findings: [],
+    };
+  }
 }

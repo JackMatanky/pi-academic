@@ -1,7 +1,7 @@
 ---
 name: academic-review
 description: "Review a completed academic article, or run a mechanical proofread. Use when requesting a quality scorecard/reverse-outline review or a mechanical proofread with a change report."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_lint_prose
+allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_lint_prose academic_writer_reverse_outline
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -103,7 +103,7 @@ Present the results as a clear scorecard:
 
 ## Reverse-outline diagnostics (read-only)
 
-After evaluating the draft, inspect its actual paragraphs or meaningful writing units. For each, summarize its apparent role or claim, evidence used, and explanation or link to the thesis. Note repetition, factual claims without evident support, missing explanation between evidence and claim, and abrupt progression as questions for the researcher—not automatic verdicts. Base this only on the article as read; this report must not modify article text, citations, notes, outline, snapshots, or run state. Keep this diagnostic distinct from the scorecard and citation audit.
+For substantive review, call `academic_writer_reverse_outline({article})` and use its exact paragraph/line units as an index. It segments text only; infer role, evidence, explanation, and progression yourself and present those interpretations as provisional. If unavailable, inspect the article directly. Do not use this tool in mechanical proofread mode.
 For substantive review of English prose, call `academic_writer_lint_prose({text: ARTICLE_TEXT, language: targetLanguage})` and present only contextually relevant matches as tentative prompts. This review is read-only: do not edit article text, citations, notes, outline, snapshots, or run state. Do not call the style linter in mechanical proofread mode.
 
 After the scorecard, list specific issues found:

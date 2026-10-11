@@ -159,12 +159,13 @@ If the user-supplied assignment instruction text contains any of the trigger phr
 - Hebrew: `לאורך הספרים`, `לאורך הספר`, `איתור הפרקים`, `בכל הפרקים`
 - English: `across all books`, `across both books`, `throughout the book(s)`, `every relevant chapter`
 
-then you MUST produce a `chapter_coverage` field in the evidence map. The field is a JSON object whose keys are book names (matching the `workTitle` field in `sources.json`) and whose values are arrays describing every chapter in that book.
+then you MUST produce both `chapter_counts` and `chapter_coverage` fields in the evidence map. `chapter_counts` is a JSON object keyed by exact book names; each value is the verified final chapter number for that book. Determine that boundary from a reliable edition or reference, not from the last chapter read. `chapter_coverage` maps those book names (matching the `workTitle` field in `sources.json`) to arrays describing every chapter.
 
 Schema:
 
 ```json
 {
+  "chapter_counts": { "Ezra": 10, "Nehemiah": 13 },
   "chapter_coverage": {
     "Ezra": [
       { "chapter": 1,  "status": "covered",            "evidence_ids": ["ev_ezra1_cyrus_decree"] },
@@ -179,14 +180,16 @@ Schema:
 }
 ```
 
+The chapter arrays above are abbreviated examples; the actual evidence map MUST include every chapter from 1 through each declared `chapter_counts` boundary.
+
 Rules:
 
 1. **Every chapter in every named book must appear** with one of two statuses: `covered` (you read it and emitted at least one evidence record) or `skipped-irrelevant` (you read it and judged it not responsive to the assignment, with a one-line `reason`).
-2. **No chapter may be silently omitted.** A missing chapter is a fail — the architect will reject the evidence map and re-spawn deep-reader.
+2. **No chapter may be silently omitted.** Include every chapter from 1 through the verified `chapter_counts` boundary. A missing chapter is a fail — the architect will reject the evidence map and re-spawn deep-reader.
 3. **`evidence_ids` must reference records you actually emitted** in the evidence map. The architect cross-checks.
-4. If the assignment does not contain any trigger phrase, the `chapter_coverage` field is optional. Default behaviour (curated reading) still applies for narrowly-scoped assignments.
+4. If the assignment does not contain any trigger phrase, both `chapter_counts` and `chapter_coverage` are optional. Default behaviour (curated reading) still applies for narrowly-scoped assignments.
 
-This step is mandatory before Step 2 (the structured summary). The architect agent will reject your output if `chapter_coverage` is missing when the trigger phrases are present.
+This step is mandatory before Step 2 (the structured summary). The architect agent will reject your output if either `chapter_counts` or `chapter_coverage` is missing when the trigger phrases are present.
 
 ---
 

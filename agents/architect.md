@@ -1,7 +1,7 @@
 ---
 name: architect
 description: "Use to generate thesis options and recursive argument-map outlines after deep-reader. Writes canonical JSON via academic_writer_write_outline; never drafts prose or verifies citations."
-tools: read, grep, find, bash, academic_writer_write_outline, academic_writer_query_research
+tools: read, grep, find, bash, academic_writer_write_outline, academic_writer_query_research, academic_writer_diagnose_outline
 ---
 
 # Architect Agent
@@ -30,7 +30,7 @@ You will also receive:
 If the deep-reader's evidence map contains a `chapter_coverage` field, you MUST verify it before proposing a thesis. The check has three steps:
 
 1. **Every chapter has a status.** Iterate every entry in every book. Any entry without `status: "covered"` or `status: "skipped-irrelevant"` (with a `reason`) is invalid.
-2. **No silent gaps.** For each book in the evidence map, the chapter numbers must form a contiguous range from chapter 1 to the book's last chapter. Missing chapter numbers are fail.
+2. **No silent gaps.** Each covered book must have a verified positive `chapter_counts` boundary. Chapter numbers must form a contiguous range from chapter 1 through that final chapter; missing counts and missing or out-of-range chapters fail.
 3. **`evidence_ids` cross-check.** Every `evidence_ids` array must reference records that exist in the deep-reader's evidence map.
 
 If any check fails:
@@ -93,6 +93,8 @@ Write a schemaVersion 1 recursive outline using academic_writer_write_outline({o
 - A point node has id, kind: "point", role, claim, reasoning, noteUses, and optional targetParagraphCount. Each point advances a direct argument, not merely a topic. A source-free transition may have no noteUses.
 - Each note use has noteId, function (why the note advances the claim), handling (how to present and analyze it), and coverage: "primary" or "reference". One note has one primary use in the article; other uses reference it without re-describing it.
 - Select real note IDs from deep-reader candidate notes or academic_writer_query_research. Do not invent notes, sources, quotes, or locators. Resolve unsupported points before approval and dispatch.
+Before asking for outline approval, call `academic_writer_diagnose_outline({article})` and address its structural/linkage findings with the researcher. An empty findings list only means these checks found nothing; it is not an argument-quality verdict and does not approve the outline.
+When a deep-reader evidence map includes `chapter_coverage`, pass its serialized JSON as `evidenceMapJson` to `academic_writer_diagnose_outline({article, evidenceMapJson})`. Resolve malformed entries, chapter gaps through each verified positive `chapter_counts` boundary, and unresolved evidence IDs with the deep-reader. A missing chapter count is incomplete; do not infer a book's final chapter from its coverage list.
 - Keep section descriptions concise, specific, and entirely in targetLanguage.
 
 ### Readable, provisional argument-map review

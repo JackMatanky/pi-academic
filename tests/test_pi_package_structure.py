@@ -351,11 +351,17 @@ class TestExtensions(unittest.TestCase):
             "academic_writer_list_agents",
             "academic_writer_fix_typography",
             "academic_writer_status",
-            "academic_writer_audit_citations",
             "academic_writer_lint_prose",
             "academic_writer_migrate_profile",
+            "academic_writer_diagnose_outline",
+            "academic_writer_reverse_outline",
         ]:
             self.assertIn(name, tools)
+        self.assertIn("academic_writer_diagnose_outline", _read("agents/architect.md"))
+        self.assertIn("academic_writer_reverse_outline", _read("agents/synthesizer.md"))
+        self.assertIn(
+            "academic_writer_reverse_outline", _read("skills/academic-review/SKILL.md")
+        )
 
         forbidden = [root_env, f"extensions/{env_inject}"]
         for d in [

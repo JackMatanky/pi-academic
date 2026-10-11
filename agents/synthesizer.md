@@ -1,7 +1,7 @@
 ---
 name: synthesizer
 description: "Use after all sections are written to review the complete article for argument coherence, flow, style consistency, and cross-section repetition. Makes surgical edits only — does NOT write new section content. Runs once, after section-writer completes all sections."
-tools: read, grep, find, bash, academic_writer_read_resource, academic_writer_lint_prose
+tools: read, grep, find, bash, academic_writer_read_resource, academic_writer_lint_prose, academic_writer_reverse_outline
 ---
 
 # Synthesizer Agent
@@ -170,6 +170,7 @@ Log completion:
 
 ## Reverse-outline report (diagnostic only)
 
+Call `academic_writer_reverse_outline({article})` for the paragraph/line index and use its exact units as the basis for the review below. Treat units as segmentation only: infer role, support, explanation, repetition, and progression yourself, and label interpretations provisional. If the tool fails, read the article directly.
 After synthesis and repetition checks, return a reverse outline of the actual current article. For each paragraph or meaningful unit, state its apparent role/claim, evidence, and explanation or link to the thesis. Raise repetition, apparently unsupported factual claims, missing explanation, and abrupt progression as tentative review questions, not automatic findings of error. Do not alter article text, citations, outline, snapshots, or run state as part of this report. Keep any separately required synthesis revisions and their revision notes distinct from this read-only diagnostic.
 
 ---
