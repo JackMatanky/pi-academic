@@ -1,6 +1,12 @@
 # Anti-AI Patterns — English Academic Writing
 
-Reference for detecting and fixing AI-generated writing patterns in English academic prose.
+Reference for English academic prose. These heuristics flag patterns that can make prose sound generic; a match is not evidence of authorship or an error by itself. Interpret them in the context of the argument, sources, genre, and researcher's style fingerprint.
+
+## Deterministic advisory lint
+
+The English-only `academic_writer_lint_prose` tool runs `scripts/lint-prose.py` on draft text without storing or modifying it. It reports stable rule IDs and source line locations for a small set of surface patterns: `chatbot-residue`, `staged-opener`, `inflated-significance`, `meta-announcement`, and `repeated-paragraph-opening`. It excludes frontmatter, headings, fenced code, inline code, blockquotes, citation markers, and URLs where practical.
+
+Treat each result as an advisory prompt: inspect context and preserve intentional voice, academic qualifications, evidence, and quotations. The linter does not rewrite text, determine authorship, or measure writing quality. No findings do not establish quality. Its checks supplement, and do not replace, the contextual guidance below.
 
 Patterns here have **named numeric caps per article**. The synthesizer's full-article sweep owns article-wide cap enforcement; section-writer only fixes paragraph-local occurrences before handoff. A pattern is not forbidden — it is capped. The cap is the total count allowed across the entire article, not per paragraph.
 

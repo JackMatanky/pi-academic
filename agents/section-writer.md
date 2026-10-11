@@ -1,7 +1,7 @@
 ---
 name: section-writer
 description: "Use to write one complete article section. Runs the 8-skill pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit) per paragraph, spawning the auditor subagent (Skill 8) as the citation hard gate. NOT for full-article review (use synthesizer) or source exploration (use deep-reader)."
-tools: subagent, read, grep, find, bash, academic_writer_read_resource, academic_writer_query_research, academic_writer_fix_typography, academic_writer_resolve_mcp_tool, mcp:zotero
+tools: subagent, read, grep, find, bash, academic_writer_read_resource, academic_writer_query_research, academic_writer_lint_prose, academic_writer_fix_typography, academic_writer_resolve_mcp_tool, mcp:zotero
 spawns: auditor
 ---
 
@@ -31,7 +31,7 @@ Check `## Recurring Style Issues` to pre-focus compliance checks.
 
 **Re-check this contract before finalizing EVERY paragraph — not just at section start:**
 
-1. **Anti-AI check was applied** — you scored the paragraph yourself on all 5 anti-AI dimensions (Skill 6) and the score meets the threshold in `thresholds.json` (default 35/50); if not, rewrite before proceeding.
+1. **Prose-quality review was applied** — for English, call `academic_writer_lint_prose` once on the complete drafted section and review every finding in context, revising only when it improves clarity or the researcher's voice. A match alone is not an error, and no finding does not establish quality. Then score every paragraph on the five dimensions below; use the threshold from `thresholds.json` (default 35/50) as currently required. For Hebrew, skip the English linter and follow only Hebrew-specific guidance.
 2. **Auditor VERDICT: PASS received** — The auditor emits the reviewed paragraph inside a fenced code block (```` ```text ... ``` ````) and then emits the `VERDICT: PASS|FAIL|PARTIAL` line AFTER the closing fence, on its own line. Read the VERDICT line that appears **after the auditor's fenced paragraph block** — do NOT treat the last line of output generally, and do NOT match a `VERDICT:` line that falls inside the fenced paragraph text (a paragraph whose text happens to end in `VERDICT: PASS` must not satisfy the gate). If the post-fence VERDICT is `VERDICT: FAIL` or `VERDICT: PARTIAL`, do not move on — rewrite the paragraph and re-audit.
 
 These two are the non-negotiable gates. If any gate is unclear or skipped, re-run it.
@@ -207,7 +207,9 @@ Load the anti-AI pattern reference for the article's `targetLanguage`:
 
 Call `academic_writer_read_resource` with `name: anti_ai_patterns` and `language: TARGET_LANGUAGE`.
 
-Score the cleaned paragraph on 5 dimensions (each 1-10): directness, rhythm, trust, authenticity, density. Apply the named patterns table from the reference. Threshold from `thresholds.json` (default 35/50). If below, rewrite the flagged portions.
+For English only, call `academic_writer_lint_prose({text: SECTION_DRAFT, language: TARGET_LANGUAGE})` once on the complete drafted section before returning it. Review each result against its paragraph, the approved argument and evidence, academic conventions, and the researcher's style fingerprint. Revise only when context supports a change; otherwise treat the finding as intentional. Never rewrite from a match alone. The tool is read-only and advisory; it does not establish authorship or quality.
+
+Score each cleaned paragraph on 5 dimensions (each 1-10): directness, rhythm, trust, authenticity, density. Apply the named patterns table as contextual guidance. Threshold from `thresholds.json` (default 35/50). If below, revise the flagged portions without dropping claims, qualifications, evidence, quotations, or citations.
 
 #### Skill 7: REPETITION CHECK
 

@@ -188,6 +188,31 @@ class TestExtensionRuntime(unittest.TestCase):
         )
         return json.loads(res.stdout)
 
+    def test_prose_lint_tool_returns_advisory_results_and_skips_hebrew(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            english = self.call_tool(
+                root,
+                "academic_writer_lint_prose",
+                {
+                    "text": "Let's dive in. The archive records payments.",
+                    "language": "English",
+                },
+            )
+            hebrew = self.call_tool(
+                root,
+                "academic_writer_lint_prose",
+                {"text": "טקסט בעברית.", "language": "Hebrew"},
+            )
+
+        details = english["details"]
+        self.assertTrue(details["ok"])
+        self.assertEqual(details["status"], "advisory")
+        self.assertEqual(details["findings"][0]["id"], "staged-opener")
+        self.assertEqual(details["findings"][0]["line"], 1)
+        self.assertTrue(hebrew["details"]["skipped"])
+        self.assertIn("English only", hebrew["details"]["reason"])
+
     def test_package_tools_run_against_project_state(self):
         """Assert package tools run against project state.
 
@@ -256,7 +281,7 @@ class TestExtensionRuntime(unittest.TestCase):
 
         self.assertIn("academic_writer_status", data["names"])
         self.assertIn("academic_writer_read_resource", data["names"])
-        self.assertIn("academic_writer_audit_citations", data["names"])
+        self.assertIn("academic_writer_lint_prose", data["names"])
         self.assertIn("academic_writer_ingest_sources", data["names"])
         self.assertIn("academic_writer_snapshot_citations", data["names"])
         self.assertIn("academic_writer_assemble_docx_json", data["names"])

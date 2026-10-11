@@ -1,7 +1,7 @@
 ---
 name: synthesizer
 description: "Use after all sections are written to review the complete article for argument coherence, flow, style consistency, and cross-section repetition. Makes surgical edits only — does NOT write new section content. Runs once, after section-writer completes all sections."
-tools: read, grep, find, bash, academic_writer_read_resource
+tools: read, grep, find, bash, academic_writer_read_resource, academic_writer_lint_prose
 ---
 
 # Synthesizer Agent
@@ -145,6 +145,7 @@ Log synthesis completion:
 ## Full-Article Repetition Check
 
 After synthesis revisions, run a **dedicated cross-section repetition pass**.
+For English articles, call `academic_writer_lint_prose({text: ARTICLE_TEXT, language: targetLanguage})` on the complete current draft after synthesis edits. Inspect every finding in its surrounding context; revise only when warranted by the argument, sources, academic genre, and style fingerprint. A match is never an automatic verdict or authorship claim. If prose changes, rerun the linter on the revised draft. Skip it for non-English text; this tool does not replace the existing language-specific review or citation audit.
 
 ### What to check
 

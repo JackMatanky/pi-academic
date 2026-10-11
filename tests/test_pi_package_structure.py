@@ -352,6 +352,7 @@ class TestExtensions(unittest.TestCase):
             "academic_writer_fix_typography",
             "academic_writer_status",
             "academic_writer_audit_citations",
+            "academic_writer_lint_prose",
             "academic_writer_migrate_profile",
         ]:
             self.assertIn(name, tools)

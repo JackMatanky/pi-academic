@@ -1,7 +1,7 @@
 ---
 name: academic-edit
 description: "Edit a drafted article, from one narrowly scoped section to multiple sections or structural revisions. Use when revising, correcting, or restructuring existing article text."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_assemble_docx_json
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_assemble_docx_json academic_writer_lint_prose
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -123,6 +123,7 @@ When auditing or revising an existing draft:
 1. **Preserve Paragraphs by Default**: Treat original paragraphs as valid prose unless an edit or audit failure requires changes.
 2. **Spawn Auditor per Paragraph**: Run an `auditor` subagent on each paragraph to verify citations and anti-AI/quality guidelines.
 3. **Selective Rewriting**: Keep original paragraph text intact if the auditor returns `PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
+For an English prose-style cleanup request, call `academic_writer_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
 
 ---
 

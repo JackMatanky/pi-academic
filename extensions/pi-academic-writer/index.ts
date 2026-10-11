@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -179,6 +179,73 @@ async function runCitationAudit(
   return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
     ? (parsed as Record<string, unknown>)
     : { ok: false, error: "audit-citations.py returned a non-object result" };
+}
+/**
+ * Runs the advisory English prose linter on draft text without writing it to disk.
+ *
+ * @param text - English prose to inspect.
+ * @param language - Target language; non-English input is skipped.
+ * @param projectRoot - Project directory used as the subprocess working directory.
+ * @param signal - Optional abort signal forwarded to the subprocess.
+ * @returns Advisory findings or an explicit skipped result.
+ */
+async function runProseLint(
+  text: string,
+  language: string,
+  projectRoot: string,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>> {
+  if (!language.trim().toLowerCase().startsWith("en")) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: "The prose linter currently supports English only.",
+    };
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      "python3",
+      [join(PACKAGE_ROOT, "scripts", "lint-prose.py"), "-"],
+      { cwd: projectRoot, signal, stdio: ["pipe", "pipe", "pipe"] },
+    );
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.once("error", reject);
+    child.once("close", (code) => {
+      if (code !== 0) {
+        reject(
+          new Error(
+            stderr.trim() || "lint-prose.py exited with status " + code,
+          ),
+        );
+        return;
+      }
+      try {
+        const parsed: unknown = JSON.parse(stdout);
+        if (
+          parsed === null ||
+          typeof parsed !== "object" ||
+          Array.isArray(parsed)
+        ) {
+          reject(new Error("lint-prose.py returned a non-object result"));
+          return;
+        }
+        resolve({ ok: true, ...(parsed as Record<string, unknown>) });
+      } catch (error) {
+        reject(error);
+      }
+    });
+    child.stdin.end(text);
+  });
 }
 
 /**
@@ -581,6 +648,49 @@ export default function piAcademicWriter(pi: ExtensionAPI) {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return textResult(`Citation audit failed: ${message}`, {
+          ok: false,
+          error: message,
+        });
+      }
+    },
+  });
+  pi.registerTool({
+    name: "academic_writer_lint_prose",
+    label: "Academic Writer Prose Lint",
+    description:
+      "Run read-only, deterministic English prose-pattern checks. Findings are advisory prompts for contextual review, not violations or authorship judgments.",
+    parameters: Type.Object({
+      text: Type.String({
+        description: "Draft prose to inspect; it is not modified or stored.",
+      }),
+      language: Type.String({
+        minLength: 1,
+        description:
+          "Target language; English is linted and other languages are explicitly skipped.",
+      }),
+    }),
+    execute: async (_id, params, signal, _onUpdate, ctx) => {
+      try {
+        const details = await runProseLint(
+          String(params.text),
+          String(params.language),
+          ctx.cwd,
+          signal,
+        );
+        if (details.skipped === true) {
+          return textResult(
+            "Prose lint skipped: English-only advisory rules.",
+            details,
+          );
+        }
+        const count = detailCount(details, "findings");
+        return textResult(
+          "Prose lint completed with " + count + " advisory match(es).",
+          details,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return textResult("Prose lint failed: " + message, {
           ok: false,
           error: message,
         });

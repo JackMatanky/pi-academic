@@ -10,7 +10,7 @@ AI-first academic writing assistant for Humanities researchers. Writes rigorousl
 - **Guided workflow** — Sources → Evidence cards → Argument → Draft → Review and revise; return to reading or reshape the argument as needed
 - **Parallel processing** — all sections written simultaneously for speed
 - **Citation-verified** — every claim checked against your source library; nothing fabricated
-- **Anti-AI filter** — every paragraph scored on 5 dimensions to eliminate generic AI writing patterns
+- **Prose quality checks** — deterministic English pattern findings are advisory; agents review them in context alongside the researcher's style profile.
 - **Quality gate** — 6-dimension self-review scorecard before export; score below 40/60 triggers your review
 - **Abstract generation** — automatic תקציר with optional dual-language support
 - **Session dashboard** — shows profile, article count, tool status, plus active/last run state at startup
@@ -91,6 +91,8 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 
 Local files work without Zotero; Zotero is optional and preferred when enabled. Structured notes, canonical outline data, and article-local snapshots remain internal sources of truth.
 Review presents a read-only reverse outline of actual paragraph roles, evidence, and explanation, with tentative prompts about repetition, support, missing analysis, or abrupt transitions. It is a discussion aid, not an automatic verdict or persisted rewrite.
+
+For English prose, `academic_writer_lint_prose` reports repeatable surface-pattern signals for an agent to assess in context. It does not rewrite text, judge authorship, or prove quality. The standalone read-only CLI is `python3 scripts/lint-prose.py articles/<slug>.md`; pass `-` instead of a path to read text from standard input.
 
 ---
 
