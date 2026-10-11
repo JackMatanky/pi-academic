@@ -92,7 +92,7 @@ Converts a written article to PDF, HTML, ODT, LaTeX, or EPUB via Pandoc after th
 Local files work without Zotero; Zotero is optional and preferred when enabled. Structured notes, canonical outline data, and article-local snapshots remain internal sources of truth.
 Review presents a read-only reverse outline of actual paragraph roles, evidence, and explanation, with tentative prompts about repetition, support, missing analysis, or abrupt transitions. It is a discussion aid, not an automatic verdict or persisted rewrite.
 
-For English prose, `academic_writer_lint_prose` reports repeatable surface-pattern signals for an agent to assess in context. It does not rewrite text, judge authorship, or prove quality. The standalone read-only CLI is `python3 scripts/lint-prose.py articles/<slug>.md`; pass `-` instead of a path to read text from standard input.
+For English prose, the `academic_writer_lint_prose` tool reports deterministic, advisory surface-pattern findings for contextual review. It does not rewrite text, judge authorship, or prove quality.
 
 ---
 

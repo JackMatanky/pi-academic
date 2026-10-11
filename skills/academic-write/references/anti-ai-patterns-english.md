@@ -4,7 +4,7 @@ Reference for English academic prose. These heuristics flag patterns that can ma
 
 ## Deterministic advisory lint
 
-The English-only `academic_writer_lint_prose` tool runs `scripts/lint-prose.py` on draft text without storing or modifying it. It reports stable rule IDs and source line locations for a small set of surface patterns: `chatbot-residue`, `staged-opener`, `inflated-significance`, `meta-announcement`, and `repeated-paragraph-opening`. It excludes frontmatter, headings, fenced code, inline code, blockquotes, citation markers, and URLs where practical.
+The English-only `academic_writer_lint_prose` tool analyzes draft text in memory without storing or modifying it. It reports stable rule IDs and source line locations for a small set of surface patterns: `chatbot-residue`, `staged-opener`, `inflated-significance`, `meta-announcement`, and `repeated-paragraph-opening`. It excludes frontmatter, headings, fenced code, inline code, blockquotes, citation markers, and URLs where practical.
 
 Treat each result as an advisory prompt: inspect context and preserve intentional voice, academic qualifications, evidence, and quotations. The linter does not rewrite text, determine authorship, or measure writing quality. No findings do not establish quality. Its checks supplement, and do not replace, the contextual guidance below.
 

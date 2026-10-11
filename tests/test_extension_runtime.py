@@ -188,28 +188,53 @@ class TestExtensionRuntime(unittest.TestCase):
         )
         return json.loads(res.stdout)
 
-    def test_prose_lint_tool_returns_advisory_results_and_skips_hebrew(self):
+    def test_prose_lint_tool_returns_advisory_findings_and_skips_hebrew(self):
+        article = (
+            "---\ntitle: Great question\nsummary: Let's dive in.\n---\n\n"
+            "## Introduction\n"
+            "Let's dive in. The archive records payments.\n\n"
+            "The institute stands as a testament to its founders.\n"
+            "It is worth noting that the archive was catalogued in 1924.\n"
+            "Great question. I hope this helps.\n\n"
+            "The author argues through careful analysis.\n\n"
+            "The author argues through close reading.\n\n"
+            "> Let's dive in.\n"
+            "`Let's dive in` and [a link](https://example.test/Lets-dive-in).\n"
+            "```text\nGreat question. I hope this helps.\n```\n"
+            "A supported claim [@smith2020] remains.\n"
+        )
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             english = self.call_tool(
                 root,
                 "academic_writer_lint_prose",
-                {
-                    "text": "Let's dive in. The archive records payments.",
-                    "language": "English",
-                },
+                {"text": article, "language": "English"},
             )
             hebrew = self.call_tool(
                 root,
                 "academic_writer_lint_prose",
                 {"text": "טקסט בעברית.", "language": "Hebrew"},
             )
+            self.assertEqual(list(root.iterdir()), [])
 
         details = english["details"]
         self.assertTrue(details["ok"])
+        self.assertEqual(details["file"], "<stdin>")
+        self.assertEqual(details["language"], "english")
         self.assertEqual(details["status"], "advisory")
-        self.assertEqual(details["findings"][0]["id"], "staged-opener")
-        self.assertEqual(details["findings"][0]["line"], 1)
+        self.assertEqual(
+            [(finding["id"], finding["line"]) for finding in details["findings"]],
+            [
+                ("staged-opener", 7),
+                ("inflated-significance", 9),
+                ("meta-announcement", 10),
+                ("chatbot-residue", 11),
+                ("repeated-paragraph-opening", 13),
+                ("repeated-paragraph-opening", 15),
+            ],
+        )
+        self.assertEqual(details["findings"][4]["relatedLines"], [15])
+        self.assertEqual(details["findings"][5]["relatedLines"], [13])
         self.assertTrue(hebrew["details"]["skipped"])
         self.assertIn("English only", hebrew["details"]["reason"])
 
