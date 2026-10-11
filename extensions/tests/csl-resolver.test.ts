@@ -15,12 +15,15 @@ import { afterEach, test } from "node:test";
 import { resolveCslStyle } from "../pi-academic-writer/csl-resolver.js";
 
 const projects: string[] = [];
+
 const originalFetch = globalThis.fetch;
+
 const xml =
   '<?xml version="1.0"?><style xmlns="http://purl.org/net/xbiblio/csl" version="1.0"></style>';
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+
   for (const project of projects.splice(0))
     rmSync(project, { recursive: true, force: true });
 });
@@ -29,12 +32,14 @@ afterEach(() => {
 function project(): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "csl-resolver-")));
   projects.push(root);
+
   return root;
 }
 
 function style(path: string, content = xml): string {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content);
+
   return path;
 }
 
@@ -47,6 +52,7 @@ test("popular aliases and style IDs resolve cached files, without network access
   globalThis.fetch = () => {
     throw new Error("unexpected download");
   };
+
   for (const alias of [
     "apa",
     "APA 7th edition",
@@ -88,8 +94,10 @@ test("direct URL downloads even without --download and reuses its cached basenam
   const calls: string[] = [];
   globalThis.fetch = async (value) => {
     calls.push(String(value));
+
     return new Response(xml);
   };
+
   const path = await resolveCslStyle(url, root);
   assert.equal(path, join(root, ".academic-writer", "csl", "my-style.csl"));
   assert.equal(readFileSync(path, "utf8"), xml);
@@ -103,10 +111,12 @@ test("style IDs fall back from Zotero to the CSL repository and report both fail
   globalThis.fetch = async (input) => {
     const url = String(input);
     calls.push(url);
+
     return url.includes("raw.githubusercontent.com")
       ? new Response(xml)
       : new Response("not found", { status: 404 });
   };
+
   const path = await resolveCslStyle("mla", root, true);
   assert.equal(
     path,
@@ -127,6 +137,7 @@ test("style IDs fall back from Zotero to the CSL repository and report both fail
         /CSL style id not found via Zotero or citation-style-language\/styles: absent/,
       );
       assert.equal((error.message.match(/\(404\)/g) ?? []).length, 2);
+
       return true;
     },
   );

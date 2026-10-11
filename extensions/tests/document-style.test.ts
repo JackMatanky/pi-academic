@@ -23,11 +23,13 @@ import { runPandoc } from "../pi-academic-writer/pandoc.js";
 import { loadStylePackage } from "../pi-academic-writer/style-design.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
+
 const needsPandoc = { skip: hasPandoc ? false : "pandoc is not installed" };
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "document-style-")));
   t.after(() => rmSync(root, { recursive: true, force: true }));
+
   return root;
 }
 
@@ -44,9 +46,11 @@ function writePackage(
     join(dir, "design.json"),
     JSON.stringify({ schemaVersion: 1, name, ...design }),
   );
+
   for (const [file, content] of Object.entries(files)) {
     writeFileSync(join(dir, file), content);
   }
+
   return dir;
 }
 
@@ -54,11 +58,13 @@ function zipEntry(path: string, entry: string): string {
   const entries = unzipSync(new Uint8Array(readFileSync(path)));
   const data = entries[entry];
   assert.ok(data, `${entry} missing from ${path}`);
+
   return strFromU8(data);
 }
 
 test("invalid designs name the field and the correction", (t) => {
   const root = project(t);
+
   const cases: [Record<string, unknown>, RegExp][] = [
     [{ components: { body: { color: "red" } } }, /components\.body\.color/],
     [
@@ -93,6 +99,7 @@ test("invalid designs name the field and the correction", (t) => {
       /formats\.latex\.template: use a relative \.tex file/,
     ],
   ];
+
   cases.forEach(([design, pattern], index) => {
     const name = `bad-${index}`;
     writePackage(root, name, design);
@@ -121,9 +128,11 @@ test("a symlinked asset cannot point outside the package", (t) => {
   const root = project(t);
   const outside = join(root, "secret.docx");
   writeFileSync(outside, "x");
+
   const dir = writePackage(root, "linked", {
     formats: { docx: { referenceDocument: "ref.docx" } },
   });
+
   symlinkSync(outside, join(dir, "ref.docx"));
   assert.throws(
     () => loadStylePackage(root, "linked", ["docx"]),
@@ -148,6 +157,7 @@ test("omitted properties merge from the starter and explicit components are trac
 
 test("the starter installs editable native files and never overwrites", async (t) => {
   const root = project(t);
+
   if (!hasPandoc) return t.skip("pandoc is not installed");
   const installed = await installStarterPackage(root);
   assert.deepEqual(installed.files, [
@@ -196,22 +206,26 @@ test(
         hyperlink: { color: "#0000FF" },
       },
     });
+
     const style = await renderDocumentStyle(
       root,
       "docx-pkg",
       "docx",
       join(root, "out"),
     );
+
     assert.deepEqual(style.generated, ["referenceDocument"]);
     assert.deepEqual(style.args, [
       `--reference-doc=${style.assets.referenceDocument}`,
     ]);
     const reference = style.assets.referenceDocument ?? "";
     const styles = zipEntry(reference, "word/styles.xml");
+
     const heading =
       styles.match(
         /<w:style [^>]*w:styleId="Heading1"[\s\S]*?<\/w:style>/,
       )?.[0] ?? "";
+
     assert.match(heading, /w:ascii="Georgia"/);
     assert.match(heading, /<w:sz w:val="40"/);
     assert.match(heading, /<w:color w:val="112233"/);
@@ -224,10 +238,12 @@ test(
       styles.match(/w:styleId="BodyText"[\s\S]*?<\/w:style>/)?.[0] ?? "",
       /w:line="480"/,
     );
+
     const section =
       zipEntry(reference, "word/document.xml").match(
         /<w:sectPr[\s\S]*?<\/w:sectPr>/,
       )?.[0] ?? "";
+
     assert.match(section, /<w:pgSz w:w="12240" w:h="15840"/);
     assert.match(section, /w:top="1134" w:right="1440" w:bottom="1701"/);
     assert.match(section, /w:footer="567"/);
@@ -250,6 +266,7 @@ test(
   needsPandoc,
   async (t) => {
     const root = project(t);
+
     const dir = writePackage(
       root,
       "native",
@@ -259,12 +276,14 @@ test(
       },
       { "mine.docx": "not really a docx" },
     );
+
     const style = await renderDocumentStyle(
       root,
       "native",
       "docx",
       join(root, "out"),
     );
+
     assert.deepEqual(style.generated, []);
     assert.equal(
       style.assets.referenceDocument,
@@ -282,12 +301,14 @@ test(
   async (t) => {
     const root = project(t);
     writePackage(root, "plain", {});
+
     const plain = await renderDocumentStyle(
       root,
       "plain",
       "docx",
       join(root, "o1"),
     );
+
     assert.deepEqual(plain.warnings, [], "starter defaults must not warn");
     writePackage(root, "wrote-it", {
       components: {
@@ -295,12 +316,14 @@ test(
         footnoteReference: { alignment: "center" },
       },
     });
+
     const docx = await renderDocumentStyle(
       root,
       "wrote-it",
       "docx",
       join(root, "o2"),
     );
+
     assert.ok(
       docx.warnings.some((w) =>
         w.includes("components.citation is not applied"),
@@ -313,12 +336,14 @@ test(
           w.includes("character style"),
       ),
     );
+
     const latex = await renderDocumentStyle(
       root,
       "wrote-it",
       "latex",
       join(root, "o3"),
     );
+
     assert.ok(
       latex.warnings.some((w) => w.startsWith("latex: components.citation")),
     );
@@ -337,12 +362,14 @@ test(
         body: { lineSpacing: 1.5, alignment: "justify" },
       },
     });
+
     const style = await renderDocumentStyle(
       root,
       "odt-pkg",
       "odt",
       join(root, "out"),
     );
+
     const path = style.assets.referenceDocument ?? "";
     const bytes = new Uint8Array(readFileSync(path));
     assert.equal(
@@ -351,9 +378,11 @@ test(
       "mimetype must be the first entry",
     );
     const styles = zipEntry(path, "styles.xml");
+
     const heading =
       styles.match(/style:name="Heading_20_1"[\s\S]*?<\/style:style>/)?.[0] ??
       "";
+
     assert.match(heading, /fo:font-size="22pt"/);
     assert.match(heading, /fo:font-weight="bold"/);
     assert.match(
@@ -395,12 +424,14 @@ test(
         footer: { alignment: "right" },
       },
     });
+
     const style = await renderDocumentStyle(
       root,
       "tex-pkg",
       "latex",
       join(root, "out"),
     );
+
     const tex = readFileSync(style.assets.preamble ?? "", "utf8");
     assert.match(
       tex,
@@ -443,6 +474,7 @@ test(
   needsPandoc,
   async (t) => {
     const root = project(t);
+
     const dir = writePackage(
       root,
       "pdf-pkg",
@@ -457,12 +489,14 @@ test(
           "\\documentclass{article}\n\\begin{document}\n$body$\n\\end{document}\n",
       },
     );
+
     const style = await renderDocumentStyle(
       root,
       "pdf-pkg",
       "pdf",
       join(root, "out"),
     );
+
     assert.equal(style.assets.engine, "tectonic");
     assert.equal(style.assets.template, join(realpathSync(dir), "shared.tex"));
     assert.deepEqual(style.args, [

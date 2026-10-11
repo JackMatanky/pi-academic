@@ -19,6 +19,7 @@ import {
 /** Narrow to a full audit result; invalid project/article paths return only an error. */
 function details(result: CitationAuditResult): CitationAuditDetails {
   assert.ok("markers" in result, "expected a full audit result");
+
   return result;
 }
 
@@ -36,6 +37,7 @@ function fixture(t: TestContext, article = "Text [@smith2020, p. 4].") {
     join(root, ".academic-writer", "bibliography.bib"),
     "@book{smith2020, title={Book}}\n",
   );
+
   return root;
 }
 
@@ -172,6 +174,7 @@ test("article paths cannot escape the project via traversal or symlinks", (t) =>
   const outside = mkdtempSync(join(tmpdir(), "citation-outside-"));
   t.after(() => rmSync(outside, { recursive: true, force: true }));
   symlinkSync(outside, join(root, "articles", "outside"));
+
   for (const article of [
     "../outside.md",
     "articles/outside/new.md",

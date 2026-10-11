@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 
 export interface PandocOptions {
-  cwd?: string;
-  signal?: AbortSignal;
+  cwd?: string | undefined;
+  signal?: AbortSignal | undefined;
   /** Piped to Pandoc's standard input. */
-  input?: string;
+  input?: string | undefined;
 }
 
 /** Run Pandoc and resolve with its raw standard output. */
@@ -13,11 +13,13 @@ export function runPandoc(
   options: PandocOptions = {},
 ): Promise<Buffer> {
   const { promise, resolve, reject } = Promise.withResolvers<Buffer>();
+
   const child = spawn("pandoc", args, {
     cwd: options.cwd,
     signal: options.signal,
     stdio: ["pipe", "pipe", "pipe"],
   });
+
   const out: Buffer[] = [];
   const err: Buffer[] = [];
   child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
@@ -32,6 +34,7 @@ export function runPandoc(
   });
   child.stdin.on("error", () => undefined);
   child.stdin.end(options.input ?? "");
+
   return promise;
 }
 

@@ -5,14 +5,12 @@ import { PACKAGE_ROOT } from "../lib/paths.js";
 /**
  * Narrows resource language options to the packaged anti-AI pattern files.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param language - Optional language selector for language-specific resources.
- * @returns The typed result described by this helper contract.
  */
 function normalizeLanguage(language: unknown): "english" | "hebrew" {
   if (typeof language !== "string") return "hebrew";
   const normalized = language.trim().toLowerCase();
+
   return normalized.startsWith("en") || normalized === "english"
     ? "english"
     : "hebrew";
@@ -21,12 +19,9 @@ function normalizeLanguage(language: unknown): "english" | "hebrew" {
 /**
  * Resolves a stable Academic Writer resource name to its package/project file path.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param name - Stable packaged resource name.
  * @param projectRoot - Absolute project root used to resolve project-relative files.
  * @param language - Optional language selector for language-specific resources.
- * @returns The typed result described by this helper contract.
  */
 export function resolveResourcePath(
   name: string,
@@ -40,10 +35,12 @@ export function resolveResourcePath(
         ".academic-writer",
         "thresholds.json",
       );
+
       return existsSync(projectOverride)
         ? projectOverride
         : join(PACKAGE_ROOT, "thresholds.json");
     }
+
     case "words":
       return join(PACKAGE_ROOT, "words.md");
     case "scorecard":
@@ -64,6 +61,7 @@ export function resolveResourcePath(
       );
     case "anti_ai_patterns": {
       const lang = normalizeLanguage(language);
+
       return join(
         PACKAGE_ROOT,
         "skills",
@@ -72,6 +70,7 @@ export function resolveResourcePath(
         `anti-ai-patterns-${lang}.md`,
       );
     }
+
     case "voice_profile_load":
       return join(
         PACKAGE_ROOT,

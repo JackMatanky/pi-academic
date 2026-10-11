@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { extname, isAbsolute, relative, resolve } from "node:path";
+import { extname, resolve } from "node:path";
+import { errorMessage, isInside } from "../lib/fs-safe.js";
 
 type Unit = {
   id: string;
@@ -16,11 +17,9 @@ export function reverseOutline(
   article: string,
 ): Record<string, unknown> {
   const path = resolve(root, article);
-  const articles = resolve(root, "articles");
-  const rel = relative(articles, path);
+
   if (
-    isAbsolute(rel) ||
-    rel.startsWith("..") ||
+    !isInside(resolve(root, "articles"), path) ||
     extname(path).toLowerCase() !== ".md"
   )
     return {
@@ -31,6 +30,7 @@ export function reverseOutline(
     };
   let source: string;
   let newline: string;
+
   try {
     source = readFileSync(path, "utf8");
     newline = source.includes("\r\n") ? "\r\n" : "\n";
@@ -38,16 +38,18 @@ export function reverseOutline(
     return {
       status: "error",
       artifact: path,
-      reason: error instanceof Error ? error.message : String(error),
+      reason: errorMessage(error),
       units: [],
     };
   }
+
   const lines = source.split(/\r?\n/);
   const headings: Array<{ level: number; text: string }> = [];
   const units: Unit[] = [];
   let paragraph: string[] = [];
   let paragraphStart = 0;
   let fence: string | null = null;
+
   const flush = (endLine: number): void => {
     if (paragraph.length) {
       const text = paragraph.join(newline);
@@ -63,18 +65,23 @@ export function reverseOutline(
       paragraph = [];
     }
   };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
     const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
+
     if (fenceMatch) {
       flush(i);
       const marker = fenceMatch[1]![0]!;
+
       if (fence === null) fence = marker;
       else if (fence === marker) fence = null;
       continue;
     }
+
     if (fence !== null) continue;
     const heading = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
+
     if (heading) {
       flush(i);
       const level = heading[1]!.length;
@@ -86,6 +93,8 @@ export function reverseOutline(
       paragraph.push(line);
     }
   }
+
   flush(paragraphStart + paragraph.length - 1);
+
   return { status: "advisory", artifact: path, units };
 }

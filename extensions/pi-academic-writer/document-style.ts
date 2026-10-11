@@ -8,6 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { errorMessage } from "../lib/fs-safe.js";
 import { defaultReference } from "./pandoc.js";
 import {
   loadStarterDesign,
@@ -45,6 +46,7 @@ export async function withScratchDir<T>(
   const runs = join(projectRoot, ".academic-writer", "runs");
   mkdirSync(runs, { recursive: true });
   const dir = mkdtempSync(join(runs, `${prefix}-`));
+
   try {
     return await work(dir);
   } finally {
@@ -96,6 +98,7 @@ export async function renderDocumentStyle(
       generated.push("referenceDocument");
       warnings.push(...built.warnings);
     }
+
     args.push(`--reference-doc=${assets.referenceDocument}`);
   } else {
     if (native.preamble) {
@@ -107,9 +110,11 @@ export async function renderDocumentStyle(
       generated.push("preamble");
       warnings.push(...built.warnings);
     }
+
     if (assets.template) args.push(`--template=${assets.template}`);
     args.push(`--include-in-header=${assets.preamble}`);
   }
+
   return {
     package: packageName,
     format,
@@ -145,15 +150,17 @@ export async function checkStylePackage(
           format,
           join(dir, format),
         );
+
         for (const warning of rendered.warnings) warnings.add(warning);
       } catch (error) {
         errors.push({
           format,
-          message: error instanceof Error ? error.message : String(error),
+          message: errorMessage(error),
         });
       }
     }
   });
+
   return {
     package: packageName,
     ok: errors.length === 0,
@@ -165,7 +172,9 @@ export async function checkStylePackage(
 /** Names of the packages under `.academic-writer/styles/` that contain a design.json. */
 export function listStylePackages(projectRoot: string): string[] {
   const root = join(projectRoot, ".academic-writer", "styles");
+
   if (!existsSync(root)) return [];
+
   return readdirSync(root, { withFileTypes: true })
     .filter(
       (entry) =>
@@ -196,15 +205,19 @@ export async function installStarterPackage(
       `Style package '${name}': use lowercase letters, digits, and hyphens`,
     );
   }
+
   const directory = join(projectRoot, ".academic-writer", "styles", name);
+
   if (existsSync(directory)) {
     throw new Error(
       `Style package '${name}' already exists; choose another name or edit it in place`,
     );
   }
+
   const starter = JSON.parse(
     readFileSync(join(STARTER_DIR, "design.json"), "utf8"),
   ) as Record<string, unknown>;
+
   const design = loadStarterDesign();
   const nativeDir = join(directory, "native");
   mkdirSync(nativeDir, { recursive: true });
@@ -231,6 +244,7 @@ export async function installStarterPackage(
     "native/reference.odt",
     "native/preamble.tex",
   );
+
   return { package: name, directory, files };
 }
 

@@ -83,7 +83,13 @@ class TestExtensionRuntime(unittest.TestCase):
                 }});
                 const ctx = {{ cwd: process.argv[2] }};
                 const signal = new AbortController().signal;
-                const call = (name, params = {{}}) => tools.get(name).execute("test", params, signal, undefined, ctx);
+                const call = async (name, params = {{}}) => {{
+                  try {{
+                    return await tools.get(name).execute("test", params, signal, undefined, ctx);
+                  }} catch (error) {{
+                    return {{ isError: true, content: [{{ type: "text", text: error.text ?? error.message }}], details: error.details ?? {{ ok: false, error: error.message }} }};
+                  }}
+                }};
                 const status = await call("academic_writer_status");
                 const migration = await call("academic_writer_migrate_profile");
                 const health = await call("academic_writer_health");
@@ -167,13 +173,18 @@ class TestExtensionRuntime(unittest.TestCase):
                 }});
                 const ctx = {{ cwd: process.argv[2] }};
                 const signal = new AbortController().signal;
-                const result = await tools.get({json.dumps(name)}).execute(
-                  "test",
-                  {json.dumps(params)},
-                  signal,
-                  undefined,
-                  ctx
-                );
+                let result;
+                try {{
+                  result = await tools.get({json.dumps(name)}).execute(
+                    "test",
+                    {json.dumps(params)},
+                    signal,
+                    undefined,
+                    ctx
+                  );
+                }} catch (error) {{
+                  result = {{ isError: true, content: [{{ type: "text", text: error.text ?? error.message }}], details: error.details ?? {{ ok: false, error: error.message }} }};
+                }}
                 console.log(JSON.stringify(result));
                 """
             ),
@@ -433,7 +444,7 @@ class TestExtensionRuntime(unittest.TestCase):
             args = log.read_text(encoding="utf-8").splitlines()
             result = data["details"]["results"][0]
             self.assertTrue(result["ok"])
-            self.assertTrue(result["exists"])
+            self.assertNotIn("isError", data)
             self.assertTrue((root / result["output"]).is_file())
             self.assertIn("--citeproc", args)
             self.assertIn("--fail-if-warnings", args)
@@ -458,7 +469,7 @@ class TestExtensionRuntime(unittest.TestCase):
             missing_result = missing["details"]["results"][0]
             self.assertFalse(missing["details"]["ok"])
             self.assertFalse(missing_result["ok"])
-            self.assertFalse(missing_result["exists"])
+            self.assertTrue(missing["isError"])
             self.assertIn("did not create", missing_result["error"])
 
     def test_docx_extraction_prefers_pandoc_citations(self):
@@ -980,8 +991,9 @@ class TestExtensionRuntime(unittest.TestCase):
                 ),
                 "bibliography": "@book{new, title={New}}",
             }
-            with self.assertRaises(subprocess.CalledProcessError):
-                self.call_tool(root, "academic_writer_write_sources_cache", params)
+            failed = self.call_tool(root, "academic_writer_write_sources_cache", params)
+            self.assertTrue(failed["isError"])
+            self.assertIn("Zotero sourceId", failed["content"][0]["text"])
             self.assertEqual(
                 source_file.read_text(encoding="utf-8"), "original sources\n"
             )

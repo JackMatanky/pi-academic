@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { unzipSync } from "fflate";
+import { resolveInside } from "../lib/fs-safe.js";
 import { withScratchDir } from "./document-style.js";
 import { defaultReference, runPandoc } from "./pandoc.js";
 import type { StyleDesign } from "./style-design.js";
@@ -10,11 +11,14 @@ interface Footnote {
   after: string;
   text: string;
 }
+
 type Paragraph = string | { text: string; footnotes?: Footnote[] };
+
 interface Section {
   title?: string;
   paragraphs: Paragraph[];
 }
+
 interface ArticleFormat {
   font?: string;
   bodySize?: number;
@@ -25,6 +29,7 @@ interface ArticleFormat {
   margins?: number;
   isRtl?: boolean;
 }
+
 export interface ArticleData {
   title?: string;
   thesis?: string;
@@ -36,8 +41,8 @@ export interface ArticleData {
 
 export interface GenerateDocxOptions {
   /** A style package's DOCX reference; replaces the format-derived one. */
-  referenceDoc?: string;
-  signal?: AbortSignal;
+  referenceDoc?: string | undefined;
+  signal?: AbortSignal | undefined;
 }
 
 export interface GenerateDocxResult {
@@ -57,12 +62,14 @@ export function parseArticle(raw: unknown): ArticleData {
   if (!isObject(raw) || !Array.isArray(raw.sections)) {
     throw new Error("article JSON must be an object with a sections array");
   }
+
   raw.sections.forEach((section: unknown, i: number) => {
     if (!isObject(section) || !Array.isArray(section.paragraphs)) {
       throw new Error(
         `sections[${i}] must be an object with a paragraphs array`,
       );
     }
+
     section.paragraphs.forEach((paragraph: unknown, j: number) => {
       const ok =
         typeof paragraph === "string" ||
@@ -76,6 +83,7 @@ export function parseArticle(raw: unknown): ArticleData {
                   typeof f.after === "string" &&
                   typeof f.text === "string",
               ))));
+
       if (!ok) {
         throw new Error(
           `sections[${i}].paragraphs[${j}] must be a string or {text, footnotes:[{after, text}]}`,
@@ -83,23 +91,29 @@ export function parseArticle(raw: unknown): ArticleData {
       }
     });
   });
+
   // Shape verified above.
   return raw as unknown as ArticleData;
 }
 
 /**
  * Typography fixes for Hebrew: spaced hyphen for em dashes, gereshayim for
- * paired straight quotes, and no stray directional marks. Orphan leading
- * punctuation is dropped only from paragraph text, never from match markers.
+ * paired straight quotes around Hebrew text, and no stray directional marks.
+ * Orphan leading punctuation (a mark followed by whitespace) is dropped only
+ * from paragraph text, never from match markers, so `.NET` is left alone.
  */
 export function cleanRtlText(text: string, trimOrphan = true): string {
   let out = text
-    .replace(/\u2014/g, " - ")
-    .replace(/"([^"]{0,200})"/g, "\u05f4$1\u05f4")
+    .replace(/\s*\u2014\s*/g, " - ")
+    .replace(/"([^"]{0,200})"/g, (quoted, inner: string) =>
+      /[\u0590-\u05ff]/.test(inner) ? `\u05f4${inner}\u05f4` : quoted,
+    )
     .replace(/\u200f+(?=[.,;:)\]"])/g, "")
     .replace(/(?<=[([])\u200e+/g, "")
     .replace(/[\u200e\u200f]{2,}/g, "");
-  if (trimOrphan) out = out.replace(/^\s*[.,;:]/, "").trim();
+
+  if (trimOrphan) out = out.replace(/^\s*[.,;:](?=\s)/, "").trim();
+
   return out;
 }
 
@@ -122,6 +136,7 @@ export function formatDesign(format: ArticleFormat = {}): StyleDesign {
   const margin = (format.margins ?? 1) * 25.4;
   const heading = format.headingSize ?? 13;
   const start = rtl ? "right" : "left";
+
   return {
     schemaVersion: 1,
     name: "article-format",
@@ -208,16 +223,21 @@ function paragraphMarkdown(
 ): string {
   const clean = (text: string, trim = true) =>
     rtl ? cleanRtlText(text, trim) : text;
+
   const text = clean(
     typeof paragraph === "string" ? paragraph : paragraph.text,
   );
+
   const notes =
     typeof paragraph === "string" ? [] : (paragraph.footnotes ?? []);
+
   let cursor = 0;
   let out = "";
+
   for (const note of notes) {
     const marker = clean(note.after, false);
     const index = marker ? text.indexOf(marker, cursor) : -1;
+
     if (index < 0) continue;
     const end = index + marker.length;
     out += escapeRaw(text.slice(cursor, end));
@@ -227,11 +247,13 @@ function paragraphMarkdown(
     out += `[^${definitions.length}]`;
     cursor = end;
   }
+
   return `${out}${escapeRaw(text.slice(cursor))}`.trim();
 }
 
 function div(style: string, text: string, dir?: "ltr"): string {
   const direction = dir ? ` dir="${dir}"` : "";
+
   return `::: {custom-style="${style}"${direction}}\n${escapeMarkdown(text)}\n:::`;
 }
 
@@ -243,13 +265,16 @@ export function articleMarkdown(
   const blocks: string[] = [];
   const definitions: string[] = [];
   const primary = data.abstract?.primary;
+
   if (primary) {
     blocks.push(
       div("AbstractTitle", rtl ? "תקציר" : "Abstract"),
       div("Abstract", clean(primary)),
     );
   }
+
   const secondary = data.abstract?.secondary;
+
   if (secondary) {
     // The secondary abstract runs in the opposite direction.
     const dir = rtl ? "ltr" : undefined;
@@ -258,14 +283,19 @@ export function articleMarkdown(
       div("Abstract", clean(secondary), dir),
     );
   }
+
   for (const section of data.sections) {
     if (section.title) blocks.push(`# ${escapeMarkdown(clean(section.title))}`);
+
     for (const paragraph of section.paragraphs) {
       const markdown = paragraphMarkdown(paragraph, rtl, definitions);
+
       if (markdown) blocks.push(markdown);
     }
   }
+
   blocks.push(...definitions);
+
   return {
     markdown: `${blocks.join("\n\n")}\n`,
     footnotes: definitions.length,
@@ -278,6 +308,7 @@ function assertFootnoteCapable(path: string): void {
       file.name === "word/footnotes.xml" ||
       file.name === "word/_rels/document.xml.rels",
   });
+
   if (
     !entries["word/footnotes.xml"] ||
     !entries["word/_rels/document.xml.rels"]
@@ -295,11 +326,12 @@ export async function generateDocx(
   cwd: string,
   options: GenerateDocxOptions = {},
 ): Promise<GenerateDocxResult> {
-  const source = resolve(cwd, inputPath);
-  const output = resolve(cwd, outputPath);
+  const source = resolveInside(cwd, inputPath);
+  const output = resolveInside(cwd, outputPath);
   const data = parseArticle(JSON.parse(readFileSync(source, "utf8")));
   const rtl = data.format?.isRtl ?? true;
   const { markdown, footnotes } = articleMarkdown(data, rtl);
+
   const args = [
     "-f",
     "markdown-smart",
@@ -308,8 +340,10 @@ export async function generateDocx(
     "-M",
     `dir=${rtl ? "rtl" : "ltr"}`,
   ];
+
   if (data.title)
     args.push("-M", `title=${rtl ? cleanRtlText(data.title) : data.title}`);
+
   if (data.thesis)
     args.push(
       "-M",
@@ -323,6 +357,7 @@ export async function generateDocx(
       input: markdown,
     });
   };
+
   if (options.referenceDoc) {
     assertFootnoteCapable(options.referenceDoc);
     await run(options.referenceDoc);
@@ -333,15 +368,18 @@ export async function generateDocx(
         await defaultReference("docx", { signal: options.signal }),
         new Map(),
       );
+
       const reference = resolve(dir, "reference.docx");
       writeFileSync(reference, built.bytes);
       await run(reference);
     });
   }
+
   if (!existsSync(output))
     throw new Error(
       "Pandoc exited successfully but did not create the output file",
     );
+
   return {
     ok: true,
     output: outputPath,

@@ -99,6 +99,7 @@ const TEXT_ONLY_IGNORED: (keyof ComponentStyle)[] = [
 ];
 
 const mm = (value: number) => `${+value.toFixed(3)}mm`;
+
 const pt = (value: number) => `${+value.toFixed(3)}pt`;
 
 function childByName(
@@ -115,6 +116,7 @@ function childByName(
       return node as Element;
     }
   }
+
   return undefined;
 }
 
@@ -124,12 +126,15 @@ function ensureProps(
   local: "paragraph-properties" | "text-properties",
 ): Element {
   const existing = childByName(style, NS.style, local);
+
   if (existing) return existing;
   const created = ownerOf(style).createElementNS(NS.style, `style:${local}`);
   const text = childByName(style, NS.style, "text-properties");
+
   if (local === "paragraph-properties" && text)
     style.insertBefore(created, text);
   else style.appendChild(created);
+
   return created;
 }
 
@@ -140,6 +145,7 @@ function set(el: Element, qname: string, value: string): void {
 
 function applyParagraph(style: Element, props: ComponentStyle): void {
   const pp = ensureProps(style, "paragraph-properties");
+
   if (props.alignment) {
     const align = {
       left: "start",
@@ -147,26 +153,36 @@ function applyParagraph(style: Element, props: ComponentStyle): void {
       center: "center",
       justify: "justify",
     }[props.alignment];
+
     set(pp, "fo:text-align", align);
   }
+
   if (props.lineSpacing !== undefined)
     set(pp, "fo:line-height", `${+(props.lineSpacing * 100).toFixed(1)}%`);
+
   if (props.spaceBeforePt !== undefined)
     set(pp, "fo:margin-top", pt(props.spaceBeforePt));
+
   if (props.spaceAfterPt !== undefined)
     set(pp, "fo:margin-bottom", pt(props.spaceAfterPt));
+
   if (props.indentLeftMm !== undefined)
     set(pp, "fo:margin-left", mm(props.indentLeftMm));
+
   if (props.indentRightMm !== undefined)
     set(pp, "fo:margin-right", mm(props.indentRightMm));
+
   if (props.firstLineIndentMm !== undefined)
     set(pp, "fo:text-indent", mm(props.firstLineIndentMm));
   else if (props.hangingIndentMm !== undefined)
     set(pp, "fo:text-indent", mm(-props.hangingIndentMm));
+
   if (props.keepWithNext !== undefined)
     set(pp, "fo:keep-with-next", props.keepWithNext ? "always" : "auto");
+
   if (props.pageBreakBefore !== undefined)
     set(pp, "fo:break-before", props.pageBreakBefore ? "page" : "auto");
+
   if (props.borderWidthPt !== undefined || props.borderColor) {
     set(
       pp,
@@ -174,11 +190,13 @@ function applyParagraph(style: Element, props: ComponentStyle): void {
       `${pt(props.borderWidthPt ?? 0.5)} solid ${props.borderColor ?? "#000000"}`,
     );
   }
+
   if (props.shading) set(pp, "fo:background-color", props.shading);
 }
 
 function applyText(style: Element, props: ComponentStyle): void {
   const tp = ensureProps(style, "text-properties");
+
   if (props.fontFamily) {
     for (const stale of [
       "style:font-name",
@@ -187,10 +205,12 @@ function applyText(style: Element, props: ComponentStyle): void {
     ]) {
       tp.removeAttribute(stale);
     }
+
     set(tp, "fo:font-family", props.fontFamily);
     set(tp, "style:font-family-complex", props.fontFamily);
     set(tp, "style:font-family-asian", props.fontFamily);
   }
+
   if (props.fontSizePt !== undefined) {
     for (const name of [
       "fo:font-size",
@@ -200,8 +220,10 @@ function applyText(style: Element, props: ComponentStyle): void {
       set(tp, name, pt(props.fontSizePt));
     }
   }
+
   if (props.bold !== undefined) {
     const weight = props.bold ? "bold" : "normal";
+
     for (const name of [
       "fo:font-weight",
       "style:font-weight-complex",
@@ -210,8 +232,10 @@ function applyText(style: Element, props: ComponentStyle): void {
       set(tp, name, weight);
     }
   }
+
   if (props.italic !== undefined) {
     const italic = props.italic ? "italic" : "normal";
+
     for (const name of [
       "fo:font-style",
       "style:font-style-complex",
@@ -220,9 +244,12 @@ function applyText(style: Element, props: ComponentStyle): void {
       set(tp, name, italic);
     }
   }
+
   if (props.color) set(tp, "fo:color", props.color);
+
   if (props.underline !== undefined) {
     set(tp, "style:text-underline-style", props.underline ? "solid" : "none");
+
     if (props.underline) {
       set(tp, "style:text-underline-width", "auto");
       set(tp, "style:text-underline-color", "font-color");
@@ -232,10 +259,13 @@ function applyText(style: Element, props: ComponentStyle): void {
 
 function findStyle(doc: Document, name: string): Element | undefined {
   const all = doc.getElementsByTagNameNS(NS.style, "style");
+
   for (let i = 0; i < all.length; i++) {
     const style = all[i] as Element;
+
     if (style.getAttributeNS(NS.style, "name") === name) return style;
   }
+
   return undefined;
 }
 
@@ -244,13 +274,17 @@ function patchPage(doc: Document, design: StyleDesign): void {
   const layoutName = master?.getAttributeNS(NS.style, "page-layout-name");
   const layouts = doc.getElementsByTagNameNS(NS.style, "page-layout");
   let layout: Element | undefined;
+
   for (let i = 0; i < layouts.length; i++) {
     const candidate = layouts[i] as Element;
+
     if (candidate.getAttributeNS(NS.style, "name") === layoutName)
       layout = candidate;
   }
+
   const props =
     layout && childByName(layout, NS.style, "page-layout-properties");
+
   if (!layout || !props)
     throw new Error("ODT reference has no page layout to configure");
   const [width, height] = pageSizeMm(design.page);
@@ -264,9 +298,11 @@ function patchPage(doc: Document, design: StyleDesign): void {
   // Word measures the footer from the page edge; ODF puts it inside the bottom margin.
   const footerDistance = design.page.footerDistanceMm;
   const footerStyle = childByName(layout, NS.style, "footer-style");
+
   const footerProps =
     footerStyle &&
     childByName(footerStyle, NS.style, "header-footer-properties");
+
   if (
     footerDistance !== undefined &&
     footerProps &&
@@ -289,9 +325,11 @@ export function buildOdtReference(
   const warnings: string[] = [];
   const entries: Record<string, Uint8Array> = unzipSync(base);
   const stylesXml = entries["styles.xml"];
+
   if (!stylesXml) throw new Error("ODT reference is missing styles.xml");
   const doc = new DOMParser().parseFromString(strFromU8(stylesXml), "text/xml");
   const officeStyles = doc.getElementsByTagNameNS(NS.office, "styles")[0];
+
   if (!officeStyles)
     throw new Error("ODT reference has no office:styles section");
 
@@ -300,13 +338,16 @@ export function buildOdtReference(
     ComponentStyle,
   ][]) {
     const reason = UNSUPPORTED[name];
+
     if (reason) {
       if (explicit.has(name))
         warnings.push(`odt: components.${name} is not applied; ${reason}`);
       continue;
     }
+
     for (const target of STYLE_MAP[name] ?? []) {
       let style = findStyle(doc, target.name);
+
       if (!style && target.create) {
         style = doc.createElementNS(NS.style, "style:style");
         set(style, "style:name", target.name);
@@ -314,16 +355,20 @@ export function buildOdtReference(
         set(style, "style:parent-style-name", target.create);
         officeStyles.appendChild(style);
       }
+
       if (!style) {
         if (explicit.has(name)) {
           warnings.push(
             `odt: components.${name} skipped; style ${target.name} is missing from the reference`,
           );
         }
+
         continue;
       }
+
       if (target.family === "paragraph") applyParagraph(style, props);
       applyText(style, props);
+
       if (target.family === "text" && explicit.has(name)) {
         for (const key of TEXT_ONLY_IGNORED) {
           if (explicit.get(name)?.has(key)) {
@@ -335,13 +380,17 @@ export function buildOdtReference(
       }
     }
   }
+
   patchPage(doc, design);
   entries["styles.xml"] = strToU8(new XMLSerializer().serializeToString(doc));
   // ODF requires the mimetype entry first and stored uncompressed.
   const ordered: Record<string, [Uint8Array, { level: 0 | 6 }]> = {};
+
   if (entries.mimetype) ordered.mimetype = [entries.mimetype, { level: 0 }];
+
   for (const [path, data] of Object.entries(entries)) {
     if (path !== "mimetype") ordered[path] = [data, { level: 6 }];
   }
+
   return { bytes: zipSync(ordered), warnings };
 }

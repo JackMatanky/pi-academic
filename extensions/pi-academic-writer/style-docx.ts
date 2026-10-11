@@ -11,9 +11,13 @@ import {
 } from "./style-design.js";
 
 const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
 const R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
 const REL = "http://schemas.openxmlformats.org/package/2006/relationships";
+
 const CT = "http://schemas.openxmlformats.org/package/2006/content-types";
+
 const FOOTER_REL_ID = "rIdAwFooter1";
 
 // Word rejects out-of-order children, so every insertion follows these sequences.
@@ -41,6 +45,7 @@ const STYLE_ORDER = [
   "tcPr",
   "tblStylePr",
 ] as const;
+
 const PPR_ORDER = [
   "pStyle",
   "keepNext",
@@ -79,6 +84,7 @@ const PPR_ORDER = [
   "sectPr",
   "pPrChange",
 ] as const;
+
 const RPR_ORDER = [
   "rStyle",
   "rFonts",
@@ -120,6 +126,7 @@ const RPR_ORDER = [
   "specVanish",
   "oMath",
 ] as const;
+
 const TBLPR_ORDER = [
   "tblStyle",
   "tblpPr",
@@ -137,7 +144,9 @@ const TBLPR_ORDER = [
   "tblCellMar",
   "tblLook",
 ] as const;
+
 const TBLSTYLEPR_ORDER = ["pPr", "rPr", "tblPr", "trPr", "tcPr"] as const;
+
 const TCPR_ORDER = [
   "cnfStyle",
   "tcW",
@@ -235,29 +244,38 @@ const PARAGRAPH_ONLY: (keyof ComponentStyle)[] = [
 ];
 
 const twipsMm = (mm: number) => String(Math.round((mm * 1440) / 25.4));
+
 const twipsPt = (pt: number) => String(Math.round(pt * 20));
+
 const hex = (color: string) => color.slice(1).toUpperCase();
 
 function elementChildren(parent: Element): Element[] {
   const out: Element[] = [];
+
   for (let node = parent.firstChild; node; node = node.nextSibling) {
     if (node.nodeType === 1) out.push(node as Element);
   }
+
   return out;
 }
 
 /** Return the child with this name, creating it at the schema-correct position. */
 function ensure(parent: Element, local: string, order: Order): Element {
   const existing = elementChildren(parent).find((el) => el.localName === local);
+
   if (existing) return existing;
   const doc = ownerOf(parent);
   const created = doc.createElementNS(W, `w:${local}`);
   const rank = order.indexOf(local);
+
   const next = elementChildren(parent).find((el) => {
     const other = order.indexOf(el.localName ?? "");
+
     return other > rank;
   });
+
   parent.insertBefore(created, next ?? null);
+
   return created;
 }
 
@@ -270,6 +288,7 @@ function attrs(el: Element, values: Record<string, string>): Element {
   for (const [name, value] of Object.entries(values)) {
     el.setAttributeNS(W, `w:${name}`, value);
   }
+
   return el;
 }
 
@@ -280,6 +299,7 @@ function toggle(rPr: Element, local: string, on: boolean): void {
 function applyRun(rPr: Element, props: ComponentStyle): void {
   if (props.fontFamily) {
     const fonts = ensure(rPr, "rFonts", RPR_ORDER);
+
     // Theme attributes take precedence over explicit names in Word.
     for (const theme of [
       "asciiTheme",
@@ -289,6 +309,7 @@ function applyRun(rPr: Element, props: ComponentStyle): void {
     ]) {
       drop(fonts, theme);
     }
+
     attrs(fonts, {
       ascii: props.fontFamily,
       hAnsi: props.fontFamily,
@@ -296,26 +317,33 @@ function applyRun(rPr: Element, props: ComponentStyle): void {
       eastAsia: props.fontFamily,
     });
   }
+
   if (props.bold !== undefined) {
     toggle(rPr, "b", props.bold);
     toggle(rPr, "bCs", props.bold);
   }
+
   if (props.italic !== undefined) {
     toggle(rPr, "i", props.italic);
     toggle(rPr, "iCs", props.italic);
   }
+
   if (props.color) {
     const color = ensure(rPr, "color", RPR_ORDER);
+
     for (const theme of ["themeColor", "themeShade", "themeTint"]) {
       drop(color, theme);
     }
+
     attrs(color, { val: hex(props.color) });
   }
+
   if (props.fontSizePt !== undefined) {
     const half = String(Math.round(props.fontSizePt * 2));
     attrs(ensure(rPr, "sz", RPR_ORDER), { val: half });
     attrs(ensure(rPr, "szCs", RPR_ORDER), { val: half });
   }
+
   if (props.underline !== undefined) {
     attrs(ensure(rPr, "u", RPR_ORDER), {
       val: props.underline ? "single" : "none",
@@ -345,13 +373,16 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
       val: props.keepWithNext ? "1" : "0",
     });
   }
+
   if (props.pageBreakBefore !== undefined) {
     attrs(ensure(pPr, "pageBreakBefore", PPR_ORDER), {
       val: props.pageBreakBefore ? "1" : "0",
     });
   }
+
   if (props.borderWidthPt !== undefined || props.borderColor) {
     const borders = ensure(pPr, "pBdr", PPR_ORDER);
+
     while (borders.firstChild) borders.removeChild(borders.firstChild);
     box(borders, props.borderWidthPt ?? 0.5, props.borderColor ?? "", [
       "top",
@@ -360,6 +391,7 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
       "right",
     ]);
   }
+
   if (props.shading) {
     attrs(ensure(pPr, "shd", PPR_ORDER), {
       val: "clear",
@@ -367,20 +399,24 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
       fill: hex(props.shading),
     });
   }
+
   if (
     props.spaceBeforePt !== undefined ||
     props.spaceAfterPt !== undefined ||
     props.lineSpacing !== undefined
   ) {
     const spacing = ensure(pPr, "spacing", PPR_ORDER);
+
     if (props.spaceBeforePt !== undefined) {
       attrs(spacing, { before: twipsPt(props.spaceBeforePt) });
       drop(spacing, "beforeAutospacing");
     }
+
     if (props.spaceAfterPt !== undefined) {
       attrs(spacing, { after: twipsPt(props.spaceAfterPt) });
       drop(spacing, "afterAutospacing");
     }
+
     if (props.lineSpacing !== undefined) {
       attrs(spacing, {
         line: String(Math.round(props.lineSpacing * 240)),
@@ -388,6 +424,7 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
       });
     }
   }
+
   if (
     props.indentLeftMm !== undefined ||
     props.indentRightMm !== undefined ||
@@ -395,10 +432,13 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
     props.hangingIndentMm !== undefined
   ) {
     const ind = ensure(pPr, "ind", PPR_ORDER);
+
     if (props.indentLeftMm !== undefined)
       attrs(ind, { left: twipsMm(props.indentLeftMm) });
+
     if (props.indentRightMm !== undefined)
       attrs(ind, { right: twipsMm(props.indentRightMm) });
+
     if (props.firstLineIndentMm !== undefined) {
       drop(ind, "hanging");
       attrs(ind, { firstLine: twipsMm(props.firstLineIndentMm) });
@@ -407,6 +447,7 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
       attrs(ind, { hanging: twipsMm(props.hangingIndentMm) });
     }
   }
+
   if (props.alignment) {
     const jc = {
       left: "left",
@@ -414,6 +455,7 @@ function applyParagraph(pPr: Element, props: ComponentStyle): void {
       center: "center",
       justify: "both",
     }[props.alignment];
+
     attrs(ensure(pPr, "jc", PPR_ORDER), { val: jc });
   }
 }
@@ -426,10 +468,12 @@ function findStyle(root: Element, id: string): Element | undefined {
 
 function createStyle(root: Element, target: StyleTarget): Element {
   const doc = ownerOf(root);
+
   const style = attrs(doc.createElementNS(W, "w:style"), {
     type: target.type,
     styleId: target.id,
   });
+
   attrs(append(style, doc.createElementNS(W, "w:name")), {
     val: target.create?.name ?? target.id,
   });
@@ -437,6 +481,7 @@ function createStyle(root: Element, target: StyleTarget): Element {
     val: target.create?.basedOn ?? "Normal",
   });
   root.appendChild(style);
+
   return style;
 }
 
@@ -448,6 +493,7 @@ function applyStyle(
   if (target.type === "paragraph") {
     applyParagraph(ensure(style, "pPr", STYLE_ORDER), props);
   }
+
   applyRun(ensure(style, "rPr", STYLE_ORDER), props);
 }
 
@@ -455,14 +501,19 @@ function applyTable(root: Element, design: StyleDesign) {
   const table = design.components.table;
   const header = design.components.tableHeader;
   const style = findStyle(root, "Table");
+
   if (!style) return;
+
   if (table) {
     applyParagraph(ensure(style, "pPr", STYLE_ORDER), table);
     applyRun(ensure(style, "rPr", STYLE_ORDER), table);
     const tblPr = ensure(style, "tblPr", STYLE_ORDER);
+
     if (table.cellPaddingMm !== undefined) {
       const margins = ensure(tblPr, "tblCellMar", TBLPR_ORDER);
+
       while (margins.firstChild) margins.removeChild(margins.firstChild);
+
       for (const side of ["top", "left", "bottom", "right"]) {
         attrs(append(margins, ownerOf(root).createElementNS(W, `w:${side}`)), {
           w: twipsMm(table.cellPaddingMm),
@@ -470,8 +521,10 @@ function applyTable(root: Element, design: StyleDesign) {
         });
       }
     }
+
     if (table.borderWidthPt !== undefined || table.borderColor) {
       const borders = ensure(tblPr, "tblBorders", TBLPR_ORDER);
+
       while (borders.firstChild) borders.removeChild(borders.firstChild);
       box(borders, table.borderWidthPt ?? 0.5, table.borderColor ?? "", [
         "top",
@@ -482,6 +535,7 @@ function applyTable(root: Element, design: StyleDesign) {
         "insideV",
       ]);
     }
+
     if (table.shading) {
       attrs(ensure(tblPr, "shd", TBLPR_ORDER), {
         val: "clear",
@@ -490,20 +544,24 @@ function applyTable(root: Element, design: StyleDesign) {
       });
     }
   }
+
   if (header) {
     let first = elementChildren(style).find(
       (el) =>
         el.localName === "tblStylePr" &&
         el.getAttributeNS(W, "type") === "firstRow",
     );
+
     if (!first) {
       first = attrs(ownerOf(root).createElementNS(W, "w:tblStylePr"), {
         type: "firstRow",
       });
       style.appendChild(first);
     }
+
     applyParagraph(ensure(first, "pPr", TBLSTYLEPR_ORDER), header);
     applyRun(ensure(first, "rPr", TBLSTYLEPR_ORDER), header);
+
     if (header.shading) {
       const tcPr = ensure(first, "tcPr", TBLSTYLEPR_ORDER);
       attrs(ensure(tcPr, "shd", TCPR_ORDER), {
@@ -517,26 +575,33 @@ function applyTable(root: Element, design: StyleDesign) {
 
 function patchSection(doc: Document, design: StyleDesign): void {
   const body = doc.getElementsByTagNameNS(W, "body")[0];
+
   if (!body) throw new Error("DOCX reference has no document body");
   let sect = elementChildren(body).find((el) => el.localName === "sectPr");
+
   if (!sect) {
     sect = doc.createElementNS(W, "w:sectPr");
     body.appendChild(sect);
   }
+
   const keep = elementChildren(sect).filter(
     (el) => el.localName === "footnotePr" || el.localName === "endnotePr",
   );
+
   while (sect.firstChild) sect.removeChild(sect.firstChild);
   const footer = doc.createElementNS(W, "w:footerReference");
   footer.setAttributeNS(W, "w:type", "default");
   footer.setAttributeNS(R, "r:id", FOOTER_REL_ID);
   sect.appendChild(footer);
+
   for (const el of keep) sect.appendChild(el);
   const [width, height] = pageSizeMm(design.page);
+
   const size = attrs(append(sect, doc.createElementNS(W, "w:pgSz")), {
     w: twipsMm(width),
     h: twipsMm(height),
   });
+
   if (design.page.orientation === "landscape")
     attrs(size, { orient: "landscape" });
   const m = design.page.marginsMm;
@@ -554,6 +619,7 @@ function patchSection(doc: Document, design: StyleDesign): void {
 function footerXml(): string {
   const run = (inner: string) =>
     `<w:r><w:rPr><w:rStyle w:val="PageNumber"/></w:rPr>${inner}</w:r>`;
+
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<w:ftr xmlns:w="${W}" xmlns:r="${R}"><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>` +
@@ -568,7 +634,9 @@ function footerXml(): string {
 
 function parse(entries: Record<string, Uint8Array>, path: string): Document {
   const data = entries[path];
+
   if (!data) throw new Error(`DOCX reference is missing ${path}`);
+
   return new DOMParser().parseFromString(strFromU8(data), "text/xml");
 }
 
@@ -612,6 +680,7 @@ export function buildDocxReference(
 ): BuiltReference {
   const warnings: string[] = [];
   const entries: Record<string, Uint8Array> = unzipSync(base);
+
   for (const required of [
     "word/footnotes.xml",
     "word/styles.xml",
@@ -623,31 +692,39 @@ export function buildDocxReference(
       );
     }
   }
+
   const stylesDoc = parse(entries, "word/styles.xml");
   const root = rootOf(stylesDoc);
+
   for (const [name, props] of Object.entries(design.components) as [
     ComponentName,
     ComponentStyle,
   ][]) {
     const reason = UNSUPPORTED[name];
+
     if (reason) {
       if (explicit.has(name))
         warnings.push(`docx: components.${name} is not applied; ${reason}`);
       continue;
     }
+
     for (const target of STYLE_MAP[name] ?? []) {
       const style =
         findStyle(root, target.id) ??
         (target.create ? createStyle(root, target) : undefined);
+
       if (!style) {
         if (explicit.has(name)) {
           warnings.push(
             `docx: components.${name} skipped; style ${target.id} is missing from the reference`,
           );
         }
+
         continue;
       }
+
       applyStyle(style, target, props);
+
       if (target.type === "character" && explicit.has(name)) {
         for (const key of PARAGRAPH_ONLY) {
           if (explicit.get(name)?.has(key)) {
@@ -659,7 +736,9 @@ export function buildDocxReference(
       }
     }
   }
+
   applyTable(root, design);
+
   // The footer needs a page-number run style and a footer style even when unconfigured.
   for (const id of ["Footer", "PageNumber"]) {
     if (!findStyle(root, id)) {
@@ -673,15 +752,19 @@ export function buildDocxReference(
       });
     }
   }
+
   const footer = findStyle(root, "Footer");
+
   if (footer && !design.components.footer?.alignment) {
     applyParagraph(ensure(footer, "pPr", STYLE_ORDER), { alignment: "center" });
   }
+
   entries["word/styles.xml"] = serialize(stylesDoc);
 
   const docDoc = parse(entries, "word/document.xml");
   patchSection(docDoc, design);
   entries["word/document.xml"] = serialize(docDoc);
   addPart(entries);
+
   return { bytes: zipSync(entries), warnings };
 }

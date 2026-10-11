@@ -1,27 +1,13 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-/**
- * Project-relative directory containing persisted run-state JSON files.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+/** Project-relative directory containing persisted run-state JSON files. */
 const RUNS_RELATIVE_DIR = ".academic-writer/runs";
-/**
- * Run statuses considered active in dashboards and status tools.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** Run statuses considered active in dashboards and status tools. */
 const ACTIVE_STATUSES = new Set(["planned", "running", "blocked"]);
 
-/**
- * Project run metadata stored in `.academic-writer/runs/<run-id>.json`.
- *
- * @remarks
- * Defines the serializable shape shared between extension tools, tests, and prompts.
- */
+/** Project run metadata stored in `.academic-writer/runs/<run-id>.json`. */
 export interface RunInfo {
   runId: string;
   status: string;
@@ -30,12 +16,7 @@ export interface RunInfo {
   path: string;
 }
 
-/**
- * Sorted run-state summary for dashboards and status tools.
- *
- * @remarks
- * Defines the serializable shape shared between extension tools, tests, and prompts.
- */
+/** Sorted run-state summary for dashboards and status tools. */
 export interface RunSummary {
   dir: string;
   active: RunInfo[];
@@ -45,10 +26,7 @@ export interface RunSummary {
 /**
  * Reads JSON without letting malformed run files break session startup.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param path - File path to read, write, or resolve.
- * @returns The typed result described by this helper contract.
  */
 function readJson(path: string): unknown | null {
   try {
@@ -61,12 +39,7 @@ function readJson(path: string): unknown | null {
 /**
  * Converts one run-state JSON file into a typed summary row.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param path - File path to read, write, or resolve.
- * @param relativePath - Value supplied by the caller.
- * @param fallbackRunId - Value supplied by the caller.
- * @returns The typed result described by this helper contract.
  */
 function readRun(
   path: string,
@@ -74,8 +47,10 @@ function readRun(
   fallbackRunId: string,
 ): RunInfo & { mtimeMs: number } {
   const data = readJson(path);
+
   const isRun =
     data !== null && typeof data === "object" && !Array.isArray(data);
+
   return {
     runId:
       isRun && "runId" in data && typeof data.runId === "string"
@@ -101,13 +76,11 @@ function readRun(
 /**
  * Summarizes active and latest Academic Writer runs for a project.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param projectDir - Absolute project directory used for project-local state.
- * @returns The typed result described by this helper contract.
  */
 export function summarizeRuns(projectDir: string): RunSummary {
   const runsDir = join(projectDir, RUNS_RELATIVE_DIR);
+
   if (!existsSync(runsDir))
     return { dir: RUNS_RELATIVE_DIR, active: [], last: null };
 
@@ -124,6 +97,7 @@ export function summarizeRuns(projectDir: string): RunSummary {
       .sort((a, b) => b.mtimeMs - a.mtimeMs);
 
     const compact: RunInfo[] = runs.map(({ mtimeMs: _mtimeMs, ...run }) => run);
+
     return {
       dir: RUNS_RELATIVE_DIR,
       active: compact.filter((run) => ACTIVE_STATUSES.has(run.status)),

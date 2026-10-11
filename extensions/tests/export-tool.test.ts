@@ -17,12 +17,16 @@ import { test, type TestContext } from "node:test";
 import { strFromU8, unzipSync } from "fflate";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import piAcademicWriter from "../pi-academic-writer/index.js";
+import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
 
 type Params = Record<string, unknown>;
+
 interface ToolResult {
   content: { text: string }[];
   details: Record<string, unknown>;
+  isError?: boolean;
 }
+
 interface Tool {
   execute(
     id: string,
@@ -36,9 +40,11 @@ interface Tool {
 const realPandoc = spawnSync("which", ["pandoc"], {
   encoding: "utf8",
 }).stdout.trim();
+
 const needsPandoc = { skip: realPandoc ? false : "pandoc is not installed" };
 
 const tools = new Map<string, Tool>();
+
 // Only registerTool is exercised by these tools.
 piAcademicWriter({
   registerTool: (tool: Tool & { name: string }) => tools.set(tool.name, tool),
@@ -47,6 +53,7 @@ piAcademicWriter({
 function tool(name: string): Tool {
   const found = tools.get(name);
   assert.ok(found, `${name} is not registered`);
+
   return found;
 }
 
@@ -89,10 +96,12 @@ function harness(
   mkdirSync(bin);
   writeFileSync(join(bin, "pandoc"), STUB);
   chmodSync(join(bin, "pandoc"), 0o755);
+
   for (const engine of options.engines ?? []) {
     writeFileSync(join(bin, engine), "#!/bin/sh\n");
     chmodSync(join(bin, engine), 0o755);
   }
+
   const log = join(root, "pandoc.log");
   const saved = { ...process.env };
   Object.assign(process.env, {
@@ -113,6 +122,7 @@ function harness(
       if (saved[key] === undefined) delete process.env[key];
       else process.env[key] = saved[key];
     }
+
     rmSync(root, { recursive: true, force: true });
   });
   mkdirSync(join(root, "articles"));
@@ -120,10 +130,27 @@ function harness(
     join(root, "articles", "essay.md"),
     "Plain text with no citations.\n",
   );
+
   return {
     root,
-    run: (name, params) =>
-      tool(name).execute("t", params, undefined, undefined, { cwd: root }),
+    run: async (name, params) => {
+      try {
+        return {
+          ...(await tool(name).execute("t", params, undefined, undefined, {
+            cwd: root,
+          })),
+          isError: false,
+        };
+      } catch (error) {
+        if (!(error instanceof ToolFailure)) throw error;
+
+        return {
+          content: [{ text: error.text }],
+          details: error.details,
+          isError: true,
+        };
+      }
+    },
     invocations: () =>
       existsSync(log)
         ? readFileSync(log, "utf8")
@@ -146,6 +173,7 @@ function writePackage(
     join(dir, "design.json"),
     JSON.stringify({ schemaVersion: 1, name, ...design }),
   );
+
   for (const [file, content] of Object.entries(files))
     writeFileSync(join(dir, file), content);
 }
@@ -177,19 +205,23 @@ interface Entry {
     warnings: string[];
   };
 }
+
 const entries = (result: ToolResult): Entry[] =>
   result.details.results as Entry[];
 
 test("without a style package no style flags are passed and the pdf engine is detected", async (t) => {
   const both = harness(t, { engines: ["xelatex", "tectonic"] });
+
   const result = await both.run(
     "academic_writer_export_article",
     exportParams(["docx", "odt", "latex", "pdf"]),
   );
+
   assert.equal(result.details.ok, true);
   assert.equal(result.details.stylePackage, null);
   const calls = both.invocations();
   assert.equal(calls.length, 4);
+
   for (const call of calls) {
     assert.ok(
       !call.some(
@@ -200,19 +232,19 @@ test("without a style package no style flags are passed and the pdf engine is de
       ),
     );
   }
+
   assert.ok(
     calls[3]?.includes("--pdf-engine=xelatex"),
     "xelatex is preferred when installed",
   );
   assert.deepEqual(
-    calls.map((call) => call[call.indexOf("-o") + 1]),
-    [
-      "articles/essay.docx",
-      "articles/essay.odt",
-      "articles/essay.tex",
-      "articles/essay.pdf",
-    ],
+    calls.map((call) => (call[call.indexOf("-o") + 1] ?? "").split(".").pop()),
+    ["docx", "odt", "tex", "pdf"],
   );
+
+  for (const name of ["docx", "odt", "tex", "pdf"]) {
+    assert.ok(existsSync(join(both.root, "articles", `essay.${name}`)), name);
+  }
 });
 
 test("pdf engine precedence: explicit argument, then package engine, then detection", async (t) => {
@@ -221,14 +253,18 @@ test("pdf engine precedence: explicit argument, then package engine, then detect
     formats: { pdf: { engine: "xelatex" } },
   });
   writePackage(h.root, "no-engine", {});
+
   const engineOf = async (extra: Params) => {
     const result = await h.run(
       "academic_writer_export_article",
       exportParams(["pdf"], extra),
     );
-    assert.equal(result.details.ok, true, result.content[0]?.text);
+
+    assert.equal(result.details.ok, true, result.content[0]?.text ?? "");
+
     return entries(result)[0]?.engine;
   };
+
   assert.equal(
     await engineOf({}),
     "tectonic",
@@ -249,10 +285,12 @@ test("pdf engine precedence: explicit argument, then package engine, then detect
   assert.ok(calls[2]?.includes("--pdf-engine=xelatex"));
   assert.ok(calls[3]?.includes("--pdf-engine=tectonic"));
   const none = harness(t);
+
   const result = await none.run(
     "academic_writer_export_article",
     exportParams(["pdf"]),
   );
+
   assert.equal(entries(result)[0]?.engine, undefined);
   assert.ok(
     !none.invocations()[0]?.some((arg) => arg.startsWith("--pdf-engine")),
@@ -268,19 +306,23 @@ test(
     writePackage(h.root, "from-profile", {});
     writePackage(h.root, "from-call", {});
     setProfileStylePackage(h.root, "from-profile");
+
     const profile = await h.run(
       "academic_writer_export_article",
       exportParams(["docx", "odt", "latex", "pdf"]),
     );
+
     assert.equal(profile.details.stylePackage, "from-profile");
     assert.deepEqual(
       entries(profile).map((e) => e.style?.package),
       Array(4).fill("from-profile"),
     );
+
     const call = await h.run(
       "academic_writer_export_article",
       exportParams(["docx"], { stylePackage: "from-call" }),
     );
+
     assert.equal(call.details.stylePackage, "from-call");
     assert.equal(entries(call)[0]?.style?.package, "from-call");
 
@@ -307,10 +349,12 @@ test(
     writePackage(h.root, "odt-broken", {
       formats: { odt: { referenceDocument: "missing.odt" } },
     });
+
     const invalid = await h.run(
       "academic_writer_export_article",
       exportParams(["docx", "odt", "latex"], { stylePackage: "odt-broken" }),
     );
+
     assert.equal(invalid.details.ok, false);
     const [docx, odt, latex] = entries(invalid);
     assert.equal(docx?.ok, true);
@@ -320,17 +364,19 @@ test(
     assert.equal(h.invocations().length, 2, "odt never reached Pandoc");
 
     const failing = harness(t, { failExt: ".odt" });
+
     const result = await failing.run(
       "academic_writer_export_article",
       exportParams(["docx", "odt", "latex"]),
     );
+
     assert.deepEqual(
       entries(result).map((e) => e.ok),
       [true, false, true],
     );
     assert.match(
       entries(result)[1]?.error ?? "",
-      /stub failure for articles\/essay\.odt/,
+      /stub failure for .*export\.odt/,
     );
     assert.match(result.content[0]?.text ?? "", /odt: failed/);
   },
@@ -342,10 +388,12 @@ test("a failed citation audit stops the export before Pandoc runs", async (t) =>
     join(h.root, "articles", "essay.md"),
     "Literal mode with a pandoc marker [@key].\n",
   );
+
   const result = await h.run(
     "academic_writer_export_article",
     exportParams(["docx"]),
   );
+
   assert.equal(result.details.ok, false);
   assert.match(result.content[0]?.text ?? "", /citation audit failed/);
   assert.equal(h.invocations().length, 0);
@@ -373,10 +421,12 @@ test(
 
 test("unsupported formats are rejected up front", async (t) => {
   const h = harness(t);
+
   const result = await h.run(
     "academic_writer_export_article",
     exportParams(["html", "epub"]),
   );
+
   assert.equal(result.details.ok, false);
   assert.deepEqual(result.details.supported, ["docx", "odt", "latex", "pdf"]);
   assert.equal(h.invocations().length, 0);
@@ -409,17 +459,20 @@ test(
         ],
       }),
     );
+
     const heading = (docx: string) =>
       strFromU8(
         unzipSync(new Uint8Array(readFileSync(join(h.root, docx))))[
           "word/styles.xml"
         ] ?? new Uint8Array(),
       ).match(/w:styleId="Heading1"[\s\S]*?<\/w:style>/)?.[0] ?? "";
+
     const profile = await h.run("academic_writer_generate_docx", {
       input: "a.json",
       output: "p.docx",
     });
-    assert.equal(profile.details.ok, true, profile.content[0]?.text);
+
+    assert.equal(profile.details.ok, true, profile.content[0]?.text ?? "");
     assert.equal(profile.details.footnotes, 1);
     assert.match(heading("p.docx"), /Georgia/);
     await h.run("academic_writer_generate_docx", {
@@ -428,11 +481,13 @@ test(
       stylePackage: "sans",
     });
     assert.match(heading("c.docx"), /Helvetica/);
+
     const bad = await h.run("academic_writer_generate_docx", {
       input: "a.json",
       output: "x.docx",
       stylePackage: "absent",
     });
+
     assert.equal(bad.details.ok, false);
     assert.match(
       bad.content[0]?.text ?? "",
@@ -447,8 +502,10 @@ test(
   needsPandoc,
   async (t) => {
     const h = harness(t, { passthrough: true });
+
     const call = (params: Params) =>
       h.run("academic_writer_style_package", params);
+
     assert.deepEqual((await call({ action: "list" })).details.packages, []);
     const installed = await call({ action: "install-starter" });
     assert.equal(installed.details.ok, true);
@@ -470,10 +527,12 @@ test(
 
 test("fix_typography replaces em dashes and leaves ordinary hyphens alone", async (t) => {
   const h = harness(t);
+
   const result = await h.run("academic_writer_fix_typography", {
     text: 'well-known \u2014 "ציטוט"',
   });
-  assert.equal(result.content[0]?.text, "well-known  -  \u05f4ציטוט\u05f4");
+
+  assert.equal(result.content[0]?.text, "well-known - \u05f4ציטוט\u05f4");
 });
 
 test(
@@ -483,11 +542,13 @@ test(
     const h = harness(t, { passthrough: true });
     await h.run("academic_writer_style_package", { action: "install-starter" });
     setProfileStylePackage(h.root, "academic-default");
+
     const result = await h.run(
       "academic_writer_export_article",
       exportParams(["docx", "odt", "latex"]),
     );
-    assert.equal(result.details.ok, true, result.content[0]?.text);
+
+    assert.equal(result.details.ok, true, result.content[0]?.text ?? "");
     assert.deepEqual(
       entries(result).map((e) => e.style?.warnings),
       [[], [], []],
@@ -509,6 +570,7 @@ test(
   },
   async (t) => {
     const h = harness(t, { passthrough: true });
+
     // The harness narrows PATH; keep the real engine reachable.
     const real = spawnSync(
       "sh",
@@ -521,6 +583,7 @@ test(
         },
       },
     ).stdout.trim();
+
     const engineDir = join(h.root, ".engine");
     mkdirSync(engineDir);
     writeFileSync(
@@ -561,19 +624,96 @@ test(
         "",
       ].join("\n"),
     );
+
     const result = await h.run(
       "academic_writer_export_article",
       exportParams(["pdf"]),
     );
-    assert.equal(result.details.ok, true, result.content[0]?.text);
+
+    assert.equal(result.details.ok, true, result.content[0]?.text ?? "");
     const pdf = readFileSync(join(h.root, "articles", "essay.pdf"));
     assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
   },
 );
 
-test("package tools never write outside the project", async (t) => {
+test("exporting without a style package creates no styles directory", async (t) => {
   const h = harness(t);
   rmSync(join(h.root, ".academic-writer"), { recursive: true, force: true });
   await h.run("academic_writer_export_article", exportParams(["docx"]));
   assert.ok(!existsSync(join(h.root, ".academic-writer", "styles")));
+});
+
+test("every path-taking tool rejects paths outside the project", async (t) => {
+  const h = harness(t);
+  const outside = join(h.root, "..", `outside-${process.pid}`);
+  t.after(() => rmSync(outside, { recursive: true, force: true }));
+
+  const attempts: Array<[string, Params]> = [
+    [
+      "academic_writer_assemble_docx_json",
+      { input: "articles/essay.md", output: join(outside, "a.json") },
+    ],
+    [
+      "academic_writer_generate_docx",
+      { input: "articles/essay.md", output: join(outside, "a.docx") },
+    ],
+    ["academic_writer_extract_document", { path: join(outside, "a.md") }],
+    ["academic_writer_snapshot_citations", { article: `../${outside}/a.md` }],
+    ["academic_writer_migrate_article_outline", { article: "../x.md" }],
+    [
+      "academic_writer_export_article",
+      { ...exportParams(["docx"]), article: "../essay.md" },
+    ],
+  ];
+
+  for (const [name, params] of attempts) {
+    const result = await h.run(name, params);
+    assert.equal(result.isError, true, name);
+  }
+
+  assert.equal(existsSync(outside), false);
+});
+
+test("a failed export keeps the previous output and remote references are refused", async (t) => {
+  const h = harness(t, { failExt: ".odt" });
+  const previous = join(h.root, "articles", "essay.odt");
+  writeFileSync(previous, "previous export");
+
+  const failed = await h.run(
+    "academic_writer_export_article",
+    exportParams(["odt"]),
+  );
+
+  assert.equal(failed.isError, true);
+  assert.equal(readFileSync(previous, "utf8"), "previous export");
+
+  const remote = await h.run(
+    "academic_writer_export_article",
+    exportParams(["docx"], { csl: "https://example.test/style.csl" }),
+  );
+
+  assert.equal(remote.isError, true);
+  assert.match(remote.content[0]?.text ?? "", /local file/);
+  assert.equal(h.invocations().length, 1, "only the first export ran Pandoc");
+});
+
+test("articles outside the project and unsupported formats never reach Pandoc", async (t) => {
+  const h = harness(t);
+
+  const outside = await h.run("academic_writer_export_article", {
+    article: "../essay.md",
+    citationStyle: "inline-parenthetical",
+    formats: ["docx"],
+  });
+
+  assert.equal(outside.isError, true);
+
+  const mixed = await h.run(
+    "academic_writer_export_article",
+    exportParams(["docx", "html"]),
+  );
+
+  assert.equal(mixed.isError, true);
+  assert.match(mixed.content[0]?.text ?? "", /unsupported format\(s\): html/);
+  assert.equal(h.invocations().length, 0);
 });

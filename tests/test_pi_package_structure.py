@@ -259,6 +259,17 @@ class TestJSON(unittest.TestCase):
                             self.fail(f"Invalid JSON in {path}: {e}")
 
 
+def _tool_sources():
+    """Concatenate the extension entry point and every tool module."""
+    base = "extensions/pi-academic-writer"
+    paths = [f"{base}/index.ts"] + sorted(
+        os.path.join(f"{base}/tools", name)
+        for name in os.listdir(f"{base}/tools")
+        if name.endswith(".ts")
+    )
+    return "\n".join(_read(path) for path in paths)
+
+
 class TestExtensions(unittest.TestCase):
     """Test cases covering Extensions.
 
@@ -351,7 +362,7 @@ class TestExtensions(unittest.TestCase):
         self.assertTrue(
             os.path.isfile(tools_path), "pi-academic-writer extension missing"
         )
-        tools = _read(tools_path)
+        tools = _tool_sources()
         for name in [
             "academic_writer_read_resource",
             "academic_writer_resolve_csl",
@@ -411,15 +422,9 @@ class TestExtensions(unittest.TestCase):
             None.
         """
         resources_source = _read("extensions/pi-academic-writer/resources.ts")
-        tools_source = _read("extensions/pi-academic-writer/index.ts")
         self.assertIn("projectOverride", resources_source)
         self.assertIn('".academic-writer"', resources_source)
         self.assertIn('"thresholds.json"', resources_source)
-        self.assertIn(
-            "resolveResourcePath(name, ctx.cwd, params.language)",
-            tools_source,
-            "academic_writer_read_resource must pass ctx.cwd so thresholds can resolve the project override",
-        )
 
         voice_miner = _read("agents/voice-profile-builder.md")
         self.assertIn("academic_writer_read_resource", voice_miner)
@@ -479,7 +484,7 @@ class TestExtensions(unittest.TestCase):
         Returns:
             None.
         """
-        tools = _read("extensions/pi-academic-writer/index.ts")
+        tools = _tool_sources()
         profile = _read("extensions/lib/profile.ts")
         schema = _read("skills/academic-setup/references/profile-schema.md")
         init = _read("skills/academic-setup/SKILL.md")

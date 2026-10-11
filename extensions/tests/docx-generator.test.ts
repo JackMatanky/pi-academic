@@ -22,17 +22,20 @@ import {
 } from "../pi-academic-writer/docx-generator.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
+
 const needsPandoc = { skip: hasPandoc ? false : "pandoc is not installed" };
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "docx-generator-")));
   t.after(() => rmSync(root, { recursive: true, force: true }));
+
   return root;
 }
 
 function part(path: string, entry: string): string {
   const data = unzipSync(new Uint8Array(readFileSync(path)))[entry];
   assert.ok(data, `${entry} missing`);
+
   return strFromU8(data);
 }
 
@@ -55,6 +58,7 @@ async function build(
   const root = project(t);
   writeFileSync(join(root, "a.json"), JSON.stringify(article));
   await generateDocx("a.json", "a.docx", root, { referenceDoc });
+
   return { root, out: join(root, "a.docx") };
 }
 
@@ -80,6 +84,7 @@ test("footnotes follow the cursor: first match at or after the previous one, mis
     },
     false,
   );
+
   assert.equal(footnotes, 2);
   assert.equal(
     markdown,
@@ -98,20 +103,26 @@ test("user text is made literal for Pandoc markdown", () => {
 test("Hebrew typography cleanup applies to RTL text only and keeps hyphens", () => {
   assert.equal(
     cleanRtlText('a \u2014 b "ציטוט" well-known'),
-    "a  -  b \u05f4ציטוט\u05f4 well-known",
+    "a - b \u05f4ציטוט\u05f4 well-known",
   );
+  assert.equal(cleanRtlText("a\u2014b"), "a - b");
+  assert.equal(cleanRtlText('say "hi" ok'), 'say "hi" ok');
+  assert.equal(cleanRtlText(".NET is a framework"), ".NET is a framework");
   assert.equal(cleanRtlText(", orphan"), "orphan");
   assert.equal(cleanRtlText(", marker", false), ", marker");
   assert.equal(cleanRtlText("x\u200f\u200e\u200fy"), "xy");
+
   const rtl = articleMarkdown(
-    { sections: [{ paragraphs: ['say "hi" \u2014 ok'] }] },
+    { sections: [{ paragraphs: ['say "שלום" \u2014 ok'] }] },
     true,
   ).markdown;
+
   const ltr = articleMarkdown(
     { sections: [{ paragraphs: ['say "hi" \u2014 ok'] }] },
     false,
   ).markdown;
-  assert.match(rtl, /\u05f4hi\u05f4/);
+
+  assert.match(rtl, /\u05f4שלום\u05f4/);
   assert.match(ltr, /\\"hi\\"/);
 });
 
@@ -139,6 +150,7 @@ test("article format values become the style design", () => {
     lineSpacing: 1,
     isRtl: false,
   });
+
   assert.equal(design.components.body?.fontFamily, "Arial");
   assert.equal(design.components.body?.fontSizePt, 10);
   assert.equal(design.components.heading1?.alignment, "left");
@@ -151,6 +163,7 @@ test(
   needsPandoc,
   async (t) => {
     const literal = "*not italic* _x_ [not a link](http://x.org) 1. not a list";
+
     const { out } = await build(t, {
       title: "Title *with* markup",
       thesis: "A subtitle",
@@ -167,6 +180,7 @@ test(
         },
       ],
     });
+
     const doc = part(out, "word/document.xml");
     assert.equal(
       runText(doc).includes(literal),
@@ -203,17 +217,21 @@ test(
       text: "טקסט עם הערה",
       footnotes: [{ after: "הערה", text: "הערת שוליים" }],
     };
+
     const rtl = await build(t, {
       sections: [{ title: "כותרת", paragraphs: [paragraph] }],
     });
+
     assert.match(part(rtl.out, "word/document.xml"), /<w:bidi/);
     assert.match(part(rtl.out, "word/footnotes.xml"), /<w:bidi/);
+
     const ltr = await build(t, {
       format: { isRtl: false },
       sections: [
         { paragraphs: [{ text: 'Plain "quoted" text', footnotes: [] }] },
       ],
     });
+
     const ltrDoc = part(ltr.out, "word/document.xml");
     assert.doesNotMatch(ltrDoc, /<w:bidi/);
     assert.equal(runText(ltrDoc), 'Plain "quoted" text');
@@ -234,16 +252,21 @@ test(
       },
       sections: [{ paragraphs: ["Body."] }],
     });
+
     const styles = part(out, "word/styles.xml");
+
     const body =
       styles.match(/w:styleId="BodyText"[\s\S]*?<\/w:style>/)?.[0] ?? "";
+
     assert.match(body, /w:ascii="Arial"/);
     assert.match(body, /<w:sz w:val="20"/);
     assert.match(body, /w:line="480"/);
+
     const section =
       part(out, "word/document.xml").match(
         /<w:sectPr[\s\S]*?<\/w:sectPr>/,
       )?.[0] ?? "";
+
     assert.match(section, /w:pgSz w:w="12240" w:h="15840"/);
     assert.match(
       section,
@@ -275,8 +298,10 @@ test(
   needsPandoc,
   async (t) => {
     const root = project(t);
+
     const { installStarterPackage } =
       await import("../pi-academic-writer/document-style.js");
+
     const installed = await installStarterPackage(root);
     writeFileSync(
       join(root, "a.json"),

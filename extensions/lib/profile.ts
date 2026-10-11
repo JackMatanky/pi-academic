@@ -1,36 +1,21 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { errorMessage, writeFileAtomic } from "./fs-safe.js";
 import type { ProfileData } from "./types.js";
 
-/**
- * Project-local directory containing Academic Writer runtime data.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+/** Project-local directory containing Academic Writer runtime data. */
 const PROFILE_DIR = ".academic-writer";
-/**
- * Project-relative markdown profile path.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** Project-relative markdown profile path. */
 const PROFILE_RELATIVE_PATH = ".academic-writer/profile.md";
-/**
- * Old project-relative JSON profile path migrated on first load.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** Old project-relative JSON profile path migrated on first load. */
 const JSON_PROFILE_RELATIVE_PATH = ".academic-writer/profile.json";
 
 /**
  * Returns the project-local `.academic-writer` directory path.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param projectDir - Absolute project directory used for project-local state.
- * @returns The typed result described by this helper contract.
  */
 export function getProfileDirPath(projectDir: string): string {
   return join(projectDir, PROFILE_DIR);
@@ -39,28 +24,16 @@ export function getProfileDirPath(projectDir: string): string {
 /**
  * Returns the project-local Academic Writer profile markdown path.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param projectDir - Absolute project directory used for project-local state.
- * @returns The typed result described by this helper contract.
  */
 export function getProfilePath(projectDir: string): string {
   return join(projectDir, PROFILE_RELATIVE_PATH);
 }
 
-/**
- * Profile data plus extension fields preserved during markdown serialization.
- *
- * @remarks
- * Narrows a reusable structural type used by profile parsing and serialization.
- */
+/** Profile data plus extension fields preserved during markdown serialization. */
 type ProfileFields = ProfileData & Record<string, unknown>;
-/**
- * Result payload for one JSON-to-markdown profile migration attempt.
- *
- * @remarks
- * Defines the serializable shape shared between extension tools, tests, and prompts.
- */
+
+/** Result payload for one JSON-to-markdown profile migration attempt. */
 export interface ProfileMigrationResult {
   ok: boolean;
   migrated: boolean;
@@ -70,12 +43,8 @@ export interface ProfileMigrationResult {
   error?: string;
   profile?: ProfileData;
 }
-/**
- * Scalar profile frontmatter fields serialized directly as YAML values.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** Scalar profile frontmatter fields serialized directly as YAML values. */
 const SCALAR_KEYS = [
   "fieldOfStudy",
   "citationStyle",
@@ -83,19 +52,11 @@ const SCALAR_KEYS = [
   "updatedAt",
   "createdAt",
 ] as const;
-/**
- * Array profile frontmatter fields serialized as YAML lists.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** Array profile frontmatter fields serialized as YAML lists. */
 const LIST_KEYS = ["abstractLanguages", "analyzedArticles"] as const;
-/**
- * JSON profile sections serialized under stable markdown headings.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** JSON profile sections serialized under stable markdown headings. */
 const JSON_SECTIONS = [
   ["tools", "Tools"],
   ["outputFormatPreferences", "Output Format Preferences"],
@@ -103,12 +64,8 @@ const JSON_SECTIONS = [
   ["articleStructure", "Article Structure"],
   ["sources", "Sources"],
 ] as const;
-/**
- * Normalized markdown heading lookup for JSON-backed profile sections.
- *
- * @remarks
- * Kept as a single module-level constant so callers do not duplicate package paths or option lists.
- */
+
+/** Normalized markdown heading lookup for JSON-backed profile sections. */
 const JSON_SECTION_KEYS = Object.fromEntries(
   JSON_SECTIONS.map(([key, heading]) => [
     heading.toLowerCase().replace(/\s+/g, ""),
@@ -119,155 +76,215 @@ const JSON_SECTION_KEYS = Object.fromEntries(
 /**
  * Parses the profile's deliberately small YAML-frontmatter subset.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param raw - Raw profile markdown content.
  * @param fields - Mutable parsed profile fields accumulator.
  */
 function parseFrontmatter(raw: string, fields: ProfileFields): void {
-  const fmMatch = raw.match(/(?:^|\n)---\n([\s\S]*?)\n---/);
-  if (!fmMatch) return;
+  const block = /(?:^|\n)---\n([\s\S]*?)\n---/.exec(raw)?.[1];
 
-  const fmLines = fmMatch[1].split("\n");
-  let i = 0;
-  while (i < fmLines.length) {
-    const line = fmLines[i];
-    const kvMatch = line.match(/^([\w-]+): (.+)$/);
-    if (kvMatch) {
-      const [, key, value] = kvMatch;
-      const v = value.trim();
-      if (v === "null") fields[key] = null;
-      else if (v === "[]") fields[key] = [];
-      else fields[key] = v;
-      i++;
+  if (block === undefined) return;
+  const lines = block.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    const scalar = /^([\w-]+): (.+)$/.exec(line);
+
+    if (scalar) {
+      fields[scalar[1] ?? ""] = parseScalar((scalar[2] ?? "").trim());
       continue;
     }
 
-    if (/^[\w-]+:\s*$/.test(line)) {
-      const key = line.split(":")[0];
+    const listKey = /^([\w-]+):\s*$/.exec(line)?.[1];
+
+    if (listKey) {
       const items: string[] = [];
-      i++;
-      while (i < fmLines.length && fmLines[i].startsWith("  - ")) {
-        items.push(fmLines[i].slice(4));
-        i++;
-      }
-      fields[key] = items;
-      continue;
-    }
 
-    i++;
+      while ((lines[i + 1] ?? "").startsWith("  - ")) {
+        i += 1;
+        items.push((lines[i] ?? "").slice(4));
+      }
+
+      fields[listKey] = items;
+    }
   }
+}
+
+/** Reads one frontmatter value: `null`, `[]`, a JSON-quoted string, or bare text. */
+function parseScalar(value: string): unknown {
+  if (value === "null") return null;
+
+  if (value === "[]") return [];
+
+  if (value.startsWith('"')) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+
+      if (typeof parsed === "string") return parsed;
+    } catch {
+      // not valid JSON: keep the text as written
+    }
+  }
+
+  return value;
 }
 
 /**
  * Stores a recognized JSON profile section under its canonical profile key.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param heading - Markdown heading naming a JSON-backed profile section.
  * @param parsed - Parsed JSON section value.
  * @param fields - Mutable parsed profile fields accumulator.
  */
 function assignJsonSection(
-  heading: string,
+  title: string,
   parsed: unknown,
   fields: ProfileFields,
 ): void {
-  const key = JSON_SECTION_KEYS[heading];
-  if (key) (fields as Record<string, unknown>)[key] = parsed;
+  const key = JSON_SECTION_KEYS[title.toLowerCase().replace(/\s+/g, "")];
+
+  if (key) {
+    (fields as Record<string, unknown>)[key] = parsed;
+
+    return;
+  }
+
+  const extra = fields.extraSections;
+  fields.extraSections = {
+    ...(typeof extra === "object" && extra !== null ? extra : {}),
+    [title]: parsed,
+  };
 }
 
 /**
  * Parses profile JSON sections headed by `## <Name>`.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param raw - Raw profile markdown content.
  * @param fields - Mutable parsed profile fields accumulator.
  */
 function parseJsonSections(raw: string, fields: ProfileFields): void {
   const sectionRe = /^## ([^\n]+)\n+```json\n([\s\S]*?)\n```/gm;
-  let m: RegExpExecArray | null;
-  while ((m = sectionRe.exec(raw)) !== null) {
+
+  for (const match of raw.matchAll(sectionRe)) {
+    const title = (match[1] ?? "").trim();
+
     try {
-      const heading = m[1].trim().toLowerCase().replace(/\s+/g, "");
-      assignJsonSection(heading, JSON.parse(m[2]) as unknown, fields);
-    } catch {
-      // skip malformed JSON blocks
+      assignJsonSection(title, JSON.parse(match[2] ?? "") as unknown, fields);
+    } catch (error) {
+      throw new Error(
+        `Profile section "${title}" has invalid JSON: ${errorMessage(error)}`,
+      );
     }
   }
 }
 
 /**
- * Parses a profile markdown document, returning null only for unreadable parser failures.
+ * Parses a profile markdown document.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
- * @param raw - Raw profile markdown content.
- * @returns The typed result described by this helper contract.
+ * @throws When a JSON section is malformed, so a corrupt profile is never mistaken for a missing one.
  */
-export function parseProfileMd(raw: string): ProfileData | null {
-  try {
-    const profile: ProfileFields = {};
-    parseFrontmatter(raw, profile);
-    parseJsonSections(raw, profile);
-    return profile;
-  } catch {
-    return null;
-  }
+export function parseProfileMd(raw: string): ProfileFields {
+  const text = raw.replace(/\r\n?/g, "\n");
+  const profile: ProfileFields = {};
+  parseFrontmatter(text, profile);
+  parseJsonSections(text, profile);
+
+  return profile;
 }
 
 /**
  * Serializes the known Academic Writer profile fields back to markdown.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param profile - Parsed profile data used by the caller.
- * @returns The typed result described by this helper contract.
  */
 export function serializeProfileMd(profile: ProfileFields): string {
   const lines = ["# Academic Writer Profile", "", "---"];
+
+  const writeList = (key: string, value: unknown[]) => {
+    if (value.length === 0) {
+      lines.push(`${key}: []`);
+
+      return;
+    }
+
+    lines.push(`${key}:`);
+
+    for (const item of value) lines.push(`  - ${String(item)}`);
+  };
+
   for (const key of SCALAR_KEYS) {
     const value = profile[key];
-    if (value !== undefined && value !== null) lines.push(`${key}: ${value}`);
+
+    if (value !== undefined && value !== null)
+      lines.push(`${key}: ${formatScalar(String(value))}`);
   }
+
   for (const key of LIST_KEYS) {
     const value = profile[key];
-    if (!Array.isArray(value) || value.length === 0) {
-      lines.push(`${key}: []`);
-    } else {
-      lines.push(`${key}:`);
-      for (const item of value) lines.push(`  - ${String(item)}`);
-    }
+    writeList(key, Array.isArray(value) ? value : []);
   }
+
+  // Frontmatter keys this version does not know are carried through unchanged.
+  for (const [key, value] of Object.entries(profile)) {
+    if (RESERVED_KEYS.has(key) || value === undefined || value === null)
+      continue;
+
+    if (Array.isArray(value)) writeList(key, value);
+    else if (typeof value !== "object")
+      lines.push(`${key}: ${formatScalar(String(value))}`);
+  }
+
   lines.push("---", "");
+
+  const writeSection = (heading: string, value: unknown) =>
+    lines.push(
+      `## ${heading}`,
+      "",
+      "```json",
+      JSON.stringify(value, null, 2),
+      "```",
+      "",
+    );
+
   for (const [key, heading] of JSON_SECTIONS) {
     const value = profile[key];
-    if (value !== undefined && value !== null) {
-      lines.push(
-        `## ${heading}`,
-        "",
-        "```json",
-        JSON.stringify(value, null, 2),
-        "```",
-        "",
-      );
-    }
+
+    if (value !== undefined && value !== null) writeSection(heading, value);
   }
+
+  const extra = profile.extraSections;
+
+  const extraSections =
+    typeof extra === "object" && extra !== null ? extra : {};
+
+  for (const [heading, value] of Object.entries(extraSections))
+    writeSection(heading, value);
+
   return lines.join("\n");
+}
+
+const RESERVED_KEYS = new Set<string>([
+  ...SCALAR_KEYS,
+  ...LIST_KEYS,
+  ...JSON_SECTIONS.map(([key]) => key),
+  "extraSections",
+]);
+
+/** Quotes scalars that would not survive the line-based parser unchanged. */
+function formatScalar(text: string): string {
+  return /[\r\n]|^\s|\s$|^"|^$|^(?:null|\[\])$/.test(text)
+    ? JSON.stringify(text)
+    : text;
 }
 
 /**
  * Migrates the old JSON profile location into the markdown profile format once.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param projectDir - Absolute project directory used for project-local state.
- * @returns The typed result described by this helper contract.
  */
 export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
   const jsonPath = join(projectDir, JSON_PROFILE_RELATIVE_PATH);
   const profilePath = getProfilePath(projectDir);
+
   const resultPaths = {
     jsonPath: JSON_PROFILE_RELATIVE_PATH,
     profilePath: PROFILE_RELATIVE_PATH,
@@ -281,6 +298,7 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
       reason: "profile already exists",
     };
   }
+
   if (!existsSync(jsonPath)) {
     return {
       ok: true,
@@ -292,6 +310,7 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
 
   try {
     const parsed = JSON.parse(readFileSync(jsonPath, "utf-8")) as unknown;
+
     if (
       parsed === null ||
       typeof parsed !== "object" ||
@@ -306,65 +325,80 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
     }
 
     const profile = parsed as ProfileFields;
-    mkdirSync(getProfileDirPath(projectDir), { recursive: true });
-    writeFileSync(profilePath, serializeProfileMd(profile), "utf-8");
+    writeFileAtomic(profilePath, serializeProfileMd(profile));
+
     return { ok: true, migrated: true, ...resultPaths, profile };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, migrated: false, ...resultPaths, error: message };
+    return {
+      ok: false,
+      migrated: false,
+      ...resultPaths,
+      error: errorMessage(error),
+    };
   }
 }
 
 /**
  * Updates only recognized profile fields, preserving missing optional sections.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param projectDir - Absolute project directory used for project-local state.
  * @param patch - Profile fields to replace.
- * @returns The typed result described by this helper contract.
  */
 export function updateProfile(
   projectDir: string,
   patch: Record<string, unknown>,
 ): ProfileData | null {
   const profilePath = getProfilePath(projectDir);
+
   if (!existsSync(profilePath)) return null;
-  const profile = parseProfileMd(readFileSync(profilePath, "utf-8"));
-  if (!profile) return null;
-  const editable = new Set<string>([
-    ...SCALAR_KEYS,
-    ...LIST_KEYS,
-    ...JSON_SECTIONS.map(([key]) => key),
-  ]);
-  const fields = profile as Record<string, unknown>;
-  for (const [key, value] of Object.entries(patch)) {
-    if (editable.has(key)) fields[key] = value;
-  }
-  if (!("updatedAt" in patch)) fields.updatedAt = new Date().toISOString();
-  writeFileSync(
-    profilePath,
-    serializeProfileMd(fields as ProfileFields),
-    "utf-8",
+
+  const fields: ProfileFields = parseProfileMd(
+    readFileSync(profilePath, "utf-8"),
   );
-  return fields as ProfileData;
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (!EDITABLE_KEYS.has(key)) continue;
+    assertPatchValue(key, value);
+    fields[key] = value;
+  }
+
+  if (!("updatedAt" in patch)) fields.updatedAt = new Date().toISOString();
+  writeFileAtomic(profilePath, serializeProfileMd(fields));
+
+  return fields;
+}
+
+const EDITABLE_KEYS = new Set<string>([
+  ...SCALAR_KEYS,
+  ...LIST_KEYS,
+  ...JSON_SECTIONS.map(([key]) => key),
+]);
+
+/** Rejects patch values the serializer could not round-trip. */
+function assertPatchValue(key: string, value: unknown): void {
+  const isObject = (v: unknown) =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+
+  if ((SCALAR_KEYS as readonly string[]).includes(key)) {
+    if (typeof value !== "string" && value !== null)
+      throw new Error(`Profile field ${key} must be a string or null`);
+  } else if ((LIST_KEYS as readonly string[]).includes(key)) {
+    if (!Array.isArray(value) || value.some((v) => typeof v !== "string"))
+      throw new Error(`Profile field ${key} must be an array of strings`);
+  } else if (value !== null && !isObject(value)) {
+    throw new Error(`Profile section ${key} must be an object or null`);
+  }
 }
 
 /**
  * Loads the project profile if `.academic-writer/profile.md` exists.
  *
- * @remarks
- * Provides a typed helper boundary for Academic Writer extension code.
  * @param projectDir - Absolute project directory used for project-local state.
- * @returns The typed result described by this helper contract.
  */
 export function loadProfile(projectDir: string): ProfileData | null {
   const profilePath = getProfilePath(projectDir);
+
   if (!existsSync(profilePath)) return null;
-  try {
-    const raw = readFileSync(profilePath, "utf-8");
-    return parseProfileMd(raw);
-  } catch {
-    return null;
-  }
+
+  return parseProfileMd(readFileSync(profilePath, "utf-8"));
 }

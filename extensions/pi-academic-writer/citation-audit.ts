@@ -1,4 +1,6 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { errorMessage } from "../lib/fs-safe.js";
+import { fenceAfter } from "../lib/markdown.js";
 import { homedir } from "node:os";
 import {
   basename,
@@ -34,9 +36,35 @@ export type CitationAuditResult =
   | CitationAuditDetails
   | { ok: false; error: string };
 
-const markerPattern = /\[((?:[^\[\]]|\\.)*@(?:[^\[\]]|\\.)*)\]/gu;
-const citeKeyPattern = /@([A-Za-z0-9_:.#$%&+?<>~/\-]+)/gu;
+// Pandoc keys start with a letter, digit or underscore, may contain internal
+// punctuation only when an alphanumeric follows, and `@` must not follow a word
+// character (so e-mail addresses are not citations).
+const bracketPattern = /\[((?:[^[\]]|\\.)*)\]/gu;
+
+const citationStart = /(?<![\p{L}\p{N}_\\])@/u;
+
+const citeKeyPattern =
+  /(?<![\p{L}\p{N}_\\])@([\p{L}\p{N}_](?:[\p{L}\p{N}_]|[:.#$%&+?<>~/-](?=[\p{L}\p{N}_]))*)/gu;
+
 const bibliographyKeyPattern = /@[\p{L}\p{N}_]+\s*\{\s*([^,\s]+)\s*,/gu;
+
+/** Blanks front matter, fenced code and inline code, which Pandoc never parses for citations. */
+function stripCode(markdown: string): string {
+  const lines = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---(?=\r?\n|$)/, "");
+  let fence: string | null = null;
+
+  return lines
+    .split(/\r?\n/)
+    .map((line) => {
+      const inCode = fence !== null;
+      fence = fenceAfter(line, fence);
+
+      if (inCode || fence !== null) return "";
+
+      return line.replace(/(`+)[^`]*?\1/g, " ");
+    })
+    .join("\n");
+}
 
 function isFile(path: string): boolean {
   try {
@@ -46,10 +74,11 @@ function isFile(path: string): boolean {
   }
 }
 
-// Path.resolve() in Python follows existing symlink parents even for a missing leaf.
+// Resolves symlinks in the nearest existing ancestor, so a missing leaf is still checked.
 function resolveRealPath(path: string): string {
   if (existsSync(path)) return realpathSync(path);
   const parent = dirname(path);
+
   return parent === path ? path : join(resolveRealPath(parent), basename(path));
 }
 
@@ -58,9 +87,11 @@ function collectCiteKeys(value: unknown, keys: Set<string>): void {
     for (const item of value) collectCiteKeys(item, keys);
   } else if (value !== null && typeof value === "object") {
     const record = value as Record<string, unknown>;
+
     if (typeof record.citeKey === "string" && record.citeKey.trim()) {
       keys.add(record.citeKey.trim());
     }
+
     for (const item of Object.values(record)) {
       if (item !== null && typeof item === "object")
         collectCiteKeys(item, keys);
@@ -76,18 +107,22 @@ export function auditCitations(
 ): CitationAuditResult {
   try {
     const root = resolveRealPath(resolve(projectRoot));
+
     const expandedArticle =
       article === "~"
         ? homedir()
         : article.startsWith(`~${sep}`)
           ? join(homedir(), article.slice(2))
           : article;
+
     const articlePath = resolveRealPath(
       isAbsolute(expandedArticle)
         ? expandedArticle
         : resolve(root, expandedArticle),
     );
+
     const articleRelative = relative(root, articlePath);
+
     if (
       articleRelative === ".." ||
       articleRelative.startsWith(`..${sep}`) ||
@@ -114,68 +149,99 @@ export function auditCitations(
       malformedMarkers: [],
       warnings: [],
     };
+
     if (!isFile(articlePath)) {
       result.ok = false;
       result.error = `Article not found: ${articlePath}`;
+
       return result;
     }
 
-    const text = readFileSync(articlePath, "utf8");
-    const markers = Array.from(
-      text.matchAll(markerPattern),
-      (match) => match[0],
-    );
+    const text = stripCode(readFileSync(articlePath, "utf8"));
+
+    const markers = Array.from(text.matchAll(bracketPattern))
+      .filter((match) => citationStart.test(match[1] ?? ""))
+      .map((match) => match[0]);
+
     const keys = new Set<string>();
     const malformed: string[] = [];
+
     for (const marker of markers) {
       const found = Array.from(
         marker.matchAll(citeKeyPattern),
-        (match) => match[1],
+        (match) => match[1] ?? "",
       );
+
       if (!found.length) malformed.push(marker);
+
       for (const key of found) keys.add(key);
     }
+
+    if (citationStyle !== "inline-parenthetical") {
+      // Pandoc also resolves narrative `@key` outside brackets.
+      const prose = text
+        .replace(bracketPattern, " ")
+        .replace(/\]\([^)]*\)|<[^>\s]+>|\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, " ");
+
+      for (const match of prose.matchAll(citeKeyPattern)) {
+        keys.add(match[1] ?? "");
+      }
+    }
+
     result.markers = markers;
     result.citationKeys = [...keys];
     result.malformedMarkers = malformed;
+
     if (citationStyle === "inline-parenthetical") {
       if (markers.length) {
         result.ok = false;
         result.error =
           "inline-parenthetical articles must not contain Pandoc citeproc markers";
       }
+
       return result;
     }
 
     const suffix = extname(articlePath);
+
     const articleBase = suffix
       ? articlePath.slice(0, -suffix.length)
       : articlePath;
+
     const localSources = `${articleBase}.sources.json`;
     const localBibliography = `${articleBase}.bibliography.bib`;
+
     const scope =
       isFile(localSources) || isFile(localBibliography) ? "article" : "global";
+
     const sources =
       scope === "article"
         ? localSources
         : join(root, ".academic-writer", "sources.json");
+
     const bibliography =
       scope === "article"
         ? localBibliography
         : join(root, ".academic-writer", "bibliography.bib");
+
     result.assetScope = scope;
     result.sourcesPath = relative(root, sources);
     result.bibliographyPath = relative(root, bibliography);
-    if (!markers.length)
+
+    if (!markers.length && !keys.size)
       result.warnings.push("No Pandoc citeproc markers found");
+
     if (malformed.length) result.ok = false;
 
     if (!isFile(sources)) {
       result.ok = false;
       result.error = `${result.sourcesPath} not found`;
+
       return result;
     }
+
     const sourceKeys = new Set<string>();
+
     try {
       collectCiteKeys(
         JSON.parse(readFileSync(sources, "utf8")) as unknown,
@@ -183,36 +249,40 @@ export function auditCitations(
       );
     } catch (error) {
       result.ok = false;
-      result.error = `Could not read ${result.sourcesPath}: ${error instanceof Error ? error.message : String(error)}`;
+      result.error = `Could not read ${result.sourcesPath}: ${errorMessage(error)}`;
+
       return result;
     }
+
     if (!isFile(bibliography)) {
       result.ok = false;
       result.error = `${result.bibliographyPath} not found`;
+
       return result;
     }
+
     const bibliographyKeys = new Set(
       Array.from(
         readFileSync(bibliography, "utf8").matchAll(bibliographyKeyPattern),
         (match) => match[1],
       ),
     );
+
     result.missingFromSources = result.citationKeys.filter(
       (key) => !sourceKeys.has(key),
     );
     result.missingFromBibliography = result.citationKeys.filter(
       (key) => !bibliographyKeys.has(key),
     );
+
     if (
       result.missingFromSources.length ||
       result.missingFromBibliography.length
     )
       result.ok = false;
+
     return result;
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    return { ok: false, error: errorMessage(error) };
   }
 }

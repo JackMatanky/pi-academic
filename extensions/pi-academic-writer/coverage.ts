@@ -1,3 +1,5 @@
+import { errorMessage } from "../lib/fs-safe.js";
+
 export type CoverageFinding = {
   code: string;
   path: string;
@@ -6,38 +8,52 @@ export type CoverageFinding = {
 
 export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
   const findings: CoverageFinding[] = [];
+
   const add = (code: string, path: string, explanation: string) =>
     findings.push({ code, path, explanation });
+
   try {
     const parsed: unknown = JSON.parse(json);
+
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
       throw Error("evidence map must be a JSON object");
     const root = parsed as Record<string, unknown>;
+
     if (root.chapter_coverage === undefined) return findings;
     const coverage = root.chapter_coverage;
     const counts = root.chapter_counts;
+
     if (!coverage || typeof coverage !== "object" || Array.isArray(coverage))
       throw Error("chapter_coverage must map book names to chapter arrays");
+
     if (!counts || typeof counts !== "object" || Array.isArray(counts))
       throw Error(
         "chapter_counts must map book names to positive chapter counts",
       );
     const ids = new Set<string>();
+
     const collect = (value: unknown): void => {
       if (!value || typeof value !== "object") return;
+
       if (Array.isArray(value)) {
         value.forEach(collect);
+
         return;
       }
+
       const record = value as Record<string, unknown>;
+
       if (typeof record.id === "string") ids.add(record.id);
       Object.values(record).forEach(collect);
     };
+
     collect(root);
+
     for (const [book, entries] of Object.entries(
       coverage as Record<string, unknown>,
     )) {
       const base = "$.chapter_coverage." + book;
+
       if (!Array.isArray(entries)) {
         add(
           "unsupported-chapter-coverage",
@@ -46,19 +62,24 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
         );
         continue;
       }
+
       const chapters = new Set<number>();
       entries.forEach((item, index) => {
         const at = base + "[" + index + "]";
+
         if (!item || typeof item !== "object" || Array.isArray(item)) {
           add(
             "unsupported-chapter-coverage",
             at,
             "Chapter entry must be an object.",
           );
+
           return;
         }
+
         const entry = item as Record<string, unknown>;
         const chapter = entry.chapter;
+
         if (
           typeof chapter !== "number" ||
           !Number.isInteger(chapter) ||
@@ -69,8 +90,10 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
             at + ".chapter",
             "Chapter must be a positive integer.",
           );
+
           return;
         }
+
         if (chapters.has(chapter))
           add(
             "duplicate-chapter",
@@ -78,6 +101,7 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
             "Chapter " + chapter + " is duplicated.",
           );
         chapters.add(chapter);
+
         if (entry.status === "skipped-irrelevant") {
           if (typeof entry.reason !== "string" || !entry.reason.trim())
             add(
@@ -111,6 +135,7 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
           );
       });
       const last = (counts as Record<string, unknown>)[book];
+
       if (typeof last !== "number" || !Number.isInteger(last) || last < 1) {
         add(
           "unsupported-chapter-count",
@@ -119,6 +144,7 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
         );
         continue;
       }
+
       for (let n = 1; n <= last; n++)
         if (!chapters.has(n))
           add(
@@ -130,6 +156,7 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
               last +
               ".",
           );
+
       for (const n of chapters)
         if (n > last)
           add(
@@ -142,8 +169,9 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
     add(
       "unsupported-chapter-coverage",
       "$.chapter_coverage",
-      error instanceof Error ? error.message : String(error),
+      errorMessage(error),
     );
   }
+
   return findings;
 }
