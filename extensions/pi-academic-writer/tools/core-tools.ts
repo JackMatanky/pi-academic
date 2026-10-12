@@ -28,7 +28,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     parameters: Type.Object({
       name: Type.String({
         description:
-          "Resource name: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, or citation_review_gate.",
+          "Resource name: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, voice_profile_template, run_state_contract, citation_export_contract, or citation_review_gate.",
       }),
       language: Type.Optional(
         Type.String({

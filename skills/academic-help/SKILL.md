@@ -132,8 +132,8 @@ This is independent of the article pipeline — use it anytime you want to query
 The voice system follows a clear 3-tier hierarchy:
 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint`). The fingerprint is extracted from your past articles during `/skill:academic-setup` and captures 25 dimensions across 8 categories.
-2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root. Loaded via `voice_profile_load` as high-level human guidelines.
-3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is an intermediate output from mining tools and is **NOT** a runtime source of truth.
+2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as high-level human guidelines.
+3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is an intermediate output from mining tools and is **NOT** a runtime source of truth.
 
 | Category | What it tracks |
 |----------|---------------|

@@ -1,4 +1,4 @@
-# AUTHOR_VOICE — E2E Fixture
+# Voice Profile — E2E Fixture
 
 Deterministic voice profile for E2E smoke testing the write pipeline.
 

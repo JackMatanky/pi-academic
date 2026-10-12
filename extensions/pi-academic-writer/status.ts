@@ -109,7 +109,7 @@ function directoryState(
  */
 export function buildStatus(projectRoot: string): AcademicWriterStatus {
   const profile = fileState(projectRoot, ".academic-writer/profile.md");
-  const voice = fileState(projectRoot, "AUTHOR_VOICE.md");
+  const voice = fileState(projectRoot, ".academic-writer/voice/profile.md");
   const sourcesPath = join(projectRoot, ".academic-writer", "sources.json");
 
   const sources = {

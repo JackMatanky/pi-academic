@@ -37,7 +37,6 @@ export default defineConfig({
       ".aw-ts-test/**",
       ".aw-runtime-*/**",
       ".academic-writer/**",
-      ".voice/**",
       "past-articles/**",
       "logs/**",
       "package-lock.json",

@@ -211,10 +211,9 @@ For Zotero web/API mode, keep secrets in user-global MCP config (`~/.config/mcp/
 your-research-folder/
 ├── past-articles/              ← Drop your published papers here (PDFs or DOCXs)
 ├── articles/                   ← Output Markdown, DOCX, and exports
-├── AUTHOR_VOICE.md             ← Distilled voice profile (git-tracked)
-├── .voice/                     ← Voice-subsystem working state (fingerprint, interview transcripts, audit)
 └── .academic-writer/
     ├── profile.md               ← Your profile (auto-created)
+    ├── voice/                   ← Voice profile (profile.md), mining state
     ├── sources/                 ← Optional local PDFs/DOCX/MD/TXT sources
     ├── sources.json             ← Current-run source registry/cache
     ├── bibliography.bib         ← Current-run BibTeX cache; articles keep frozen copies beside each draft

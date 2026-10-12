@@ -34,8 +34,8 @@ Print fingerprint summary to confirm it's loaded.
 ### Voice Source Hierarchy
 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
-2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
-3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
+2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT runtime source of truth.
 
 ---
 

@@ -24,10 +24,6 @@ logs/
 # Runtime state, not part of package distribution
 /.academic-writer/
 
-# Voice profile build artifacts (only AUTHOR_VOICE.md is tracked)
-.voice/*
-!.voice/.gitkeep
-
 # Bundled Gemini MCP server build artifacts
 mcp/gemini-server/dist/
 mcp/gemini-server/node_modules/

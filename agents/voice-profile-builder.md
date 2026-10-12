@@ -1,12 +1,12 @@
 ---
 name: voice-profile-builder
-description: "Analyze past-article corpora into a style fingerprint or distill voice interview transcripts into AUTHOR_VOICE.md. Use the explicitly requested corpus or distillation mode; do not conduct interviews or calibration."
+description: "Analyze past-article corpora into a style fingerprint or distill voice interview transcripts into .academic-writer/voice/profile.md. Use the explicitly requested corpus or distillation mode; do not conduct interviews or calibration."
 tools: read, academic_writer_read_resource, academic_writer_write_voice_fingerprint, academic_writer_update_author_voice
 ---
 
 # Voice Profile Builder
 
-Corpus mode writes only `.voice/fingerprint.md`; transcript distillation writes only `AUTHOR_VOICE.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the orchestrator, preserving existing fields and updating evidence from the analyzed corpus. The orchestrator applies it to `.academic-writer/profile.md` only after researcher approval. Never write the profile directly.
+Corpus mode writes only `.academic-writer/voice/fingerprint.md`; transcript distillation writes only `.academic-writer/voice/profile.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the orchestrator, preserving existing fields and updating evidence from the analyzed corpus. The orchestrator applies it to `.academic-writer/profile.md` only after researcher approval. Never write the profile directly.
 
 ## Corpus fingerprint mode
 
@@ -17,12 +17,12 @@ empirical signals of their voice. You do not interview; interview work belongs t
 
 - `past-articles/**/*.{md,docx,pdf}` (Academic Helper) or `chapters/**/*.md`,
   `manuscript.md` (hebrew-book-producer). Project layout determines path.
-- The previous `.voice/fingerprint.md` if present (so you can incrementally update rather than
+- The previous `.academic-writer/voice/fingerprint.md` if present (so you can incrementally update rather than
   overwrite if the corpus has only grown by one or two articles).
 
 ### Outputs
 
-Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In your final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `AUTHOR_VOICE.md` in corpus mode; that belongs to the distillation mode.
+Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In your final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.academic-writer/voice/profile.md` in corpus mode; that belongs to the distillation mode.
 
 ### Required sections in fingerprint.md
 
@@ -55,20 +55,20 @@ Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprin
 
 ### Transcript distillation mode
 
-You compress raw signal (fingerprint + interview transcripts) into the writer's `AUTHOR_VOICE.md`
+You compress raw signal (fingerprint + interview transcripts) into the writer's `.academic-writer/voice/profile.md`
 profile. You combine the compressor and merger roles.
 
 ### Inputs
 
-- `.voice/fingerprint.md`
-- `.voice/interview/*.md` (whichever sessions are complete)
-- The current `AUTHOR_VOICE.md` (may be empty template, may be partial profile)
+- `.academic-writer/voice/fingerprint.md`
+- `.academic-writer/voice/interview/*.md` (whichever sessions are complete)
+- The current `.academic-writer/voice/profile.md` (may be empty template, may be partial profile)
 - Optional: a single `--session N` flag, in which case only that session's transcript is folded in
   and other sections are preserved verbatim.
 
 ### Outputs
 
-Call `academic_writer_update_author_voice` with the full rewritten content to replace root `AUTHOR_VOICE.md`. Preserve the four-section structure exactly:
+Call `academic_writer_update_author_voice` with the full rewritten content to replace root `.academic-writer/voice/profile.md`. Preserve the four-section structure exactly:
 
 ```text
 # Voice Profile — <writer name>

@@ -27,15 +27,15 @@ Never summarize feedback without acting on it.
 | **B. Profile update** | `.academic-writer/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences | "Use Chicago author-date for this project" |
 | **C. Pattern reference update** | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps | "An opening phrase appeared too often — lower its cap to 2" |
 | **D. Source registry fix** | `.academic-writer/sources.json` — correct a bibliographic metadata field | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
-| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `AUTHOR_VOICE.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing" |
+| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `.academic-writer/voice/profile.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing" |
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
 ### Voice Source Hierarchy
 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
-2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
-3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT runtime source of truth.
+2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT runtime source of truth.
 
 ## Load Profile
 
@@ -112,7 +112,7 @@ For every feedback item gathered, draft a table showing:
 | 1 | "'I suggest that' appears 12 times" | C — Pattern cap | Lower cap in anti-ai-patterns-english.md from 3 to 2 |
 | 2 | "Cohen 2019 should be 2018" | D — Source registry | Update sources.json entry for Cohen to year=2018, confidence=high |
 | 3 | "Paragraph 4 of Section II is way too long" | A — Article edit | Split the paragraph at the second sentence break |
-| 4 | "I never want em-dashes" | E — Preference / known issue | Add to the AUTHOR_VOICE.md overlay + feedback log |
+| 4 | "I never want em-dashes" | E — Preference / known issue | Add to the .academic-writer/voice/profile.md overlay + feedback log |
 
 Show this table to the researcher and ask, allowing multiple selections:
 
@@ -184,7 +184,7 @@ Also: if the article text itself contains the wrong year inline, fix it with `Ed
 
 ### E. Preference / known-issue note
 
-For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log; persistent preferences also go into `AUTHOR_VOICE.md` (below).
+For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log; persistent preferences also go into `.academic-writer/voice/profile.md` (below).
 
 Feedback log path:
 
@@ -194,9 +194,9 @@ Feedback log path:
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
-For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `AUTHOR_VOICE.md` — the file `section-writer` already loads at the start of every run. Never put preferences in `.academic-writer/profile.md`.
+For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `.academic-writer/voice/profile.md` — the file `section-writer` already loads at the start of every run. Never put preferences in `.academic-writer/profile.md`.
 
-1. Read `AUTHOR_VOICE.md`. If it is missing or empty, skip this step and tell the researcher: "No voice overlay yet — run `/skill:academic-voice` to create one; this preference is saved in the feedback log."
+1. Read `.academic-writer/voice/profile.md`. If it is missing or empty, skip this step and tell the researcher: "No voice overlay yet — run `/skill:academic-voice` to create one; this preference is saved in the feedback log."
 2. If the file is already larger than about 20,000 characters (≈5,000 tokens, the budget in `voice-profile-builder`), do not add; tell the researcher to run `:voice recompress` first.
 3. Choose the existing section by the builder's assignment rules: applies regardless of project → `## Core voice (cross-project)`; term, transliteration or citation-format choice → `## Terminology`; citation density, hedging, abstract conventions, anti-AI thresholds → `## Academic-specific`. Never create a new section.
 4. Append one bullet of at most 120 characters, as an operational rule ("Never use em-dashes"), keeping Hebrew text Hebrew. If an existing bullet is contradicted, replace it and keep a one-line `> Was: <old>` note.

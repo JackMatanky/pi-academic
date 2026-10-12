@@ -15,14 +15,18 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Write Voice Audit",
     description:
-      "Write .voice/audit.md. The academic-voice skill's path to persist its calibration report without a generic write grant.",
+      "Write .academic-writer/voice/audit.md. The academic-voice skill's path to persist its calibration report without a generic write grant.",
     parameters: Type.Object({
       content: Type.String({
         description: "Full audit report markdown content.",
       }),
     }),
     run: ({ content }, { cwd }) => {
-      const result = writeProjectTextFile(cwd, ".voice/audit.md", content);
+      const result = writeProjectTextFile(
+        cwd,
+        ".academic-writer/voice/audit.md",
+        content,
+      );
 
       return { text: `Voice audit written: ${result.path}`, details: result };
     },
@@ -33,15 +37,19 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Update Author Voice",
     description:
-      "Overwrite AUTHOR_VOICE.md with the given content. Used by the academic-voice skill and voice-profile-builder instead of a generic write/edit grant.",
+      "Overwrite .academic-writer/voice/profile.md with the given content. Used by the academic-voice skill and voice-profile-builder instead of a generic write/edit grant.",
     parameters: Type.Object({
-      content: Type.String({ description: "Full AUTHOR_VOICE.md content." }),
+      content: Type.String({ description: "Full voice profile content." }),
     }),
     run: ({ content }, { cwd }) => {
-      const result = writeProjectTextFile(cwd, "AUTHOR_VOICE.md", content);
+      const result = writeProjectTextFile(
+        cwd,
+        ".academic-writer/voice/profile.md",
+        content,
+      );
 
       return {
-        text: `AUTHOR_VOICE.md updated: ${result.path}`,
+        text: `Voice profile updated: ${result.path}`,
         details: result,
       };
     },
@@ -52,7 +60,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Write Interview Session",
     description:
-      "Write .voice/interview/<sessionId>.md. The academic-voice skill's path to persist a session transcript without a generic write grant. sessionId must match ^[a-zA-Z0-9_-]+$.",
+      "Write .academic-writer/voice/interview/<sessionId>.md. The academic-voice skill's path to persist a session transcript without a generic write grant. sessionId must match ^[a-zA-Z0-9_-]+$.",
     parameters: Type.Object({
       sessionId: Type.String({
         minLength: 1,
@@ -72,7 +80,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
 
       const result = writeProjectTextFile(
         cwd,
-        `.voice/interview/${sessionId}.md`,
+        `.academic-writer/voice/interview/${sessionId}.md`,
         content,
       );
 
@@ -88,7 +96,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Write Voice Fingerprint",
     description:
-      "Write .voice/fingerprint.md. The voice-profile-builder agent's only path to persist its style fingerprint without a generic write grant.",
+      "Write .academic-writer/voice/fingerprint.md. The voice-profile-builder agent's only path to persist its style fingerprint without a generic write grant.",
     parameters: Type.Object({
       content: Type.String({
         description: "Full fingerprint markdown content.",
@@ -97,7 +105,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     run: ({ content }, { cwd }) => {
       const result = writeProjectTextFile(
         cwd,
-        ".voice/fingerprint.md",
+        ".academic-writer/voice/fingerprint.md",
         content,
       );
 

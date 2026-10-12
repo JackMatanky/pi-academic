@@ -11,8 +11,9 @@ Quick onboarding wizard. Creates the researcher profile, detects integrations, a
 Run silently before anything else:
 
 ```bash
-mkdir -p past-articles .academic-writer
+mkdir -p past-articles .academic-writer .academic-writer/voice
 # If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
+# If .academic-writer/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .academic-writer/voice/profile.md.
 ```
 
 Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.

@@ -14,8 +14,8 @@ Want this agent drafting in a different model's voice (e.g. Gemini)? That's a ha
 ## Voice Profile Hierarchy
 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object loaded from disk below).
-2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` from project root. Read at the start of every section. Weight `## Academic-specific` higher when its rules conflict with `## Core voice`.
-3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT a runtime source of truth — DO NOT read or use it.
+2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` from project root. Read at the start of every section. Weight `## Academic-specific` higher when its rules conflict with `## Core voice`.
+3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT a runtime source of truth — DO NOT read or use it.
 
 ## Persistent Behavioral Contract
 

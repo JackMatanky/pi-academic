@@ -46,6 +46,7 @@ Without mise, the equivalent raw commands:
 | `extensions/pi-academic-writer/docx-generator.ts` / `pandoc.ts`         | Literal-citation DOCX: article JSON to escaped Pandoc markdown with real footnotes and RTL, built by Pandoc; `pandoc.ts` is the only place Pandoc is spawned |
 | `extensions/pi-academic-writer/csl-resolver.ts` / `citation-audit.ts`   | CSL alias/id/URL/path resolution with a project cache, and the deterministic citation-key audit |
 | `templates/document-styles/academic-default/`                           | The shipped starter design; `academic_writer_style_package` copies it into a project |
+| `templates/voice/profile.md`                                            | The empty four-section voice profile template; `academic_writer_read_resource(name: voice_profile_template)` exposes it and setup seeds `.academic-writer/voice/profile.md` from it |
 | `extensions/pi-academic-writer/prose-lint.ts` / `academic_writer_lint_prose` | Read-only English prose-pattern linter; emits advisory JSON findings for contextual agent review and does not modify drafts. |
 
 ## Conventions

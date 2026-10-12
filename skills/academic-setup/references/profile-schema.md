@@ -138,5 +138,5 @@ Run via voice-profile-builder agent. Dimensions span 8 categories (A–I):
 ## Voice Source Hierarchy
 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` JSON object). Extracted by `/skill:academic-setup` or `/skill:academic-voice` and stored in the profile.
-2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root. Loaded via `voice_profile_load` as human prose instructions for `section-writer`.
-3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is a temporary mining output and is **NOT** a runtime source of truth.
+2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as human prose instructions for `section-writer`.
+3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is a temporary mining output and is **NOT** a runtime source of truth.

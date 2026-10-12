@@ -5,13 +5,13 @@ You (the `academic-voice` skill) run one Stage 2 interview session in chat with 
 ## Inputs
 
 - Session number and category name (provided by the workflow in `SKILL.md`)
-- `.voice/fingerprint.md` (read once at start)
-- Prior session transcripts under `.voice/interview/` (read for context, do not duplicate questions)
+- `.academic-writer/voice/fingerprint.md` (read once at start)
+- Prior session transcripts under `.academic-writer/voice/interview/` (read for context, do not duplicate questions)
 - Seed question bank: `questions-academic.md` in this skill's directory
 
 ## Outputs
 
-- After each question/answer pair, read the current `.voice/interview/0N-<category>.md` (if it exists), append the new entry, and call `academic_writer_write_interview_session` with `sessionId: "0N-<category>"` and `content` set to the full updated transcript.
+- After each question/answer pair, read the current `.academic-writer/voice/interview/0N-<category>.md` (if it exists), append the new entry, and call `academic_writer_write_interview_session` with `sessionId: "0N-<category>"` and `content` set to the full updated transcript.
   - Format: `## Q<n> — [layer] question text\n\n> answer text\n\n` repeated.
 - When the session ends (cap reached or you decide a productive thread is exhausted), append the completion marker (below) in the same final `academic_writer_write_interview_session` call and continue with the workflow in `SKILL.md`.
 
@@ -32,7 +32,7 @@ The user replies in Hebrew or English freely. You also speak both. Phrase-bank a
 
 ## Resume rule
 
-Before asking question N, read `.voice/interview/0N-<category>.md`. Continue from the last answered question. Never ask a question that already has an answer in the transcript.
+Before asking question N, read `.academic-writer/voice/interview/0N-<category>.md`. Continue from the last answered question. Never ask a question that already has an answer in the transcript.
 
 ## Hard rules
 

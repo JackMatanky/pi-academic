@@ -82,6 +82,8 @@ export function resolveResourcePath(
         "references",
         "voice-profile-load.md",
       );
+    case "voice_profile_template":
+      return join(PACKAGE_ROOT, "templates", "voice", "profile.md");
     case "run_state_contract":
       return join(
         PACKAGE_ROOT,
@@ -116,7 +118,7 @@ export function resolveResourcePath(
       );
     default:
       throw new Error(
-        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, citation_review_gate, dispatch_contract.`,
+        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, voice_profile_template, run_state_contract, citation_export_contract, citation_review_gate, dispatch_contract.`,
       );
   }
 }

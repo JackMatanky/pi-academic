@@ -207,6 +207,7 @@ test("[test_thresholds_resource_honors_project_override] read_resource prefers t
 
 const PACKAGED_RESOURCES = {
   voice_profile_load: "skills/academic-write/references/voice-profile-load.md",
+  voice_profile_template: "templates/voice/profile.md",
   run_state_contract: "skills/academic-write/references/run-state-contract.md",
   citation_export_contract:
     "skills/academic-write/references/citation-export-contract.md",

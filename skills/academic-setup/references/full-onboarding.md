@@ -21,8 +21,9 @@ Personalized onboarding that creates your researcher profile, detects available 
 Run silently before saying anything:
 
 ```bash
-mkdir -p past-articles .academic-writer .academic-writer/sources
+mkdir -p past-articles .academic-writer .academic-writer/sources .academic-writer/voice
 # If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
+# If .academic-writer/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .academic-writer/voice/profile.md.
 ```
 
 If `.academic-writer/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
@@ -347,8 +348,8 @@ Full rubric (all 30 dimensions across categories A–I): see `references/profile
 
 After the past articles are analyzed, read the `dispatch_contract` resource (`academic_writer_read_resource`) for the call shape on this harness, then:
 
-1. Dispatch `voice-profile-builder` in corpus fingerprint mode on `past-articles/`. It writes `.voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
-2. Dispatch `voice-profile-builder` in transcript distillation mode with only that fingerprint as input, to seed the four-section `AUTHOR_VOICE.md` at the project root.
+1. Dispatch `voice-profile-builder` in corpus fingerprint mode on `past-articles/`. It writes `.academic-writer/voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
+2. Dispatch `voice-profile-builder` in transcript distillation mode with only that fingerprint as input, to seed the four-section `.academic-writer/voice/profile.md` at the project root.
 3. Say: "✓ Voice fingerprint created from N past articles. You can write articles now, or run `/skill:academic-voice` for a deeper profile (recommended)."
 
 The researcher is not required to run the Stage 2 interview. They can start writing immediately with the fingerprint.

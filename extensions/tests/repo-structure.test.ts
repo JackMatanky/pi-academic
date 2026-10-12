@@ -12,20 +12,27 @@ const isFile = (rel: string): boolean => {
   return existsSync(path) && statSync(path).isFile();
 };
 
-test("[test_author_voice_at_root_exists] AUTHOR_VOICE.md sits at the repo root", () => {
-  assert.ok(isFile("AUTHOR_VOICE.md"));
+test("[test_voice_artifacts_under_academic_writer] voice artifacts live under .academic-writer/voice/", () => {
+  const voiceTools = readRepo(
+    "extensions/pi-academic-writer/tools/voice-tools.ts",
+  );
+
+  assert.ok(voiceTools.includes(".academic-writer/voice/profile.md"));
+  assert.ok(
+    !voiceTools.includes(".voice/"),
+    "voice paths must not use .voice/",
+  );
 });
 
-test("[test_voice_dir_exists] .voice/ exists and is kept by .gitkeep", () => {
-  assert.ok(statSync(join(repoRoot, ".voice")).isDirectory());
-  assert.ok(isFile(".voice/.gitkeep"));
+test("[test_fixture_voice_profile_location] the e2e fixture voice profile sits in .academic-writer/voice/", () => {
+  assert.ok(
+    isFile("tests/e2e/fixture-project/.academic-writer/voice/profile.md"),
+  );
 });
 
-test("[test_voice_artifacts_gitignored] voice artifacts are gitignored except .gitkeep", () => {
-  const gitignore = readRepo(".gitignore");
-
-  assert.ok(gitignore.includes(".voice/*"));
-  assert.ok(gitignore.includes("!.voice/.gitkeep"));
+test("[test_no_voice_state_in_package] the package repo keeps no voice state at its root", () => {
+  assert.ok(!isFile("AUTHOR_VOICE.md"));
+  assert.ok(!existsSync(join(repoRoot, ".voice")));
 });
 
 test("[test_json_validity] every committed JSON file parses", () => {
