@@ -49,4 +49,12 @@ When stopping (cap or thread-exhausted), append:
 <!-- session complete: <count> questions, <iso8601 timestamp> -->
 ```
 
+For quick mode, also append this marker in the same final write:
+
+```text
+<!-- mode: quick -->
+```
+
+Then continue with the workflow in `SKILL.md`.
+
 in the final `academic_writer_write_interview_session` call, then continue with the workflow in `SKILL.md`.

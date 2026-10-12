@@ -3,7 +3,7 @@ name: academic-voice
 description: >-
   Manage the researcher voice profile: refresh corpus-derived style patterns, conduct or resume the adversarial interview,
   calibrate, audit, and recompress. Use when adding past articles or refining the writer profile.
-allowed-tools: read write edit find grep bash subagent academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_read_resource academic_writer_write_interview_session academic_writer_write_voice_audit academic_writer_update_author_voice
+allowed-tools: read write edit find grep bash subagent academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_read_resource academic_writer_write_interview_session academic_writer_write_voice_audit academic_writer_update_author_voice academic_writer_update_profile
 metadata: {author: "Yotam Fromm", version: "0.2.19"}
 ---
 
@@ -19,8 +19,7 @@ or specified explicitly.
 - `:voice continue` — resume the next unfinished session (or finish the current one)
 - `:voice recompress` — re-distill all transcripts + fingerprint into `AUTHOR_VOICE.md`
 - `:voice audit` — run rule-coverage check against the corpus
-- `:voice quick` — adaptive short path (skips sessions 4 and 7, caps at 8 questions per session,
-  one calibration at end, ~43 prompts total)
+- `:voice quick` — short path (sessions 1, 2, 3, 5, and 6 only; 8 questions per session, one final calibration)
 - `:voice status` — list completed sessions and last calibration score
 
 ## Workflow
@@ -38,10 +37,9 @@ Wherever a step below says to dispatch `voice-profile-builder`, read the `dispat
 
 ### `:voice continue`
 
-1. Detect the highest completed session by scanning `.voice/interview/` for the completion marker.
-2. Run the next session yourself per `references/interview-protocol.md`, then dispatch `voice-profile-builder` (distillation, `--session N`).
-3. After session 3, run `references/calibration-protocol.md` yourself.
-4. After session 7, run the final calibration yourself, then dispatch `voice-profile-builder` in transcript distillation mode over all completed sessions.
+1. Scan `.voice/interview/` for complete sessions and mode markers. Resume the next unfinished session; do not repeat completed sessions.
+2. In full mode, run sessions in order and distill each transcript. Calibrate after session 3 and session 7; after session 7, distill all completed sessions.
+3. In quick mode, continue through sessions `[1, 2, 3, 5, 6]` and calibrate only after session 6. `--upgrade` runs the missing full sessions 4 and 7 without repeating completed sessions; after session 7, calibrate and distill all transcripts.
 
 ### `:voice recompress`
 
@@ -56,10 +54,13 @@ Wherever a step below says to dispatch `voice-profile-builder`, read the `dispat
 
 ### `:voice quick`
 
-1. Same as `:voice init`, but run each session in quick mode (8 questions per session; skip sessions 4 and 7).
-2. Stamp `[quick]` in `AUTHOR_VOICE.md` and `.voice/audit.md`.
-3. Single calibration at the end (after session 6 in quick numbering, which is the last).
-4. Tell the user: "Quick profile created. Run `:voice continue --upgrade` to fill in missed sessions."
+1. Run sessions 1, 2, 3, 5, and 6 (8 questions each). Write `<!-- mode: quick -->` beside the completion marker in each transcript.
+2. Distill each transcript, stamp `[quick]` in `AUTHOR_VOICE.md` and `.voice/audit.md`, then calibrate once after session 6 and run a final distillation over all completed sessions.
+3. Tell the user: "Quick profile created. Run `:voice continue --upgrade` to complete the full protocol."
+
+### `:voice continue --upgrade`
+
+For quick-mode transcripts, run the missing full sessions 4 and 7 without repeating completed sessions. After session 7, run the final calibration and distill all transcripts; remove `[quick]` only after the full workflow is complete.
 
 ### `:voice status`
 
@@ -69,6 +70,6 @@ Wherever a step below says to dispatch `voice-profile-builder`, read the `dispat
 
 ## Hard rules
 
-- Calibration mode runs ONLY after sessions 3 and 7 (or after final session in quick mode).
-- Sessions 1, 2, 4, 5, 6 are followed by `voice-profile-builder` distillation but not by calibration.
-- Quick mode is reversible: `:voice continue --upgrade` runs the missed sessions.
+- Calibration runs after full session 3 and session 7; quick mode calibrates only after session 6.
+- Quick mode is reversible: `:voice continue --upgrade` adds the omitted full sessions without repeating completed sessions.
+- A transcript marked quick remains quick on ordinary `:voice continue`; only `--upgrade` switches its schedule.

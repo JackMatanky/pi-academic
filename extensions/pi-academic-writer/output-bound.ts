@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { writeFileAtomic } from "../lib/fs-safe.js";
+import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
 
 export const MAX_OUTPUT_BYTES = 50_000;
 
@@ -60,12 +60,14 @@ function spill(
   text: string,
   now: number,
 ): string | null {
-  if (!existsSync(join(projectRoot, ".academic-writer"))) return null;
-
-  const dir = join(projectRoot, SPILL_DIR);
-
   try {
+    if (!existsSync(resolveInside(projectRoot, ".academic-writer")))
+      return null;
+
+    const dir = resolveInside(projectRoot, SPILL_DIR);
+
     mkdirSync(dir, { recursive: true });
+    resolveInside(projectRoot, SPILL_DIR);
 
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry);

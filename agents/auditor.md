@@ -201,16 +201,7 @@ Scan every **analytical / interpretive sentence** — any sentence that asserts 
 
 ### Check G — Zotero Source Title Integrity
 
-When a citation cites a Zotero source, verify that the `Title` field in the citation matches the `workTitle` in `sources.json` for that sourceId — NOT the Zotero collection name, not a generic label.
-
-```bash
-cat .academic-writer/sources.json | python3 -c "
-import json, sys
-sources = json.load(sys.stdin)
-for s in sources:
-    print(s.get('sourceId'), '→', s.get('workTitle'))
-"
-```
+When a citation cites a Zotero source, verify that the `Title` field in the citation matches the `workTitle` in the applicable source registry record. For a frozen article, read `articles/<slug>.sources.json`; use `.academic-writer/sources.json` only when no article-local snapshot exists. Never let a mutable project cache override an existing article snapshot.
 
 For each citation in the paragraph, cross-check: does the cited title string match (modulo minor punctuation) the `workTitle` in the registry? If not, emit `[NEEDS REVIEW: title mismatch — registry says "<workTitle>", citation says "<cited title>"]` and REJECT.
 

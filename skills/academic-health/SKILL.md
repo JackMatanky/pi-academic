@@ -36,15 +36,21 @@ Use `academic_writer_status`/`academic_writer_health` details. If empty: "Add 5�
 
 Use `academic_writer_health` for the `zotero-mcp` binary check. If a project `.mcp.json` exists and needs debugging, read it with the Read tool; do not parse credentials or copy secrets into the report.
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** resolve each distinct bare-named tool before
+calling it. Bare names are tools without the `academic_writer_` prefix (e.g.
+`zotero_get_item_fulltext`, `notebook_list`, `get_text`). Call
+`academic_writer_resolve_mcp_tool` with the bare name, then use its returned
+`live_name` for subsequent calls. If `live_name` is `null`, treat that tool as
+unavailable for this run.
 
-Then call `zotero_get_recent(limit=20)` to probe live MCP connectivity.
+Resolve `zotero_get_recent` and call its returned `live_name` with `limit=20` to
+probe live MCP connectivity.
 
 Report:
 
 - `zotero-mcp` binary installed? ✓/✗
 - Project `.mcp.json` present? ✓/✗/not required if global config works
-- If project `.mcp.json` has a `zotero` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers.zotero.directTools` lists the tools this package calls? ✓/✗
+- If project `.mcp.json` has a `zotero` server under pi: verify `settings.toolPrefix` is `"none"` and `mcpServers.zotero.directTools` lists the tools this package calls. Under omp, these keys are ignored; judge the integration by live tool resolution and the connectivity probe.
 - MCP server connected? ✓/✗
 - Number of items in library
 - Configured collection scope: `tools.zotero.collection.name/key` or "all library"
@@ -89,25 +95,31 @@ Report:
 
 **Skip if `tools.sefaria.enabled` is false.** Report as "Disabled (enable with `/skill:academic-setup`)".
 
-If `tools.sefaria.enabled` is true, check if bare Sefaria tools (`get_text`, `search`) are available in the runtime toolset.
+If `tools.sefaria.enabled` is true, resolve `get_text` and `search` with
+`academic_writer_resolve_mcp_tool`; call only returned `live_name` values. If both
+return `null`, report that biblical context expansion is unavailable.
+
 Report:
 
 - Sefaria integration enabled? ✓/✗
-- Bare Sefaria MCP tools available? ✓/✗
+- Resolved Sefaria MCP tools available? ✓/✗
 - If error/missing: warn that biblical context expansion will be limited.
 
 ## 6. NotebookLM
 
 **Skip if `tools.notebooklm.enabled` is false.** Report as "Disabled (enable with `/skill:academic-setup`)".
 
-Use `academic_writer_health` for the `nlm` and `notebooklm-mcp` binary checks. If installed, run `nlm login --check`; use `notebook_list()` as the live MCP probe.
+Use `academic_writer_health` for the `nlm` and `notebooklm-mcp` binary checks.
+If installed, run `nlm login --check`; resolve `notebook_list` with
+`academic_writer_resolve_mcp_tool` and call its returned `live_name` as the live
+MCP probe.
 
 Report:
 
 - CLI installed? ✓/✗
 - MCP server binary installed? ✓/✗
 - Project `.mcp.json` present? ✓/✗/not required if global config works
-- If project `.mcp.json` has a `notebooklm-mcp` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers["notebooklm-mcp"].directTools` lists the tools this package calls? ✓/✗
+- If project `.mcp.json` has a `notebooklm-mcp` server under pi: verify `settings.toolPrefix` is `"none"` and `mcpServers["notebooklm-mcp"].directTools` lists the tools this package calls. Under omp, these keys are ignored; judge the integration by live tool resolution and the notebook probe.
 - Authenticated? ✓/✗
 - MCP can list notebooks? ✓/✗ (and count)
 - Configured notebook scope: `tools.notebooklm.notebook.name/id` or "all notebooks"

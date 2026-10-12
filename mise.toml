@@ -1,7 +1,7 @@
 # academic-writer — dev toolchain, managed by mise (https://mise.jdx.dev)
 #
-# `mise install` provisions Node/hk/taplo; the postinstall hook then bootstraps
-# the npm trees (root + extensions/), so a fresh clone is ready for
+# `mise install` provisions Node/hk/taplo/vp; the postinstall hook then
+# bootstraps the npm trees (root + extensions/), so a fresh clone is ready for
 # `mise run lint` / `mise run test` with one command.
 #
 # Note: this does NOT manage zotero-mcp (`pip install zotero-mcp-server`) —
@@ -9,37 +9,38 @@
 # (see README.md "Quick Start"), not this repo's own dev/build toolchain.
 
 [tools]
-node = "26"      # satisfies package.json engines (>=22.19) and extensions/@types/node ^26
+node = "26"               # satisfies package.json engines (>=22.19) and extensions/@types/node ^26
 hk = "latest"
 taplo = "latest"
+"npm:vite-plus" = "1.1.0"
 
 [tasks.setup]
 description = "Install npm deps (root + extensions/)"
 run = ["npm install", "npm --prefix extensions install"]
 
 [tasks.fmt]
-description = "Format TypeScript, JSON, YAML, and TOML; apply Oxlint autofixes"
+description = "Format source files with Vite+ and TOML with Taplo"
 run = [
-  "npx oxlint --fix extensions",
-  "npx oxfmt --write \"**/*.{ts,js,json,yml,yaml}\"",
+  "npx vp lint --fix extensions",
+  "npx vp fmt --write \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo format mise.toml",
 ]
 
 [tasks.fmt-check]
-description = "Check formatting without changing files"
+description = "Check formatting with Vite+ and TOML with Taplo"
 run = [
-  "npx oxfmt --check \"**/*.{ts,js,json,yml,yaml}\"",
+  "npx vp fmt --check \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo check mise.toml",
 ]
 
 [tasks.lint]
-description = "Lint TypeScript (Oxlint + anti-slop, tsc), and check formatting"
-run = ["mise run fmt-check", "npx oxlint extensions", "npm run typecheck"]
+description = "Check formatting, Vite+ lint rules, and strict TypeScript types"
+run = ["mise run fmt-check", "npx vp lint extensions", "npm run typecheck"]
 
 [tasks.test]
-description = "Run the TypeScript test suite"
+description = "Run the TypeScript suite through Vite+"
 alias = "t"
-run = ["npm --prefix extensions run test"]
+run = "cd extensions && ../node_modules/.bin/vp run test"
 
 [tasks.typecheck]
 description = "Strict TypeScript check on extensions/"
@@ -54,6 +55,6 @@ description = "Install hk git hooks for this repo (run once after cloning)"
 run = "hk install"
 
 [hooks]
-# Runs after `mise install` provisions node/hk/taplo (including on a no-op
+# Runs after `mise install` provisions node/hk/taplo/vp (including on a no-op
 # install), so dependencies stay in sync whenever the pinned versions change.
 postinstall = { task = "setup" }

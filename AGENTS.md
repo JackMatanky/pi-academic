@@ -5,23 +5,22 @@ a single researcher on a local machine; the package should never assume team wor
 
 ## Commands
 
-With [mise](https://mise.jdx.dev) (recommended — pins Node 26 / hk / taplo):
+With [mise](https://mise.jdx.dev) (recommended — pins Node 26, hk, Taplo, and Vite+):
 
-- `mise install` — provisions Node/hk/taplo and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`
-- `mise run fmt` — formats TS/JS, JSON/YAML, and TOML
-- `mise run lint` — runs formatting checks, Oxlint, and strict TS
-- `mise run test` (alias `t`) — TypeScript suite (`extensions/tests/*.test.ts`, run with `node --test` against `tsc` output)
+- `mise install` — provisions tools and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`
+- `mise run fmt` — formats TS/JS, JSON/YAML, and TOML with Vite+ and Taplo
+- `mise run lint` — checks formatting, runs Vite+ lint rules (including vendored anti-slop rules), and strict TypeScript
+- `mise run test` (alias `t`) — runs the TypeScript `node:test` suite through `vp run test`
 - `mise run typecheck` — strict TS check on `extensions/`
 - `mise run ci` — lint + test
 - `mise run install-hooks` — installs hk-managed pre-commit/pre-push hooks (run once after cloning, or use `hk install --global`)
 
 Without mise, the equivalent raw commands:
 
-- `npm install && npm --prefix extensions install` — installs `pi-subagents`, `pi-mcp-adapter`, `pi-web-access`, `@earendil-works/pi-coding-agent`, the runtime dependencies (`fflate`, `@xmldom/xmldom`, `unpdf`), plus root/extension dev tooling
-- `npm --prefix extensions run test` — compile `extensions/` and run the TypeScript tests (needs `pandoc`; the PDF build test also needs `xelatex` or `tectonic` and is skipped without one)
-- `npx oxfmt --check "**/*.{ts,js,json,yml,yaml}"` — raw formatting check before TS
-- `mise run fmt` also applies Oxlint autofixes; `mise run lint` runs `oxlint extensions` (with the vendored anti-slop rules in `tools/oxlint/anti-slop/`)
-- `npm run typecheck` — strict TS check on `extensions/`
+- `npm install && npm --prefix extensions install` — installs runtime/peer development dependencies, Vite+, and extension dependencies
+- `npx vp fmt --check "**/*.{ts,js,json,yml,yaml}" && taplo check mise.toml` — formatting checks
+- `npx vp lint extensions && npm run typecheck` — lint and strict TS check
+- `cd extensions && ../node_modules/.bin/vp run test` — compile `extensions/` and run the TypeScript tests (needs `pandoc`; the PDF build test also needs `xelatex` or `tectonic` and is skipped without one)
 
 ## Source layout
 
@@ -53,7 +52,8 @@ Without mise, the equivalent raw commands:
 - **Profile-scoped**: every skill/agent that touches `.academic-writer/` must check `.academic-writer/profile.md` exists first (or be the `init`/`setup` skill creating it).
 - **Thresholds**: package contributors edit `thresholds.json` at repo root to change shipped defaults, never inline numbers in skills or agents. Researchers override per project by editing `.academic-writer/thresholds.json` (see `academic_writer_read_resource` resolution order above) — never tell a researcher to edit the package's own copy.
 - **Strict TypeScript**: `extensions/` must compile under `tsc --noEmit` with `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals`/`Parameters`, and `verbatimModuleSyntax`; never use `any`. Optional option fields that callers forward from possibly-undefined values are declared `?: T | undefined`.
-- **Decode at the boundary**: JSON files, tool arguments and parsed markdown are decoded once with a TypeBox schema (`lib/schema.ts`) into a named type derived with `Static<>`; code past the boundary never uses `typeof` checks, `Record<string, unknown>` or `as` assertions. `oxlint` with the vendored anti-slop rules enforces this in `mise run lint`; do not suppress findings.
+- **Decode at the boundary**: JSON files, tool arguments and parsed markdown are decoded once with a TypeBox schema (`lib/schema.ts`) into a named type derived with `Static<>`; code past the boundary never uses `typeof` checks, `Record<string, unknown>` or `as` assertions. `mise run lint` runs Vite+ lint with the vendored anti-slop rules in
+  `tools/oxlint/anti-slop/`; do not suppress findings.
 - **Project paths and writes**: any path that comes from a tool argument goes through `resolveInside(projectRoot, path)` before it is read or written; shared JSON is written with `writeFileAtomic`, and read-modify-write cycles run under `withFileLock`. Tool failures throw `ToolFailure` (via `fail()`), because Pi only sets `isError` when `execute` throws.
 - **Skill frontmatter**: `name`, `description`, optional `allowed-tools` (space-delimited), optional `metadata: {author, version}`. No `user-invocable` — every pi skill is both model- and `/skill:name`-invocable.
 - **Agent frontmatter**: `name`, `description`, `tools` (comma-delimited for `pi-subagents`), and optional `spawns` for OMP nested-agent grants. A restricted nested caller needs `subagent` in its `tools` under pi and `spawns: <agent>` under OMP. Pi MCP visibility grants use `mcp:<server>` or `mcp:<server>/<tool>`; OMP MCP names are resolved at runtime. Omit `model:` to inherit the harness default; override via `subagents.agentOverrides.<name>.model` (pi) or `task.agentModelOverrides.<name>` (OMP).

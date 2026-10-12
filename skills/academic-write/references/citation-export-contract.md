@@ -49,18 +49,11 @@ Rules: write this JSON with the Write tool, not a Python heredoc; move literal c
 
 ## Citeproc mode
 
-Every other `citationStyle` value is citeproc mode. Body citations must be Pandoc markers written by `section-writer`: `[@citeKey, p. N]` or co-located markers such as `[@key1; @key2, p. N]`. `citeKey` must come from `.academic-writer/sources.json`; never invent it.
+Every other `citationStyle` value is citeproc mode. Body citations must be Pandoc markers written by `section-writer`: `[@citeKey, p. N]` or co-located markers such as `[@key1; @key2, p. N]`. `citeKey` must come from the approved article-local `articles/<slug>.sources.json` snapshot; never invent it.
 
 Resolve the active CSL reference with `academic_writer_resolve_csl` using the profile's custom value when present (`outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or `citation.csl`), otherwise `citationStyle`. Use `download: true`.
 
 Rules:
 
 - Keep the markdown body clean; do not add citeproc YAML frontmatter just for export.
-- `bibliography` is always `.academic-writer/bibliography.bib`.
-- Pass the resolved CSL path as `csl` to `academic_writer_export_article`.
-- Do not strip or rewrite `[@citeKey]` markers.
-- Do not emit literal author/year citation prose in citeproc mode.
-
-Before Pandoc DOCX/export, call `academic_writer_audit_citations` with the markdown article path and the actual `citationStyle`. The audit must pass: every marker key must exist in both `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
-
-Citeproc DOCX/export uses `academic_writer_export_article`, which passes `--citeproc`, `--bibliography`, `--csl`, and `--fail-if-warnings` to Pandoc. This path does not set right-to-left document direction; warn Hebrew users that manual RTL adjustment may be needed unless their CSL/template handles it.
+- Omit the `bibliography` override when a frozen article-local snapshot exists; it always takes precedence. Use an explicit override only for a pre-snapshot article.

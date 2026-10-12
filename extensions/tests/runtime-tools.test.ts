@@ -353,6 +353,7 @@ test("[test_export_passes_citeproc_options_to_pandoc] export passes citeproc opt
     citationStyle: "chicago",
     formats: ["docx"],
     csl: "style.csl",
+    bibliography: ".academic-writer/bibliography.bib",
   };
 
   const data = await callTool(root, "academic_writer_export_article", params);

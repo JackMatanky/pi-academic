@@ -47,7 +47,11 @@ omp plugin install github:JackMatanky/academic-writer
 
 To work on the package locally, clone it and run `omp install ./academic-writer`.
 
-Three of the four `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) are unnecessary under OMP — it ships native equivalents (`task` subagent dispatch, native MCP discovery, native `web_search`). Only `@earendil-works/pi-coding-agent`'s types matter there, and only for local type-checking.
+The package depends on `typebox` at runtime. Three of the four companion peers
+(`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) are unnecessary under OMP —
+it ships native equivalents (`task` subagent dispatch, native MCP discovery,
+native `web_search`). Only `@earendil-works/pi-coding-agent` is needed for local
+type-checking.
 
 ### 3. Initialize Your Profile
 
@@ -259,13 +263,13 @@ pi install git:github.com/JackMatanky/academic-writer
 
 Skills (`skills/`), agents (`agents/`), and extensions (`extensions/`) are the package source — there is no separate build step that generates them; pi loads them directly via convention directories.
 
-With [mise](https://mise.jdx.dev) (recommended — pins the toolchain):
+With [mise](https://mise.jdx.dev) (recommended — pins the toolchain, including Node 26, Taplo, and Vite+):
 
 ```bash
-mise install           # provisions Node/hk/taplo and npm-installs both trees
-mise run fmt           # format TS/JS, JSON/YAML, and TOML
-mise run lint          # formatting checks + Oxlint + strict TS
-mise run test          # TypeScript test suite
+mise install           # provisions tools and npm-installs both trees
+mise run fmt           # Vite+ formats TS/JS/JSON/YAML; Taplo formats TOML
+mise run lint          # formatting checks + Vite+ anti-slop lint + strict TS
+mise run test          # TypeScript node:test suite through Vite+
 mise run ci            # lint + test
 mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 ```
@@ -273,11 +277,10 @@ mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 Without mise:
 
 ```bash
-npm install && npm --prefix extensions install  # runtime deps (fflate, @xmldom/xmldom, unpdf) and dev tooling — peerDependencies aren't wired as active Pi extensions here
-npx oxfmt --check "**/*.{ts,js,json,yml,yaml}"
-npx oxlint extensions                            # Oxlint + anti-slop rules (baseline findings pending)
-npm run typecheck                                # strict TS check on extensions/
-npm --prefix extensions run test                 # TypeScript tests (needs pandoc; PDF test needs xelatex or tectonic)
+npm install && npm --prefix extensions install  # dependencies + local Vite+
+npx vp fmt --check "**/*.{ts,js,json,yml,yaml}" && taplo check mise.toml
+npx vp lint extensions && npm run typecheck     # lint + strict TS check
+cd extensions && ../node_modules/.bin/vp run test # TS tests; PDF also needs xelatex/tectonic
 ```
 
 **Versioning is automatic.** Every push to `main` triggers CI that bumps the patch version in `package.json`, tags the release, and creates a GitHub Release. Do not bump versions manually.

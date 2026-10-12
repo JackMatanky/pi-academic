@@ -39,23 +39,14 @@ export interface ToolContext {
 
 /**
  * A failed tool call. Pi marks a call as an error only when `execute` throws,
- * so failures are thrown; the structured details ride along on the error and
- * are appended to the message because the model sees only the message.
+ * so failures are thrown; structured details stay available to adapters.
  */
 export class ToolFailure<Details extends object = object> extends Error {
   readonly text: string;
   readonly details: Details & { ok: false };
 
   constructor(text: string, details?: Details) {
-    const extra = Object.entries(details ?? {}).filter(
-      ([key]) => key !== "ok" && key !== "error",
-    );
-
-    super(
-      extra.length > 0
-        ? `${text}\n${JSON.stringify(Object.fromEntries(extra))}`
-        : text,
-    );
+    super(text);
     this.name = "ToolFailure";
     this.text = text;
     this.details = Object.assign({}, details, { ok: false as const });
@@ -63,13 +54,23 @@ export class ToolFailure<Details extends object = object> extends Error {
 }
 
 /**
- * Throws a {@link ToolFailure}.
+ * Throws a {@link ToolFailure}; bounded tool dispatch retains details in the
+ * error text for consumers that do not expose structured details.
  */
 export function fail<Details extends object>(
   text: string,
   details?: Details,
 ): never {
-  throw new ToolFailure(text, details);
+  const visibleDetails = Object.fromEntries(
+    Object.entries(details ?? {}).filter(([key]) => key !== "error"),
+  );
+
+  const message =
+    Object.keys(visibleDetails).length > 0
+      ? `${text}\n${JSON.stringify(visibleDetails)}`
+      : text;
+
+  throw new ToolFailure(message, details);
 }
 
 /**
@@ -192,11 +193,17 @@ export function registerTool<S extends TSchema>(
           details: output.details ?? {},
         };
       } catch (cause) {
-        if (cause instanceof ToolFailure) throw cause;
-        throw new ToolFailure(
-          `${spec.failure ?? `${spec.label} failed`}: ${errorMessage(cause)}`,
-          { error: errorMessage(cause) },
-        );
+        if (cause instanceof ToolFailure) {
+          throw new ToolFailure(
+            boundOutput(ctx.cwd, spec.name, cause.text),
+            cause.details,
+          );
+        }
+
+        const message = `${spec.failure ?? `${spec.label} failed`}: ${errorMessage(cause)}`;
+        const bounded = boundOutput(ctx.cwd, spec.name, message);
+
+        throw new ToolFailure(bounded, { error: bounded });
       }
     },
   };

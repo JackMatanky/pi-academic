@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -89,4 +90,31 @@ test("without .academic-writer nothing is created and the notice says the output
 
   assert.match(out, /The full output was not saved/);
   assert.deepEqual(readdirSync(root), []);
+});
+
+test("output spills stay inside the project when the state directory is a symlink", (t) => {
+  const root = project(t, false);
+  const outside = mkdtempSync(join(tmpdir(), "aw-outside-"));
+
+  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  symlinkSync(outside, join(root, ".academic-writer"));
+
+  const out = boundOutput(root, "tool", "x\n".repeat(3000));
+
+  assert.match(out, /The full output was not saved/);
+  assert.deepEqual(readdirSync(outside), []);
+});
+
+test("output spills stay inside the project when the spill directory is a symlink", (t) => {
+  const root = project(t, true);
+  const outside = mkdtempSync(join(tmpdir(), "aw-outside-"));
+
+  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  mkdirSync(join(root, ".academic-writer", "runs"));
+  symlinkSync(outside, spillDir(root));
+
+  const out = boundOutput(root, "tool", "x\n".repeat(3000));
+
+  assert.match(out, /The full output was not saved/);
+  assert.deepEqual(readdirSync(outside), []);
 });

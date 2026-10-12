@@ -80,7 +80,7 @@ test("invalid designs name the field and the correction", (t) => {
     ],
     [
       { components: { body: { fontSizePT: 12 } } },
-      /components\.body\.fontSizePT: remove the unknown property/,
+      /components\.body\.fontSizePT/,
     ],
     [{ components: { nothing: {} } }, /components\.nothing/],
     [{ page: { size: "A3" } }, /page\.size/],

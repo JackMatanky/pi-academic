@@ -208,6 +208,8 @@ Evidence re-description check: a reference note use back-references its primary 
 
 #### Skill 8: CITATION AUDIT (hard gate)
 
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness and the `auditor_result` schema.
+
 **Use your subagent-dispatch tool to spawn an `auditor` subagent.** The auditor's full rule set is injected automatically. Spawn with:
 
 - The paragraph text
@@ -216,7 +218,7 @@ Evidence re-description check: a reference note use back-references its primary 
 - tools from the profile and citationStyle for Check D/E
 - `outputSchema`: the `auditor_result` schema from the `dispatch_contract` resource (on omp also `schemaMode: "strict"`)
 
-If rejected: re-run Skills 1-7 on the paragraph with the auditor's feedback, re-spawn the auditor (fresh — see decision matrix above), and re-audit. Max rewrite cycles from `thresholds.json > rewriteCycles.max` (default 3). If still failing after the max, include the paragraph with a `[NEEDS REVIEW]` marker.
+If rejected: re-run Skills 1-7 on the paragraph with the auditor's feedback, re-spawn the auditor (fresh — see decision matrix above), and re-audit. Max rewrite cycles from `thresholds.json > rewriteCycles.max` (default 3). If still failing after the max, stop the section and report the paragraph as unresolved to the orchestrator. Do not return the rejected paragraph, assemble the section, or continue to export until the researcher resolves it.
 
 ---
 

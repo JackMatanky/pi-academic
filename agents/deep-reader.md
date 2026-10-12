@@ -1,7 +1,7 @@
 ---
 name: deep-reader
 description: "Explore original sources, map evidence and gaps, and save unchecked candidate research notes before thesis proposal. Writes only current-run citation caches and candidate notes; never article-local snapshots or article prose."
-tools: read, grep, find, academic_writer_ingest_sources, academic_writer_write_sources_cache, academic_writer_write_research_notes, academic_writer_resolve_mcp_tool, mcp:zotero/zotero_get_item_fulltext, mcp:zotero/zotero_get_item_metadata, mcp:zotero/zotero_get_pdf_outline, mcp:zotero/zotero_search_items, mcp:notebooklm-mcp/notebook_list, mcp:notebooklm-mcp/notebook_query, mcp:sefaria/get_text, mcp:sefaria/search
+tools: read, grep, find, academic_writer_ingest_sources, academic_writer_write_sources_cache, academic_writer_write_research_notes, academic_writer_resolve_mcp_tool, mcp:zotero/zotero_get_item_fulltext, mcp:zotero/zotero_get_item_metadata, mcp:zotero/zotero_get_pdf_outline, mcp:zotero/zotero_search_items, mcp:zotero/zotero_read_pdf_pages, mcp:notebooklm-mcp/notebook_list, mcp:notebooklm-mcp/notebook_query, mcp:sefaria/get_text, mcp:sefaria/search
 ---
 
 # Deep Reader Agent

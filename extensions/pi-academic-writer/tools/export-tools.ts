@@ -133,7 +133,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
         Type.String({
           minLength: 1,
           description:
-            "Local bibliography file for citeproc exports. Defaults to the article-local snapshot, then .academic-writer/bibliography.bib.",
+            "Local bibliography for citeproc exports. The frozen article-local snapshot takes precedence; this override applies only before a snapshot exists.",
         }),
       ),
       pdfEngine: Type.Optional(
@@ -202,11 +202,13 @@ export function registerExportTools(pi: ExtensionAPI): void {
 
       const localAssets = citationAssetPaths(audit.article);
 
-      const bibliography =
-        params.bibliography ??
-        (existsSync(join(cwd, localAssets.bibliography))
-          ? localAssets.bibliography
-          : ".academic-writer/bibliography.bib");
+      const hasArticleBibliography = existsSync(
+        join(cwd, localAssets.bibliography),
+      );
+
+      const bibliography = hasArticleBibliography
+        ? localAssets.bibliography
+        : (params.bibliography ?? ".academic-writer/bibliography.bib");
 
       const results: ExportResult[] = [];
 

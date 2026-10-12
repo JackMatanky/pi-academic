@@ -6,7 +6,7 @@ tools: read, academic_writer_read_resource, academic_writer_write_voice_fingerpr
 
 # Voice Profile Builder
 
-Select exactly one operation from the task. Corpus analysis writes only `.voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`; profile distillation writes only `AUTHOR_VOICE.md` through `academic_writer_update_author_voice`. Never substitute one artifact for the other.
+Corpus mode writes only `.voice/fingerprint.md`; transcript distillation writes only `AUTHOR_VOICE.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the orchestrator, preserving existing fields and updating evidence from the analyzed corpus. The orchestrator applies it to `.academic-writer/profile.md` only after researcher approval. Never write the profile directly.
 
 ## Corpus fingerprint mode
 
@@ -22,7 +22,7 @@ empirical signals of their voice. You do not interview; interview work belongs t
 
 ### Outputs
 
-Call `academic_writer_write_voice_fingerprint` with the full fingerprint content. Never write `AUTHOR_VOICE.md` in corpus mode; that belongs to the distillation mode.
+Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In your final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `AUTHOR_VOICE.md` in corpus mode; that belongs to the distillation mode.
 
 ### Required sections in fingerprint.md
 

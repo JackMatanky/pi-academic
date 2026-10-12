@@ -157,7 +157,9 @@ Re-read the `styleFingerprint`. For each paragraph being adjusted:
 1. Score current paragraph against fingerprint (10 dimensions)
 2. Apply the requested tone change while keeping fingerprint compliance
 3. Use `representativeExcerpts` as style targets
-4. Run Hebrew grammar check if applicable
+4. Run the Hebrew grammar check when Hebrew text changed.
+Before dispatching, read the `dispatch_contract` resource (`academic_writer_read_resource`) and pass its `auditor_result` schema as `outputSchema` (on omp use `schemaMode: "strict"`).
+
 5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `auditor` subagent** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the auditor's structured result — exactly as Modes A/B/E do. If the auditor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
 
 If the researcher wants tone that differs from their fingerprint (e.g., "make this more polemical even though my usual style is measured"), note the deviation and apply it as a conscious choice.
@@ -181,7 +183,7 @@ Show the current recursive outline and selected original paragraphs. Reorder, sp
 
 ### Mode F: Cut / Expand
 
-**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, **use your subagent-dispatch tool to spawn an `auditor` subagent** (revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the auditor's structured result — exactly as Modes A/B/E do. If rejected, restore/fix the citation and re-audit before finalizing.
+**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, read the `dispatch_contract` resource and spawn an `auditor` with the `auditor_result` schema as `outputSchema` (on omp also `schemaMode: "strict"`), pass revised paragraph text, sectionIndex, paragraphIndex, and tools, then gate on `verdict: PASS`. If rejected, restore/fix the citation and re-audit before finalizing.
 
 **Expand:** Spawn research subagents to find additional material, then spawn section-writer for the expanded passages. The section-writer already runs the auditor hard gate on every paragraph it produces (including any cited sentences it rewrites), so the expand path is covered by the section-writer pipeline.
 

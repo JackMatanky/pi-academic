@@ -35,18 +35,13 @@ If new files found, show them:
 
 ## Step 2: Spawn Style Miner
 
-**Use your subagent-dispatch tool to spawn the `voice-profile-builder` subagent.** Pass:
+Read the profile with `academic_writer_get_profile`, then spawn `voice-profile-builder` with:
 
-- List of new article filenames
-- Current `styleFingerprint` from the profile
-- `targetLanguage`
+- The new article filenames and current `.voice/fingerprint.md`
+- The existing full `styleFingerprint` object
+- `targetLanguage` and the current `analyzedArticles` list
 
-The style miner returns:
-
-- Updated fingerprint dimensions
-- New representative excerpts
-- Statistics (sentence lengths, transition patterns, vocabulary patterns, linking word usage)
-- A diff report showing what changed
+The agent writes only `.voice/fingerprint.md`. It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not the agent—updates the runtime profile after researcher approval.
 
 ## Step 3: Present Diff Report
 
@@ -73,23 +68,12 @@ Show the researcher what changed:
 
 ## Step 4: Confirm and Save
 
-Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
-> "Would you like to save these updates to your style fingerprint?"
->
-> 1. **Save updates** — Merge the new patterns into your profile.
-> 2. **Review details first** — Show me the full before/after comparison.
-> 3. **Discard** — Keep the current fingerprint unchanged.
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+Ask the researcher whether to save, review, or discard the changes. Wait for the answer and accept a number, label, or close paraphrase.
 
-If **Save**, update the profile:
-
-1. Merge the updated `styleFingerprint` into `.academic-writer/profile.md`
-2. Add the new filenames to `analyzedArticles` array
-3. Update `updatedAt` timestamp
-
-Use the `Write` tool to save the updated profile.
+If **Save**, call `academic_writer_update_profile` with a `fieldsJson` object containing the complete proposed `styleFingerprint` and the merged `analyzedArticles` list. Do not use generic file-write tools for the profile.
 
 If **Review details**, show the full before/after for each dimension, then ask again.
+
 
 ## Completion
 

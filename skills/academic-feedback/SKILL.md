@@ -24,10 +24,10 @@ Never summarize feedback without acting on it.
 | Category | What it touches | Example |
 |----------|-----------------|---------|
 | **A. Article edit** | The finished article file in `articles/` | "Section III repeats Text 360 — consolidate" |
-| **B. Profile update** | `.academic-writer/profile.md` — fingerprint, preferences, article structure, targetLanguage, abstractLanguages, outputFormatPreferences | "My paragraphs should be shorter by default" |
-| **C. Pattern reference update** | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps | "'I suggest that' appeared too often — lower the cap to 2" |
+| **B. Profile update** | `.academic-writer/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences | "Use Chicago author-date for this project" |
+| **C. Pattern reference update** | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps | "An opening phrase appeared too often — lower its cap to 2" |
 | **D. Source registry fix** | `.academic-writer/sources.json` — correct a bibliographic metadata field | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
-| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent preferences also go into `AUTHOR_VOICE.md` (see Phase 4.E). Use for observations that don't fit A–D but should carry forward. | "I don't like em-dashes in my writing, ever" |
+| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `AUTHOR_VOICE.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing" |
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 

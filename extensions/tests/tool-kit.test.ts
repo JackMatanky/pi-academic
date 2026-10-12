@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
+import { fail, ToolFailure } from "../pi-academic-writer/tool-kit.js";
 import { createToolHarness } from "./helpers.js";
 
 const CORE_TOOLS = [
@@ -22,6 +23,20 @@ function scratch(t: TestContext): string {
 
   return dir;
 }
+
+test("fail exposes structured diagnostics in the error message", () => {
+  assert.throws(
+    () => fail("request failed", { diagnostics: "missing source" }),
+    (cause: unknown) => {
+      assert.ok(cause instanceof ToolFailure);
+      assert.match(cause.message, /"diagnostics":"missing source"/);
+      assert.equal(cause.details.diagnostics, "missing source");
+      assert.equal(cause.details.ok, false);
+
+      return true;
+    },
+  );
+});
 
 test("every tool declares an approval tier and exactly the six core tools are essential", () => {
   const { definitions } = createToolHarness();

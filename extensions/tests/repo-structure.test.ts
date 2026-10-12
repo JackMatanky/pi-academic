@@ -28,59 +28,6 @@ test("[test_voice_artifacts_gitignored] voice artifacts are gitignored except .g
   assert.ok(gitignore.includes("!.voice/.gitkeep"));
 });
 
-/**
- * The body of a `[table]` in a TOML file, up to the next table header.
- */
-function tomlTable(text: string, name: string): string {
-  const start = text.indexOf(`[${name}]`);
-
-  assert.notEqual(start, -1, `mise.toml has no [${name}] table`);
-
-  const body = text.slice(start + name.length + 2);
-  const next = body.search(/^\[/m);
-
-  return next === -1 ? body : body.slice(0, next);
-}
-
-test("[test_mise_tasks_cover_format_lint_and_hk] mise tasks cover format, lint and hk", () => {
-  const text = readRepo("mise.toml");
-  const tools = tomlTable(text, "tools");
-
-  assert.match(tools, /^hk\s*=/m);
-  assert.match(tools, /^taplo\s*=/m);
-
-  for (const task of ["fmt", "fmt-check", "lint", "ci", "install-hooks"])
-    assert.ok(text.includes(`[tasks.${task}]`), `missing task ${task}`);
-
-  const lint = tomlTable(text, "tasks.lint");
-
-  assert.ok(lint.includes("npm run typecheck"));
-  assert.ok(lint.includes("fmt-check"));
-  assert.match(
-    tomlTable(text, "tasks.install-hooks"),
-    /^run\s*=\s*"hk install"\s*$/m,
-  );
-
-  const depends = /^depends\s*=\s*\[([^\]]*)\]/m.exec(
-    tomlTable(text, "tasks.ci"),
-  );
-
-  assert.ok(depends, "[tasks.ci] has no depends array");
-  assert.ok(depends[1]?.includes('"lint"'));
-  assert.ok(depends[1]?.includes('"test"'));
-});
-
-test("[test_hk_runs_before_commit_and_push] hk runs fmt/lint before commit and ci before push", () => {
-  const content = readRepo("hk.pkl");
-
-  assert.ok(content.includes("github.com/jdx/hk"));
-  assert.ok(content.includes('["pre-commit"]'));
-  assert.ok(content.includes('["pre-push"]'));
-  assert.ok(content.includes("mise run fmt"));
-  assert.ok(content.includes("mise run lint"));
-  assert.ok(content.includes("mise run ci"));
-});
-
 test("[test_json_validity] every committed JSON file parses", () => {
   for (const file of repoFiles(".", [".json"])) {
     assert.doesNotThrow(

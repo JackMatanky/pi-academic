@@ -1,6 +1,6 @@
 # Output: self-review, Markdown, audit, export
 
-### Step 8.7: Self-Review (Quality Gate)
+## Step 8.7: Self-Review (Quality Gate)
 
 Run the scorecard workflow of `/skill:academic-review` in pipeline-step mode (it reads the `scorecard` resource). Score the article on 6 dimensions (each 1–10):
 
@@ -73,7 +73,7 @@ Report to researcher:
 > Citations: [N] ([citationStyle] format)
 > Sections: [N]
 > Language: [targetLanguage]
-> [If citeproc mode: Bibliography — `.academic-writer/bibliography.bib` via pandoc `--citeproc` (CSL: [resolved CSL path])]
+> [If citeproc mode: Bibliography — frozen article-local snapshot via pandoc `--citeproc` (CSL: [resolved CSL path])]
 >
 > Quality checks applied per paragraph:
 >

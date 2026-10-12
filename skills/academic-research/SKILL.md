@@ -1,7 +1,7 @@
 ---
 name: academic-research
-description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool academic_writer_read_resource
+description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Use when investigating a topic or fact-checking before writing."
+allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool academic_writer_read_resource zotero_search_items zotero_semantic_search notebook_list notebook_query
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -21,7 +21,7 @@ Call `academic_writer_get_profile`.
 
 If it returns `ok: false`: "Run `/skill:academic-setup` first to set up your profile and index your sources."
 
-Read the returned `tools` object to know which integrations are available.
+Use the profile `targetLanguage` as the dispatch value.
 
 ---
 
@@ -42,56 +42,33 @@ Accept any of these forms:
 
 ## Parallel Research via Subagents
 
-**Speed is critical.** Spawn subagents in parallel to query all enabled tools simultaneously. Do NOT query tools sequentially.
+**Speed is critical.** Search integrations in parallel where their work is independent; query sequentially only when the next step depends on results.
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** resolve every bare-named tool with `academic_writer_resolve_mcp_tool` once per distinct name before calling it. Use the returned `live_name`; if it is `null`, treat that integration as unavailable.
 
-### Determine which subagents to launch
+### Determine the research path
 
-Based on the question and enabled tools, spawn ALL applicable agents **at the same time**:
+Read `dispatch_contract` before spawning an agent. Under OMP, put independent agents in one `task` call; under pi, issue sibling `subagent` calls in one response.
 
-**Spawn independent research subagents in parallel** — under OMP, put them in one `task` call’s `tasks` array; under pi, issue sibling `subagent` calls in one response:
+1. **Local sources:** call `academic_writer_ingest_sources` to index files under `.academic-writer/sources/`, then use the returned records and text for relevant evidence.
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+2. **Zotero:** if enabled, resolve and call `zotero_search_items` directly to find relevant records, scoping by `tools.zotero.collection.key` when configured. For optional semantic discovery, resolve `zotero_semantic_search` and use it only if available. If relevant source IDs are found, dispatch `deep-reader` with `subject`, `selectedSourceIds`, `tools`, and `targetLanguage`; the agent reads those sources and records unchecked candidate notes. Do not dispatch it without the required inputs.
 
-1. **Local Folder Source Ingest**: Call `academic_writer_ingest_sources` to index any local files under `.academic-writer/sources/`.
+3. **NotebookLM:** if enabled, resolve `notebook_list` and `notebook_query` and query the configured notebook directly (or choose a relevant notebook from the list). Treat its response as supplementary leads, not citable evidence.
 
-2. **Zotero research** (if `tools.zotero.enabled`): dispatch `agent: "deep-reader"` (its tools include the read-only Zotero grants). Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. Preferred for searching/reading Zotero documents.
+Each enabled integration may be queried alongside independent local ingest or other searches. Merge and cross-check the returned evidence before answering.
 
-3. **NotebookLM supplementary query** (if `tools.notebooklm.enabled`): dispatch `agent: "deep-reader"` with the instruction `query NotebookLM only (notebook_list, notebook_query); return findings as leads, not citable evidence`. Pass `tools.notebooklm.notebook` if configured. Query that notebook for supplementary context using `notebook_query`.
+### Zotero deep-reader instructions
 
-*(Note: The package's own RAG vector-search pipeline is a future TODO and is not active in current tool runs. Zotero's `zotero_semantic_search` is a separate, optional upstream tool — see the Zotero instructions below.)*
-Each subagent runs independently and returns its findings.
+Pass the exact selected Zotero item keys, article subject, profile tools settings, and target language. The reader uses `zotero_get_item_fulltext` for evidence and `zotero_read_pdf_pages` to verify exact page references.
 
 ### Local Folder Sources Instructions
 
 Call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD files from `.academic-writer/sources/`. Search and read extracted content to answer research queries.
 
-### Zotero Subagent Instructions
-
-The Zotero subagent should:
-
-1. **Search** — if `tools.zotero.collection.key` is present, scope the search natively: `zotero_search_items(query="QUERY", collection_key=COLLECTION_KEY)`. Otherwise search all sources with `zotero_search_items(query="QUERY")`, which falls back to simplified/semantic matching on its own when keyword search finds nothing. Optional, for pure topic/concept queries: `zotero_semantic_search(query="QUERY")` — it requires the optional `[semantic]` extra (`pip install "zotero-mcp-server[semantic]"`) and a populated index; check readiness with `zotero_get_search_database_status` and rebuild with `zotero_update_search_database`. If it reports the extra is missing, skip it and rely on `zotero_search_items`.
-2. **Read relevant documents** for full passages: `zotero_get_item_fulltext(item_key="DOC_ID")`
-3. **Verify page numbers** when exact citations are needed: `zotero_read_pdf_pages(item_key="DOC_ID", start_page=..., end_page=...)`
-4. **Return full text passages** with document ID, title, and page numbers
-
-### NotebookLM Subagent Instructions
-
-The NotebookLM subagent should:
-
-1. **Choose notebook scope**: use `tools.notebooklm.notebook` when present; otherwise use `notebook_list` to find relevant notebooks.
-2. **Query notebooks**: Use `notebook_query` MCP tool with the research question for AI-powered Q&A
-3. **Cross-reference**: NotebookLM answers are AI-synthesized — always cross-reference key claims against Zotero or ingested local source results for citation accuracy
-4. **Return findings** with notebook name and any source references NotebookLM provides
-
-**Important:** NotebookLM answers are supplementary context. Never cite NotebookLM output as a primary source — always verify claims against Zotero or ingested local sources.
-
----
-
 ## Merge & Present Findings
 
-Once all subagents return, **merge results** by deduplicating and cross-referencing:
+Once independent tool calls and dispatched agents return, **merge results** by deduplicating and cross-checking:
 
 1. If both Zotero and local files found the same passage, prefer Zotero's version for page precision.
 2. Always verify claims against Zotero or ingested local documents.

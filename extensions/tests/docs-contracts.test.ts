@@ -109,29 +109,19 @@ test("[test_cross_references] the help skill mentions every skill", () => {
     );
 });
 
-test("[test_research_skill_zotero_search_guidance] research skill gives current Zotero search guidance", () => {
+test("[test_research_skill_dispatch_contract] research uses scoped searches and complete reader inputs", () => {
   const content = readRepo("skills/academic-research/SKILL.md");
 
-  assert.ok(
-    !content.includes("cannot accept a collection filter"),
-    "zotero_search_items accepts collection_key natively — drop the hedge",
-  );
-  assert.ok(
-    content.includes("collection_key=COLLECTION_KEY"),
-    "collection scope must be passed as collection_key",
-  );
-  assert.ok(
-    content.includes("zotero-mcp-server[semantic]"),
-    "zotero_semantic_search needs the optional [semantic] extra documented",
-  );
-  assert.ok(
-    content.includes("zotero_get_search_database_status"),
-    "semantic search readiness must be checked before it is recommended",
-  );
-  assert.ok(
-    !content.includes("Vectorless RAG"),
-    "'not active' note contradicts the same skill offering zotero_semantic_search",
-  );
+  for (const needle of [
+    "academic_writer_resolve_mcp_tool",
+    "tools.zotero.collection.key",
+    "selectedSourceIds",
+    "targetLanguage",
+    "Do not dispatch it without the required inputs",
+    "notebook_query",
+    "dispatch_contract",
+  ])
+    assert.ok(content.includes(needle), `research skill omits ${needle}`);
 });
 
 test("[test_agents_md_whole_server_grant_includes_write_tools] AGENTS.md documents that a whole-server Zotero grant includes write tools", () => {
