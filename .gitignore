@@ -31,3 +31,5 @@ logs/
 # Bundled Gemini MCP server build artifacts
 mcp/gemini-server/dist/
 mcp/gemini-server/node_modules/
+
+*digest.txt
