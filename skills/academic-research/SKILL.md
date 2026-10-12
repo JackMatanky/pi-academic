@@ -1,7 +1,7 @@
 ---
 name: academic-research
 description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Spawns parallel subagents for speed. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool
+allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool academic_writer_read_resource
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -52,11 +52,13 @@ Based on the question and enabled tools, spawn ALL applicable agents **at the sa
 
 **Spawn independent research subagents in parallel** — under OMP, put them in one `task` call’s `tasks` array; under pi, issue sibling `subagent` calls in one response:
 
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
 1. **Local Folder Source Ingest**: Call `academic_writer_ingest_sources` to index any local files under `.academic-writer/sources/`.
 
-2. **Zotero subagent** (if `tools.zotero.enabled`): Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. Preferred for searching/reading Zotero documents.
+2. **Zotero research** (if `tools.zotero.enabled`): dispatch `agent: "deep-reader"` (its tools include the read-only Zotero grants). Pass as prompt the question, questionType, sourceIds, and `tools.zotero.collection` if configured. Preferred for searching/reading Zotero documents.
 
-3. **NotebookLM subagent** (if `tools.notebooklm.enabled`): Pass `tools.notebooklm.notebook` if configured. Query that notebook for supplementary context using `notebook_query`.
+3. **NotebookLM supplementary query** (if `tools.notebooklm.enabled`): dispatch `agent: "deep-reader"` with the instruction `query NotebookLM only (notebook_list, notebook_query); return findings as leads, not citable evidence`. Pass `tools.notebooklm.notebook` if configured. Query that notebook for supplementary context using `notebook_query`.
 
 *(Note: The package's own RAG vector-search pipeline is a future TODO and is not active in current tool runs. Zotero's `zotero_semantic_search` is a separate, optional upstream tool — see the Zotero instructions below.)*
 Each subagent runs independently and returns its findings.

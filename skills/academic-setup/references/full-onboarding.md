@@ -21,7 +21,7 @@ Personalized onboarding that creates your researcher profile, detects available 
 Run silently before saying anything:
 
 ```bash
-mkdir -p past-articles .academic-writer .academic-writer/sources .academic-writer/logs
+mkdir -p past-articles .academic-writer .academic-writer/sources
 # If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
 ```
 

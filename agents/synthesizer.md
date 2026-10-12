@@ -1,7 +1,7 @@
 ---
 name: synthesizer
 description: "Use after all sections are written to review the complete article for argument coherence, flow, style consistency, and cross-section repetition. Makes surgical edits only — does NOT write new section content. Runs once, after section-writer completes all sections."
-tools: read, grep, find, bash, academic_writer_read_resource, academic_writer_lint_prose, academic_writer_reverse_outline
+tools: read, grep, find, academic_writer_read_resource, academic_writer_lint_prose, academic_writer_reverse_outline
 ---
 
 # Synthesizer Agent
@@ -15,16 +15,6 @@ The structural review (intro/conclusion checks, gap flagging, citation locking) 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
 2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` in project root.
 3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT a runtime source of truth.
-
-## Agent Memory
-
-Load your memory at the start of every spawn:
-
-```bash
-cat .academic-writer/agent-memory/synthesizer/MEMORY.md 2>/dev/null || echo "(no memory yet)"
-```
-
-Check `## Recurring Structural Issues` to know which introduction/conclusion problems to look for first. Check `## Overused Transitions` and flag them early in the linking words sweep.
 
 ## Coordinator Role Separation
 
@@ -138,8 +128,6 @@ Scan the entire article for **embedded foreign language text** that survived per
 8. NEVER rewrite full paragraphs — make surgical edits only. **EXCEPT for evidence consolidation:** when the same source is fully re-described in multiple body sections, keep the full description where it does the most argumentative work (the approved outline’s primary note use identifies this point) and reduce other occurrences to a brief reference without changing citations. This is the ONLY condition under which you may rewrite more than a sentence at a time.
 9. NEVER change or remove any citation — citations are locked
 
-Log synthesis completion:
-
 ---
 
 ## Full-Article Repetition Check
@@ -165,8 +153,6 @@ For English articles, call `academic_writer_lint_prose({text: ARTICLE_TEXT, lang
 - For evidence re-description, keep the full description in the owner section and back-reference elsewhere
 - For formulaic-pattern cap overflow, rewrite the overflow instances (prefer direct statement over hedging)
 - NEVER remove or alter citations when fixing repetition
-
-Log completion:
 
 ## Reverse-outline report (diagnostic only)
 

@@ -17,6 +17,7 @@ const PROFILE_PATH = ".academic-writer/profile.md";
 export function registerProfileTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_migrate_profile",
+    effect: "write",
     label: "Academic Writer Migrate Profile",
     description:
       "One-time migration from .academic-writer/profile.json to .academic-writer/profile.md. Use during init/setup preflight before checking for an existing profile.",
@@ -39,6 +40,8 @@ export function registerProfileTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_get_profile",
+    effect: "read",
+    core: true,
     label: "Academic Writer Get Profile",
     description:
       "Read and parse .academic-writer/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
@@ -63,6 +66,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_update_profile",
+    effect: "write",
     label: "Academic Writer Update Profile",
     description:
       "Patch recognized .academic-writer/profile.md fields using a JSON object string. Preserves the existing markdown profile shape and updates updatedAt when omitted.",

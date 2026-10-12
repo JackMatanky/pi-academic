@@ -11,7 +11,7 @@ Quick onboarding wizard. Creates the researcher profile, detects integrations, a
 Run silently before anything else:
 
 ```bash
-mkdir -p past-articles .academic-writer .academic-writer/logs
+mkdir -p past-articles .academic-writer
 # If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
 ```
 
@@ -164,7 +164,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Type:  MCP server (zotero-mcp)
 >    What:  Local/cloud reference library
 >    Config: standard MCP config (.mcp.json or ~/.config/mcp/mcp.json)
->    Needs: settings.toolPrefix="none" + directTools=true
+>    Needs: settings.toolPrefix="none" + directTools listing the Zotero tools this package calls
 >    ```
 >
 > 2. **NotebookLM** — ✓ Detected / ✗ Not found
@@ -179,7 +179,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Install: uv tool install notebooklm-mcp-cli
 >    Auth:    nlm login
 >    Config:  standard MCP config (.mcp.json or ~/.config/mcp/mcp.json)
->    Needs:   settings.toolPrefix="none" + directTools=true
+>    Needs:   settings.toolPrefix="none" + directTools listing the NotebookLM tools this package calls
 >    ```
 >
 > 3. **Sefaria** — ✓ Detected / ✗ Not found
@@ -190,7 +190,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Type:  MCP server with bare get_text/search tools
 >    What:  Judaic primary text context expansion
 >    Config: standard MCP config, no secrets in profile
->    Needs: settings.toolPrefix="none" + directTools=true
+>    Needs: settings.toolPrefix="none" + directTools=["get_text", "search"]
 >    ```
 >
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
@@ -212,16 +212,16 @@ If Zotero is selected but not detected:
         "command": "zotero-mcp",
         "args": ["serve"],
         "env": { "ZOTERO_LOCAL": "true" },
-        "directTools": true
+        "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
       }
     }
   }
   ```
 
-Under oh-my-pi, this `settings`/`directTools` configuration is not read; oh-my-pi always exposes MCP tools as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` locates automatically — no additional MCP config changes are needed there.
+Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
 
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `zotero` block unless the JSON is simple enough to update safely. Do not write API keys into a project file; Zotero web/API credentials belong in user-global MCP config or command interpolation.
-- After any MCP server block is added for the first time (yours or the researcher's), tell the researcher to restart Pi before re-probing: direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable until the new session starts.
+- After any MCP server block is added for the first time (yours or the researcher's), call `academic_writer_status` before re-probing: on `harness: pi`, tell the researcher to restart pi (direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable until the new session starts); on `harness: omp`, run `/mcp reload` instead of restarting.
 
 If NotebookLM is selected but `notebook_list()` is unavailable:
 
@@ -234,13 +234,13 @@ If NotebookLM is selected but `notebook_list()` is unavailable:
     "mcpServers": {
       "notebooklm-mcp": {
         "command": "notebooklm-mcp",
-        "directTools": true
+        "directTools": ["notebook_list", "notebook_query", "notebook_create", "source_add", "studio_create", "studio_status"]
       }
     }
   }
   ```
 
-Under oh-my-pi, this `settings`/`directTools` configuration is not read; oh-my-pi always exposes MCP tools as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` locates automatically — no additional MCP config changes are needed there.
+Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
 
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `notebooklm-mcp` block unless the JSON is simple enough to update safely.
 

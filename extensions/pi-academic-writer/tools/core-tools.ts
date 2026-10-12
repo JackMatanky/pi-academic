@@ -1,3 +1,4 @@
+import type { Harness } from "../../lib/harness.js";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -16,9 +17,11 @@ import { fail, registerTool } from "../tool-kit.js";
 /**
  * Resource, status, health, path and MCP-name lookup tools.
  */
-export function registerCoreTools(pi: ExtensionAPI): void {
+export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {
     name: "academic_writer_read_resource",
+    effect: "read",
+    core: true,
     label: "Academic Writer Resource",
     description:
       "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-writer/thresholds.json first (the project override created by init/setup) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
@@ -67,6 +70,7 @@ export function registerCoreTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_list_agents",
+    effect: "read",
     label: "Academic Writer Agents",
     description: "List packaged Academic Writer agent definition files.",
     parameters: Type.Object({}),
@@ -81,9 +85,11 @@ export function registerCoreTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_status",
+    effect: "read",
+    core: true,
     label: "Academic Writer Status",
     description:
-      "Report project-local Academic Writer setup state, source/bibliography availability, run state, and packaged agents.",
+      "Report project-local Academic Writer setup state, source/bibliography availability, run state, and packaged agents. Includes the active harness (pi or omp).",
     parameters: Type.Object({}),
     run: (_params, { cwd }) => {
       const status = buildStatus(cwd);
@@ -121,12 +127,16 @@ export function registerCoreTools(pi: ExtensionAPI): void {
         `Sefaria: ${status.tools.sefaria?.enabled ? "enabled" : "disabled"}`,
       ].join("\n");
 
-      return { text, details: status };
+      return {
+        text: `Harness: ${harness}\n${text}`,
+        details: { ...status, harness },
+      };
     },
   });
 
   registerTool(pi, {
     name: "academic_writer_health",
+    effect: "read",
     label: "Academic Writer Health",
     description:
       "Return deterministic local health data: profile/source/run state, packaged agents, and local command availability. Live MCP probes still belong in the health skill.",
@@ -144,12 +154,17 @@ export function registerCoreTools(pi: ExtensionAPI): void {
         `Sefaria MCP: ${health.commands.sefariaMcp ? "installed" : "not detected"}`,
       ].join("\n");
 
-      return { text, details: health };
+      return {
+        text: `Harness: ${harness}\n${text}`,
+        details: { ...health, harness },
+      };
     },
   });
 
   registerTool(pi, {
     name: "academic_writer_article_paths",
+    effect: "read",
+    core: true,
     label: "Academic Writer Article Paths",
     description:
       "Build deterministic article slug, markdown, DOCX, and intermediate JSON paths from a subject. Supports non-English titles.",
@@ -171,6 +186,7 @@ export function registerCoreTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_list_project_files",
+    effect: "read",
     label: "Academic Writer Project Files",
     description:
       "List project articles or past-article corpus files deterministically in newest-first order. Use instead of ls/find/head/wc in skills.",
@@ -197,6 +213,7 @@ export function registerCoreTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_resolve_mcp_tool",
+    effect: "read",
     label: "Academic Writer Resolve MCP Tool",
     description:
       "Resolve the live callable name for a bare MCP tool (e.g. zotero_get_item_fulltext, notebook_list, get_text) across harnesses. Call once per logical tool name per agent run, cache the returned live_name, and call that tool with the arguments documented for the logical name elsewhere in this skill/agent. Returns live_name: null when no matching tool is connected.",
@@ -210,7 +227,11 @@ export function registerCoreTools(pi: ExtensionAPI): void {
     // A missing connection is an answer, not a failure: callers branch on
     // live_name.
     run: ({ logical_name: logicalName }) => {
-      const live = new Set(pi.getActiveTools());
+      const live = new Set(
+        harness === "omp"
+          ? pi.getAllTools().map((tool) => tool.name)
+          : pi.getActiveTools(),
+      );
 
       const resolved = live.has(logicalName)
         ? logicalName

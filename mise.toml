@@ -1,8 +1,7 @@
 # academic-writer — dev toolchain, managed by mise (https://mise.jdx.dev)
 #
-# `mise install` provisions Node/uv/Python/hk/taplo; the postinstall hook then
-# bootstraps npm trees (root + extensions/) and syncs the uv-managed
-# Python environment (pyproject.toml + uv.lock), so a fresh clone is ready for
+# `mise install` provisions Node/hk/taplo; the postinstall hook then bootstraps
+# the npm trees (root + extensions/), so a fresh clone is ready for
 # `mise run lint` / `mise run test` with one command.
 #
 # Note: this does NOT manage zotero-mcp (`pip install zotero-mcp-server`) —
@@ -10,30 +9,17 @@
 # (see README.md "Quick Start"), not this repo's own dev/build toolchain.
 
 [tools]
-node = "26"      # matches package.json engines (>=20) and extensions/@types/node ^26
-python = "3.12"
-uv = "latest"
+node = "26"      # satisfies package.json engines (>=22.19) and extensions/@types/node ^26
 hk = "latest"
 taplo = "latest"
-[settings]
-# Sources the .venv that `uv sync`/`uv run` manage via pyproject.toml +
-# uv.lock (mise locates the project by walking up for uv.lock). "create|source"
-# creates the venv if missing, then activates it on mise activate/exec.
-python.uv_venv_auto = "create|source"
-
-[env]
-# Point uv at mise's pinned Python interpreter instead of letting it
-# download its own copy of the same version.
-UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
 
 [tasks.setup]
-description = "Install npm deps (root + extensions/) and sync Python deps via uv"
-run = ["npm install", "npm --prefix extensions install", "uv sync"]
+description = "Install npm deps (root + extensions/)"
+run = ["npm install", "npm --prefix extensions install"]
 
 [tasks.fmt]
-description = "Format Python, TypeScript, JSON, YAML, and TOML; apply Oxlint autofixes"
+description = "Format TypeScript, JSON, YAML, and TOML; apply Oxlint autofixes"
 run = [
-  "uv run ruff format .",
   "npx oxlint --fix extensions",
   "npx oxfmt --write \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo format mise.toml",
@@ -42,23 +28,18 @@ run = [
 [tasks.fmt-check]
 description = "Check formatting without changing files"
 run = [
-  "uv run ruff format --check .",
   "npx oxfmt --check \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo check mise.toml",
 ]
 
 [tasks.lint]
-description = "Lint Python and TypeScript (Oxlint + anti-slop, tsc), and check formatting"
-run = [
-  "mise run fmt-check",
-  "uv run ruff check --select E9,F63,F7,F82 .",
-  "npx oxlint extensions",
-  "npm run typecheck",
-]
+description = "Lint TypeScript (Oxlint + anti-slop, tsc), and check formatting"
+run = ["mise run fmt-check", "npx oxlint extensions", "npm run typecheck"]
+
 [tasks.test]
-description = "Run the TypeScript and Python test suites"
+description = "Run the TypeScript test suite"
 alias = "t"
-run = ["npm --prefix extensions run test", "uv run python -m pytest tests/"]
+run = ["npm --prefix extensions run test"]
 
 [tasks.typecheck]
 description = "Strict TypeScript check on extensions/"
@@ -73,6 +54,6 @@ description = "Install hk git hooks for this repo (run once after cloning)"
 run = "hk install"
 
 [hooks]
-# Runs after `mise install` provisions node/uv/python/hk/taplo (including on a no-op
+# Runs after `mise install` provisions node/hk/taplo (including on a no-op
 # install), so dependencies stay in sync whenever the pinned versions change.
 postinstall = { task = "setup" }

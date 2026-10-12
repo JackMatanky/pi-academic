@@ -1,6 +1,6 @@
 # Stage 2 Question Bank — Academic
 
-This file is consumed by the `voice-facilitator` agent. The interviewer adapts within sessions
+This file is consumed by the `academic-voice` skill. The interviewer adapts within sessions
 (12–18 questions, hard cap 18) but draws from this seed list.
 
 ## Layer legend

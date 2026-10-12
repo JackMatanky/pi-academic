@@ -20,6 +20,7 @@ import { fail, parseJsonArray, registerTool } from "../tool-kit.js";
 export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_extract_document",
+    effect: "read",
     label: "Academic Writer Extract Document",
     description:
       "Extract deterministic plain text from markdown, text, PDF, or DOCX files inside the project. Use instead of ad-hoc shell extraction snippets.",
@@ -47,6 +48,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_ingest_sources",
+    effect: "write",
     label: "Academic Writer Ingest Sources",
     description:
       "Ingest PDF, DOCX, Markdown, or text files inside the project (default: .academic-writer/sources/). Generates local source records, citekeys, sources.json, and bibliography.bib without requiring Zotero. Existing Zotero records and the citekeys of already-ingested files are preserved.",
@@ -83,6 +85,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_write_sources_cache",
+    effect: "write",
     label: "Academic Writer Write Sources Cache",
     description:
       "Write the current-run .academic-writer/sources.json and .academic-writer/bibliography.bib from deep-reader's extracted records. Call before academic_writer_snapshot_citations.",
@@ -119,6 +122,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_snapshot_citations",
+    effect: "write",
     label: "Academic Writer Snapshot Citations",
     description:
       "Freeze the current project citation cache beside an article as articles/<slug>.sources.json and articles/<slug>.bibliography.bib.",
@@ -148,6 +152,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_resolve_csl",
+    effect: "exec",
     label: "Academic Writer Resolve CSL",
     description:
       "Resolve a bundled alias, CSL repository id, cached style, or custom .csl path to a local CSL file for Pandoc.",
@@ -174,6 +179,8 @@ export function registerSourceTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_audit_citations",
+    effect: "read",
+    core: true,
     label: "Academic Writer Citation Audit",
     description:
       "Deterministically verify citation syntax and citeproc keys before DOCX/export/review. Code spans, fenced code, front matter and e-mail addresses are ignored; narrative @key citations are checked. Semantic claim verification still belongs to the auditor agent.",
@@ -220,6 +227,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_lint_prose",
+    effect: "read",
     label: "Academic Writer Prose Lint",
     description:
       "Run read-only, deterministic English prose-pattern checks. Findings are advisory prompts for contextual review, not violations or authorship judgments.",

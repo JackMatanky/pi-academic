@@ -10,6 +10,7 @@ import {
   JsonValueSchema,
   parseJsonText,
   readJsonFile,
+  stringEnum,
   type JsonValue,
 } from "../lib/schema.js";
 import { diagnoseChapterCoverage, type CoverageFinding } from "./coverage.js";
@@ -28,13 +29,13 @@ import { frozenPath, getOutline, outlinePath } from "./research-outline.js";
  * Parameters of `academic_writer_query_research`.
  */
 export const ResearchQuerySchema = Type.Object({
-  operation: Type.Union([
-    Type.Literal("section_bundle"),
-    Type.Literal("note_by_id"),
-    Type.Literal("notes_by_source"),
-    Type.Literal("notes_by_tag"),
-    Type.Literal("outline_summary"),
-  ]),
+  operation: stringEnum([
+    "section_bundle",
+    "note_by_id",
+    "notes_by_source",
+    "notes_by_tag",
+    "outline_summary",
+  ] as const),
   article: Type.Optional(Type.String()),
   sectionId: Type.Optional(Type.String()),
   noteId: Type.Optional(Type.String()),

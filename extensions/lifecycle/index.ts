@@ -1,12 +1,12 @@
 import type { ProfileData } from "../lib/types.js";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-import { execFile } from "node:child_process";
-import { appendFileSync, existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { errorMessage } from "../lib/fs-safe.js";
-import { getProfilePath, loadProfile } from "../lib/profile.js";
+import { detectHarness } from "../lib/harness.js";
+import { loadProfile } from "../lib/profile.js";
 import { summarizeRuns } from "../lib/runs.js";
 
 /**
@@ -41,12 +41,13 @@ interface RunLine {
 const DASHBOARD_REASONS = new Set(["startup", "new", "resume"]);
 
 /**
- * Returns whether this lifecycle event should display the dashboard.
+ * Returns whether this lifecycle event should display the dashboard. oh-my-pi's
+ * `session_start` payload has no `reason`; pi's has one.
  *
- * @param reason - Lifecycle event reason emitted by Pi.
+ * @param reason - Lifecycle event reason emitted by pi, if any.
  */
-function shouldShowDashboard(reason: string): boolean {
-  return DASHBOARD_REASONS.has(reason);
+function shouldShowDashboard(reason: string | undefined): boolean {
+  return reason === undefined || DASHBOARD_REASONS.has(reason);
 }
 
 /**
@@ -193,15 +194,29 @@ function buildDashboardLines(
 }
 
 /**
- * Registers Academic Writer lifecycle notifications and session logging.
+ * Packages pi does not load by itself; their absence breaks dispatch and web
+ * research. `mcp` is not checked: its proxy tool may be absent when only direct
+ * tools are configured.
+ */
+const COMPANIONS = [
+  ["subagent", "pi-subagents"],
+  ["web_search", "pi-web-access"],
+] as const;
+
+/**
+ * Registers the Academic Writer session dashboard (and, on pi, a warning about
+ * missing companion packages).
  *
  * @param pi - Pi extension API used to register lifecycle hooks or tools.
  */
 export default function (pi: ExtensionAPI) {
-  pi.on("session_start", async (event, ctx) => {
-    if (!shouldShowDashboard(event.reason)) return;
+  const harness = detectHarness(pi);
 
-    const projectDir = process.cwd();
+  pi.on("session_start", async (event: { reason?: string }, ctx) => {
+    // hasUI is false for headless, print and subagent sessions on both harnesses.
+    if (!ctx.hasUI || !shouldShowDashboard(event.reason)) return;
+
+    const projectDir = ctx.cwd;
     let profile: ProfileData | null;
 
     try {
@@ -218,70 +233,20 @@ export default function (pi: ExtensionAPI) {
     if (!profile) return;
 
     ctx.ui.notify(buildDashboardLines(projectDir, profile).join("\n"), "info");
-  });
 
-  pi.on("agent_settled", async () => {
-    const projectDir = process.cwd();
+    if (harness !== "pi") return;
 
-    // Hard gate: only notify in academic-writer projects.
-    if (!existsSync(join(projectDir, ".academic-writer", "profile.md"))) {
-      return;
-    }
+    const present = new Set(pi.getAllTools().map((tool) => tool.name));
 
-    // macOS only — silently no-op elsewhere.
-    if (process.platform !== "darwin") {
-      return;
-    }
+    const missing = COMPANIONS.flatMap(([tool, pkg]) =>
+      present.has(tool) ? [] : [pkg],
+    );
 
-    // Use execFile (not exec) — args are passed as an array to osascript,
-    // never interpreted by the shell. The script string is a static literal.
-    const script =
-      'display notification "Task complete" with title "Academic Writer" sound name "Glass"';
-
-    execFile("osascript", ["-e", script], { timeout: 2000 }, () => {
-      // Silent — never block on notification.
-    });
-  });
-
-  pi.on("session_shutdown", async (event, ctx) => {
-    // Only log real session termination — "reload"/"new"/"resume"/"fork" are
-    // extension-runtime teardowns for the same logical session, not the
-    // "SessionEnd" the original hook logged once per Claude Code session.
-    if (event.reason !== "quit") {
-      return;
-    }
-
-    const projectDir = process.cwd();
-
-    if (!existsSync(getProfilePath(projectDir))) {
-      return;
-    }
-
-    const logsDir = join(projectDir, ".academic-writer", "logs");
-
-    if (!existsSync(logsDir)) {
-      return;
-    }
-
-    try {
-      const now = new Date();
-      const [dateStr = "", clock = ""] = now.toISOString().split("T");
-      const timeStr = clock.split(".")[0];
-      const logFile = join(logsDir, `${dateStr}.log`);
-
-      const sessionId = ctx.sessionManager.getSessionId() ?? "unknown";
-
-      const entry = [
-        "",
-        `--- Session End: ${timeStr} (${sessionId}) ---`,
-        `Timestamp: ${now.toISOString()}`,
-        "---",
-        "",
-      ].join("\n");
-
-      appendFileSync(logFile, entry, "utf-8");
-    } catch {
-      // Silent failure — logging should never block the session
+    if (missing.length > 0) {
+      ctx.ui.notify(
+        `Missing companion package(s): ${missing.join(", ")}. Install with: ${missing.map((pkg) => `pi install npm:${pkg}`).join("; ")}`,
+        "warning",
+      );
     }
   });
 }

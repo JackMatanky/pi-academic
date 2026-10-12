@@ -44,7 +44,7 @@ Report:
 
 - `zotero-mcp` binary installed? ✓/✗
 - Project `.mcp.json` present? ✓/✗/not required if global config works
-- If project `.mcp.json` has a `zotero` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers.zotero.directTools` is `true`? ✓/✗
+- If project `.mcp.json` has a `zotero` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers.zotero.directTools` lists the tools this package calls? ✓/✗
 - MCP server connected? ✓/✗
 - Number of items in library
 - Configured collection scope: `tools.zotero.collection.name/key` or "all library"
@@ -60,17 +60,17 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
       "command": "zotero-mcp",
       "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
-      "directTools": true
+      "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
     }
   }
 }
 ```
 
-Under oh-my-pi, this `settings`/`directTools` configuration is not read; oh-my-pi always exposes MCP tools as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` locates automatically — no additional MCP config changes are needed there.
+Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
 
 Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global MCP config or command interpolation for Zotero web/API credentials.
 
-Direct MCP tools are cached at startup: after `.mcp.json` or global MCP config is created or changed for the first time, ask the researcher to restart Pi and re-run the probe — `zotero_get_recent` stays unavailable for the rest of the current session otherwise.
+Direct MCP tools are cached at startup: after `.mcp.json` or global MCP config is created or changed for the first time, call `academic_writer_status`: on `harness: pi`, ask the researcher to restart pi; on `harness: omp`, run `/mcp reload` instead of restarting. Then re-run the probe — `zotero_get_recent` stays unavailable otherwise.
 
 ---
 
@@ -107,7 +107,7 @@ Report:
 - CLI installed? ✓/✗
 - MCP server binary installed? ✓/✗
 - Project `.mcp.json` present? ✓/✗/not required if global config works
-- If project `.mcp.json` has a `notebooklm-mcp` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers["notebooklm-mcp"].directTools` is `true`? ✓/✗
+- If project `.mcp.json` has a `notebooklm-mcp` server: `settings.toolPrefix` is `"none"`? ✓/✗ and `mcpServers["notebooklm-mcp"].directTools` lists the tools this package calls? ✓/✗
 - Authenticated? ✓/✗
 - MCP can list notebooks? ✓/✗ (and count)
 - Configured notebook scope: `tools.notebooklm.notebook.name/id` or "all notebooks"
@@ -129,7 +129,7 @@ Report:
 >    nlm login
 >    ```
 >
-> 3. Add `notebooklm-mcp` to `.mcp.json` or user-global MCP config with `toolPrefix: "none"` and `directTools: true`.
+> 3. Add `notebooklm-mcp` to `.mcp.json` or user-global MCP config with `toolPrefix: "none"` and `directTools` listing the NotebookLM tools this package calls (`notebook_list`, `notebook_query`, `notebook_create`, `source_add`, `studio_create`, `studio_status`).
 >
 > 4. Re-run `/skill:academic-health` to verify.
 

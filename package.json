@@ -20,12 +20,14 @@
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
     "fflate": "^0.8.3",
+    "typebox": "^1.3.8",
     "unpdf": "^1.8.1"
   },
   "devDependencies": {
     "@oxlint/plugins": "1.87.0",
     "oxfmt": "0.72.0",
-    "oxlint": "1.87.0"
+    "oxlint": "1.87.0",
+    "yaml": "^2.9.0"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
@@ -34,7 +36,7 @@
     "pi-web-access": "*"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.19.0"
   },
   "omp": {
     "extensions": [
@@ -44,7 +46,7 @@
     "skills": [
       "./skills"
     ],
-    "image": "./assets/pi-academic-writer.svg"
+    "image": "./assets/pi-academic-writer.png"
   },
   "pi": {
     "extensions": [
@@ -54,7 +56,7 @@
     "skills": [
       "./skills"
     ],
-    "image": "./assets/pi-academic-writer.svg"
+    "image": "./assets/pi-academic-writer.png"
   },
   "pi-subagents": {
     "agents": [

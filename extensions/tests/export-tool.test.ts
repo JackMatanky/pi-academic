@@ -1,9 +1,3 @@
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-  ToolDefinition,
-} from "@earendil-works/pi-coding-agent";
-
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
@@ -24,22 +18,10 @@ import { test, type TestContext } from "node:test";
 import { strFromU8, unzipSync } from "fflate";
 import { Type } from "typebox";
 
-import {
-  isValid,
-  JsonObjectSchema,
-  parseWith,
-  type JsonObject,
-} from "../lib/schema.js";
-import piAcademicWriter from "../pi-academic-writer/index.js";
-import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
+import { parseWith, type JsonObject } from "../lib/schema.js";
+import { createToolHarness } from "./helpers.js";
 
 type Params = JsonObject;
-
-interface ToolResult {
-  content: { text: string }[];
-  details: JsonObject;
-  isError?: boolean;
-}
 
 const realPandoc = spawnSync("which", ["pandoc"], {
   encoding: "utf8",
@@ -47,61 +29,9 @@ const realPandoc = spawnSync("which", ["pandoc"], {
 
 const needsPandoc = { skip: realPandoc ? false : "pandoc is not installed" };
 
-const tools = new Map<string, Pick<ToolDefinition, "execute">>();
+const { callTool } = createToolHarness();
 
-// The extension only registers tools and, for MCP-name lookup, lists active
-// ones.
-const extensionApi: Partial<ExtensionAPI> = {
-  registerTool: (definition) => {
-    tools.set(definition.name, { execute: definition.execute });
-  },
-  getActiveTools: () => [],
-};
-
-// SAFETY: `extensionApi` implements the only two members the tools call.
-piAcademicWriter(extensionApi as ExtensionAPI);
-
-/**
- * Runs a registered tool, turning thrown failures into error results.
- */
-async function callTool(
-  cwd: string,
-  name: string,
-  params: Params,
-): Promise<ToolResult> {
-  const definition = tools.get(name);
-
-  assert.ok(definition, `${name} is not registered`);
-
-  try {
-    // SAFETY: the tools read only `cwd` from the context.
-    const context = { cwd } as ExtensionContext;
-
-    const result = await definition.execute(
-      "t",
-      params,
-      undefined,
-      undefined,
-      context,
-    );
-
-    return {
-      content: result.content.flatMap((part) =>
-        part.type === "text" ? [{ text: part.text }] : [],
-      ),
-      details: isValid(JsonObjectSchema, result.details) ? result.details : {},
-      isError: false,
-    };
-  } catch (cause) {
-    if (!(cause instanceof ToolFailure)) throw cause;
-
-    return {
-      content: [{ text: cause.text }],
-      details: cause.details,
-      isError: true,
-    };
-  }
-}
+type ToolResult = Awaited<ReturnType<typeof callTool>>;
 
 const STUB = `#!/bin/sh
 for a in "$@"; do

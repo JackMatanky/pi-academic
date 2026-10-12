@@ -1,7 +1,7 @@
 ---
 name: academic-feedback
-description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and session memory. Use after the researcher reviews an article produced by /skill:academic-write or /skill:academic-edit."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files
+description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and voice-overlay preferences. Use after the researcher reviews an article produced by /skill:academic-write or /skill:academic-edit."
+allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_update_author_voice
 metadata: {author: "Yotam Fromm", version: "0.2.23"}
 ---
 
@@ -27,7 +27,7 @@ Never summarize feedback without acting on it.
 | **B. Profile update** | `.academic-writer/profile.md` — fingerprint, preferences, article structure, targetLanguage, abstractLanguages, outputFormatPreferences | "My paragraphs should be shorter by default" |
 | **C. Pattern reference update** | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps | "'I suggest that' appeared too often — lower the cap to 2" |
 | **D. Source registry fix** | `.academic-writer/sources.json` — correct a bibliographic metadata field | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
-| **E. Memory / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md` AND the session memory system. Use for observations that don't fit A–D but should carry forward. | "I don't like em-dashes in my writing, ever" |
+| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent preferences also go into `AUTHOR_VOICE.md` (see Phase 4.E). Use for observations that don't fit A–D but should carry forward. | "I don't like em-dashes in my writing, ever" |
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
@@ -112,7 +112,7 @@ For every feedback item gathered, draft a table showing:
 | 1 | "'I suggest that' appears 12 times" | C — Pattern cap | Lower cap in anti-ai-patterns-english.md from 3 to 2 |
 | 2 | "Cohen 2019 should be 2018" | D — Source registry | Update sources.json entry for Cohen to year=2018, confidence=high |
 | 3 | "Paragraph 4 of Section II is way too long" | A — Article edit | Split the paragraph at the second sentence break |
-| 4 | "I never want em-dashes" | E — Memory / profile | Add to profile preferences + feedback log |
+| 4 | "I never want em-dashes" | E — Preference / known issue | Add to the AUTHOR_VOICE.md overlay + feedback log |
 
 Show this table to the researcher and ask, allowing multiple selections:
 
@@ -182,9 +182,9 @@ Example:
 
 Also: if the article text itself contains the wrong year inline, fix it with `Edit` on `articles/<slug>.md`. Don't leave the article out of sync with the corrected registry.
 
-### E. Memory / known-issue note
+### E. Preference / known-issue note
 
-For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log AND to session memory.
+For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log; persistent preferences also go into `AUTHOR_VOICE.md` (below).
 
 Feedback log path:
 
@@ -194,13 +194,15 @@ Feedback log path:
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
-For session memory (persistent preferences, project-local — never `$HOME`), write a `feedback_*.md` file to `.academic-writer/memory/` only for items that represent **persistent preferences** worth carrying across sessions — not one-off fixes. Examples worth a memory entry:
+For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `AUTHOR_VOICE.md` — the file `section-writer` already loads at the start of every run. Never put preferences in `.academic-writer/profile.md`.
 
-- "Never use em-dashes anywhere"
-- "Abstracts should always be both Hebrew and English"
-- "For Bible articles, always cite the Hebrew chapter/verse first, then the English translation"
+1. Read `AUTHOR_VOICE.md`. If it is missing or empty, skip this step and tell the researcher: "No voice overlay yet — run `/skill:academic-voice` to create one; this preference is saved in the feedback log."
+2. If the file is already larger than about 20,000 characters (≈5,000 tokens, the budget in `voice-profile-builder`), do not add; tell the researcher to run `:voice recompress` first.
+3. Choose the existing section by the builder's assignment rules: applies regardless of project → `## Core voice (cross-project)`; term, transliteration or citation-format choice → `## Terminology`; citation density, hedging, abstract conventions, anti-AI thresholds → `## Academic-specific`. Never create a new section.
+4. Append one bullet of at most 120 characters, as an operational rule ("Never use em-dashes"), keeping Hebrew text Hebrew. If an existing bullet is contradicted, replace it and keep a one-line `> Was: <old>` note.
+5. Write the whole file back with `academic_writer_update_author_voice` and update the `> Updated` line to today's date.
 
-Never create a memory file for a one-off article edit or a specific citation fix — those belong only in the feedback log.
+Examples worth a bullet: "Never use em-dashes anywhere"; "Abstracts are always both Hebrew and English"; "For Bible articles cite the Hebrew chapter/verse first". One-off article edits and specific citation fixes belong only in the feedback log.
 
 ## Phase 5 — Log & Summary
 
@@ -229,7 +231,7 @@ Then show a summary to the researcher:
 >
 > - Applied: N items (A: N, B: N, C: N, D: N, E: N)
 > - Deferred: N items (logged to `.academic-writer/feedback/<file>.md`)
-> - Memory entries added: N
+> - Voice-overlay preferences added: N
 >
 > Next runs of `/skill:academic-write` will pick up all profile and pattern changes automatically. For the article itself, the edits have been written to `articles/<slug>.md` — you may want to regenerate the .docx by running the last step of `/skill:academic-write` or edit and re-export manually."
 

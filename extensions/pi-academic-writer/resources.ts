@@ -106,9 +106,17 @@ export function resolveResourcePath(
         "references",
         "citation-review-gate.md",
       );
+    case "dispatch_contract":
+      return join(
+        PACKAGE_ROOT,
+        "skills",
+        "academic-write",
+        "references",
+        "dispatch-contract.md",
+      );
     default:
       throw new Error(
-        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, citation_review_gate.`,
+        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, run_state_contract, citation_export_contract, citation_review_gate, dispatch_contract.`,
       );
   }
 }

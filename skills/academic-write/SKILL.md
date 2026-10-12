@@ -87,8 +87,6 @@ Use the run-state contract loaded above for all logging from this point forward;
 
 Record the run ID — use it for ALL logging from this point forward.
 
-Log profile load:
-
 ### Step 1: Subject & Language
 
 Ask:
@@ -146,8 +144,6 @@ Store the draft text as userDraftText regardless of choice. If they chose expans
 Present them clearly and ask:
 > "Which of these sources should I focus on? You can name them by number, by title, or say 'all'."
 
-After researcher confirms selection, log:
-
 ---
 
 ### Step 2b: NotebookLM Source Query (if enabled)
@@ -176,11 +172,13 @@ Pass the NotebookLM summary as additional context to the deep-reader agent promp
 
 **Use your subagent-dispatch tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
 
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
 The deep-reader reads original Zotero/local sources, writes current-run .academic-writer/sources.json and .academic-writer/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
 
 Wait for the deep-reader to return retrieved passages before continuing to Step 4. Confirm `.academic-writer/sources.json` exists.
 
-After receiving the deep-reader result, mark node complete:
+Update the run state for this phase.
 
 ---
 
@@ -188,7 +186,7 @@ After receiving the deep-reader result, mark node complete:
 
 **Use your subagent-dispatch tool to spawn the `architect` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
 
-After receiving the architect result, mark node complete:
+Update the run state for this phase.
 
 Present the architect's output to researcher:
 > "Based on your sources, here are possible arguments:
@@ -198,8 +196,6 @@ Present the architect's output to researcher:
 > 3. [thesis c] — supported by [sources]
 >
 > Which resonates? Pick one, modify it, or tell me your own thesis."
-
-After the researcher picks a thesis, log thesis approval:
 
 ---
 
@@ -243,17 +239,19 @@ The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, ci
 
 Traverse the approved JSON outline in ordered depth-first tree order. Spawn one section-writer task for each section with direct point children; nested child sections are separate drafting units; heading-only sections produce no task. Parallelize independent units through one batched task call (OMP) or sibling subagent calls (pi). Assemble prose under headings in the original tree order.
 
-Pass only MD_PATH, sectionId, and contextual details: citationStyle, targetLanguage, articleStructure, enabled tools, targetWordCount, priorSectionTexts and outlineOverview. The writer calls academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}) for its approved subtree and selected frozen notes; it writes direct point children only. Do not pass mutable project notes, registry, or pasted section specs as substitutes.
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
+Pass only MD_PATH, sectionId, and contextual details: citationStyle, targetLanguage, articleStructure, enabled tools, targetWordCount and outlineOverview. The writer calls academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}) for its approved subtree and selected frozen notes; it writes direct point children only. Do not pass mutable project notes, registry, or pasted section specs as substitutes.
 
 Each section-writer runs the eight-skill paragraph pipeline and auditor hard gate. The auditor independently verifies original sources using note IDs and locators only as leads. Stop on a missing/invalid bundle; never bypass the pipeline with inline body writing.
 
-After receiving each section-writer result, mark node complete:
+Section writers never receive other sections' drafted text. Cross-section transitions and repetition are handled in Step 8 by the synthesizer after sections are assembled in outline order.
+
+Update the run state for this phase.
 
 ---
 
 ### Step 8: Synthesis + Full-Article Repetition Check
-
-Once all sections are approved, log the spawn event:
 
 **Use your subagent-dispatch tool to spawn the `synthesizer` subagent.** Pass the following as the prompt:
 
@@ -277,7 +275,7 @@ Once all sections are approved, log the spawn event:
 
 Makes targeted revisions only — does not rewrite from scratch. Citations are locked.
 
-After receiving the synthesizer result, mark node complete:
+Update the run state for this phase.
 
 ---
 
@@ -297,9 +295,6 @@ If `abstractLanguages` is not set in the profile, default to `[targetLanguage]` 
 
 Store the abstract(s) for inclusion in the DOCX output.
 
-Log completion:
+### Step 8.7 and Step 9: Self-review, output, delivery
 
-…
-
-…
->
+Read `references/export-and-delivery.md` and follow it end to end: Step 8.7 self-review gate, then Step 9 Markdown output, citation audit, DOCX/export by citation mode, and the final report. Do not report the article as delivered until that file's audit and requested export have succeeded.

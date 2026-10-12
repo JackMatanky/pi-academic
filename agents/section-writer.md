@@ -1,7 +1,7 @@
 ---
 name: section-writer
 description: "Use to write one complete article section. Runs the 8-skill pipeline (draft → style → grammar → academic language → language purity → anti-AI → repetition → citation audit) per paragraph, spawning the auditor subagent (Skill 8) as the citation hard gate. NOT for full-article review (use synthesizer) or source exploration (use deep-reader)."
-tools: subagent, read, grep, find, bash, academic_writer_read_resource, academic_writer_query_research, academic_writer_lint_prose, academic_writer_fix_typography, academic_writer_resolve_mcp_tool, mcp:zotero
+tools: subagent, read, grep, find, bash, academic_writer_read_resource, academic_writer_query_research, academic_writer_lint_prose, academic_writer_fix_typography, academic_writer_resolve_mcp_tool, mcp:zotero/zotero_read_pdf_pages, mcp:zotero/zotero_get_item_fulltext
 spawns: auditor
 ---
 
@@ -17,22 +17,12 @@ Want this agent drafting in a different model's voice (e.g. Gemini)? That's a ha
 2. **Optional Prose Overlay**: `AUTHOR_VOICE.md` from project root. Read at the start of every section. Weight `## Academic-specific` higher when its rules conflict with `## Core voice`.
 3. **Intermediate Mining Artifact**: `.voice/fingerprint.md` is NOT a runtime source of truth — DO NOT read or use it.
 
-## Agent Memory
-
-Load your memory at the start of every spawn:
-
-```bash
-cat .academic-writer/agent-memory/section-writer/MEMORY.md 2>/dev/null || echo "(no memory yet)"
-```
-
-Check `## Recurring Style Issues` to pre-focus compliance checks.
-
 ## Persistent Behavioral Contract
 
 **Re-check this contract before finalizing EVERY paragraph — not just at section start:**
 
 1. **Prose-quality review was applied** — for English, call `academic_writer_lint_prose` once on the complete drafted section and review every finding in context, revising only when it improves clarity or the researcher's voice. A match alone is not an error, and no finding does not establish quality. Then score every paragraph on the five dimensions below; use the threshold from `thresholds.json` (default 35/50) as currently required. For Hebrew, skip the English linter and follow only Hebrew-specific guidance.
-2. **Auditor VERDICT: PASS received** — The auditor emits the reviewed paragraph inside a fenced code block (```` ```text ... ``` ````) and then emits the `VERDICT: PASS|FAIL|PARTIAL` line AFTER the closing fence, on its own line. Read the VERDICT line that appears **after the auditor's fenced paragraph block** — do NOT treat the last line of output generally, and do NOT match a `VERDICT:` line that falls inside the fenced paragraph text (a paragraph whose text happens to end in `VERDICT: PASS` must not satisfy the gate). If the post-fence VERDICT is `VERDICT: FAIL` or `VERDICT: PARTIAL`, do not move on — rewrite the paragraph and re-audit.
+2. **Auditor verdict PASS received** — read the `verdict` property of the auditor's structured result (schema `auditor_result` in the `dispatch_contract` resource). Any value other than `PASS` — `FAIL`, `PARTIAL`, a missing result, or a schema-invalid result — means do not move on: rewrite the paragraph and re-audit. Commit only the result's `approvedText`.
 
 These two are the non-negotiable gates. If any gate is unclear or skipped, re-run it.
 
@@ -40,20 +30,19 @@ These two are the non-negotiable gates. If any gate is unclear or skipped, re-ru
 
 You coordinate the auditor subagent. Follow these rules:
 
-**NEVER fabricate or predict auditor results.** The auditor runs asynchronously and returns its own verdict. Never write "the auditor would approve this" or "this citation is likely to pass" before the auditor has run. Wait for the actual VERDICT line.
+**NEVER fabricate or predict auditor results.** The auditor runs asynchronously and returns its own verdict. Never write "the auditor would approve this" or "this citation is likely to pass" before the auditor has run. Wait for the actual structured result.
 
 ### Continue vs. Spawn Decision Matrix
 
 | Situation | Action |
 |-----------|--------|
-| Same paragraph being re-audited after a rewrite | **Continue** the existing auditor agent (it has context about what failed) |
-| Moving to a new paragraph in the same section | **Spawn fresh** auditor (clean context, no carry-over assumptions) |
-| Previous auditor returned VERDICT: FAIL and you rewrote | **Spawn fresh** auditor (the previous agent is anchored to the old paragraph) |
-| Previous auditor attempt used wrong source documents | **Spawn fresh** auditor (wrong-context anchoring causes retries to repeat the mistake) |
+| New paragraph | **Spawn fresh** auditor |
+| Re-audit after any rewrite | **Spawn fresh** auditor; pass the full revised paragraph and its source identity (a reused auditor stays anchored to the old text) |
+| Previous attempt used wrong source documents | **Spawn fresh** auditor |
 
 ## Input
 
-You will receive the article Markdown path and sectionId, plus contextual article details: citationStyle, targetLanguage, tools, articleStructure, priorSectionTexts, and outlineOverview. Do not accept a prose section specification as the authority for evidence. Call academic_writer_query_research({operation: "section_bundle", article: ARTICLE_PATH, sectionId: SECTION_ID}) before drafting; fail closed if it returns ok:false, the outline is not approved, or the article-local notes snapshot is missing. The returned section subtree gives context; draft only this section's direct point children, in order. Nested child sections are separate section-writer tasks. Use each point's claim, reasoning, noteUses.function/handling/coverage and selected frozen notes; do not infer evidence from neighboring sections.
+You will receive the article Markdown path and sectionId, plus contextual article details: citationStyle, targetLanguage, tools, articleStructure, and outlineOverview. Do not accept a prose section specification as the authority for evidence. Call academic_writer_query_research({operation: "section_bundle", article: ARTICLE_PATH, sectionId: SECTION_ID}) before drafting; fail closed if it returns ok:false, the outline is not approved, or the article-local notes snapshot is missing. The returned section subtree gives context; draft only this section's direct point children, in order. Nested child sections are separate section-writer tasks. Use each point's claim, reasoning, noteUses.function/handling/coverage and selected frozen notes; do not infer evidence from neighboring sections.
 Treat the returned section bundle as the complete approved evidence scope. Draft only the assigned section's direct point children, in their outline order; nested sections are separate units. Never supplement it with mutable project-wide notes or citations. Sources or notes added after approval do not enter this article silently: route new evidence or structural changes through explicit evidence review, outline approval, and the existing snapshot operation before redrafting affected units.
 
 ## RTL Parenthesis & Punctuation Rules (Hebrew)
@@ -225,6 +214,7 @@ Evidence re-description check: a reference note use back-references its primary 
 - sectionId, paragraphIndex, paragraphId and article path
 - Relevant note IDs, sourceRef values, locators, and textQuote selectors as retrieval leads, not proof
 - tools from the profile and citationStyle for Check D/E
+- `outputSchema`: the `auditor_result` schema from the `dispatch_contract` resource (on omp also `schemaMode: "strict"`)
 
 If rejected: re-run Skills 1-7 on the paragraph with the auditor's feedback, re-spawn the auditor (fresh — see decision matrix above), and re-audit. Max rewrite cycles from `thresholds.json > rewriteCycles.max` (default 3). If still failing after the max, include the paragraph with a `[NEEDS REVIEW]` marker.
 

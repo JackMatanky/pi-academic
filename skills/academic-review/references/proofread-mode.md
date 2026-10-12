@@ -38,10 +38,12 @@ Record `SOURCE_PATH`, `FILEBASE` (the source filename without extension), and `P
 
 **Use your subagent-dispatch tool to spawn the `proofreader` subagent.** Pass it the full article text with line numbers, `LANGUAGE`, and a `SECTION_LABEL` if you proofread section-by-section.
 
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
 - Default: one `proofreader` spawn over the whole article — an article is not book-scale.
 - Optional optimization for long articles (many `##` sections): split on top-level headings and spawn one `proofreader` per section together (one OMP `task` batch or sibling pi `subagent` calls; concurrency cap 6), each with its own `SECTION_LABEL`. Merge the returned change lists. Do this only if the article is long enough that a single pass would lose fidelity; otherwise keep it to one spawn.
 
-Each spawn returns one JSON object: `{agent, language, changes[], summary}` (schema in `agents/proofreader.md`). Collect all `changes`.
+Each spawn returns one structured object (`proofreader_result` schema; pass it as `outputSchema`). Collect all `changes`.
 
 Each change is one of:
 

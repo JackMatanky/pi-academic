@@ -130,8 +130,11 @@ export async function extractDocument(
     if (ext === ".docx") {
       const pandoc = await extractDocxWithPandoc(path, signal);
 
+      signal?.throwIfAborted();
+
       if ("text" in pandoc)
         return { ok: true, path: relPath, text: pandoc.text };
+
       const text = extractDocxParagraphs(path);
 
       return {
@@ -145,7 +148,12 @@ export async function extractDocument(
     }
 
     if (ext === ".pdf") {
+      signal?.throwIfAborted();
+
       const pdf = await getDocumentProxy(new Uint8Array(readFileSync(path)));
+
+      signal?.throwIfAborted();
+
       const { text: pageTexts } = await extractText(pdf, { mergePages: false });
 
       const pages = pageTexts.map((text, pdfPageIndex) => ({

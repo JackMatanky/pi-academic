@@ -11,7 +11,7 @@ import {
   writeFileAtomic,
 } from "../../lib/fs-safe.js";
 import { loadProfile } from "../../lib/profile.js";
-import { parseWith } from "../../lib/schema.js";
+import { parseWith, stringEnum } from "../../lib/schema.js";
 import { ArticleFormatSchema } from "../article.js";
 import { auditCitations } from "../citation-audit.js";
 import { selectPdfEngine } from "../commands.js";
@@ -105,6 +105,7 @@ function summarizeStyle(style: RenderedStyle): StyleSummary {
 export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_export_article",
+    effect: "exec",
     label: "Academic Writer Export Article",
     description:
       "Audit citations and export an article to DOCX, ODT, LaTeX, or PDF with Pandoc, applying the profile style package or an optional per-export override. Continues other formats when one fails; unsupported formats are rejected up front. Output replaces an earlier export only when Pandoc succeeds.",
@@ -136,7 +137,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
         }),
       ),
       pdfEngine: Type.Optional(
-        Type.Union([Type.Literal("xelatex"), Type.Literal("tectonic")], {
+        stringEnum(["xelatex", "tectonic"] as const, {
           description:
             "Optional PDF engine. Defaults to the style package engine, then to whichever of xelatex/tectonic is installed.",
         }),
@@ -150,7 +151,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
       ),
     }),
     failure: "Export failed",
-    run: async (params, { cwd, signal }) => {
+    run: async (params, { cwd, signal, progress }) => {
       const { article, citationStyle } = params;
 
       const requested = [
@@ -220,6 +221,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
             ok: false,
             error: "The output file would overwrite the article itself",
           });
+          progress(`${format}: failed`);
           continue;
         }
 
@@ -302,6 +304,8 @@ export function registerExportTools(pi: ExtensionAPI): void {
             }
           }),
         );
+
+        progress(`${format}: ${results.at(-1)?.ok ? "done" : "failed"}`);
       }
 
       const ok = results.every((result) => result.ok);
@@ -331,6 +335,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_assemble_docx_json",
+    effect: "write",
     label: "Academic Writer Assemble DOCX JSON",
     description:
       "Deterministically assemble article JSON for academic_writer_generate_docx from an article markdown file inside the project. Headings below the title become sections, [^n] footnotes become real footnotes, and fenced code is left intact. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
@@ -388,6 +393,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_generate_docx",
+    effect: "exec",
     label: "Academic Writer Generate DOCX",
     description:
       "Generate an Academic Writer .docx with real footnotes from the article JSON payload, using Pandoc and the profile's style package when one is configured.",
@@ -453,18 +459,15 @@ export function registerExportTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_style_package",
+    effect: "write",
+    effectFor: ({ action }) => (action === "list" ? "read" : "write"),
     label: "Academic Writer Style Package",
     description:
       "Manage document style packages under .academic-writer/styles/: list them, install the academic-default starter (design.json plus editable native Word/LibreOffice/LaTeX files), or validate a package for every export format and report what each format cannot express.",
     parameters: Type.Object({
-      action: Type.Union(
-        [
-          Type.Literal("list"),
-          Type.Literal("install-starter"),
-          Type.Literal("validate"),
-        ],
-        { description: "list, install-starter, or validate." },
-      ),
+      action: stringEnum(["list", "install-starter", "validate"] as const, {
+        description: "list, install-starter, or validate.",
+      }),
       name: Type.Optional(
         Type.String({
           minLength: 1,
@@ -515,6 +518,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
 
   registerTool(pi, {
     name: "academic_writer_fix_typography",
+    effect: "read",
     label: "Academic Writer Fix Typography",
     description:
       "Apply deterministic typography cleanup to a paragraph: em dashes become spaced hyphens, straight quotes around Hebrew text become gereshayim (English quotes are left alone), and stray directional marks and orphan leading punctuation are removed.",

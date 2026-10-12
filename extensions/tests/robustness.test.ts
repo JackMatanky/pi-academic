@@ -76,6 +76,23 @@ test("a failing Pandoc falls back to paragraph text with a warning", async (t) =
   assert.match((result.warnings ?? []).join("\n"), /footnotes and citations/);
 });
 
+test("an aborted extraction fails instead of falling back to paragraph text", async (t) => {
+  const dir = scratch(t);
+
+  writeFileSync(join(dir, "essay.docx"), docx(BODY("Plain body text")));
+
+  const controller = new AbortController();
+
+  controller.abort();
+
+  const result = await withFailingPandoc(t, dir, () =>
+    extractDocument(dir, "essay.docx", controller.signal),
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.text, "");
+});
+
 test("an oversized document.xml is refused instead of inflated", async (t) => {
   const dir = scratch(t);
   // 65 MiB of spaces compresses to a few dozen KiB, the shape of a zip bomb.

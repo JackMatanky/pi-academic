@@ -1,9 +1,25 @@
-import type { Static, TSchema } from "typebox";
+import type { Static, TSchema, TUnsafe } from "typebox";
 
 import { readFileSync } from "node:fs";
 
 import { Type } from "typebox";
 import Value from "typebox/value";
+
+/**
+ * A string enum as a plain JSON-Schema `enum`. `Type.Union` of literals becomes
+ * `anyOf`, which Google's tool API rejects; this mirrors pi-ai's `StringEnum`
+ * without importing it (omp's pi-ai shim does not export it).
+ */
+export function stringEnum<const T extends readonly string[]>(
+  values: T,
+  options: { description?: string } = {},
+): TUnsafe<T[number]> {
+  return Type.Unsafe<T[number]>({
+    type: "string",
+    enum: [...values],
+    ...options,
+  });
+}
 
 /**
  * Schema for any value JSON can represent.

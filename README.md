@@ -39,12 +39,13 @@ pi install git:github.com/JackMatanky/academic-writer
 
 Pi prompts you to trust the project on first run — see [Project Trust](https://pi.dev/docs/latest/settings#project-trust).
 
-**Under oh-my-pi (OMP):** `omp install` does not support direct git-URL installs — clone the repo first, then install from the local path:
+**Under oh-my-pi (OMP):**
 
 ```bash
-git clone https://github.com/JackMatanky/academic-writer
-omp install ./academic-writer
+omp plugin install github:JackMatanky/academic-writer
 ```
+
+To work on the package locally, clone it and run `omp install ./academic-writer`.
 
 Three of the four `peerDependencies` (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) are unnecessary under OMP — it ships native equivalents (`task` subagent dispatch, native MCP discovery, native `web_search`). Only `@earendil-works/pi-coding-agent`'s types matter there, and only for local type-checking.
 
@@ -162,10 +163,10 @@ All integrations are optional. Choose which to enable during `/skill:academic-se
 | **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero                                               | Put files in `.academic-writer/sources/`; Academic Writer ingests them with `academic_writer_ingest_sources` and generates citekeys/BibTeX.                                                                                          |
 | **Zotero**        | Preferred reference manager for source PDFs (local library or web API)                                   | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`)                          |
 | **NotebookLM**    | AI-powered source Q&A, audio overviews, study guides                                                     | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config                      |
-| **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                                          | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools: true`); no credentials go in `.academic-writer/profile.md`.                                                                               |
+| **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                                          | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools` listing `get_text` and `search`); no credentials go in `.academic-writer/profile.md`.                                                                               |
 | **Pandoc**        | DOCX/ODT/LaTeX/PDF export and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
-This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings.
+This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings. Under omp use `task.agentModelOverrides.<agent-name>` or a `@role` alias; the auditor benefits most from a strong model and the proofreader from a cheap one.
 
 **Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and article-local `articles/<slug>.bibliography.bib` is used first, falling back to `.academic-writer/bibliography.bib`. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
 
@@ -181,15 +182,15 @@ This package doesn't hardcode a specific model provider for prose drafting — p
       "command": "zotero-mcp",
       "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
-      "directTools": true
+      "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
     },
     "notebooklm-mcp": {
       "command": "notebooklm-mcp",
-      "directTools": true
+      "directTools": ["notebook_list", "notebook_query", "notebook_create", "source_add", "studio_create", "studio_status"]
     },
     "sefaria": {
       "command": "sefaria-mcp",
-      "directTools": true
+      "directTools": ["get_text", "search"]
     }
   }
 }
@@ -214,10 +215,8 @@ your-research-folder/
     ├── bibliography.bib         ← Current-run BibTeX cache; articles keep frozen copies beside each draft
     ├── csl/                     ← Cached/downloaded or custom CSL files for citeproc export
     ├── research-brief.md        ← Output from /skill:academic-write
-    ├── agent-memory/            ← Per-agent persistent notes
     ├── styles/                  ← Project-local document style packages
-    ├── runs/                    ← Active/last run state shown in the dashboard
-    └── logs/                    ← Session logs
+    └── runs/                    ← Active/last run state shown in the dashboard
 ```
 
 ---
@@ -232,7 +231,7 @@ your-research-folder/
 pip install zotero-mcp-server
 ```
 
-For local Zotero, add the `.mcp.json` snippet from the Integrations section. Zotero desktop must be running with the local API enabled (Settings → Advanced). The `zotero` server must expose direct bare tools (`settings.toolPrefix: "none"` plus `directTools: true`) because the package calls tools like `zotero_get_recent` directly.
+For local Zotero, add the `.mcp.json` snippet from the Integrations section. Zotero desktop must be running with the local API enabled (Settings → Advanced). The `zotero` server must expose direct bare tools (`settings.toolPrefix: "none"` plus `directTools` listing the tools this package calls) because the package calls tools like `zotero_get_recent` directly.
 
 **Articles won't export to .docx / .odt** — install [Pandoc](https://pandoc.org) (`brew install pandoc`). Every DOCX, ODT, LaTeX, and PDF export, and the literal-citation DOCX generator, run through it.
 
@@ -260,13 +259,13 @@ pi install git:github.com/JackMatanky/academic-writer
 
 Skills (`skills/`), agents (`agents/`), and extensions (`extensions/`) are the package source — there is no separate build step that generates them; pi loads them directly via convention directories.
 
-With [mise](https://mise.jdx.dev) (recommended — pins the toolchain, manages the `uv`-synced `.venv` for you):
+With [mise](https://mise.jdx.dev) (recommended — pins the toolchain):
 
 ```bash
-mise install           # provisions Node/uv/Python/hk/taplo, npm-installs both trees, uv-syncs pyproject.toml
-mise run fmt           # format Python, TS/JS, JSON/YAML, and TOML
-mise run lint          # formatting checks + ruff + strict TS
-mise run test          # TypeScript tests, then pytest
+mise install           # provisions Node/hk/taplo and npm-installs both trees
+mise run fmt           # format TS/JS, JSON/YAML, and TOML
+mise run lint          # formatting checks + Oxlint + strict TS
+mise run test          # TypeScript test suite
 mise run ci            # lint + test
 mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 ```
@@ -275,13 +274,10 @@ Without mise:
 
 ```bash
 npm install && npm --prefix extensions install  # runtime deps (fflate, @xmldom/xmldom, unpdf) and dev tooling — peerDependencies aren't wired as active Pi extensions here
-uv sync                                          # pytest, pyyaml, ruff (no Python runtime dependencies)
 npx oxfmt --check "**/*.{ts,js,json,yml,yaml}"
 npx oxlint extensions                            # Oxlint + anti-slop rules (baseline findings pending)
-uv run ruff check --select E9,F63,F7,F82 .
 npm run typecheck                                # strict TS check on extensions/
 npm --prefix extensions run test                 # TypeScript tests (needs pandoc; PDF test needs xelatex or tectonic)
-uv run python -m pytest tests/                  # pytest suite
 ```
 
 **Versioning is automatic.** Every push to `main` triggers CI that bumps the patch version in `package.json`, tags the release, and creates a GitHub Release. Do not bump versions manually.

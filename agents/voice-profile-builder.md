@@ -1,7 +1,7 @@
 ---
 name: voice-profile-builder
 description: "Analyze past-article corpora into a style fingerprint or distill voice interview transcripts into AUTHOR_VOICE.md. Use the explicitly requested corpus or distillation mode; do not conduct interviews or calibration."
-tools: read, bash, academic_writer_read_resource, academic_writer_write_voice_fingerprint, academic_writer_update_author_voice
+tools: read, academic_writer_read_resource, academic_writer_write_voice_fingerprint, academic_writer_update_author_voice
 ---
 
 # Voice Profile Builder
@@ -11,7 +11,7 @@ Select exactly one operation from the task. Corpus analysis writes only `.voice/
 ## Corpus fingerprint mode
 
 You read the writer's corpus and produce a human-readable markdown fingerprint capturing the
-empirical signals of their voice. You do not interview; interview work belongs to `voice-facilitator`.
+empirical signals of their voice. You do not interview; interview work belongs to the `academic-voice` skill.
 
 ### Inputs
 

@@ -5,9 +5,9 @@ This document describes the current Pi/oh-my-pi package, not the retired CLI/Cla
 ## Discovery and orchestration
 
 - `package.json` discovers skills under `./skills` for both Pi and OMP.
-- `pi-subagents` discovers agents under `./agents`. The package currently exposes eleven user-facing skills and eight agents.
+- `pi-subagents` discovers agents under `./agents`. The package currently exposes eleven user-facing skills and seven agents.
 - Each skill has one `SKILL.md` with its public name and trigger; mode details live in that skill’s `references/` directory and are not independently discovered as skills.
-- Merged voice agents select a named operation explicitly. Their mode-specific tool grants and artifact boundaries are documented in the agent file.
+- The merged `voice-profile-builder` agent selects a named operation (corpus fingerprint or transcript distillation) explicitly. Its tool grants and artifact boundaries are documented in the agent file; interviews and calibration run in chat inside the `academic-voice` skill.
 
 ## User-facing routes
 
@@ -31,4 +31,4 @@ This document describes the current Pi/oh-my-pi package, not the retired CLI/Cla
 
 ## Core agents
 
-`deep-reader` → `architect` → `section-writer` (with `auditor` hard gate) → `synthesizer`. `proofreader` supplies separate suggestion-only mechanical findings. Voice work uses `voice-profile-builder` and `voice-facilitator` in explicit modes.
+`deep-reader` → `architect` → `section-writer` (with `auditor` hard gate) → `synthesizer`. `proofreader` supplies separate suggestion-only mechanical findings. Voice work uses `voice-profile-builder` in explicit modes; the `academic-voice` skill runs interviews and calibration in chat.

@@ -123,7 +123,7 @@ When auditing or revising an existing draft:
 
 1. **Preserve Paragraphs by Default**: Treat original paragraphs as valid prose unless an edit or audit failure requires changes.
 2. **Spawn Auditor per Paragraph**: Run an `auditor` subagent on each paragraph to verify citations and anti-AI/quality guidelines.
-3. **Selective Rewriting**: Keep original paragraph text intact if the auditor returns `PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
+3. **Selective Rewriting**: Keep original paragraph text intact if the auditor returns `verdict: PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
 For an English prose-style cleanup request, call `academic_writer_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
 
 ---
@@ -134,7 +134,9 @@ For an English prose-style cleanup request, call `academic_writer_lint_prose({te
 
 **Use your subagent-dispatch tool to spawn a `section-writer` subagent** for each section being revised. The section-writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit).
 
-Pass MD_PATH, sectionId, requested edit instructions, current target text, citationStyle, targetLanguage, tools, and adjacent section context. The writer fetches its authoritative point/evidence bundle via academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}). Do not pass a flat section spec or mutable project note library.
+Pass MD_PATH, sectionId, requested edit instructions, current target text, citationStyle, targetLanguage, tools, and the current text of unchanged adjacent sections (sections revised in the same wave may change; do not rely on their wording). The writer fetches its authoritative point/evidence bundle via academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}). Do not pass a flat section spec or mutable project note library.
+
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
 For multiple sections being edited, **spawn one `section-writer` per section in parallel**: under OMP, one `task` call with a `tasks` entry per section; under pi, sibling `subagent` calls in one response.
 
@@ -144,7 +146,7 @@ For multiple sections being edited, **spawn one `section-writer` per section in 
 
 Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
 
-The auditor verifies every footnote and returns specific fix instructions. Apply fixes, then re-audit.
+The auditor verifies every footnote and returns specific fix instructions. Apply fixes, then re-audit. Pass the `auditor_result` schema as `outputSchema`.
 
 ### Mode C: Tone / Style Adjustment
 
@@ -154,7 +156,7 @@ Re-read the `styleFingerprint`. For each paragraph being adjusted:
 2. Apply the requested tone change while keeping fingerprint compliance
 3. Use `representativeExcerpts` as style targets
 4. Run Hebrew grammar check if applicable
-5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `auditor` subagent** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `VERDICT: PASS` — exactly as Modes A/B/E do. If the auditor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
+5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `auditor` subagent** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the auditor's structured result — exactly as Modes A/B/E do. If the auditor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
 
 If the researcher wants tone that differs from their fingerprint (e.g., "make this more polemical even though my usual style is measured"), note the deviation and apply it as a conscious choice.
 
@@ -177,7 +179,7 @@ Show the current recursive outline and selected original paragraphs. Reorder, sp
 
 ### Mode F: Cut / Expand
 
-**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, **use your subagent-dispatch tool to spawn an `auditor` subagent** (revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `VERDICT: PASS` — exactly as Modes A/B/E do. If rejected, restore/fix the citation and re-audit before finalizing.
+**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, **use your subagent-dispatch tool to spawn an `auditor` subagent** (revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the auditor's structured result — exactly as Modes A/B/E do. If rejected, restore/fix the citation and re-audit before finalizing.
 
 **Expand:** Spawn research subagents to find additional material, then spawn section-writer for the expanded passages. The section-writer already runs the auditor hard gate on every paragraph it produces (including any cited sentences it rewrites), so the expand path is covered by the section-writer pipeline.
 

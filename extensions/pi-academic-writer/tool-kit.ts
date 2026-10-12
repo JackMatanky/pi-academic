@@ -1,4 +1,7 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ToolDefinition,
+} from "@earendil-works/pi-coding-agent";
 import type { Static, TSchema } from "typebox";
 
 import { errorMessage } from "../lib/fs-safe.js";
@@ -11,6 +14,7 @@ import {
   type JsonObject,
   type JsonValue,
 } from "../lib/schema.js";
+import { boundOutput } from "./output-bound.js";
 
 /**
  * What a tool hands back on success: text for the model and structured details
@@ -27,6 +31,10 @@ export interface ToolOutput {
 export interface ToolContext {
   cwd: string;
   signal: AbortSignal | undefined;
+  /**
+   * Streams an interim status line to the caller while the tool runs.
+   */
+  progress(text: string): void;
 }
 
 /**
@@ -93,7 +101,21 @@ function parseJsonAs<S extends TSchema>(
   }
 }
 
-interface ToolSpec<S extends TSchema> {
+/**
+ * What a tool may do. oh-my-pi maps it to its approval tier; pi ignores it.
+ */
+export type ToolEffect = "read" | "write" | "exec";
+
+/**
+ * Oh-my-pi extras on a tool definition; pi's `ToolDefinition` does not declare
+ * them and ignores them.
+ */
+interface OmpToolExtras {
+  approval: (args: JsonValue) => ToolEffect;
+  loadMode?: "essential";
+}
+
+export interface ToolSpec<S extends TSchema> {
   name: string;
   label: string;
   description: string;
@@ -103,6 +125,19 @@ interface ToolSpec<S extends TSchema> {
    * `<label> failed`.
    */
   failure?: string;
+  /**
+   * What the tool may do. oh-my-pi maps it to its approval tier; pi ignores it.
+   */
+  effect: ToolEffect;
+  /**
+   * Per-call refinement for tools whose effect depends on arguments.
+   */
+  effectFor?: (params: Static<S>) => ToolEffect;
+  /**
+   * Keep the tool in oh-my-pi's always-loaded set; all others stay
+   * discoverable.
+   */
+  core?: boolean | undefined;
   run(
     params: Static<S>,
     context: ToolContext,
@@ -112,25 +147,48 @@ interface ToolSpec<S extends TSchema> {
 /**
  * Registers a tool whose handler returns {@link ToolOutput} and reports problems
  * by throwing. Every error, expected or not, reaches Pi as a thrown
- * {@link ToolFailure}.
+ * {@link ToolFailure}. Output is bounded by {@link boundOutput}.
  */
 export function registerTool<S extends TSchema>(
   pi: ExtensionAPI,
   spec: ToolSpec<S>,
 ): void {
-  pi.registerTool({
+  const extras: OmpToolExtras = {
+    approval: (args) =>
+      spec.effectFor && isValid(spec.parameters, args)
+        ? spec.effectFor(args)
+        : spec.effect,
+  };
+
+  if (spec.core) extras.loadMode = "essential";
+
+  const definition: ToolDefinition<S> & OmpToolExtras = {
+    ...extras,
     name: spec.name,
     label: spec.label,
     description: spec.description,
     parameters: spec.parameters,
-    execute: async (_id, params, signal, _onUpdate, ctx) => {
+    execute: async (_id, params, signal, onUpdate, ctx) => {
       try {
         assertValid(spec.parameters, params, "Invalid tool parameters");
 
-        const output = await spec.run(params, { cwd: ctx.cwd, signal });
+        const output = await spec.run(params, {
+          cwd: ctx.cwd,
+          signal,
+          progress: (text) =>
+            onUpdate?.({
+              content: [{ type: "text" as const, text }],
+              details: {},
+            }),
+        });
 
         return {
-          content: [{ type: "text" as const, text: output.text }],
+          content: [
+            {
+              type: "text" as const,
+              text: boundOutput(ctx.cwd, spec.name, output.text),
+            },
+          ],
           details: output.details ?? {},
         };
       } catch (cause) {
@@ -141,5 +199,7 @@ export function registerTool<S extends TSchema>(
         );
       }
     },
-  });
+  };
+
+  pi.registerTool(definition);
 }

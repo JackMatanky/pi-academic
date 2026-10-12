@@ -79,6 +79,8 @@ Read the text you are given. Do not read other files except to confirm a suspect
 
 Return **exactly one** JSON object as your final message — no prose before or after it. Mechanical changes the orchestrator will apply; `idea-flag` items it will only report.
 
+The dispatcher passes the `proofreader_result` schema (`dispatch_contract` resource) as `outputSchema`; your final message must satisfy it.
+
 ```json
 {
   "agent": "proofreader",
