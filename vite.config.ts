@@ -40,7 +40,6 @@ export default defineConfig({
       ".voice/**",
       "past-articles/**",
       "logs/**",
-      "uv.lock",
       "package-lock.json",
       "extensions/package-lock.json",
     ],
