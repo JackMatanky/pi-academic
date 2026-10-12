@@ -3,6 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static, type TSchema } from "typebox";
 
 import { stringEnum } from "../../lib/schema.js";
+import { NoteUpsertSchema, OutlineShellSchema } from "../research-core.js";
 import { reviewResearchNotes, writeResearchNotes } from "../research-notes.js";
 import {
   migrateArticleOutline,
@@ -11,18 +12,13 @@ import {
   writeOutline,
 } from "../research-outline.js";
 import {
+  decodeResearchQuery,
   diagnoseOutline,
   queryResearch,
   ResearchQuerySchema,
 } from "../research-query.js";
 import { reverseOutline } from "../reverse-outline.js";
-import {
-  fail,
-  parseJsonArray,
-  parseJsonObject,
-  registerTool,
-  type ToolEffect,
-} from "../tool-kit.js";
+import { registerTool, type ToolEffect } from "../tool-kit.js";
 
 /**
  * A research-library tool: runs `run` and returns its value as JSON.
@@ -36,7 +32,7 @@ function registerResearchTool<S extends TSchema, Result>(
     parameters: S;
     effect: ToolEffect;
     core?: boolean | undefined;
-    run: (params: Static<S>, cwd: string) => Result;
+    run: (params: Static<S>, cwd: string) => Result | Promise<Result>;
   },
 ): void {
   registerTool(pi, {
@@ -47,8 +43,8 @@ function registerResearchTool<S extends TSchema, Result>(
     effect: spec.effect,
     core: spec.core,
     failure: `${spec.label} failed`,
-    run: (params, { cwd }) => {
-      const value = spec.run(params, cwd);
+    run: async (params, { cwd }) => {
+      const value = await spec.run(params, cwd);
 
       return {
         text: JSON.stringify(value),
@@ -68,14 +64,8 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     label: "Write Research Notes",
     description:
       "Validate and merge note upserts into the project research-notes library.",
-    parameters: Type.Object({ notesJson: Type.String({ minLength: 2 }) }),
-    run: ({ notesJson }, cwd) => {
-      const input = parseJsonArray(notesJson);
-
-      if (!input) return fail("notesJson must be a JSON array");
-
-      return writeResearchNotes(cwd, input);
-    },
+    parameters: Type.Object({ notesJson: Type.Array(NoteUpsertSchema) }),
+    run: ({ notesJson }, cwd) => writeResearchNotes(cwd, notesJson),
   });
   registerResearchTool(pi, {
     name: "academic_writer_review_research_notes",
@@ -93,15 +83,9 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     name: "academic_writer_write_outline",
     effect: "write",
     label: "Write Article Outline",
-    description: "Validate and save canonical recursive article outline JSON.",
-    parameters: Type.Object({ outlineJson: Type.String({ minLength: 2 }) }),
-    run: ({ outlineJson }, cwd) => {
-      const input = parseJsonObject(outlineJson);
-
-      if (!input) return fail("outlineJson must be a JSON object");
-
-      return writeOutline(cwd, input);
-    },
+    description: "Validate and save a canonical recursive article outline.",
+    parameters: Type.Object({ outlineJson: OutlineShellSchema }),
+    run: ({ outlineJson }, cwd) => writeOutline(cwd, outlineJson),
   });
   registerResearchTool(pi, {
     name: "academic_writer_render_outline",
@@ -126,7 +110,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     label: "Query Research Notes",
     description: "Retrieve fixed-scope research note and outline bundles.",
     parameters: ResearchQuerySchema,
-    run: (params, cwd) => queryResearch(cwd, params),
+    run: (params, cwd) => queryResearch(cwd, decodeResearchQuery(params)),
   });
   registerResearchTool(pi, {
     name: "academic_writer_diagnose_outline",

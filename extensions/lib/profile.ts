@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Type } from "typebox";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 import { errorMessage, writeFileAtomic } from "./fs-safe.js";
 import {
@@ -128,58 +129,39 @@ interface ProfileParts {
 }
 
 /**
- * Reads one frontmatter value: `null`, `[]`, a JSON-quoted string, or text.
+ * Parses the profile's frontmatter block with the YAML library and keeps the
+ * small value contract: strings, string lists and `null`. Other shapes were
+ * skipped by the previous line-based parser and still are; scalar numbers and
+ * booleans become their text form so unknown keys carry through unchanged.
+ *
+ * @throws When the block is not valid YAML, so a corrupt profile is never
+ *   mistaken for a missing field.
  */
-function parseScalar(value: string): FrontmatterValue | null {
-  if (value === "null") return null;
+const ScalarSchema = Type.Union([Type.Number(), Type.Boolean()]);
 
-  if (value === "[]") return [];
+const StringListSchema = Type.Array(Type.String());
 
-  if (value.startsWith('"')) {
-    try {
-      const parsed = parseJsonText(value);
-
-      if (isValid(StringSchema, parsed)) return parsed;
-    } catch {
-      // not valid JSON: keep the text as written
-    }
-  }
-
-  return value;
-}
-
-/**
- * Parses the profile's deliberately small YAML-frontmatter subset.
- */
 function parseFrontmatter(text: string): Map<string, FrontmatterValue | null> {
   const values = new Map<string, FrontmatterValue | null>();
   const block = /(?:^|\n)---\n([\s\S]*?)\n---/.exec(text)?.[1];
 
   if (block === undefined) return values;
 
-  const lines = block.split("\n");
+  let parsed: unknown;
 
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index] ?? "";
-    const scalar = /^([\w-]+): (.+)$/.exec(line);
+  try {
+    parsed = parseYaml(block);
+  } catch (cause) {
+    throw new Error(`Malformed profile frontmatter: ${errorMessage(cause)}`);
+  }
 
-    if (scalar?.[1]) {
-      values.set(scalar[1], parseScalar((scalar[2] ?? "").trim()));
-      continue;
-    }
+  if (!isValid(JsonObjectSchema, parsed)) return values;
 
-    const listKey = /^([\w-]+):\s*$/.exec(line)?.[1];
-
-    if (!listKey) continue;
-
-    const items: string[] = [];
-
-    while ((lines[index + 1] ?? "").startsWith("  - ")) {
-      index += 1;
-      items.push((lines[index] ?? "").slice(4));
-    }
-
-    values.set(listKey, items);
+  for (const [key, value] of Object.entries(parsed)) {
+    if (value === null) values.set(key, null);
+    else if (isValid(StringSchema, value)) values.set(key, value);
+    else if (isValid(ScalarSchema, value)) values.set(key, String(value));
+    else if (isValid(StringListSchema, value)) values.set(key, value);
   }
 
   return values;
@@ -279,12 +261,15 @@ export function parseProfileMd(raw: string): Profile {
 }
 
 /**
- * Quotes scalars that would not survive the line-based parser unchanged.
+ * Quotes scalars with YAML's own rules, so every serialized value reads back
+ * unchanged (the old line-based parser accepted colons in plain scalars).
+ * Standalone block scalars serialize unindented, so multiline text keeps the
+ * JSON double-quoted form, which YAML reads back identically.
  */
 function formatScalar(text: string): string {
-  return /[\r\n]|^\s|\s$|^"|^$|^(?:null|\[\])$/.test(text)
-    ? JSON.stringify(text)
-    : text;
+  const inline = stringifyYaml(text).trimEnd();
+
+  return inline.includes("\n") ? JSON.stringify(text) : inline;
 }
 
 /**
@@ -302,7 +287,7 @@ export function serializeProfileMd(profile: Profile): string {
 
     lines.push(`${key}:`);
 
-    for (const item of items) lines.push(`  - ${item}`);
+    for (const item of items) lines.push(`  - ${formatScalar(item)}`);
   };
 
   for (const key of SCALAR_KEYS) {

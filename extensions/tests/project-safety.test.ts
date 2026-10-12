@@ -19,6 +19,7 @@ import { Type } from "typebox";
 import { resolveInside, withFileLock } from "../lib/fs-safe.js";
 import {
   loadProfile,
+  parseProfileMd,
   serializeProfileMd,
   updateProfile,
 } from "../lib/profile.js";
@@ -83,13 +84,13 @@ test("resolveInside accepts project paths and rejects escapes, including through
   assert.throws(() => resolveInside(root, "link/x.md"), /inside/);
 });
 
-test("withFileLock serialises callers and takes over an abandoned lock", (t) => {
+test("withFileLock serialises callers and takes over an abandoned lock", async (t) => {
   const root = project(t);
   const target = join(root, "state.json");
   assert.equal(
-    withFileLock(target, () => {
-      assert.throws(
-        () => withFileLock(target, () => 0, { timeoutMs: 60 }),
+    await withFileLock(target, async () => {
+      await assert.rejects(
+        withFileLock(target, () => 0, { timeoutMs: 60 }),
         /Timed out locking/,
       );
 
@@ -102,10 +103,55 @@ test("withFileLock serialises callers and takes over an abandoned lock", (t) => 
   mkdirSync(`${target}.lock`);
   const old = new Date(Date.now() - 60_000);
   utimesSync(`${target}.lock`, old, old);
-  assert.equal(
-    withFileLock(target, () => "taken over"),
-    "taken over",
+  assert.equal(await withFileLock(target, () => "taken over"), "taken over");
+});
+
+test("withFileLock queues same-process contention and keeps an active owner through a stale takeover", async (t) => {
+  const root = project(t);
+  const target = join(root, "state.json");
+  const order: string[] = [];
+  // Test-controlled gate: first holds the lock until released, so no real
+  // timer decides the interleaving.
+  let openGate: () => void = () => {};
+
+  const gate = new Promise<void>((resolve) => {
+    openGate = resolve;
+  });
+
+  const first = withFileLock(target, async () => {
+    order.push("first-start");
+    // Older than staleMs: a naive takeover would evict this active owner.
+    utimesSync(`${target}.lock`, new Date(Date.now() - 60_000), new Date());
+    await gate;
+    order.push("first-end");
+
+    return 1;
+  });
+
+  const second = withFileLock(target, () => {
+    order.push("second");
+
+    return 2;
+  });
+
+  await Promise.resolve();
+  openGate();
+
+  assert.deepEqual([await first, await second], [1, 2]);
+  assert.deepEqual(order, ["first-start", "first-end", "second"]);
+  assert.equal(existsSync(`${target}.lock`), false, "lock is released");
+});
+
+test("withFileLock releases the lock when the callback rejects", async (t) => {
+  const root = project(t);
+  const target = join(root, "state.json");
+
+  await assert.rejects(
+    withFileLock(target, () => Promise.reject(new Error("boom"))),
+    /boom/,
   );
+  assert.equal(existsSync(`${target}.lock`), false, "lock is released");
+  assert.equal(await withFileLock(target, () => "again"), "again");
 });
 
 test("re-ingesting keeps Zotero records, existing citekeys and foreign BibTeX entries", async (t) => {
@@ -289,7 +335,7 @@ test("the citation audit ignores e-mail, code and trailing punctuation but check
     "@book{smith2020, title={B}}\n",
   );
   const audit = auditCitations("articles/a.md", "chicago", root);
-  assert.ok("mode" in audit);
+  assert.equal(audit.status, "failed");
   assert.deepEqual(audit.citationKeys.sort(), ["ghost", "smith2020"]);
   assert.deepEqual(audit.missingFromSources, ["ghost"]);
   assert.deepEqual(audit.malformedMarkers, []);
@@ -330,6 +376,51 @@ test("updateProfile keeps unknown fields and sections, quotes awkward values and
   assert.throws(() => updateProfile(root, { tools: [1] }));
   assert.equal(updateProfile(join(root, "nowhere"), {}), null);
   assert.equal(serializeProfileMd({}).includes("abstractLanguages: []"), true);
+});
+
+test("profile frontmatter parses as YAML with the string/list/null contract", (t) => {
+  const root = project(t);
+  write(
+    root,
+    ".academic-writer/profile.md",
+    [
+      "# Academic Writer Profile",
+      "",
+      "---",
+      "fieldOfStudy: 'Ancient: History'",
+      'quoted: "a: b"',
+      "version: 2",
+      "flag: true",
+      "empty:",
+      "languages:",
+      "  - English",
+      "  - 'Hebrew: Biblical'",
+      "nested:",
+      "  inner: 1",
+      "---",
+      "",
+    ].join("\n"),
+  );
+  const profile = loadProfile(root);
+  assert.equal(profile?.fieldOfStudy, "Ancient: History");
+  // Nulls and shapes outside the contract are not carried in the extras;
+  // numbers and booleans arrive as their text form.
+  assert.deepEqual(profile?.extraFrontmatter, {
+    quoted: "a: b",
+    version: "2",
+    flag: "true",
+    languages: ["English", "Hebrew: Biblical"],
+  });
+
+  const serialized = parseProfileMd(serializeProfileMd(profile!));
+
+  assert.deepEqual(
+    serialized.extraFrontmatter ?? {},
+    profile?.extraFrontmatter,
+  );
+
+  write(root, ".academic-writer/profile.md", "---\nbroken: a: b\n---\n");
+  assert.throws(() => loadProfile(root), /Malformed profile frontmatter/);
 });
 
 test("a malformed profile section is an error, not a missing profile", (t) => {

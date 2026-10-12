@@ -22,26 +22,36 @@ export function stringEnum<const T extends readonly string[]>(
 }
 
 /**
- * Schema for any value JSON can represent.
- */
-export const JsonValueSchema = Type.Cyclic(
-  {
-    Json: Type.Union([
-      Type.String(),
-      Type.Number(),
-      Type.Boolean(),
-      Type.Null(),
-      Type.Array(Type.Ref("Json")),
-      Type.Record(Type.String(), Type.Ref("Json")),
-    ]),
-  },
-  "Json",
-);
-
-/**
  * Any value JSON can represent.
  */
-export type JsonValue = Static<typeof JsonValueSchema>;
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/**
+ * Recursive JSON Schema for values at tool and file boundaries. The explicit
+ * `$ref` avoids `Type.Ref`, which OMP's TypeBox shim does not expose.
+ */
+export const JsonValueSchema = Type.Unsafe<JsonValue>({
+  $defs: {
+    Json: {
+      $id: "Json",
+      anyOf: [
+        { type: "string" },
+        { type: "number" },
+        { type: "boolean" },
+        { type: "null" },
+        { type: "array", items: { $ref: "Json" } },
+        { type: "object", additionalProperties: { $ref: "Json" } },
+      ],
+    },
+  },
+  $ref: "Json",
+});
 
 /**
  * A JSON object.
@@ -80,21 +90,23 @@ export function firstSchemaError(schema: TSchema, value: JsonValue): string {
 }
 
 /**
- * Narrows `value` to the schema's type, or throws.
+ * Narrows `value` to the schema's type, or throws. Generic over the incoming
+ * type so known-typed callers keep their evidence (`JsonValue & Static<S>`) and
+ * unknown callers still narrow.
  *
  * @throws With `label` and the first violation when the value does not match.
  */
-export function assertValid<S extends TSchema>(
+export function assertValid<S extends TSchema, T>(
   schema: S,
-  value: unknown,
+  value: T,
   label: string,
-): asserts value is Static<S> {
-  if (Value.Check(schema, value)) return;
-
+): asserts value is Static<S> & T {
   const [error] = Value.Errors(schema, value);
 
+  if (!error) return;
+
   throw new Error(
-    `${label} ${error ? `${error.instancePath || "(root)"}: ${error.message}` : "invalid value"}`,
+    `${label} ${error.instancePath || "(root)"}: ${error.message}`,
   );
 }
 
@@ -108,17 +120,18 @@ export function parseWith<S extends TSchema>(
   value: JsonValue,
   label: string,
 ): Static<S> {
-  if (Value.Check(schema, value)) return value;
+  assertValid(schema, value, label);
 
-  throw new Error(`${label} ${firstSchemaError(schema, value)}`);
+  return value;
 }
 
 /**
- * Parses JSON text. Anything `JSON.parse` returns is a JSON value; whether it
- * has the shape the caller needs is for a schema to decide.
+ * Parses JSON text and validates that the parsed value is JSON-representable.
  */
 export function parseJsonText(text: string): JsonValue {
-  const parsed: JsonValue = JSON.parse(text);
+  const parsed: unknown = JSON.parse(text);
+
+  assertValid(JsonValueSchema, parsed, "JSON text");
 
   return parsed;
 }

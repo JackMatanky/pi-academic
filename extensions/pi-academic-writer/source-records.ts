@@ -64,6 +64,28 @@ const ZoteroKindSchema = Type.Object({ sourceType: Type.Literal("zotero") });
 const LocalKindSchema = Type.Object({ sourceType: Type.Literal("local-file") });
 
 /**
+ * Structured boundary for current-run source cache records; identity rules
+ * remain in normalization.
+ */
+export const SourceCacheRecordSchema = Type.Object({
+  sourceType: Type.Union([Type.Literal("zotero"), Type.Literal("local-file")]),
+  sourceId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  sourceFingerprint: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  libraryId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  itemKey: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  extractionConfidence: Type.Optional(
+    Type.Record(
+      Type.String(),
+      Type.Union([
+        Type.Literal("high"),
+        Type.Literal("medium"),
+        Type.Literal("low"),
+      ]),
+    ),
+  ),
+});
+
+/**
  * Reads a string-valued field of an opaque registry entry.
  */
 export function stringField(

@@ -41,7 +41,7 @@ When invoked as a pipeline step, the article text is passed directly.
 
 Call `academic_writer_read_resource` with `name: citation_review_gate`, then call `academic_writer_audit_citations` with the article markdown path and the profile's `citationStyle`.
 
-If the audit returns `ok: false`, score Citation Completeness as failing, report the exact missing/wrong-mode citation details, set run state to `failed`, and do not continue to DOCX/export. This gate is mechanical only; still perform semantic source/claim review when the mechanical audit passes.
+If the audit returns `status: failed` or `status: error`, score Citation Completeness as failing, report the citation defects or operational error respectively, set run state to `failed`, and do not continue to DOCX/export. This gate is mechanical only; still perform semantic source/claim review when `status: passed`.
 
 ## Scorecard rubric
 

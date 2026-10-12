@@ -5,15 +5,7 @@ import type {
 import type { Static, TSchema } from "typebox";
 
 import { errorMessage } from "../lib/fs-safe.js";
-import {
-  assertValid,
-  isValid,
-  JsonArraySchema,
-  JsonObjectSchema,
-  parseJsonText,
-  type JsonObject,
-  type JsonValue,
-} from "../lib/schema.js";
+import { assertValid, isValid, type JsonValue } from "../lib/schema.js";
 import { boundOutput } from "./output-bound.js";
 
 /**
@@ -71,35 +63,6 @@ export function fail<Details extends object>(
       : text;
 
   throw new ToolFailure(message, details);
-}
-
-/**
- * Parses a JSON object string, or returns null for arrays, primitives and
- * invalid JSON.
- */
-export function parseJsonObject(value: string): JsonObject | null {
-  return parseJsonAs(JsonObjectSchema, value);
-}
-
-/**
- * Parses a JSON array string, or returns null for objects, primitives and
- * invalid JSON.
- */
-export function parseJsonArray(value: string): JsonValue[] | null {
-  return parseJsonAs(JsonArraySchema, value);
-}
-
-function parseJsonAs<S extends TSchema>(
-  schema: S,
-  text: string,
-): Static<S> | null {
-  try {
-    const parsed = parseJsonText(text);
-
-    return isValid(schema, parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
 }
 
 /**

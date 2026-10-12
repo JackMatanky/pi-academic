@@ -225,7 +225,7 @@ After edits are applied:
 
 **Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode. If the profile is unavailable/stale, call `academic_writer_extract_document` on the markdown and treat any `[@citeKey]` Pandoc marker as citeproc mode.
 
-**Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. If `ok` is false, stop, set the run state to `failed`, and report the exact missing/wrong-mode citation details.
+**Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. Continue only when `status` is `passed`; for `failed`, report the exact missing/wrong-mode citation details, and for `error`, report the operational error. In either case stop and set the run state to `failed`.
 
 **`inline-parenthetical` (unchanged):** Call `academic_writer_assemble_docx_json` to build intermediate DOCX JSON deterministically (preserving footnotes, RTL settings, and section hierarchy). Do NOT hand-craft raw model-written DOCX JSON. Then pass the assembled JSON path to `academic_writer_generate_docx`.
 

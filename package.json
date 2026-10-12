@@ -1,10 +1,11 @@
 {
   "name": "academic-writer",
   "version": "0.1.0",
-  "description": "AI-first academic writing assistant for Humanities researchers — pi package",
+  "description": "AI-first academic writing assistant for Humanities researchers — works with pi and oh-my-pi",
   "keywords": [
     "academic-writing",
     "humanities",
+    "oh-my-pi",
     "pi-package"
   ],
   "license": "MIT",

@@ -1,4 +1,4 @@
-# Academic Writer — Pi Package
+# Academic Writer — Pi and oh-my-pi Package
 
 AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as DOCX, ODT, LaTeX, or PDF via Pandoc, with CSL-based citation rendering from a real Zotero- or local-source `bibliography.bib` (popular style aliases, Zotero/CSL repository styles, or custom `.csl` files).
 
@@ -106,6 +106,7 @@ Run `/skill:academic-setup` to select or install a package (the starter ships wi
 5. **Review and revise:** review citation-audit results and the `academic_writer_reverse_outline` paragraph index. Return to sources or revise the argument when needed; edits preserve unrequested text.
 
 Local files work without Zotero; Zotero is optional and preferred when enabled. Structured notes, canonical outline data, and article-local snapshots remain internal sources of truth.
+The `notesJson`, `outlineJson`, `sourcesJson`, and `fieldsJson` tool parameters accept structured arrays or objects, not serialized JSON strings. `academic_writer_assemble_docx_json` accepts an optional structured `formatJson` object; `evidenceMapJson` remains serialized text for advisory diagnosis.
 Substantive reviewers use those units to infer paragraph roles, evidence, and explanation, and raise repetition, support, missing analysis, or abrupt transitions as tentative questions—not automatic verdicts. The tool itself makes no semantic judgments and does not rewrite or persist results.
 
 For English prose, the `academic_writer_lint_prose` tool reports deterministic, advisory surface-pattern findings for contextual review. It does not rewrite text, judge authorship, or prove quality.
@@ -289,9 +290,13 @@ cd extensions && ../node_modules/.bin/vp run test # TS tests; PDF also needs xel
 
 ## Acknowledgements
 
-This is a fork of [yodem/academic-writer](https://github.com/yodem/academic-writer) by Yotam Fromm — the original Claude Code plugin this package is built on. All core skills, agents, and the citation-verification pipeline originate there; this fork converts the distribution to a [pi package](https://pi.dev/docs/latest/packages) and replaces the Candlekeep integration with Zotero MCP.
+This is a fork of [yodem/academic-writer](https://github.com/yodem/academic-writer)
+by Yotam Fromm — the original Claude Code plugin this package is built on.
+All core skills, agents, and the citation-verification pipeline originate there;
+this fork distributes it as a [pi package](https://pi.dev/docs/latest/packages)
+that also runs under oh-my-pi, and replaces the Candlekeep integration with Zotero MCP.
 
-The pi conversion depends on three community pi packages by [Nico Bailon](https://github.com/nicobailon), without which this package's subagent, MCP, and web-search architecture would not be possible:
+Under pi, the integration depends on three community packages by [Nico Bailon](https://github.com/nicobailon), without which this package's subagent, MCP, and web-search architecture would not be possible:
 
 - [pi-subagents](https://github.com/nicobailon/pi-subagents) — subagent orchestration, replacing Claude Code's `Agent`/Task tool and `agents/*.md` loading.
 - [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) — MCP server wiring, replacing `plugin.json`'s `mcpServers` key.

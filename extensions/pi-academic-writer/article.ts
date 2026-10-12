@@ -83,9 +83,7 @@ const SectionWithParagraphs = Type.Object({
 });
 
 /**
- * Validates an article payload, naming the offending section or paragraph.
- *
- * @throws With the path of the first malformed part.
+ * Validates an article payload and names the offending section or paragraph.
  */
 export function parseArticle(raw: JsonValue): ArticleData {
   if (!isValid(ArticleWithSections, raw))

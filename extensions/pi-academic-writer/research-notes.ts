@@ -129,11 +129,11 @@ function saveLibrary(projectRoot: string, notes: Note[]): void {
  * Creates or updates notes. Edited notes go back to `unchecked`; unchanged ones
  * keep their review state.
  */
-export function writeResearchNotes(
+export async function writeResearchNotes(
   projectRoot: string,
   upserts: JsonValue[],
-): Note[] {
-  return withFileLock(noteFile(projectRoot), () => {
+): Promise<Note[]> {
+  return withFileLock(noteFile(projectRoot), async () => {
     const byId = new Map(library(projectRoot).map((note) => [note.id, note]));
     const seen = new Set<string>();
     const registry = readSourceRefs(projectRoot);
@@ -178,11 +178,11 @@ export function writeResearchNotes(
 /**
  * Marks notes verified or unchecked; staleness is re-evaluated.
  */
-export function reviewResearchNotes(
+export async function reviewResearchNotes(
   projectRoot: string,
   noteIds: string[],
   state: "unchecked" | "verified",
-): Note[] {
+): Promise<Note[]> {
   return withFileLock(noteFile(projectRoot), () => {
     const notes = library(projectRoot);
     const wanted = new Set(noteIds);
@@ -215,13 +215,13 @@ export interface RefreshedSource {
 /**
  * Marks notes stale when their source vanished or its content changed.
  */
-export function markResearchNotesStale(
+export async function markResearchNotesStale(
   projectRoot: string,
   refreshed: RefreshedSource[],
-): void {
+): Promise<void> {
   const path = noteFile(projectRoot);
 
-  withFileLock(path, () => {
+  await withFileLock(path, () => {
     if (!existsSync(path)) return;
 
     const next = library(projectRoot).map((note): Note => {

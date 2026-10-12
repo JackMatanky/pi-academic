@@ -1,3 +1,5 @@
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
@@ -19,7 +21,8 @@ import { strFromU8, unzipSync } from "fflate";
 import { Type } from "typebox";
 
 import { parseWith, type JsonObject } from "../lib/schema.js";
-import { createToolHarness } from "./helpers.js";
+import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
+import { createToolHarness, get } from "./helpers.js";
 
 type Params = JsonObject;
 
@@ -29,7 +32,7 @@ const realPandoc = spawnSync("which", ["pandoc"], {
 
 const needsPandoc = { skip: realPandoc ? false : "pandoc is not installed" };
 
-const { callTool } = createToolHarness();
+const { callTool, definitions } = createToolHarness();
 
 type ToolResult = Awaited<ReturnType<typeof callTool>>;
 
@@ -345,6 +348,135 @@ test(
   },
 );
 
+test(
+  "a failing pdf or docx leaves the other formats and their flags untouched",
+  needsPandoc,
+  async (t) => {
+    const pdf = harness(t, { failExt: ".pdf" });
+
+    const result = await pdf.run(
+      "academic_writer_export_article",
+      exportParams(["pdf", "docx", "odt"]),
+    );
+
+    // Partial-failure shape: the run fails, the audit passed, and every
+    // format reports its own outcome.
+    assert.equal(result.details.ok, false);
+    assert.equal(get(result.details, "audit", "status"), "passed");
+    assert.equal(result.details.stylePackage, null);
+    assert.deepEqual(
+      entries(result).map((entry) => [entry.format, entry.ok]),
+      [
+        ["pdf", false],
+        ["docx", true],
+        ["odt", true],
+      ],
+    );
+    assert.match(
+      entries(result)[0]?.error ?? "",
+      /stub failure for .*export\.pdf/,
+    );
+    assert.match(result.content[0]?.text ?? "", /pdf: failed/);
+    assert.ok(existsSync(join(pdf.root, "articles", "essay.docx")));
+    assert.ok(existsSync(join(pdf.root, "articles", "essay.odt")));
+    assert.ok(!existsSync(join(pdf.root, "articles", "essay.pdf")));
+
+    // No engine is installed, so no call may carry another format's engine
+    // flag, and each call writes only its own output.
+    const calls = pdf.invocations();
+    assert.deepEqual(
+      calls.map((call) =>
+        (call[call.indexOf("-o") + 1] ?? "").split(".").pop(),
+      ),
+      ["pdf", "docx", "odt"],
+    );
+    assert.ok(
+      calls.every((call) =>
+        call.every((arg) => !arg.startsWith("--pdf-engine")),
+      ),
+    );
+
+    const docx = harness(t, { failExt: ".docx", engines: ["xelatex"] });
+
+    const swapped = await docx.run(
+      "academic_writer_export_article",
+      exportParams(["docx", "pdf"]),
+    );
+
+    assert.equal(swapped.details.ok, false);
+    assert.deepEqual(
+      entries(swapped).map((entry) => entry.ok),
+      [false, true],
+    );
+
+    const [docxCall, pdfCall] = docx.invocations();
+    assert.ok(!docxCall?.some((arg) => arg.startsWith("--pdf-engine")));
+    assert.ok(pdfCall?.includes("--pdf-engine=xelatex"));
+  },
+);
+
+test("aborting mid-export fails the tool and stops the remaining formats", async (t) => {
+  const h = harness(t);
+  const controller = new AbortController();
+  const tool = definitions.get("academic_writer_export_article");
+  assert.ok(tool, "the export tool is registered");
+
+  let failure: ToolFailure | undefined;
+
+  try {
+    await tool.execute(
+      "t",
+      exportParams(["docx", "odt", "latex"]),
+      controller.signal,
+      (update) => {
+        // Abort as soon as the first format reports progress, so the signal
+        // arrives while the operation still has formats to run.
+        if (
+          update.content.some(
+            (part) => part.type === "text" && part.text.includes("docx"),
+          )
+        ) {
+          controller.abort();
+        }
+      },
+      // SAFETY: the harness builds a minimal context with only the cwd the
+      // tool reads.
+      { cwd: h.root } as ExtensionContext,
+    );
+  } catch (cause) {
+    if (!(cause instanceof ToolFailure)) throw cause;
+
+    failure = cause;
+  }
+
+  assert.ok(failure, "the aborted export reports a failure");
+  assert.equal(failure.details.ok, false);
+  assert.match(failure.text, /odt: failed/);
+  assert.ok(controller.signal.aborted);
+
+  // The first format completed before the abort; later formats wrote nothing.
+  assert.ok(existsSync(join(h.root, "articles", "essay.docx")));
+  assert.ok(!existsSync(join(h.root, "articles", "essay.odt")));
+  assert.ok(!existsSync(join(h.root, "articles", "essay.tex")));
+
+  const aborted = parseWith(
+    Type.Array(EntrySchema),
+    // SAFETY: fail() details are JsonObject; the schema decodes the results
+    // array shape.
+    (failure.details as JsonObject).results ?? null,
+    "results",
+  );
+
+  assert.deepEqual(
+    aborted.map((entry) => [entry.format, entry.ok]),
+    [
+      ["docx", true],
+      ["odt", false],
+      ["latex", false],
+    ],
+  );
+});
+
 test("a failed citation audit stops the export before Pandoc runs", async (t) => {
   const h = harness(t);
   writeFileSync(
@@ -358,7 +490,16 @@ test("a failed citation audit stops the export before Pandoc runs", async (t) =>
   );
 
   assert.equal(result.details.ok, false);
+  assert.equal(get(result.details, "audit", "status"), "failed");
   assert.match(result.content[0]?.text ?? "", /citation audit failed/);
+  assert.equal(h.invocations().length, 0);
+
+  const missing = await h.run(
+    "academic_writer_export_article",
+    exportParams(["docx"], { article: "articles/missing.md" }),
+  );
+
+  assert.equal(get(missing.details, "audit", "status"), "error");
   assert.equal(h.invocations().length, 0);
 });
 
@@ -644,11 +785,15 @@ test("a failed export keeps the previous output and remote references are refuse
 
   const failed = await h.run(
     "academic_writer_export_article",
-    exportParams(["odt"]),
+    exportParams(["docx", "odt"]),
   );
 
   assert.equal(failed.isError, true);
   assert.equal(readFileSync(previous, "utf8"), "previous export");
+  assert.ok(
+    existsSync(join(h.root, "articles", "essay.docx")),
+    "the succeeding format still wrote its output",
+  );
 
   const remote = await h.run(
     "academic_writer_export_article",
@@ -657,7 +802,7 @@ test("a failed export keeps the previous output and remote references are refuse
 
   assert.equal(remote.isError, true);
   assert.match(remote.content[0]?.text ?? "", /local file/);
-  assert.equal(h.invocations().length, 1, "only the first export ran Pandoc");
+  assert.equal(h.invocations().length, 2, "only the first export ran Pandoc");
 });
 
 test("articles outside the project and unsupported formats never reach Pandoc", async (t) => {

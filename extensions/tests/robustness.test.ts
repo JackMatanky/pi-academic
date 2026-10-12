@@ -126,7 +126,7 @@ test("withFileLock serialises read-modify-write across processes", async (t) => 
 import { withFileLock } from ${JSON.stringify(lockModule)};
 const [path, rounds] = process.argv.slice(2);
 for (let i = 0; i < Number(rounds); i++) {
-  withFileLock(path, () => {
+  await withFileLock(path, () => {
     const value = Number(readFileSync(path, "utf8"));
     const until = Date.now() + 2;
     while (Date.now() < until);

@@ -1,7 +1,8 @@
-# Academic Writer — Pi Package Conventions
+# Academic Writer — Pi and oh-my-pi Package Conventions
 
-This is a [pi package](https://pi.dev/docs/latest/packages) for Humanities researchers. The user is
-a single researcher on a local machine; the package should never assume team workflows.
+This is a [pi package](https://pi.dev/docs/latest/packages) for Humanities researchers
+that also targets oh-my-pi. The user is a single researcher on a local machine;
+the package should never assume team workflows.
 
 ## Commands
 
@@ -113,4 +114,7 @@ DOCX generation branches by citation mode in Step 9 of `write`/`edit`: `inline-p
 - Don't author skill descriptions that omit "Use when…" trigger phrases.
 - Don't use Claude Code conventions (`mcp__server__tool`, `AskUserQuestion`, `WebSearch`, `/academic-writer:<name>` slash commands, `user-invocable`/`allowedTools`/`model` frontmatter) — this package targets pi and oh-my-pi, not Claude Code; oh-my-pi's own `mcp__<server>_<tool>` names are resolved at runtime by `academic_writer_resolve_mcp_tool`, never written by hand.
 - Don't move `pi-subagents`/`pi-mcp-adapter`/`pi-web-access`/`@earendil-works/pi-coding-agent` into `dependencies` or `bundledDependencies`: pi loads only resources a package's pi manifest declares, so a bundled copy would register the companions' tools a second time next to the researcher's own installed copy (the `mcp`-tool conflict this package hit once). Keep them `peerDependencies: "*"`, documented as required companion installs in README; lifecycle warns on pi when `subagent` or `web_search` is missing.
-- Keep `typebox` in `peerDependencies: "*"`, never `dependencies`: pi supplies its own copy (it warns on a dependency entry) and omp does not alias bare `typebox`, but its `bun install` installs the peer, so both harnesses resolve it.
+- Keep `typebox` in `dependencies`: the extension imports it at runtime. Pi aliases
+  it to its own copy; oh-my-pi does not alias the bare package. Same for `yaml`,
+  which parses `.academic-writer/profile.md` frontmatter. Companion harness
+  packages remain `peerDependencies` as described above.

@@ -64,7 +64,7 @@ const ok = (result: ToolResult) => result.details.ok;
 
 const OUTLINE_ARTICLE = { article: "articles/essay.md" };
 
-interface SectionNode {
+interface SectionNode extends JsonObject {
   id: string;
   kind: "section";
   title: string;
@@ -86,7 +86,7 @@ const section = (
   items,
 });
 
-function treeOutline() {
+function treeOutline(): JsonObject {
   return {
     schemaVersion: 1,
     article: {
@@ -166,7 +166,7 @@ for (const [style, citation] of [
     writeFileSync(articlePath, articleText);
 
     const note = await callTool(root, "academic_writer_write_research_notes", {
-      notesJson: JSON.stringify([
+      notesJson: [
         {
           id: "evidence",
           kind: "quotation",
@@ -177,7 +177,7 @@ for (const [style, citation] of [
             textQuote: { exact: "Exact source words" },
           },
         },
-      ]),
+      ],
     });
 
     assert.equal(ok(note), true);
@@ -227,7 +227,7 @@ for (const [style, citation] of [
     };
 
     const saved = await callTool(root, "academic_writer_write_outline", {
-      outlineJson: JSON.stringify(outline),
+      outlineJson: outline,
     });
 
     assert.equal(ok(saved), true);
@@ -259,7 +259,7 @@ for (const [style, citation] of [
       citationStyle: style,
     });
 
-    assert.equal(ok(audit), true);
+    assert.equal(audit.details.status, "passed");
 
     const bundle = await callTool(root, "academic_writer_query_research", {
       operation: "section_bundle",
@@ -318,7 +318,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
   ];
 
   const saved = await callTool(root, "academic_writer_write_research_notes", {
-    notesJson: JSON.stringify(notes),
+    notesJson: notes,
   });
 
   assert.equal(ok(saved), true);
@@ -327,14 +327,14 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
     root,
     "academic_writer_write_research_notes",
     {
-      notesJson: JSON.stringify([
+      notesJson: [
         {
           id: "invalid-date",
           kind: "idea",
           coreStatement: "Invalid timestamp",
           createdAt: "March 4, 2024",
         },
-      ]),
+      ],
     },
   );
 
@@ -397,7 +397,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
   assert.equal(ok(noSource), false);
 
   const written = await callTool(root, "academic_writer_write_outline", {
-    outlineJson: JSON.stringify(treeOutline()),
+    outlineJson: treeOutline(),
   });
 
   assert.equal(ok(written), true);
@@ -434,6 +434,86 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
     arr(at(summary, "value", "sections")).map((entry) => get(entry, "id")),
     ["outer", "inner", "deep", "inner-two", "outer-two"],
   );
+
+  for (const [valid, missing, irrelevant] of [
+    [
+      {
+        operation: "section_bundle",
+        article: "articles/augustine-time.md",
+        sectionId: "augustine",
+      },
+      "sectionId",
+      "tag",
+    ],
+    [{ operation: "note_by_id", noteId: "source-note" }, "noteId", "article"],
+    [
+      { operation: "notes_by_source", sourceId: "zotero:library:item" },
+      "sourceId",
+      "sectionId",
+    ],
+    [{ operation: "notes_by_tag", tag: "common" }, "tag", "noteId"],
+    [
+      { operation: "outline_summary", article: "articles/tree.md" },
+      "article",
+      "limit",
+    ],
+  ] as const) {
+    const validRoot = valid.operation === "section_bundle" ? FIXTURE : root;
+    assert.equal(
+      ok(await callTool(validRoot, "academic_writer_query_research", valid)),
+      true,
+    );
+
+    // Omitting via rest keeps the payload's value types without a cast.
+    const { [missing]: _removed, ...without } = valid;
+
+    const missingResult = await callTool(
+      root,
+      "academic_writer_query_research",
+      without,
+    );
+
+    assert.equal(
+      ok(missingResult),
+      false,
+      `${valid.operation} requires ${missing}`,
+    );
+    assert.match(missingResult.content[0]?.text ?? "", new RegExp(missing));
+
+    const irrelevantResult = await callTool(
+      root,
+      "academic_writer_query_research",
+      {
+        ...valid,
+        [irrelevant]: irrelevant === "limit" ? 1 : "unexpected",
+      },
+    );
+
+    assert.equal(
+      ok(irrelevantResult),
+      false,
+      `${valid.operation} rejects ${irrelevant}`,
+    );
+    assert.match(
+      irrelevantResult.content[0]?.text ?? "",
+      new RegExp(irrelevant),
+    );
+
+    const unknown = await callTool(root, "academic_writer_query_research", {
+      ...valid,
+      extra: "unexpected",
+    });
+
+    assert.equal(ok(unknown), false);
+    assert.match(unknown.content[0]?.text ?? "", /extra/);
+  }
+
+  const empty = await callTool(root, "academic_writer_query_research", {
+    operation: "notes_by_tag",
+    tag: "absent",
+  });
+
+  assert.deepEqual(at(empty, "value"), []);
 });
 
 const FIXTURE = join(repoRoot, "tests", "e2e", "fixture-project");
@@ -533,13 +613,13 @@ test("[test_outline_migration_preserves_markdown_and_conflicts] outline migratio
   forged.article.slug = "forged";
 
   const forgedResult = await callTool(root, "academic_writer_write_outline", {
-    outlineJson: JSON.stringify(forged),
+    outlineJson: forged,
   });
 
   assert.equal(ok(forgedResult), false);
 
   const accepted = await callTool(root, "academic_writer_write_outline", {
-    outlineJson: JSON.stringify(outline),
+    outlineJson: outline,
   });
 
   assert.equal(ok(accepted), true);

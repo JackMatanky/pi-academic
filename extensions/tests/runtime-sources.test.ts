@@ -130,7 +130,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   const sourceId = writeLocalSourceRegistry(root, fingerprint);
 
   const written = await callTool(root, "academic_writer_write_research_notes", {
-    notesJson: JSON.stringify([
+    notesJson: [
       {
         kind: "quotation",
         coreStatement: "Evidence",
@@ -143,7 +143,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
         },
         tags: ["argument"],
       },
-    ]),
+    ],
   });
 
   assert.equal(written.details.ok, true);
@@ -170,7 +170,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   });
 
   const savedOutline = await callTool(root, "academic_writer_write_outline", {
-    outlineJson: JSON.stringify(outline),
+    outlineJson: outline,
   });
 
   assert.equal(savedOutline.details.ok, true);
@@ -185,7 +185,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   const rejectedReference = await callTool(
     root,
     "academic_writer_write_outline",
-    { outlineJson: JSON.stringify(referenceOnly) },
+    { outlineJson: referenceOnly },
   );
 
   assert.equal(rejectedReference.details.ok, false);
@@ -209,7 +209,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   const rejectedDuplicate = await callTool(
     root,
     "academic_writer_write_outline",
-    { outlineJson: JSON.stringify(duplicatePrimary) },
+    { outlineJson: duplicatePrimary },
   );
 
   assert.equal(rejectedDuplicate.details.ok, false);
@@ -231,15 +231,15 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   const frozenPath = join(root, "articles", "essay.notes.json");
   const frozenNotes = readFileSync(frozenPath);
 
+  assert.ok(isValid(JsonObjectSchema, note), "note is an object");
+
   const unchanged = await callTool(
     root,
     "academic_writer_write_research_notes",
-    { notesJson: JSON.stringify([note]) },
+    { notesJson: [note] },
   );
 
   assert.equal(details(unchanged, "value", 0, "review", "state"), "verified");
-
-  assert.ok(isValid(JsonObjectSchema, note), "note is an object");
 
   const changed: JsonObject = {
     ...note,
@@ -247,7 +247,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   };
 
   const update = await callTool(root, "academic_writer_write_research_notes", {
-    notesJson: JSON.stringify([changed]),
+    notesJson: [changed],
   });
 
   assert.equal(details(update, "value", 0, "review", "state"), "unchecked");
@@ -323,14 +323,14 @@ test("[test_ingest_uses_content_identity_and_marks_changed_notes_stale] ingest i
 
   const note = details(
     await callTool(root, "academic_writer_write_research_notes", {
-      notesJson: JSON.stringify([
+      notesJson: [
         {
           kind: "paraphrase",
           coreStatement: "Researcher paraphrase",
           researcherNote: "I rewrote the source idea",
           sourceRef: recordId,
         },
-      ]),
+      ],
     }),
     "value",
     0,
@@ -447,7 +447,7 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
     root,
     "academic_writer_write_research_notes",
     {
-      notesJson: JSON.stringify([
+      notesJson: [
         {
           id: "unbound-paraphrase",
           kind: "paraphrase",
@@ -455,7 +455,7 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
           sourceRef: sourceId,
           researcherNote: "Researcher-authored paraphrase",
         },
-      ]),
+      ],
     },
   );
 
@@ -476,13 +476,13 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
     root,
     "academic_writer_write_research_notes",
     {
-      notesJson: JSON.stringify([
+      notesJson: [
         {
           id: "analysis-only",
           kind: "analysis",
           coreStatement: "Researcher interpretation",
         },
-      ]),
+      ],
     },
   );
 
@@ -501,7 +501,7 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
   });
 
   const rejected = await callTool(root, "academic_writer_write_outline", {
-    outlineJson: JSON.stringify(outline),
+    outlineJson: outline,
   });
 
   assert.equal(rejected.details.ok, false);
@@ -524,14 +524,14 @@ test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] 
   const bibliography = "@book{new, title={New}}";
 
   const failed = await callTool(root, "academic_writer_write_sources_cache", {
-    sourcesJson: JSON.stringify([
+    sourcesJson: [
       {
         sourceType: "zotero",
         sourceId: "zotero:wrong:key",
         libraryId: "library",
         itemKey: "key",
       },
-    ]),
+    ],
     bibliography,
   });
 
@@ -544,14 +544,14 @@ test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] 
   );
 
   await callTool(root, "academic_writer_write_sources_cache", {
-    sourcesJson: JSON.stringify([
+    sourcesJson: [
       {
         sourceType: "zotero",
         sourceId: null,
         libraryId: "library",
         itemKey: "key",
       },
-    ]),
+    ],
     bibliography,
   });
 

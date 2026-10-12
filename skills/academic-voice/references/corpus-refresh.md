@@ -70,7 +70,7 @@ Show the researcher what changed:
 
 Ask the researcher whether to save, review, or discard the changes. Wait for the answer and accept a number, label, or close paraphrase.
 
-If **Save**, call `academic_writer_update_profile` with a `fieldsJson` object containing the complete proposed `styleFingerprint` and the merged `analyzedArticles` list. Do not use generic file-write tools for the profile.
+If **Save**, call `academic_writer_update_profile` with a structured `fieldsJson` object containing the complete proposed `styleFingerprint` and the merged `analyzedArticles` list. Do not serialize it or use generic file-write tools for the profile.
 
 If **Review details**, show the full before/after for each dimension, then ask again.
 

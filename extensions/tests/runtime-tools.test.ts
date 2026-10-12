@@ -92,7 +92,7 @@ async function runTools(root: string) {
   const profile = await callTool(root, "academic_writer_get_profile", {});
 
   const updated = await callTool(root, "academic_writer_update_profile", {
-    fieldsJson: JSON.stringify({ citationStyle: "mla" }),
+    fieldsJson: { citationStyle: "mla" },
   });
 
   const paths = await callTool(root, "academic_writer_article_paths", {
@@ -255,6 +255,32 @@ function seedProject(root: string): void {
   writeFileSync(join(root, "articles", "ok.md"), "Text [@smith2020, p. 4].");
 }
 
+test("citation audit tool distinguishes passed, failed and operational error", async (t) => {
+  const root = scratch(t);
+  seedProject(root);
+
+  const run = (article: string) =>
+    callTool(root, "academic_writer_audit_citations", {
+      article,
+      citationStyle: "chicago",
+    });
+
+  const passed = await run("articles/ok.md");
+  assert.equal(passed.details.status, "passed");
+  assert.equal(passed.isError, false);
+
+  writeFileSync(join(root, "articles", "ok.md"), "[@ghost]");
+  const failed = await run("articles/ok.md");
+  assert.equal(failed.details.status, "failed");
+  assert.deepEqual(failed.details.missingFromSources, ["ghost"]);
+  assert.equal(failed.isError, true);
+
+  const error = await run("articles/missing.md");
+  assert.equal(error.details.status, "error");
+  assert.match(text(error), /Article not found/);
+  assert.equal(error.isError, true);
+});
+
 test("[test_package_tools_run_against_project_state] package tools run against project state", async (t) => {
   const root = scratch(t);
 
@@ -310,7 +336,7 @@ test("[test_package_tools_run_against_project_state] package tools run against p
   assert.equal(data.resource.details.source, "project");
   assert.deepEqual(parseJsonText(text(data.resource)), { sentinel: true });
   assert.equal(at(data.ingested, "sources", 0, "sourceType"), "local-file");
-  assert.equal(data.audit.details.ok, true);
+  assert.equal(data.audit.details.status, "passed");
   assert.deepEqual(data.audit.details.citationKeys, ["smith2020"]);
   assert.equal(data.snapshot.details.ok, true);
   assert.equal(data.snapshot.details.sources, "articles/ok.sources.json");

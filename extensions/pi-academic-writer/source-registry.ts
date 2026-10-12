@@ -332,7 +332,7 @@ export async function ingestSources(
       "\n",
     ),
   );
-  markResearchNotesStale(
+  await markResearchNotesStale(
     projectRoot,
     merged.flatMap((entry) => {
       const sourceId = stringField(entry, "sourceId");

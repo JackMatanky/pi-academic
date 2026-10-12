@@ -6,12 +6,13 @@ import { auditCitations } from "../citation-audit.js";
 import { resolveCslStyle } from "../csl-resolver.js";
 import { extractDocument } from "../documents.js";
 import { lintProse } from "../prose-lint.js";
+import { SourceCacheRecordSchema } from "../source-records.js";
 import {
   ingestSources,
   snapshotCitationAssets,
   writeSourcesCache,
 } from "../source-registry.js";
-import { fail, parseJsonArray, registerTool } from "../tool-kit.js";
+import { fail, registerTool } from "../tool-kit.js";
 
 /**
  * Source extraction and ingestion, citation cache, CSL, citation audit and
@@ -90,10 +91,8 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     description:
       "Write the current-run .academic-writer/sources.json and .academic-writer/bibliography.bib from deep-reader's extracted records. Call before academic_writer_snapshot_citations.",
     parameters: Type.Object({
-      sourcesJson: Type.String({
-        minLength: 2,
-        description:
-          "JSON array of source records (see deep-reader source-record schema).",
+      sourcesJson: Type.Array(SourceCacheRecordSchema, {
+        description: "Structured source records from deep-reader.",
       }),
       bibliography: Type.String({
         description:
@@ -102,16 +101,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     }),
     failure: "Sources cache write failed",
     run: ({ sourcesJson, bibliography }, { cwd }) => {
-      const sources = parseJsonArray(sourcesJson);
-
-      if (!sources) {
-        return fail(
-          "Sources cache write failed: sourcesJson must be a JSON array",
-          { ok: false },
-        );
-      }
-
-      const result = writeSourcesCache(cwd, sources, bibliography);
+      const result = writeSourcesCache(cwd, sourcesJson, bibliography);
 
       return {
         text: `Sources cache written: ${result.sourcesPath}, ${result.bibliographyPath}`,
@@ -200,28 +190,29 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     run: ({ article, citationStyle }, { cwd }) => {
       const audit = auditCitations(article, citationStyle, cwd);
 
-      if (!("mode" in audit)) {
-        return fail(`Citation audit failed: ${audit.error}`, audit);
+      switch (audit.status) {
+        case "error":
+          return fail(`Citation audit failed: ${audit.error}`, audit);
+        case "failed": {
+          const reasons = [
+            audit.reason,
+            audit.missingFromSources.length &&
+              `${audit.missingFromSources.length} missing source key(s): ${audit.missingFromSources.join(", ")}`,
+            audit.missingFromBibliography.length &&
+              `${audit.missingFromBibliography.length} missing bibliography key(s): ${audit.missingFromBibliography.join(", ")}`,
+            audit.malformedMarkers.length &&
+              `${audit.malformedMarkers.length} malformed marker(s): ${audit.malformedMarkers.join(" ")}`,
+          ].filter(Boolean);
+
+          return fail(`Citation audit failed: ${reasons.join("; ")}.`, audit);
+        }
+
+        case "passed":
+          return {
+            text: `Citation audit passed: ${audit.citationKeys.length} cite key(s), ${audit.warnings.length} warning(s).`,
+            details: audit,
+          };
       }
-
-      if (!audit.ok) {
-        const reasons = [
-          audit.error,
-          audit.missingFromSources.length &&
-            `${audit.missingFromSources.length} missing source key(s): ${audit.missingFromSources.join(", ")}`,
-          audit.missingFromBibliography.length &&
-            `${audit.missingFromBibliography.length} missing bibliography key(s): ${audit.missingFromBibliography.join(", ")}`,
-          audit.malformedMarkers.length &&
-            `${audit.malformedMarkers.length} malformed marker(s): ${audit.malformedMarkers.join(" ")}`,
-        ].filter(Boolean);
-
-        return fail(`Citation audit failed: ${reasons.join("; ")}.`, audit);
-      }
-
-      return {
-        text: `Citation audit passed: ${audit.citationKeys.length} cite key(s), ${audit.warnings.length} warning(s).`,
-        details: audit,
-      };
     },
   });
 

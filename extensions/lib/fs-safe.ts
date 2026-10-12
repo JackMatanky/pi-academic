@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 import {
   mkdirSync,
+  readFileSync,
   realpathSync,
   renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 /**
  * Returns the message of a thrown value.
@@ -96,18 +97,66 @@ export function writeFileAtomic(
 }
 
 /**
+ * Atomic stale-lock takeover: rename the abandoned directory aside, record our
+ * ownership in its place, then remove the rename. A competing owner re-created
+ * the lock or its meta file defeats the rename and keeps the lock.
+ */
+function takeStaleLock(lock: string, owner: string): boolean {
+  const claim = `${lock}.${process.pid}.${randomUUID().slice(0, 8)}.stale`;
+
+  try {
+    renameSync(lock, claim);
+  } catch {
+    return false; // someone else moved it first
+  }
+
+  try {
+    mkdirSync(lock);
+    writeFileSync(join(lock, "owner"), owner);
+
+    return true;
+  } finally {
+    rmSync(claim, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Arrival-order waiters per lock path; chained promises, not a poll loop.
+ */
+const lockQueues = new Map<string, Promise<void>>();
+
+/**
  * Runs `fn` while holding an exclusive directory lock next to `path`.
  *
- * Serialises read-modify-write cycles across processes (parallel subagents). A
- * lock older than `staleMs` is assumed abandoned and taken over.
+ * Serialises read-modify-write cycles across processes (parallel subagents).
+ * Concurrent callers in one process queue fairly on the same promise chain
+ * instead of polling each other. A lock older than `staleMs` is assumed
+ * abandoned and taken over; ownership is confirmed through a meta file so an
+ * active owner is never evicted by a stale-takeover race.
  */
-export function withFileLock<T>(
+export async function withFileLock<T>(
   path: string,
-  fn: () => T,
+  fn: () => T | Promise<T>,
   { timeoutMs = 10_000, staleMs = 30_000 } = {},
-): T {
+): Promise<T> {
   const lock = `${path}.lock`;
   mkdirSync(dirname(path), { recursive: true });
+  const owner = `${process.pid}-${randomUUID()}`;
+
+  // One promise chain per lock path: waiters acquire in arrival order, so
+  // same-process callers do not race each other through the filesystem.
+  const previous = lockQueues.get(lock) ?? Promise.resolve();
+  let release!: () => void;
+
+  const acquired = new Promise<void>((resolveQueue) => {
+    release = resolveQueue;
+  });
+
+  lockQueues.set(
+    lock,
+    previous.then(() => acquired),
+  );
+
   const deadline = Date.now() + timeoutMs;
 
   for (;;) {
@@ -115,25 +164,49 @@ export function withFileLock<T>(
       mkdirSync(lock);
       break;
     } catch (error) {
-      if (!isErrnoException(error) || error.code !== "EEXIST") throw error;
+      if (!isErrnoException(error) || error.code !== "EEXIST") {
+        // The queue entry must not keep later callers waiting forever.
+        release!();
+        throw error;
+      }
 
       try {
-        if (Date.now() - statSync(lock).mtimeMs > staleMs) {
-          rmSync(lock, { recursive: true, force: true });
-          continue;
+        if (
+          Date.now() - statSync(lock).mtimeMs > staleMs &&
+          takeStaleLock(lock, owner)
+        ) {
+          break;
         }
       } catch {
         continue; // lock vanished between checks
       }
 
-      if (Date.now() > deadline) throw new Error(`Timed out locking ${path}`);
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+      if (Date.now() > deadline) {
+        release!();
+        throw new Error(`Timed out locking ${path}`);
+      }
+
+      // One-shot timer; kept ref'd so a process waiting on another process's
+      // lock cannot exit with an unsettled await.
+      await new Promise<void>((resolveWait) => {
+        setTimeout(resolveWait, 25);
+      });
     }
   }
 
+  writeFileSync(join(lock, "owner"), owner);
+
   try {
-    return fn();
+    return await fn();
   } finally {
-    rmSync(lock, { recursive: true, force: true });
+    try {
+      if (readFileSync(join(lock, "owner"), "utf8") === owner) {
+        rmSync(lock, { recursive: true, force: true });
+      }
+    } catch {
+      rmSync(lock, { recursive: true, force: true });
+    }
+
+    release!();
   }
 }

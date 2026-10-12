@@ -46,7 +46,7 @@ After writing `$MD_PATH`, call `academic_writer_audit_citations` with:
 - `article: MD_PATH`
 - `citationStyle: citationStyle`
 
-If `ok` is false, stop DOCX generation, set the run state to `failed`, and report the exact missing/wrong-mode citation details. Do not continue to DOCX/export.
+Continue only when `status` is `passed`. On `failed`, report the exact missing/wrong-mode citation details; on `error`, report the operational failure. In either case stop DOCX generation, set the run state to `failed`, and do not continue to DOCX/export.
 
 #### Step 9b: DOCX Output
 

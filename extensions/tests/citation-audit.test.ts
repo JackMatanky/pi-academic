@@ -12,17 +12,15 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import {
+  analyzeCitationText,
   auditCitations,
+  resolveCitationKeys,
   type CitationAuditDetails,
   type CitationAuditResult,
 } from "../pi-academic-writer/citation-audit.js";
 
-/**
- * Narrow to a full audit result; invalid project/article paths return only an
- * error.
- */
 function details(result: CitationAuditResult): CitationAuditDetails {
-  assert.ok("markers" in result, "expected a full audit result");
+  if (result.status === "error") throw new Error(result.error);
 
   return result;
 }
@@ -48,7 +46,7 @@ function fixture(t: TestContext, article = "Text [@smith2020, p. 4].") {
 test("citeproc returns the complete stable result shape", (t) => {
   const root = fixture(t);
   assert.deepEqual(auditCitations("articles/essay.md", "chicago", root), {
-    ok: true,
+    status: "passed",
     article: "articles/essay.md",
     citationStyle: "chicago",
     mode: "citeproc",
@@ -71,7 +69,7 @@ test("article assets take precedence even when only one exists", (t) => {
     '[{"citeKey":"local"}]',
   );
   assert.deepEqual(auditCitations("articles/essay.md", "apa", root), {
-    ok: false,
+    status: "failed",
     article: "articles/essay.md",
     citationStyle: "apa",
     mode: "citeproc",
@@ -84,7 +82,7 @@ test("article assets take precedence even when only one exists", (t) => {
     missingFromBibliography: [],
     malformedMarkers: [],
     warnings: [],
-    error: "articles/essay.bibliography.bib not found",
+    reason: "articles/essay.bibliography.bib not found",
   });
 });
 
@@ -98,8 +96,8 @@ test("complete article-local assets override conflicting global assets", (t) => 
     join(root, "articles", "essay.bibliography.bib"),
     "@book{local2024, title={Local}}\n",
   );
-  const result = auditCitations("articles/essay.md", "chicago", root);
-  assert.equal(result.ok, true);
+  const result = details(auditCitations("articles/essay.md", "chicago", root));
+  assert.equal(result.status, "passed");
   assert.equal(result.assetScope, "article");
   assert.equal(result.sourcesPath, "articles/essay.sources.json");
   assert.equal(result.bibliographyPath, "articles/essay.bibliography.bib");
@@ -121,19 +119,19 @@ test("nested cite keys, bibliography keys and ordered missing keys", (t) => {
   assert.deepEqual(result.malformedMarkers, ["[@]"]);
   assert.deepEqual(result.missingFromSources, ["c"]);
   assert.deepEqual(result.missingFromBibliography, ["b"]);
-  assert.equal(result.ok, false);
+  assert.equal(result.status, "failed");
 });
 
 test("citeproc warns without markers and inline mode skips assets", (t) => {
   const root = fixture(t, "No citations.");
-  const result = auditCitations("articles/essay.md", "chicago", root);
-  assert.equal(result.ok, true);
+  const result = details(auditCitations("articles/essay.md", "chicago", root));
+  assert.equal(result.status, "passed");
   assert.deepEqual(result.warnings, ["No Pandoc citeproc markers found"]);
   rmSync(join(root, ".academic-writer"), { recursive: true });
   assert.deepEqual(
     auditCitations("articles/essay.md", "inline-parenthetical", root),
     {
-      ok: true,
+      status: "passed",
       article: "articles/essay.md",
       citationStyle: "inline-parenthetical",
       mode: "inline-parenthetical",
@@ -149,28 +147,44 @@ test("citeproc warns without markers and inline mode skips assets", (t) => {
     },
   );
   writeFileSync(join(root, "articles", "essay.md"), "[@smith2020]");
-  assert.equal(
-    auditCitations("articles/essay.md", "inline-parenthetical", root).error,
-    "inline-parenthetical articles must not contain Pandoc citeproc markers",
+  assert.deepEqual(
+    details(auditCitations("articles/essay.md", "inline-parenthetical", root)),
+    {
+      status: "failed",
+      article: "articles/essay.md",
+      citationStyle: "inline-parenthetical",
+      mode: "inline-parenthetical",
+      assetScope: null,
+      sourcesPath: null,
+      bibliographyPath: null,
+      markers: ["[@smith2020]"],
+      citationKeys: ["smith2020"],
+      missingFromSources: [],
+      missingFromBibliography: [],
+      malformedMarkers: [],
+      warnings: [],
+      reason:
+        "inline-parenthetical articles must not contain Pandoc citeproc markers",
+    },
   );
 });
 
-test("invalid JSON and missing files report failures without throwing", (t) => {
+test("invalid JSON and missing articles report operational errors", (t) => {
   const root = fixture(t);
   writeFileSync(join(root, ".academic-writer", "sources.json"), "{");
-  const invalid = details(auditCitations("articles/essay.md", "chicago", root));
-  assert.equal(invalid.ok, false);
+  const invalid = auditCitations("articles/essay.md", "chicago", root);
+  assert.equal(invalid.status, "error");
+
+  if (invalid.status !== "error") throw new Error("expected parse error");
   assert.match(
-    invalid.error ?? "",
+    invalid.error,
     /^Could not read \.academic-writer\/sources\.json:/,
   );
-  assert.deepEqual(invalid.citationKeys, ["smith2020"]);
   const absent = auditCitations("articles/missing.md", "chicago", root);
-  assert.equal(absent.ok, false);
-  assert.equal(
-    absent.error,
-    `Article not found: ${join(realpathSync(root), "articles", "missing.md")}`,
-  );
+  assert.deepEqual(absent, {
+    status: "error",
+    error: `Article not found: ${join(realpathSync(root), "articles", "missing.md")}`,
+  });
 });
 
 test("article paths cannot escape the project via traversal or symlinks", (t) => {
@@ -185,8 +199,64 @@ test("article paths cannot escape the project via traversal or symlinks", (t) =>
     join(outside, "essay.md"),
   ]) {
     assert.deepEqual(auditCitations(article, "chicago", root), {
-      ok: false,
+      status: "error",
       error: `Path must stay inside project root: ${article}`,
     });
   }
+});
+
+test("analyzer extracts markers from content without filesystem access", () => {
+  const analysis = analyzeCitationText(
+    [
+      "---",
+      "title: ignored [@frontmatter]",
+      "---",
+      "Text [@smith2020, p. 4] with `[@inlinecode]` and [@jones1999].",
+      "",
+      "```ts",
+      "const notACitation = [@fenced];",
+      "```",
+    ].join("\n"),
+    "chicago",
+  );
+
+  assert.deepEqual(analysis.markers, ["[@smith2020, p. 4]", "[@jones1999]"]);
+  assert.deepEqual(analysis.citationKeys.sort(), ["jones1999", "smith2020"]);
+  assert.deepEqual(analysis.malformedMarkers, []);
+  assert.deepEqual(analysis.warnings, []);
+  assert.equal(analysis.status, "passed");
+});
+
+test("analyzer reports inline and malformed defects without assets", () => {
+  const inline = analyzeCitationText(
+    "See [@smith2020].",
+    "inline-parenthetical",
+  );
+
+  assert.equal(inline.status, "failed");
+  assert.equal(
+    inline.reason,
+    "inline-parenthetical articles must not contain Pandoc citeproc markers",
+  );
+
+  const malformed = analyzeCitationText("[@a] and [@]", "mla");
+
+  assert.deepEqual(malformed.malformedMarkers, ["[@]"]);
+  assert.equal(malformed.status, "failed");
+
+  const quiet = analyzeCitationText("No citations here.", "chicago");
+
+  assert.deepEqual(quiet.warnings, ["No Pandoc citeproc markers found"]);
+  assert.equal(quiet.status, "passed");
+});
+
+test("key resolution compares decoded records without the filesystem", () => {
+  assert.deepEqual(
+    resolveCitationKeys(
+      ["a", "b", "c"],
+      { nested: [{ citeKey: " a " }, { citeKey: "b" }] },
+      "@book{a, title={A}}\n@article{c, title={C}}\n",
+    ),
+    { missingFromSources: ["c"], missingFromBibliography: ["b"] },
+  );
 });

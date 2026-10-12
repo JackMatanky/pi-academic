@@ -1,7 +1,12 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { extname, resolve } from "node:path";
 
-import { errorMessage, isInside } from "../lib/fs-safe.js";
+import {
+  errorMessage,
+  isErrnoException,
+  isInside,
+  resolveInside,
+} from "../lib/fs-safe.js";
 
 /**
  * One heading or paragraph-sized block of an article.
@@ -31,18 +36,28 @@ export function reverseOutline(
   root: string,
   article: string,
 ): ReverseOutlineResult {
+  const articles = resolve(root, "articles");
   const path = resolve(root, article);
 
-  if (
-    !isInside(resolve(root, "articles"), path) ||
-    extname(path).toLowerCase() !== ".md"
-  )
-    return {
-      status: "error",
-      artifact: article,
-      reason: "Article must be a Markdown file inside project articles/.",
-      units: [],
-    };
+  const outside = (): ReverseOutlineResult => ({
+    status: "error",
+    artifact: article,
+    reason: "Article must be a Markdown file inside project articles/.",
+    units: [],
+  });
+
+  if (!isInside(articles, path) || extname(path).toLowerCase() !== ".md")
+    return outside();
+
+  // Symlinks defeat the lexical check: the real file must stay inside the
+  // real articles directory. A missing article keeps the read error below.
+  try {
+    resolveInside(root, article);
+
+    if (!isInside(realpathSync(articles), realpathSync(path))) return outside();
+  } catch (cause) {
+    if (!(isErrnoException(cause) && cause.code === "ENOENT")) return outside();
+  }
 
   let source: string;
 

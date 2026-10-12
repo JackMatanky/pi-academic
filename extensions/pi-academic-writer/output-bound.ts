@@ -67,7 +67,6 @@ function spill(
     const dir = resolveInside(projectRoot, SPILL_DIR);
 
     mkdirSync(dir, { recursive: true });
-    resolveInside(projectRoot, SPILL_DIR);
 
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry);

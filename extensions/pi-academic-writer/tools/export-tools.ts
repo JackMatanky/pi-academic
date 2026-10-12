@@ -3,7 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { Type } from "typebox";
+import { Type, type Static } from "typebox";
 
 import {
   errorMessage,
@@ -11,7 +11,7 @@ import {
   writeFileAtomic,
 } from "../../lib/fs-safe.js";
 import { loadProfile } from "../../lib/profile.js";
-import { parseWith, stringEnum } from "../../lib/schema.js";
+import { stringEnum } from "../../lib/schema.js";
 import { ArticleFormatSchema } from "../article.js";
 import { auditCitations } from "../citation-audit.js";
 import { selectPdfEngine } from "../commands.js";
@@ -30,8 +30,8 @@ import { citationAssetPaths } from "../project-files.js";
 import { STYLE_FORMATS, type StyleFormat } from "../style-design.js";
 import {
   fail,
-  parseJsonObject,
   registerTool,
+  type ToolContext,
   type ToolOutput,
 } from "../tool-kit.js";
 
@@ -99,6 +99,248 @@ function summarizeStyle(style: RenderedStyle): StyleSummary {
   };
 }
 
+const ExportArticleSchema = Type.Object({
+  article: Type.String({
+    minLength: 1,
+    description: "Markdown article path inside the project.",
+  }),
+  citationStyle: Type.String({
+    minLength: 1,
+    description:
+      "Profile citationStyle; inline-parenthetical means literal mode.",
+  }),
+  formats: Type.Array(Type.String({ minLength: 2 }), {
+    description: "Formats: docx, odt, latex (.tex), pdf.",
+  }),
+  csl: Type.Optional(
+    Type.String({
+      minLength: 1,
+      description:
+        "Resolved local CSL file path for citeproc exports. If omitted, Pandoc uses its default style.",
+    }),
+  ),
+  bibliography: Type.Optional(
+    Type.String({
+      minLength: 1,
+      description:
+        "Local bibliography for citeproc exports. The frozen article-local snapshot takes precedence; this override applies only before a snapshot exists.",
+    }),
+  ),
+  pdfEngine: Type.Optional(
+    stringEnum(["xelatex", "tectonic"] as const, {
+      description:
+        "Optional PDF engine. Defaults to the style package engine, then to whichever of xelatex/tectonic is installed.",
+    }),
+  ),
+  stylePackage: Type.Optional(
+    Type.String({
+      minLength: 1,
+      description:
+        "Style package under .academic-writer/styles/ for this export; overrides the profile's stylePackage.",
+    }),
+  ),
+});
+
+type ExportArticleParams = Static<typeof ExportArticleSchema>;
+
+/**
+ * The whole `academic_writer_export_article` operation: validate references,
+ * gate on the citation audit, then export each requested format, capturing
+ * per-format outcomes and promoting Pandoc's scratch output only on success.
+ * Returns the tool output, or throws ToolFailure when the export is refused or
+ * any format fails.
+ */
+async function runExport(
+  cwd: string,
+  params: ExportArticleParams,
+  { signal, progress }: Pick<ToolContext, "progress" | "signal">,
+): Promise<ToolOutput> {
+  const { article, citationStyle } = params;
+
+  const requested = [
+    ...new Set(params.formats.map((format) => format.toLowerCase())),
+  ];
+
+  const formats = requested.filter(isStyleFormat);
+
+  if (formats.length === 0) {
+    return fail("Export failed: no supported formats requested", {
+      ok: false,
+      supported: [...STYLE_FORMATS],
+    });
+  }
+
+  if (formats.length !== requested.length) {
+    return fail(
+      `Export failed: unsupported format(s): ${requested.filter((format) => !isStyleFormat(format)).join(", ")}`,
+      { ok: false, supported: [...STYLE_FORMATS] },
+    );
+  }
+
+  if (params.csl) assertLocalReference(params.csl, "csl");
+
+  if (params.bibliography)
+    assertLocalReference(params.bibliography, "bibliography");
+
+  const audit = auditCitations(article, citationStyle, cwd);
+
+  switch (audit.status) {
+    case "failed":
+    case "error":
+      return fail("Export stopped: citation audit failed", {
+        ok: false,
+        audit,
+      });
+    case "passed":
+      break;
+  }
+
+  // The audit resolved the article inside the project; `./` keeps a leading
+  // `-` from being a flag.
+  const input = audit.article.startsWith("-")
+    ? `./${audit.article}`
+    : audit.article;
+
+  const citeproc = citationStyle !== "inline-parenthetical";
+
+  const stylePackage =
+    params.stylePackage ??
+    loadProfile(cwd)?.outputFormatPreferences?.stylePackage;
+
+  const localAssets = citationAssetPaths(audit.article);
+
+  const hasArticleBibliography = existsSync(
+    join(cwd, localAssets.bibliography),
+  );
+
+  const bibliography = hasArticleBibliography
+    ? localAssets.bibliography
+    : (params.bibliography ?? ".academic-writer/bibliography.bib");
+
+  const results: ExportResult[] = [];
+
+  for (const format of formats) {
+    const output = exportOutputPath(audit.article, format);
+    const outputPath = resolveInside(cwd, output);
+
+    if (outputPath === resolveInside(cwd, audit.article)) {
+      results.push({
+        format,
+        output,
+        ok: false,
+        error: "The output file would overwrite the article itself",
+      });
+      progress(`${format}: failed`);
+      continue;
+    }
+
+    const args = ["--from", "markdown", input];
+
+    if (citeproc) {
+      args.push(
+        "--citeproc",
+        "--fail-if-warnings",
+        `--bibliography=${bibliography}`,
+      );
+
+      if (params.csl) args.push(`--csl=${params.csl}`);
+    }
+
+    results.push(
+      await withScratchDir(cwd, "style-export", async (dir) => {
+        let style: RenderedStyle | undefined;
+        let engine: string | undefined;
+
+        const detail = () => {
+          const found: Pick<ExportResult, "engine" | "style"> = {};
+
+          if (engine) found.engine = engine;
+
+          if (style) found.style = summarizeStyle(style);
+
+          return found;
+        };
+
+        try {
+          if (stylePackage) {
+            style = await renderDocumentStyle(
+              cwd,
+              stylePackage,
+              format,
+              dir,
+              signal,
+            );
+            args.push(...style.args);
+          }
+
+          if (format === "pdf") {
+            engine =
+              params.pdfEngine ?? style?.assets.engine ?? selectPdfEngine();
+
+            if (engine) args.push(`--pdf-engine=${engine}`);
+          }
+
+          // Pandoc writes into the scratch directory; the real output is
+          // replaced only after it succeeds, so a failure never clobbers or
+          // fakes a result.
+          const scratchOutput = join(
+            dir,
+            `export.${format === "latex" ? "tex" : format}`,
+          );
+
+          await runPandoc([...args, "-o", scratchOutput], {
+            cwd,
+            signal,
+          });
+
+          if (!existsSync(scratchOutput)) {
+            throw new Error(
+              "Pandoc exited successfully but did not create the output file",
+            );
+          }
+
+          writeFileAtomic(outputPath, readFileSync(scratchOutput));
+
+          return { format, output, ok: true, ...detail() };
+        } catch (error) {
+          return {
+            format,
+            output,
+            ok: false,
+            error: errorMessage(error),
+            ...detail(),
+          };
+        }
+      }),
+    );
+
+    progress(`${format}: ${results.at(-1)?.ok ? "done" : "failed"}`);
+  }
+
+  const ok = results.every((result) => result.ok);
+
+  const text = results
+    .flatMap((result) => [
+      result.ok
+        ? `${result.format}: wrote ${result.output}`
+        : `${result.format}: failed - ${result.error}`,
+      ...(result.style?.warnings ?? []).map(
+        (warning) => `  warning: ${warning}`,
+      ),
+    ])
+    .join("\n");
+
+  const details = {
+    ok,
+    audit,
+    bibliography: citeproc ? bibliography : null,
+    stylePackage: stylePackage ?? null,
+    results,
+  };
+
+  return ok ? { text, details } : fail(text, details);
+}
+
 /**
  * Export, DOCX generation, style package and typography tools.
  */
@@ -109,230 +351,9 @@ export function registerExportTools(pi: ExtensionAPI): void {
     label: "Academic Writer Export Article",
     description:
       "Audit citations and export an article to DOCX, ODT, LaTeX, or PDF with Pandoc, applying the profile style package or an optional per-export override. Continues other formats when one fails; unsupported formats are rejected up front. Output replaces an earlier export only when Pandoc succeeds.",
-    parameters: Type.Object({
-      article: Type.String({
-        minLength: 1,
-        description: "Markdown article path inside the project.",
-      }),
-      citationStyle: Type.String({
-        minLength: 1,
-        description:
-          "Profile citationStyle; inline-parenthetical means literal mode.",
-      }),
-      formats: Type.Array(Type.String({ minLength: 2 }), {
-        description: "Formats: docx, odt, latex (.tex), pdf.",
-      }),
-      csl: Type.Optional(
-        Type.String({
-          minLength: 1,
-          description:
-            "Resolved local CSL file path for citeproc exports. If omitted, Pandoc uses its default style.",
-        }),
-      ),
-      bibliography: Type.Optional(
-        Type.String({
-          minLength: 1,
-          description:
-            "Local bibliography for citeproc exports. The frozen article-local snapshot takes precedence; this override applies only before a snapshot exists.",
-        }),
-      ),
-      pdfEngine: Type.Optional(
-        stringEnum(["xelatex", "tectonic"] as const, {
-          description:
-            "Optional PDF engine. Defaults to the style package engine, then to whichever of xelatex/tectonic is installed.",
-        }),
-      ),
-      stylePackage: Type.Optional(
-        Type.String({
-          minLength: 1,
-          description:
-            "Style package under .academic-writer/styles/ for this export; overrides the profile's stylePackage.",
-        }),
-      ),
-    }),
+    parameters: ExportArticleSchema,
     failure: "Export failed",
-    run: async (params, { cwd, signal, progress }) => {
-      const { article, citationStyle } = params;
-
-      const requested = [
-        ...new Set(params.formats.map((format) => format.toLowerCase())),
-      ];
-
-      const formats = requested.filter(isStyleFormat);
-
-      if (formats.length === 0) {
-        return fail("Export failed: no supported formats requested", {
-          ok: false,
-          supported: [...STYLE_FORMATS],
-        });
-      }
-
-      if (formats.length !== requested.length) {
-        return fail(
-          `Export failed: unsupported format(s): ${requested.filter((format) => !isStyleFormat(format)).join(", ")}`,
-          { ok: false, supported: [...STYLE_FORMATS] },
-        );
-      }
-
-      if (params.csl) assertLocalReference(params.csl, "csl");
-
-      if (params.bibliography)
-        assertLocalReference(params.bibliography, "bibliography");
-
-      const audit = auditCitations(article, citationStyle, cwd);
-
-      if (!("mode" in audit) || !audit.ok) {
-        return fail("Export stopped: citation audit failed", {
-          ok: false,
-          audit,
-        });
-      }
-
-      // The audit resolved the article inside the project; `./` keeps a leading
-      // `-` from being a flag.
-      const input = audit.article.startsWith("-")
-        ? `./${audit.article}`
-        : audit.article;
-
-      const citeproc = citationStyle !== "inline-parenthetical";
-
-      const stylePackage =
-        params.stylePackage ??
-        loadProfile(cwd)?.outputFormatPreferences?.stylePackage;
-
-      const localAssets = citationAssetPaths(audit.article);
-
-      const hasArticleBibliography = existsSync(
-        join(cwd, localAssets.bibliography),
-      );
-
-      const bibliography = hasArticleBibliography
-        ? localAssets.bibliography
-        : (params.bibliography ?? ".academic-writer/bibliography.bib");
-
-      const results: ExportResult[] = [];
-
-      for (const format of formats) {
-        const output = exportOutputPath(audit.article, format);
-        const outputPath = resolveInside(cwd, output);
-
-        if (outputPath === resolveInside(cwd, audit.article)) {
-          results.push({
-            format,
-            output,
-            ok: false,
-            error: "The output file would overwrite the article itself",
-          });
-          progress(`${format}: failed`);
-          continue;
-        }
-
-        const args = ["--from", "markdown", input];
-
-        if (citeproc) {
-          args.push(
-            "--citeproc",
-            "--fail-if-warnings",
-            `--bibliography=${bibliography}`,
-          );
-
-          if (params.csl) args.push(`--csl=${params.csl}`);
-        }
-
-        results.push(
-          await withScratchDir(cwd, "style-export", async (dir) => {
-            let style: RenderedStyle | undefined;
-            let engine: string | undefined;
-
-            const detail = () => {
-              const found: Pick<ExportResult, "engine" | "style"> = {};
-
-              if (engine) found.engine = engine;
-
-              if (style) found.style = summarizeStyle(style);
-
-              return found;
-            };
-
-            try {
-              if (stylePackage) {
-                style = await renderDocumentStyle(
-                  cwd,
-                  stylePackage,
-                  format,
-                  dir,
-                  signal,
-                );
-                args.push(...style.args);
-              }
-
-              if (format === "pdf") {
-                engine =
-                  params.pdfEngine ?? style?.assets.engine ?? selectPdfEngine();
-
-                if (engine) args.push(`--pdf-engine=${engine}`);
-              }
-
-              // Pandoc writes into the scratch directory; the real output is
-              // replaced only after it succeeds, so a failure never clobbers or
-              // fakes a result.
-              const scratchOutput = join(
-                dir,
-                `export.${format === "latex" ? "tex" : format}`,
-              );
-
-              await runPandoc([...args, "-o", scratchOutput], {
-                cwd,
-                signal,
-              });
-
-              if (!existsSync(scratchOutput)) {
-                throw new Error(
-                  "Pandoc exited successfully but did not create the output file",
-                );
-              }
-
-              writeFileAtomic(outputPath, readFileSync(scratchOutput));
-
-              return { format, output, ok: true, ...detail() };
-            } catch (error) {
-              return {
-                format,
-                output,
-                ok: false,
-                error: errorMessage(error),
-                ...detail(),
-              };
-            }
-          }),
-        );
-
-        progress(`${format}: ${results.at(-1)?.ok ? "done" : "failed"}`);
-      }
-
-      const ok = results.every((result) => result.ok);
-
-      const text = results
-        .flatMap((result) => [
-          result.ok
-            ? `${result.format}: wrote ${result.output}`
-            : `${result.format}: failed - ${result.error}`,
-          ...(result.style?.warnings ?? []).map(
-            (warning) => `  warning: ${warning}`,
-          ),
-        ])
-        .join("\n");
-
-      const details = {
-        ok,
-        audit,
-        bibliography: citeproc ? bibliography : null,
-        stylePackage: stylePackage ?? null,
-        results,
-      };
-
-      return ok ? { text, details } : fail(text, details);
-    },
+    run: (params, context) => runExport(context.cwd, params, context),
   });
 
   registerTool(pi, {
@@ -340,7 +361,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Assemble DOCX JSON",
     description:
-      "Deterministically assemble article JSON for academic_writer_generate_docx from an article markdown file inside the project. Headings below the title become sections, [^n] footnotes become real footnotes, and fenced code is left intact. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
+      "Deterministically assemble article JSON for academic_writer_generate_docx from an article markdown file inside the project. Headings below the title become sections, [^n] footnotes become real footnotes, and fenced code is left intact. Optional formatJson is a structured article-format object. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
     parameters: Type.Object({
       input: Type.String({
         minLength: 1,
@@ -352,34 +373,13 @@ export function registerExportTools(pi: ExtensionAPI): void {
       }),
       title: Type.Optional(Type.String({ minLength: 1 })),
       targetLanguage: Type.Optional(Type.String({ minLength: 1 })),
-      formatJson: Type.Optional(
-        Type.String({
-          description:
-            "Optional JSON object merged into the article JSON format field.",
-        }),
-      ),
+      formatJson: Type.Optional(ArticleFormatSchema),
     }),
     run: (params, { cwd }) => {
-      const formatJson =
-        params.formatJson === undefined
-          ? undefined
-          : parseJsonObject(params.formatJson);
-
-      if (formatJson === null) {
-        return fail("DOCX JSON assembly failed: formatJson must be an object", {
-          ok: false,
-        });
-      }
-
-      const format =
-        formatJson === undefined
-          ? undefined
-          : parseWith(ArticleFormatSchema, formatJson, "formatJson");
-
       const result = assembleDocxJson(cwd, params.input, params.output, {
         title: params.title,
         targetLanguage: params.targetLanguage,
-        format,
+        format: params.formatJson,
       });
 
       if (!result.ok) {

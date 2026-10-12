@@ -134,7 +134,7 @@ test("Hebrew typography cleanup applies to RTL text only and keeps hyphens", () 
 });
 
 test("malformed article payloads are rejected with the offending path", () => {
-  assert.throws(() => parseArticle({}), /sections array/);
+  assert.throws(() => parseArticle({}), /sections/);
   assert.throws(() => parseArticle({ sections: [{}] }), /sections\[0\]/);
   assert.throws(
     () => parseArticle({ sections: [{ paragraphs: [3] }] }),

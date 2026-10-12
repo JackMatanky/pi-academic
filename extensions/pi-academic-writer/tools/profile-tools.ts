@@ -7,7 +7,8 @@ import {
   migrateJsonProfile,
   updateProfile,
 } from "../../lib/profile.js";
-import { fail, parseJsonObject, registerTool } from "../tool-kit.js";
+import { ProfilePatchSchema } from "../../lib/types.js";
+import { fail, registerTool } from "../tool-kit.js";
 
 const PROFILE_PATH = ".academic-writer/profile.md";
 
@@ -69,25 +70,11 @@ export function registerProfileTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Update Profile",
     description:
-      "Patch recognized .academic-writer/profile.md fields using a JSON object string. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
-    parameters: Type.Object({
-      fieldsJson: Type.String({
-        minLength: 2,
-        description:
-          'JSON object of profile fields to replace, e.g. {"tools":{...}} or {"fieldOfStudy":"..."}.',
-      }),
-    }),
+      "Patch recognized .academic-writer/profile.md fields using a structured object. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
+    parameters: Type.Object({ fieldsJson: ProfilePatchSchema }),
     failure: "Profile update failed",
     run: ({ fieldsJson }, { cwd }) => {
-      const patch = parseJsonObject(fieldsJson);
-
-      if (!patch) {
-        return fail("Profile update failed: fieldsJson must be a JSON object", {
-          ok: false,
-        });
-      }
-
-      const profile = updateProfile(cwd, patch);
+      const profile = updateProfile(cwd, fieldsJson);
 
       if (!profile) {
         return fail("Profile update failed: profile missing", {

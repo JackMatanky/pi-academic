@@ -1,9 +1,9 @@
-import { Type } from "typebox";
+import { Type, type Static } from "typebox";
 
 import { errorMessage } from "../lib/fs-safe.js";
 import {
+  firstViolation,
   isValid,
-  JsonObjectSchema,
   JsonValueSchema,
   parseJsonText,
   type JsonObject,
@@ -28,28 +28,39 @@ const StringSchema = Type.String();
 const JsonArraySchema = Type.Array(JsonValueSchema);
 
 /**
- * Collects every string `id` found anywhere in the evidence map.
+ * One chapter record; value-level problems stay per-entry findings.
  */
-function collectIds(value: JsonValue, ids: Set<string>): void {
-  if (isValid(JsonArraySchema, value)) {
-    for (const item of value) collectIds(item, ids);
+const ChapterEntrySchema = Type.Record(Type.String(), JsonValueSchema);
 
-    return;
-  }
+/**
+ * The evidence-map contract, decoded once at the JSON text boundary. Containers
+ * are strict, while scalar values (chapter numbers, statuses, evidence ids) are
+ * left to the walk so one bad entry cannot mask the rest of the map.
+ */
+export const EvidenceMapSchema = Type.Object({
+  chapter_counts: Type.Optional(Type.Record(Type.String(), PositiveInteger)),
+  chapter_coverage: Type.Optional(
+    Type.Record(Type.String(), Type.Array(ChapterEntrySchema)),
+  ),
+  evidence: Type.Optional(Type.Array(Type.Object({ id: NonBlankString }))),
+});
 
-  if (!isValid(JsonObjectSchema, value)) return;
+export type EvidenceMap = Static<typeof EvidenceMapSchema>;
 
-  const { id } = value;
-
-  if (id !== undefined && isValid(StringSchema, id)) ids.add(id);
-
-  for (const child of Object.values(value)) collectIds(child, ids);
+/**
+ * Renders firstViolation path keys as a JSONPath-style locator, e.g. a.b[0].
+ */
+function violationLocator(path: readonly string[]): string {
+  return path
+    .map((segment) => (/^\d+$/.test(segment) ? `[${segment}]` : `.${segment}`))
+    .join("");
 }
 
 /**
  * Checks a book/chapter evidence map: every chapter up to the declared final
- * one is covered or skipped with a reason, and covered chapters cite evidence
- * IDs that exist in the map.
+ * one is covered or skipped with a reason, every declared book has coverage
+ * records, and covered chapters cite evidence IDs from actual evidence records
+ * in the map.
  *
  * Malformed input is reported as findings, never thrown.
  */
@@ -59,76 +70,95 @@ export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
   const add = (code: string, path: string, explanation: string) =>
     findings.push({ code, path, explanation });
 
+  let root: JsonValue;
+
   try {
-    const root = parseJsonText(json);
-
-    if (!isValid(JsonObjectSchema, root))
-      throw new Error("evidence map must be a JSON object");
-
-    const coverage = root.chapter_coverage;
-
-    if (coverage === undefined) return findings;
-
-    const counts = root.chapter_counts;
-
-    if (!coverage || !isValid(JsonObjectSchema, coverage))
-      throw new Error("chapter_coverage must map book names to chapter arrays");
-
-    if (!counts || !isValid(JsonObjectSchema, counts))
-      throw new Error(
-        "chapter_counts must map book names to positive chapter counts",
-      );
-
-    const ids = new Set<string>();
-
-    collectIds(root, ids);
-
-    for (const [book, entries] of Object.entries(coverage)) {
-      const base = "$.chapter_coverage." + book;
-
-      if (!isValid(JsonArraySchema, entries)) {
-        add(
-          "unsupported-chapter-coverage",
-          base,
-          "Book coverage must be an array of chapter records.",
-        );
-        continue;
-      }
-
-      const chapters = diagnoseBookEntries(base, entries, ids, add);
-      const last = counts[book];
-
-      if (last === undefined || !isValid(PositiveInteger, last)) {
-        add(
-          "unsupported-chapter-count",
-          "$.chapter_counts." + book,
-          "Supply the verified final chapter number as a positive integer.",
-        );
-        continue;
-      }
-
-      for (let chapter = 1; chapter <= last; chapter++)
-        if (!chapters.has(chapter))
-          add(
-            "missing-chapter",
-            base,
-            `Chapter ${chapter} is missing from coverage through declared book end ${last}.`,
-          );
-
-      for (const chapter of chapters)
-        if (chapter > last)
-          add(
-            "chapter-exceeds-book-count",
-            base,
-            `Chapter ${chapter} exceeds declared final chapter ${last}.`,
-          );
-    }
+    root = parseJsonText(json);
   } catch (cause) {
     add(
       "unsupported-chapter-coverage",
       "$.chapter_coverage",
       errorMessage(cause),
     );
+
+    return findings;
+  }
+
+  if (!isValid(EvidenceMapSchema, root)) {
+    const violation = firstViolation(EvidenceMapSchema, root);
+
+    add(
+      "unsupported-chapter-coverage",
+      "$" + violationLocator(violation?.path ?? []),
+      violation?.message ?? "evidence map must be a JSON object",
+    );
+
+    return findings;
+  }
+
+  const { chapter_counts: counts, chapter_coverage: coverage, evidence } = root;
+
+  // Both fields absent keeps the optional no-coverage behavior.
+  if (coverage === undefined && counts === undefined) return findings;
+
+  const ids = new Set((evidence ?? []).map((record) => record.id));
+
+  if (coverage === undefined || counts === undefined) {
+    if (counts !== undefined)
+      for (const book of Object.keys(counts))
+        add(
+          "unsupported-chapter-coverage",
+          `$.chapter_coverage.${book}`,
+          `chapter_counts declares book ${book} but chapter_coverage has no records for it.`,
+        );
+
+    if (coverage !== undefined)
+      add(
+        "unsupported-chapter-coverage",
+        "$.chapter_counts",
+        "chapter_counts must map book names to positive chapter counts.",
+      );
+
+    return findings;
+  }
+
+  for (const book of Object.keys(counts))
+    if (!(book in coverage))
+      add(
+        "unsupported-chapter-coverage",
+        `$.chapter_coverage.${book}`,
+        `chapter_counts declares book ${book} but chapter_coverage has no records for it.`,
+      );
+
+  for (const [book, entries] of Object.entries(coverage)) {
+    const base = "$.chapter_coverage." + book;
+    const chapters = diagnoseBookEntries(base, entries, ids, add);
+    const last = counts[book];
+
+    if (last === undefined || !isValid(PositiveInteger, last)) {
+      add(
+        "unsupported-chapter-count",
+        "$.chapter_counts." + book,
+        "Supply the verified final chapter number as a positive integer.",
+      );
+      continue;
+    }
+
+    for (let chapter = 1; chapter <= last; chapter++)
+      if (!chapters.has(chapter))
+        add(
+          "missing-chapter",
+          base,
+          `Chapter ${chapter} is missing from coverage through declared book end ${last}.`,
+        );
+
+    for (const chapter of chapters)
+      if (chapter > last)
+        add(
+          "chapter-exceeds-book-count",
+          base,
+          `Chapter ${chapter} exceeds declared final chapter ${last}.`,
+        );
   }
 
   return findings;
@@ -138,10 +168,11 @@ type AddFinding = (code: string, path: string, explanation: string) => number;
 
 /**
  * Checks one book's chapter records and returns the chapter numbers seen.
+ * Entries are decoded objects; value-level defects stay findings.
  */
 function diagnoseBookEntries(
   base: string,
-  entries: JsonValue[],
+  entries: JsonObject[],
   ids: Set<string>,
   add: AddFinding,
 ): Set<number> {
@@ -149,17 +180,6 @@ function diagnoseBookEntries(
 
   entries.forEach((item, index) => {
     const at = `${base}[${index}]`;
-
-    if (!isValid(JsonObjectSchema, item)) {
-      add(
-        "unsupported-chapter-coverage",
-        at,
-        "Chapter entry must be an object.",
-      );
-
-      return;
-    }
-
     const chapter = item.chapter;
 
     if (chapter === undefined || !isValid(PositiveInteger, chapter)) {

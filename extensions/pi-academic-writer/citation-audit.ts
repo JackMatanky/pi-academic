@@ -23,10 +23,10 @@ import {
 } from "../lib/schema.js";
 
 /**
- * An audit with an article path resolved inside the project.
+ * An audit completed with or without user-correctable citation defects.
  */
 export interface CitationAuditDetails {
-  ok: boolean;
+  status: "passed" | "failed";
   article: string;
   citationStyle: string;
   mode: "inline-parenthetical" | "citeproc";
@@ -39,15 +39,28 @@ export interface CitationAuditDetails {
   missingFromBibliography: string[];
   malformedMarkers: string[];
   warnings: string[];
-  error?: string;
+  reason?: string;
 }
 
 /**
- * Invalid project/article paths return only an error, as in the Python CLI.
+ * Operational failures cannot be mistaken for citation defects.
  */
 export type CitationAuditResult =
   | CitationAuditDetails
-  | { ok: false; error: string };
+  | { status: "error"; error: string };
+
+/**
+ * Text-level citation analysis: marker and cite-key extraction with no
+ * filesystem access.
+ */
+export interface CitationTextAnalysis {
+  status: "passed" | "failed";
+  reason?: string;
+  markers: string[];
+  citationKeys: string[];
+  malformedMarkers: string[];
+  warnings: string[];
+}
 
 // Pandoc keys start with a letter, digit or underscore, may contain internal
 // punctuation only when an alphanumeric follows, and `@` must not follow a word
@@ -122,6 +135,106 @@ function collectCiteKeys(value: JsonValue, keys: Set<string>): void {
 }
 
 /**
+ * Extracts citation markers, cite keys and text defects from Markdown. Pure:
+ * front matter, fenced code and inline code are excluded exactly as Pandoc
+ * does, and narrative `@key` resolution applies only in citeproc mode.
+ */
+export function analyzeCitationText(
+  markdown: string,
+  citationStyle: string,
+): CitationTextAnalysis {
+  const text = stripCode(markdown);
+
+  const markers = Array.from(text.matchAll(bracketPattern))
+    .filter((match) => citationStart.test(match[1] ?? ""))
+    .map((match) => match[0]);
+
+  const keys = new Set<string>();
+  const malformed: string[] = [];
+
+  for (const marker of markers) {
+    const found = Array.from(
+      marker.matchAll(citeKeyPattern),
+      (match) => match[1] ?? "",
+    );
+
+    if (!found.length) malformed.push(marker);
+
+    for (const key of found) keys.add(key);
+  }
+
+  if (citationStyle === "inline-parenthetical") {
+    const inline: CitationTextAnalysis = {
+      status: markers.length ? "failed" : "passed",
+      markers,
+      citationKeys: [...keys],
+      malformedMarkers: malformed,
+      warnings: [],
+    };
+
+    if (markers.length)
+      inline.reason =
+        "inline-parenthetical articles must not contain Pandoc citeproc markers";
+
+    return inline;
+  }
+
+  // Pandoc also resolves narrative `@key` outside brackets.
+  const prose = text
+    .replace(bracketPattern, " ")
+    .replace(/\]\([^)]*\)|<[^>\s]+>|\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, " ");
+
+  for (const match of prose.matchAll(citeKeyPattern)) {
+    keys.add(match[1] ?? "");
+  }
+
+  return {
+    status: malformed.length ? "failed" : "passed",
+    markers,
+    citationKeys: [...keys],
+    malformedMarkers: malformed,
+    warnings:
+      !markers.length && !keys.size ? ["No Pandoc citeproc markers found"] : [],
+  };
+}
+
+/**
+ * Missing-key comparison of citation keys against the audited assets.
+ */
+export interface CitationKeyResolution {
+  missingFromSources: string[];
+  missingFromBibliography: string[];
+}
+
+/**
+ * Resolves citation keys against decoded source records and raw bibliography
+ * text. Pure: callers own the filesystem reads and asset selection.
+ */
+export function resolveCitationKeys(
+  citationKeys: readonly string[],
+  sourceRecords: JsonValue,
+  bibliographyText: string,
+): CitationKeyResolution {
+  const sourceKeys = new Set<string>();
+
+  collectCiteKeys(sourceRecords, sourceKeys);
+
+  const bibliographyKeys = new Set(
+    Array.from(
+      bibliographyText.matchAll(bibliographyKeyPattern),
+      (match) => match[1],
+    ),
+  );
+
+  return {
+    missingFromSources: citationKeys.filter((key) => !sourceKeys.has(key)),
+    missingFromBibliography: citationKeys.filter(
+      (key) => !bibliographyKeys.has(key),
+    ),
+  };
+}
+
+/**
  * Audit Markdown citation markers against article-local or project-wide assets.
  */
 export function auditCitations(
@@ -155,8 +268,16 @@ export function auditCitations(
       throw new Error(`Path must stay inside project root: ${article}`);
     }
 
+    if (!isFile(articlePath))
+      return { status: "error", error: `Article not found: ${articlePath}` };
+
+    const analysis = analyzeCitationText(
+      readFileSync(articlePath, "utf8"),
+      citationStyle,
+    );
+
     const result: CitationAuditDetails = {
-      ok: true,
+      status: analysis.status,
       article: articleRelative,
       citationStyle,
       mode:
@@ -166,65 +287,17 @@ export function auditCitations(
       assetScope: null,
       sourcesPath: null,
       bibliographyPath: null,
-      markers: [],
-      citationKeys: [],
+      markers: analysis.markers,
+      citationKeys: analysis.citationKeys,
       missingFromSources: [],
       missingFromBibliography: [],
-      malformedMarkers: [],
-      warnings: [],
+      malformedMarkers: analysis.malformedMarkers,
+      warnings: analysis.warnings,
     };
 
-    if (!isFile(articlePath)) {
-      result.ok = false;
-      result.error = `Article not found: ${articlePath}`;
+    if (analysis.reason !== undefined) result.reason = analysis.reason;
 
-      return result;
-    }
-
-    const text = stripCode(readFileSync(articlePath, "utf8"));
-
-    const markers = Array.from(text.matchAll(bracketPattern))
-      .filter((match) => citationStart.test(match[1] ?? ""))
-      .map((match) => match[0]);
-
-    const keys = new Set<string>();
-    const malformed: string[] = [];
-
-    for (const marker of markers) {
-      const found = Array.from(
-        marker.matchAll(citeKeyPattern),
-        (match) => match[1] ?? "",
-      );
-
-      if (!found.length) malformed.push(marker);
-
-      for (const key of found) keys.add(key);
-    }
-
-    if (citationStyle !== "inline-parenthetical") {
-      // Pandoc also resolves narrative `@key` outside brackets.
-      const prose = text
-        .replace(bracketPattern, " ")
-        .replace(/\]\([^)]*\)|<[^>\s]+>|\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, " ");
-
-      for (const match of prose.matchAll(citeKeyPattern)) {
-        keys.add(match[1] ?? "");
-      }
-    }
-
-    result.markers = markers;
-    result.citationKeys = [...keys];
-    result.malformedMarkers = malformed;
-
-    if (citationStyle === "inline-parenthetical") {
-      if (markers.length) {
-        result.ok = false;
-        result.error =
-          "inline-parenthetical articles must not contain Pandoc citeproc markers";
-      }
-
-      return result;
-    }
+    if (citationStyle === "inline-parenthetical") return result;
 
     const suffix = extname(articlePath);
 
@@ -252,58 +325,48 @@ export function auditCitations(
     result.sourcesPath = relative(root, sources);
     result.bibliographyPath = relative(root, bibliography);
 
-    if (!markers.length && !keys.size)
-      result.warnings.push("No Pandoc citeproc markers found");
-
-    if (malformed.length) result.ok = false;
-
     if (!isFile(sources)) {
-      result.ok = false;
-      result.error = `${result.sourcesPath} not found`;
+      result.status = "failed";
+      result.reason = `${result.sourcesPath} not found`;
 
       return result;
     }
 
-    const sourceKeys = new Set<string>();
+    let sourceRecords: JsonValue;
 
     try {
-      collectCiteKeys(parseJsonText(readFileSync(sources, "utf8")), sourceKeys);
+      sourceRecords = parseJsonText(readFileSync(sources, "utf8"));
     } catch (error) {
-      result.ok = false;
-      result.error = `Could not read ${result.sourcesPath}: ${errorMessage(error)}`;
-
-      return result;
+      return {
+        status: "error",
+        error: `Could not read ${result.sourcesPath}: ${errorMessage(error)}`,
+      };
     }
 
     if (!isFile(bibliography)) {
-      result.ok = false;
-      result.error = `${result.bibliographyPath} not found`;
+      result.status = "failed";
+      result.reason = `${result.bibliographyPath} not found`;
 
       return result;
     }
 
-    const bibliographyKeys = new Set(
-      Array.from(
-        readFileSync(bibliography, "utf8").matchAll(bibliographyKeyPattern),
-        (match) => match[1],
-      ),
+    const missing = resolveCitationKeys(
+      result.citationKeys,
+      sourceRecords,
+      readFileSync(bibliography, "utf8"),
     );
 
-    result.missingFromSources = result.citationKeys.filter(
-      (key) => !sourceKeys.has(key),
-    );
-    result.missingFromBibliography = result.citationKeys.filter(
-      (key) => !bibliographyKeys.has(key),
-    );
+    result.missingFromSources = missing.missingFromSources;
+    result.missingFromBibliography = missing.missingFromBibliography;
 
     if (
       result.missingFromSources.length ||
       result.missingFromBibliography.length
     )
-      result.ok = false;
+      result.status = "failed";
 
     return result;
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { status: "error", error: errorMessage(error) };
   }
 }

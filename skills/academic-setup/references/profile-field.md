@@ -24,7 +24,7 @@ Record their answer.
 
 ## Update Profile
 
-Call `academic_writer_update_profile` with `fieldsJson`:
+Call `academic_writer_update_profile` with a structured `fieldsJson` object (not a JSON string):
 
 ```json
 {

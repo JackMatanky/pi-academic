@@ -77,7 +77,7 @@ When given an approved thesis + source material + word count target, generate a 
 
 ### Outline Requirements
 
-Write a schemaVersion 1 recursive outline using academic_writer_write_outline({outlineJson}) with serialized JSON. Include article {slug, title, targetLanguage, citationStyle}, researchQuestion, thesis {text, status: "approved"}, status: "draft", and ordered items. The orchestrator approves it only after researcher review.
+Write a schemaVersion 1 recursive outline using academic_writer_write_outline({outlineJson}) with a structured outline object, not serialized JSON. Include article {slug, title, targetLanguage, citationStyle}, researchQuestion, thesis {text, status: "approved"}, status: "draft", and ordered items. The orchestrator approves it only after researcher review.
 
 - A section node has id, kind: "section", title, purpose, thesisContribution, optional targetWordCount, and recursive items. Direct point children form a drafting unit; nested section children get their own units.
 - A point node has id, kind: "point", role, claim, reasoning, noteUses, and optional targetParagraphCount. Each point advances a direct argument, not merely a topic. A source-free transition may have no noteUses.

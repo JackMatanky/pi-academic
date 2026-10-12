@@ -115,7 +115,7 @@ For each returned BibTeX string, parse the citekey from its opening line with th
 
 Keep every successfully-fetched BibTeX entry string in memory; concatenate them into a single `bibliography.bib` string before the write below.
 
-Call `academic_writer_write_sources_cache` with `sourcesJson` set to the JSON array of records — now including `citeKey` — and `bibliography` set to the concatenated BibTeX string. This writes `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` as the current-run cache in one call.
+Call `academic_writer_write_sources_cache` with `sourcesJson` set to an array of structured records — now including `citeKey` — and `bibliography` set to the concatenated BibTeX string. Do not serialize the array. This writes `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` as the current-run cache in one call.
 
 #### Candidate source notes
 
@@ -131,7 +131,7 @@ For each saved candidate that is relevant to the research question, present a co
 
 Omit unavailable values, but label missing source identity or location as unresolved; never infer either. Candidate themes and relevance are suggestions, not source conclusions. NotebookLM-only results and unresolved identities may be shown as leads but are not source-backed cards. Save eligible findings as unchecked candidate notes only; do not mark them verified.
 
-After writing the source cache, call academic_writer_write_research_notes({notesJson}) with a serialized array of selected candidate quotation, paraphrase, and summary notes. Each includes kind, coreStatement, sourceRef matching the stable sourceId in the current registry, researcherNote, tags, and anchor.locator.display.
+After writing the source cache, call academic_writer_write_research_notes({notesJson}) with a structured array of selected candidate quotation, paraphrase, and summary notes, not a serialized string. Each includes kind, coreStatement, sourceRef matching the stable sourceId in the current registry, researcherNote, tags, and anchor.locator.display.
 
 - For local files copy sourceFingerprint from the source registry into the anchor; for Zotero include it only when a stable digest was supplied. Do not invent identity or fingerprints.
 - For quotations copy textQuote.exact verbatim from the original source and give a locator; pdfPageIndex is zero-based and only included if extracted. Do not infer printed page numbers.

@@ -47,7 +47,7 @@ const OutputFormatPreferencesSchema = Type.Object({
  * The style fingerprint and article structure are produced by agents and read
  * back verbatim, so they are kept as JSON objects rather than a fixed shape.
  */
-export const ProfileDataSchema = Type.Object({
+const ProfileFields = {
   fieldOfStudy: Type.Optional(Type.String()),
   citationStyle: Type.Optional(Type.String()),
   targetLanguage: Type.Optional(Type.String()),
@@ -68,6 +68,41 @@ export const ProfileDataSchema = Type.Object({
       }),
     ),
   ),
+};
+
+export const ProfileDataSchema = Type.Object(ProfileFields);
+
+const fields = ProfileFields;
+
+/**
+ * Recognized profile replacements; null removes a field. Unknown fields remain
+ * ignored.
+ */
+export const ProfilePatchSchema = Type.Object({
+  fieldOfStudy: Type.Optional(Type.Union([fields.fieldOfStudy, Type.Null()])),
+  citationStyle: Type.Optional(Type.Union([fields.citationStyle, Type.Null()])),
+  targetLanguage: Type.Optional(
+    Type.Union([fields.targetLanguage, Type.Null()]),
+  ),
+  updatedAt: Type.Optional(Type.Union([fields.updatedAt, Type.Null()])),
+  createdAt: Type.Optional(Type.Union([fields.createdAt, Type.Null()])),
+  abstractLanguages: Type.Optional(
+    Type.Union([fields.abstractLanguages, Type.Null()]),
+  ),
+  analyzedArticles: Type.Optional(
+    Type.Union([fields.analyzedArticles, Type.Null()]),
+  ),
+  tools: Type.Optional(Type.Union([fields.tools, Type.Null()])),
+  outputFormatPreferences: Type.Optional(
+    Type.Union([fields.outputFormatPreferences, Type.Null()]),
+  ),
+  styleFingerprint: Type.Optional(
+    Type.Union([fields.styleFingerprint, Type.Null()]),
+  ),
+  articleStructure: Type.Optional(
+    Type.Union([fields.articleStructure, Type.Null()]),
+  ),
+  sources: Type.Optional(Type.Union([fields.sources, Type.Null()])),
 });
 
 /**

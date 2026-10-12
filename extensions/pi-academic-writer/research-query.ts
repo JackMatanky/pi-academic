@@ -6,6 +6,7 @@ import { Type } from "typebox";
 
 import { errorMessage } from "../lib/fs-safe.js";
 import {
+  assertValid,
   isValid,
   JsonValueSchema,
   parseJsonText,
@@ -44,10 +45,89 @@ export const ResearchQuerySchema = Type.Object({
   limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
 });
 
+// Kept separate from the flat tool schema for pi/omp tool-schema compatibility.
+const SectionBundleQuerySchema = Type.Object(
+  {
+    operation: Type.Literal("section_bundle"),
+    article: Type.String({ minLength: 1 }),
+    sectionId: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+
+const NoteByIdQuerySchema = Type.Object(
+  {
+    operation: Type.Literal("note_by_id"),
+    noteId: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+
+const NotesBySourceQuerySchema = Type.Object(
+  {
+    operation: Type.Literal("notes_by_source"),
+    sourceId: Type.String({ minLength: 1 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  },
+  { additionalProperties: false },
+);
+
+const NotesByTagQuerySchema = Type.Object(
+  {
+    operation: Type.Literal("notes_by_tag"),
+    tag: Type.String({ minLength: 1 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  },
+  { additionalProperties: false },
+);
+
+const OutlineSummaryQuerySchema = Type.Object(
+  {
+    operation: Type.Literal("outline_summary"),
+    article: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+
+const DecodedResearchQuerySchema = Type.Union([
+  SectionBundleQuerySchema,
+  NoteByIdQuerySchema,
+  NotesBySourceQuerySchema,
+  NotesByTagQuerySchema,
+  OutlineSummaryQuerySchema,
+]);
+
 /**
- * A research query: one operation plus the parameters that operation takes.
+ * A query after its operation-specific boundary validation.
  */
-export type ResearchQuery = Static<typeof ResearchQuerySchema>;
+export type ResearchQuery = Static<typeof DecodedResearchQuerySchema>;
+
+export function decodeResearchQuery(
+  input: Static<typeof ResearchQuerySchema>,
+): ResearchQuery {
+  switch (input.operation) {
+    case "section_bundle":
+      assertValid(SectionBundleQuerySchema, input, "query");
+
+      return input;
+    case "note_by_id":
+      assertValid(NoteByIdQuerySchema, input, "query");
+
+      return input;
+    case "notes_by_source":
+      assertValid(NotesBySourceQuerySchema, input, "query");
+
+      return input;
+    case "notes_by_tag":
+      assertValid(NotesByTagQuerySchema, input, "query");
+
+      return input;
+    case "outline_summary":
+      assertValid(OutlineSummaryQuerySchema, input, "query");
+
+      return input;
+  }
+}
 
 /**
  * Counts and structure of an outline, without its content.
@@ -77,14 +157,6 @@ export type ResearchQueryResult =
   | Note[]
   | OutlineSummary
   | SectionBundle;
-
-const ALLOWED_PARAMETERS: Record<ResearchQuery["operation"], string[]> = {
-  section_bundle: ["operation", "article", "sectionId"],
-  note_by_id: ["operation", "noteId"],
-  notes_by_source: ["operation", "sourceId", "limit"],
-  notes_by_tag: ["operation", "tag", "limit"],
-  outline_summary: ["operation", "article"],
-};
 
 const NoteSnapshotSchema = Type.Object({ notes: Type.Array(JsonValueSchema) });
 
@@ -149,15 +221,7 @@ export function queryResearch(
   projectRoot: string,
   query: ResearchQuery,
 ): ResearchQueryResult {
-  const allowed = ALLOWED_PARAMETERS[query.operation];
-
-  for (const [key, value] of Object.entries(query))
-    if (value !== undefined && !allowed.includes(key))
-      throw new Error("Irrelevant parameter: " + key);
-
   if (query.operation === "note_by_id") {
-    if (!query.noteId) throw new Error("noteId required");
-
     const note = library(projectRoot).find(
       (candidate) => candidate.id === query.noteId,
     );
@@ -171,32 +235,20 @@ export function queryResearch(
     query.operation === "notes_by_source" ||
     query.operation === "notes_by_tag"
   ) {
-    const { sourceId, tag } = query;
-
-    if (query.operation === "notes_by_source" && !sourceId)
-      throw new Error("sourceId required");
-
-    if (query.operation === "notes_by_tag" && !tag)
-      throw new Error("tag required");
-
-    const limit = Math.min(100, Math.max(1, Math.floor(query.limit ?? 20)));
+    const limit = query.limit ?? 20;
 
     return library(projectRoot)
       .filter((note) =>
         query.operation === "notes_by_source"
-          ? note.sourceRef === sourceId
-          : tag !== undefined && note.tags.includes(tag),
+          ? note.sourceRef === query.sourceId
+          : note.tags.includes(query.tag),
       )
       .slice(0, limit);
   }
 
-  if (!query.article) throw new Error("article required");
-
   const outline = getOutline(projectRoot, query.article);
 
   if (query.operation === "outline_summary") return summarizeOutline(outline);
-
-  if (!query.sectionId) throw new Error("sectionId required");
 
   if (outline.status !== "approved")
     throw new Error("section_bundle requires approved outline");
