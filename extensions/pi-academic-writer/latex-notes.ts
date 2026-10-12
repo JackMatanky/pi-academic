@@ -1,6 +1,8 @@
 import { fontCommands, num, type LatexContext } from "./latex-context.js";
 
-/** Block quotes, footnotes, bibliography and citations. */
+/**
+ * Block quotes, footnotes, bibliography and citations.
+ */
 export function applyNotes(ctx: LatexContext): void {
   const { out, warnings, color, unsupported, wholly, get, explicit } = ctx;
   const quote = get("blockQuote");
@@ -32,8 +34,9 @@ export function applyNotes(ctx: LatexContext): void {
   if (footnote) {
     const fc = color("awfootnote", footnote.color);
 
-    // setspace's \setstretch re-runs \@currsize, which is \footnotesize here, and
-    // recurses forever; line spacing therefore goes into the explicit leading.
+    // setspace's \setstretch re-runs \@currsize, which is \footnotesize here,
+    // and recurses forever; line spacing therefore goes into the explicit
+    // leading.
     const leading =
       footnote.fontSizePt === undefined
         ? undefined

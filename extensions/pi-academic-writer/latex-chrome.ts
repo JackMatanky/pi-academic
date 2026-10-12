@@ -1,6 +1,8 @@
 import { fontCommands, type LatexContext } from "./latex-context.js";
 
-/** Running footer, header and hyperlink colours. */
+/**
+ * Running footer, header and hyperlink colours.
+ */
 export function applyChrome(ctx: LatexContext): void {
   const { out, color, unsupported, wholly, get } = ctx;
   // Running footer with the page number; the header stays empty.

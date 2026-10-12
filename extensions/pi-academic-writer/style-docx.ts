@@ -1,14 +1,17 @@
 import type { ExplicitProps } from "./style-design.js";
-import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import type { Document, Element } from "@xmldom/xmldom";
+
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import { append, ownerOf, rootOf } from "./xml.js";
+
 import {
+  COMPONENT_NAMES,
   pageSizeMm,
   type ComponentName,
   type ComponentStyle,
   type StyleDesign,
 } from "./style-design.js";
+import { append, isElement, ownerOf, rootOf } from "./xml.js";
 
 const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
@@ -20,7 +23,8 @@ const CT = "http://schemas.openxmlformats.org/package/2006/content-types";
 
 const FOOTER_REL_ID = "rIdAwFooter1";
 
-// Word rejects out-of-order children, so every insertion follows these sequences.
+// Word rejects out-of-order children, so every insertion follows these
+// sequences.
 const STYLE_ORDER = [
   "name",
   "aliases",
@@ -167,9 +171,14 @@ type Order = readonly string[];
 
 interface StyleTarget {
   id: string;
-  /** Paragraph styles accept every property; character styles only run properties. */
+  /**
+   * Paragraph styles accept every property; character styles only run
+   * properties.
+   */
   type: "paragraph" | "character";
-  /** Created when the reference document does not define it. */
+  /**
+   * Created when the reference document does not define it.
+   */
   create?: { name: string; basedOn: string };
 }
 
@@ -253,13 +262,15 @@ function elementChildren(parent: Element): Element[] {
   const out: Element[] = [];
 
   for (let node = parent.firstChild; node; node = node.nextSibling) {
-    if (node.nodeType === 1) out.push(node as Element);
+    if (isElement(node)) out.push(node);
   }
 
   return out;
 }
 
-/** Return the child with this name, creating it at the schema-correct position. */
+/**
+ * Return the child with this name, creating it at the schema-correct position.
+ */
 function ensure(parent: Element, local: string, order: Order): Element {
   const existing = elementChildren(parent).find((el) => el.localName === local);
 
@@ -279,7 +290,10 @@ function ensure(parent: Element, local: string, order: Order): Element {
   return created;
 }
 
-/** Remove a w: attribute by qualified name; xmldom's removeAttributeNS misses parsed attributes. */
+/**
+ * Remove a w: attribute by qualified name; xmldom's removeAttributeNS misses
+ * parsed attributes.
+ */
 function drop(el: Element, name: string): void {
   el.removeAttribute(`w:${name}`);
 }
@@ -670,8 +684,8 @@ export interface BuiltReference {
 }
 
 /**
- * Apply a style design to a Pandoc-compatible reference DOCX (normally
- * Pandoc's own default, which already carries the footnote parts).
+ * Apply a style design to a Pandoc-compatible reference DOCX (normally Pandoc's
+ * own default, which already carries the footnote parts).
  */
 export function buildDocxReference(
   design: StyleDesign,
@@ -696,10 +710,11 @@ export function buildDocxReference(
   const stylesDoc = parse(entries, "word/styles.xml");
   const root = rootOf(stylesDoc);
 
-  for (const [name, props] of Object.entries(design.components) as [
-    ComponentName,
-    ComponentStyle,
-  ][]) {
+  for (const name of COMPONENT_NAMES) {
+    const props = design.components[name];
+
+    if (!props) continue;
+
     const reason = UNSUPPORTED[name];
 
     if (reason) {
@@ -739,7 +754,8 @@ export function buildDocxReference(
 
   applyTable(root, design);
 
-  // The footer needs a page-number run style and a footer style even when unconfigured.
+  // The footer needs a page-number run style and a footer style even when
+  // unconfigured.
   for (const id of ["Footer", "PageNumber"]) {
     if (!findStyle(root, id)) {
       createStyle(root, {

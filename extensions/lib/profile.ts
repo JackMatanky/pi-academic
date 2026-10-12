@@ -1,15 +1,25 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { errorMessage, writeFileAtomic } from "./fs-safe.js";
+import type { JsonObject, JsonValue } from "./schema.js";
 import type { ProfileData } from "./types.js";
 
-/** Project-local directory containing Academic Writer runtime data. */
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { Type } from "typebox";
+
+import { errorMessage, writeFileAtomic } from "./fs-safe.js";
+import {
+  isValid,
+  JsonObjectSchema,
+  JsonValueSchema,
+  parseJsonText,
+  parseWith,
+} from "./schema.js";
+import { ProfileDataSchema } from "./types.js";
+
 const PROFILE_DIR = ".academic-writer";
 
-/** Project-relative markdown profile path. */
 const PROFILE_RELATIVE_PATH = ".academic-writer/profile.md";
 
-/** Old project-relative JSON profile path migrated on first load. */
 const JSON_PROFILE_RELATIVE_PATH = ".academic-writer/profile.json";
 
 /**
@@ -30,10 +40,30 @@ export function getProfilePath(projectDir: string): string {
   return join(projectDir, PROFILE_RELATIVE_PATH);
 }
 
-/** Profile data plus extension fields preserved during markdown serialization. */
-type ProfileFields = ProfileData & Record<string, unknown>;
+/**
+ * A frontmatter value: a line of text or a list of lines.
+ */
+export type FrontmatterValue = string | string[];
 
-/** Result payload for one JSON-to-markdown profile migration attempt. */
+const FrontmatterValueSchema = Type.Union([
+  Type.String(),
+  Type.Array(Type.String()),
+]);
+
+const StringSchema = Type.String();
+
+/**
+ * A profile: the fields this package reads, plus the frontmatter keys and JSON
+ * sections it does not know, which are carried through unchanged.
+ */
+export interface Profile extends ProfileData {
+  extraFrontmatter?: Record<string, FrontmatterValue>;
+  extraSections?: Record<string, JsonValue>;
+}
+
+/**
+ * Result payload for one JSON-to-markdown profile migration attempt.
+ */
 export interface ProfileMigrationResult {
   ok: boolean;
   migrated: boolean;
@@ -41,10 +71,12 @@ export interface ProfileMigrationResult {
   profilePath: string;
   reason?: string;
   error?: string;
-  profile?: ProfileData;
+  profile?: Profile;
 }
 
-/** Scalar profile frontmatter fields serialized directly as YAML values. */
+/**
+ * Scalar profile fields written as `key: value` frontmatter lines.
+ */
 const SCALAR_KEYS = [
   "fieldOfStudy",
   "citationStyle",
@@ -53,10 +85,14 @@ const SCALAR_KEYS = [
   "createdAt",
 ] as const;
 
-/** Array profile frontmatter fields serialized as YAML lists. */
+/**
+ * List profile fields written as frontmatter lists.
+ */
 const LIST_KEYS = ["abstractLanguages", "analyzedArticles"] as const;
 
-/** JSON profile sections serialized under stable markdown headings. */
+/**
+ * JSON profile sections and the headings they are written under.
+ */
 const JSON_SECTIONS = [
   ["tools", "Tools"],
   ["outputFormatPreferences", "Output Format Preferences"],
@@ -65,61 +101,45 @@ const JSON_SECTIONS = [
   ["sources", "Sources"],
 ] as const;
 
-/** Normalized markdown heading lookup for JSON-backed profile sections. */
-const JSON_SECTION_KEYS = Object.fromEntries(
-  JSON_SECTIONS.map(([key, heading]) => [
-    heading.toLowerCase().replace(/\s+/g, ""),
-    key,
-  ]),
-) as Record<string, keyof ProfileData>;
+const FRONTMATTER_KEYS: readonly string[] = [...SCALAR_KEYS, ...LIST_KEYS];
 
-/**
- * Parses the profile's deliberately small YAML-frontmatter subset.
- *
- * @param raw - Raw profile markdown content.
- * @param fields - Mutable parsed profile fields accumulator.
- */
-function parseFrontmatter(raw: string, fields: ProfileFields): void {
-  const block = /(?:^|\n)---\n([\s\S]*?)\n---/.exec(raw)?.[1];
+const SECTION_KEYS: readonly string[] = JSON_SECTIONS.map(([key]) => key);
 
-  if (block === undefined) return;
-  const lines = block.split("\n");
+const EDITABLE_KEYS: readonly string[] = [...FRONTMATTER_KEYS, ...SECTION_KEYS];
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? "";
-    const scalar = /^([\w-]+): (.+)$/.exec(line);
-
-    if (scalar) {
-      fields[scalar[1] ?? ""] = parseScalar((scalar[2] ?? "").trim());
-      continue;
-    }
-
-    const listKey = /^([\w-]+):\s*$/.exec(line)?.[1];
-
-    if (listKey) {
-      const items: string[] = [];
-
-      while ((lines[i + 1] ?? "").startsWith("  - ")) {
-        i += 1;
-        items.push((lines[i] ?? "").slice(4));
-      }
-
-      fields[listKey] = items;
-    }
-  }
+function normalizeTitle(title: string): string {
+  return title.toLowerCase().replace(/\s+/g, "");
 }
 
-/** Reads one frontmatter value: `null`, `[]`, a JSON-quoted string, or bare text. */
-function parseScalar(value: string): unknown {
+const sectionKeyByTitle = new Map<string, string>(
+  JSON_SECTIONS.map(([key, heading]) => [normalizeTitle(heading), key]),
+);
+
+/**
+ * The raw pieces of a profile before they are validated.
+ */
+interface ProfileParts {
+  /**
+   * Values of the keys this package knows, still unvalidated.
+   */
+  known: JsonObject;
+  extraFrontmatter: Record<string, FrontmatterValue>;
+  extraSections: Record<string, JsonValue>;
+}
+
+/**
+ * Reads one frontmatter value: `null`, `[]`, a JSON-quoted string, or text.
+ */
+function parseScalar(value: string): FrontmatterValue | null {
   if (value === "null") return null;
 
   if (value === "[]") return [];
 
   if (value.startsWith('"')) {
     try {
-      const parsed: unknown = JSON.parse(value);
+      const parsed = parseJsonText(value);
 
-      if (typeof parsed === "string") return parsed;
+      if (isValid(StringSchema, parsed)) return parsed;
     } catch {
       // not valid JSON: keep the text as written
     }
@@ -129,78 +149,152 @@ function parseScalar(value: string): unknown {
 }
 
 /**
- * Stores a recognized JSON profile section under its canonical profile key.
- *
- * @param heading - Markdown heading naming a JSON-backed profile section.
- * @param parsed - Parsed JSON section value.
- * @param fields - Mutable parsed profile fields accumulator.
+ * Parses the profile's deliberately small YAML-frontmatter subset.
  */
-function assignJsonSection(
-  title: string,
-  parsed: unknown,
-  fields: ProfileFields,
-): void {
-  const key = JSON_SECTION_KEYS[title.toLowerCase().replace(/\s+/g, "")];
+function parseFrontmatter(text: string): Map<string, FrontmatterValue | null> {
+  const values = new Map<string, FrontmatterValue | null>();
+  const block = /(?:^|\n)---\n([\s\S]*?)\n---/.exec(text)?.[1];
 
-  if (key) {
-    (fields as Record<string, unknown>)[key] = parsed;
+  if (block === undefined) return values;
 
-    return;
+  const lines = block.split("\n");
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index] ?? "";
+    const scalar = /^([\w-]+): (.+)$/.exec(line);
+
+    if (scalar?.[1]) {
+      values.set(scalar[1], parseScalar((scalar[2] ?? "").trim()));
+      continue;
+    }
+
+    const listKey = /^([\w-]+):\s*$/.exec(line)?.[1];
+
+    if (!listKey) continue;
+
+    const items: string[] = [];
+
+    while ((lines[index + 1] ?? "").startsWith("  - ")) {
+      index += 1;
+      items.push((lines[index] ?? "").slice(4));
+    }
+
+    values.set(listKey, items);
   }
 
-  const extra = fields.extraSections;
-  fields.extraSections = {
-    ...(typeof extra === "object" && extra !== null ? extra : {}),
-    [title]: parsed,
-  };
+  return values;
 }
 
 /**
- * Parses profile JSON sections headed by `## <Name>`.
+ * Splits profile markdown into frontmatter and JSON sections.
  *
- * @param raw - Raw profile markdown content.
- * @param fields - Mutable parsed profile fields accumulator.
+ * @throws When a JSON section is malformed, so a corrupt profile is never
+ *   mistaken for a missing one.
  */
-function parseJsonSections(raw: string, fields: ProfileFields): void {
-  const sectionRe = /^## ([^\n]+)\n+```json\n([\s\S]*?)\n```/gm;
+function splitProfileText(raw: string): ProfileParts {
+  const text = raw.replace(/\r\n?/g, "\n");
 
-  for (const match of raw.matchAll(sectionRe)) {
+  const parts: ProfileParts = {
+    known: {},
+    extraFrontmatter: {},
+    extraSections: {},
+  };
+
+  for (const [key, value] of parseFrontmatter(text)) {
+    if (value === null) continue;
+
+    if (FRONTMATTER_KEYS.includes(key)) parts.known[key] = value;
+    else parts.extraFrontmatter[key] = value;
+  }
+
+  const sections = text.matchAll(/^## ([^\n]+)\n+```json\n([\s\S]*?)\n```/gm);
+
+  for (const match of sections) {
     const title = (match[1] ?? "").trim();
 
     try {
-      assignJsonSection(title, JSON.parse(match[2] ?? "") as unknown, fields);
-    } catch (error) {
+      const value = parseWith(
+        JsonValueSchema,
+        parseJsonText(match[2] ?? ""),
+        title,
+      );
+
+      const key = sectionKeyByTitle.get(normalizeTitle(title));
+
+      if (key) parts.known[key] = value;
+      else parts.extraSections[title] = value;
+    } catch (cause) {
       throw new Error(
-        `Profile section "${title}" has invalid JSON: ${errorMessage(error)}`,
+        `Profile section "${title}" has invalid JSON: ${errorMessage(cause)}`,
       );
     }
   }
+
+  return parts;
 }
 
 /**
- * Parses a profile markdown document.
- *
- * @throws When a JSON section is malformed, so a corrupt profile is never mistaken for a missing one.
+ * Splits an old-format JSON profile object the same way: unknown keys that fit
+ * a frontmatter line stay there, the rest become JSON sections.
  */
-export function parseProfileMd(raw: string): ProfileFields {
-  const text = raw.replace(/\r\n?/g, "\n");
-  const profile: ProfileFields = {};
-  parseFrontmatter(text, profile);
-  parseJsonSections(text, profile);
+function splitProfileObject(object: JsonObject): ProfileParts {
+  const parts: ProfileParts = {
+    known: {},
+    extraFrontmatter: {},
+    extraSections: {},
+  };
+
+  for (const [key, value] of Object.entries(object)) {
+    if (EDITABLE_KEYS.includes(key)) parts.known[key] = value;
+    else if (isValid(FrontmatterValueSchema, value))
+      parts.extraFrontmatter[key] = value;
+    else parts.extraSections[key] = value;
+  }
+
+  return parts;
+}
+
+/**
+ * Validates the known fields and attaches the unknown ones.
+ */
+function assembleProfile(parts: ProfileParts): Profile {
+  const profile: Profile = parseWith(ProfileDataSchema, parts.known, "profile");
+
+  if (Object.keys(parts.extraFrontmatter).length > 0)
+    profile.extraFrontmatter = parts.extraFrontmatter;
+
+  if (Object.keys(parts.extraSections).length > 0)
+    profile.extraSections = parts.extraSections;
 
   return profile;
 }
 
 /**
- * Serializes the known Academic Writer profile fields back to markdown.
+ * Parses a profile markdown document.
  *
- * @param profile - Parsed profile data used by the caller.
+ * @throws When a JSON section is malformed or a field has the wrong type.
  */
-export function serializeProfileMd(profile: ProfileFields): string {
+export function parseProfileMd(raw: string): Profile {
+  return assembleProfile(splitProfileText(raw));
+}
+
+/**
+ * Quotes scalars that would not survive the line-based parser unchanged.
+ */
+function formatScalar(text: string): string {
+  return /[\r\n]|^\s|\s$|^"|^$|^(?:null|\[\])$/.test(text)
+    ? JSON.stringify(text)
+    : text;
+}
+
+/**
+ * Serializes a profile back to markdown.
+ */
+export function serializeProfileMd(profile: Profile): string {
   const lines = ["# Academic Writer Profile", "", "---"];
 
-  const writeList = (key: string, value: unknown[]) => {
-    if (value.length === 0) {
+  const writeList = (key: string, items: string[]) => {
+    if (items.length === 0) {
       lines.push(`${key}: []`);
 
       return;
@@ -208,34 +302,26 @@ export function serializeProfileMd(profile: ProfileFields): string {
 
     lines.push(`${key}:`);
 
-    for (const item of value) lines.push(`  - ${String(item)}`);
+    for (const item of items) lines.push(`  - ${item}`);
   };
 
   for (const key of SCALAR_KEYS) {
     const value = profile[key];
 
-    if (value !== undefined && value !== null)
-      lines.push(`${key}: ${formatScalar(String(value))}`);
+    if (value !== undefined) lines.push(`${key}: ${formatScalar(value)}`);
   }
 
-  for (const key of LIST_KEYS) {
-    const value = profile[key];
-    writeList(key, Array.isArray(value) ? value : []);
-  }
+  for (const key of LIST_KEYS) writeList(key, profile[key] ?? []);
 
-  // Frontmatter keys this version does not know are carried through unchanged.
-  for (const [key, value] of Object.entries(profile)) {
-    if (RESERVED_KEYS.has(key) || value === undefined || value === null)
-      continue;
-
-    if (Array.isArray(value)) writeList(key, value);
-    else if (typeof value !== "object")
-      lines.push(`${key}: ${formatScalar(String(value))}`);
+  for (const [key, value] of Object.entries(profile.extraFrontmatter ?? {})) {
+    if (isValid(StringSchema, value))
+      lines.push(`${key}: ${formatScalar(value)}`);
+    else writeList(key, value);
   }
 
   lines.push("---", "");
 
-  const writeSection = (heading: string, value: unknown) =>
+  const writeSection = (heading: string, value: JsonValue) =>
     lines.push(
       `## ${heading}`,
       "",
@@ -248,32 +334,13 @@ export function serializeProfileMd(profile: ProfileFields): string {
   for (const [key, heading] of JSON_SECTIONS) {
     const value = profile[key];
 
-    if (value !== undefined && value !== null) writeSection(heading, value);
+    if (value !== undefined) writeSection(heading, value);
   }
 
-  const extra = profile.extraSections;
-
-  const extraSections =
-    typeof extra === "object" && extra !== null ? extra : {};
-
-  for (const [heading, value] of Object.entries(extraSections))
+  for (const [heading, value] of Object.entries(profile.extraSections ?? {}))
     writeSection(heading, value);
 
   return lines.join("\n");
-}
-
-const RESERVED_KEYS = new Set<string>([
-  ...SCALAR_KEYS,
-  ...LIST_KEYS,
-  ...JSON_SECTIONS.map(([key]) => key),
-  "extraSections",
-]);
-
-/** Quotes scalars that would not survive the line-based parser unchanged. */
-function formatScalar(text: string): string {
-  return /[\r\n]|^\s|\s$|^"|^$|^(?:null|\[\])$/.test(text)
-    ? JSON.stringify(text)
-    : text;
 }
 
 /**
@@ -309,13 +376,9 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
   }
 
   try {
-    const parsed = JSON.parse(readFileSync(jsonPath, "utf-8")) as unknown;
+    const parsed = parseJsonText(readFileSync(jsonPath, "utf-8"));
 
-    if (
-      parsed === null ||
-      typeof parsed !== "object" ||
-      Array.isArray(parsed)
-    ) {
+    if (!isValid(JsonObjectSchema, parsed)) {
       return {
         ok: false,
         migrated: false,
@@ -324,78 +387,67 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
       };
     }
 
-    const profile = parsed as ProfileFields;
+    const profile = assembleProfile(splitProfileObject(parsed));
+
     writeFileAtomic(profilePath, serializeProfileMd(profile));
 
     return { ok: true, migrated: true, ...resultPaths, profile };
-  } catch (error) {
+  } catch (cause) {
     return {
       ok: false,
       migrated: false,
       ...resultPaths,
-      error: errorMessage(error),
+      error: errorMessage(cause),
     };
   }
 }
 
 /**
- * Updates only recognized profile fields, preserving missing optional sections.
+ * Updates only recognized profile fields, preserving everything else. A `null`
+ * value removes a field.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  * @param patch - Profile fields to replace.
+ *
+ * @returns The updated profile, or null when there is no profile.
+ * @throws When the patched profile would not be valid.
  */
 export function updateProfile(
   projectDir: string,
-  patch: Record<string, unknown>,
-): ProfileData | null {
+  patch: JsonObject,
+): Profile | null {
   const profilePath = getProfilePath(projectDir);
 
   if (!existsSync(profilePath)) return null;
 
-  const fields: ProfileFields = parseProfileMd(
-    readFileSync(profilePath, "utf-8"),
-  );
+  const parts = splitProfileText(readFileSync(profilePath, "utf-8"));
 
-  for (const [key, value] of Object.entries(patch)) {
-    if (!EDITABLE_KEYS.has(key)) continue;
-    assertPatchValue(key, value);
-    fields[key] = value;
+  for (const key of EDITABLE_KEYS) {
+    const value = patch[key];
+
+    if (value === undefined) continue;
+
+    if (value === null) delete parts.known[key];
+    else parts.known[key] = value;
   }
 
-  if (!("updatedAt" in patch)) fields.updatedAt = new Date().toISOString();
-  writeFileAtomic(profilePath, serializeProfileMd(fields));
+  if (patch.updatedAt === undefined)
+    parts.known.updatedAt = new Date().toISOString();
 
-  return fields;
-}
+  const profile = assembleProfile(parts);
 
-const EDITABLE_KEYS = new Set<string>([
-  ...SCALAR_KEYS,
-  ...LIST_KEYS,
-  ...JSON_SECTIONS.map(([key]) => key),
-]);
+  writeFileAtomic(profilePath, serializeProfileMd(profile));
 
-/** Rejects patch values the serializer could not round-trip. */
-function assertPatchValue(key: string, value: unknown): void {
-  const isObject = (v: unknown) =>
-    typeof v === "object" && v !== null && !Array.isArray(v);
-
-  if ((SCALAR_KEYS as readonly string[]).includes(key)) {
-    if (typeof value !== "string" && value !== null)
-      throw new Error(`Profile field ${key} must be a string or null`);
-  } else if ((LIST_KEYS as readonly string[]).includes(key)) {
-    if (!Array.isArray(value) || value.some((v) => typeof v !== "string"))
-      throw new Error(`Profile field ${key} must be an array of strings`);
-  } else if (value !== null && !isObject(value)) {
-    throw new Error(`Profile section ${key} must be an object or null`);
-  }
+  return profile;
 }
 
 /**
  * Loads the project profile if `.academic-writer/profile.md` exists.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ * @throws When the profile exists but cannot be parsed.
  */
-export function loadProfile(projectDir: string): ProfileData | null {
+export function loadProfile(projectDir: string): Profile | null {
   const profilePath = getProfilePath(projectDir);
 
   if (!existsSync(profilePath)) return null;

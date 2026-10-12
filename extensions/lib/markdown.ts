@@ -1,9 +1,9 @@
 /**
  * Tracks fenced code blocks line by line.
  *
- * Pass the previous return value (`null` outside a fence) with each line. A line
- * belongs to code when either the incoming or the returned state is non-null,
- * which covers the opening and closing fence lines themselves.
+ * Pass the previous return value (`null` outside a fence) with each line. A
+ * line belongs to code when either the incoming or the returned state is
+ * non-null, which covers the opening and closing fence lines themselves.
  *
  * @returns The fence marker that is open after `line`, or `null`.
  */

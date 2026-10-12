@@ -1,7 +1,8 @@
 import type { ExplicitProps, StyleDesign } from "./style-design.js";
-import { createLatexContext } from "./latex-context.js";
+
 import { applyBlocks } from "./latex-blocks.js";
 import { applyChrome } from "./latex-chrome.js";
+import { createLatexContext } from "./latex-context.js";
 import { applyHeadings } from "./latex-headings.js";
 import { applyNotes } from "./latex-notes.js";
 import { applyPageAndBody } from "./latex-page.js";
@@ -12,8 +13,8 @@ export interface BuiltPreamble {
 }
 
 /**
- * Generate the preamble `design.json` describes. Components the LaTeX
- * output cannot express are reported in `warnings` rather than dropped.
+ * Generate the preamble `design.json` describes. Components the LaTeX output
+ * cannot express are reported in `warnings` rather than dropped.
  */
 export function buildLatexPreamble(
   design: StyleDesign,

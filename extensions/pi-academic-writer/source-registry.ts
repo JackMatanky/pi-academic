@@ -1,7 +1,13 @@
+import type { JsonObject, JsonValue } from "../lib/schema.js";
+
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
+
+import { Type } from "typebox";
+
 import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
+import { isValid, JsonObjectSchema, parseJsonText } from "../lib/schema.js";
 import { extractDocument, type ExtractedDocument } from "./documents.js";
 import {
   citationAssetPaths,
@@ -9,31 +15,21 @@ import {
   type CitationAssetPaths,
 } from "./project-files.js";
 import { markResearchNotesStale } from "./research-notes.js";
+import {
+  normalizeSourceCacheRecord,
+  StoredLocalSourceSchema,
+  stringField,
+  type LocalSourceRecord,
+} from "./source-records.js";
 
-/** File extensions accepted by local source ingestion. */
+/**
+ * File extensions accepted by local source ingestion.
+ */
 const SUPPORTED_SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
-/** Source registry record generated from one project-local source file. */
-export interface LocalSourceRecord {
-  sourceId: string;
-  sourceFingerprint: string;
-  citeKey: string;
-  sourceType: "local-file";
-  path: string;
-  fileType: string;
-  author: null;
-  workTitle: string;
-  year: string | null;
-  extractionConfidence: {
-    author: "low";
-    workTitle: "medium";
-    year: "medium" | "low";
-  };
-  extractionNotes: string;
-  pages?: Array<{ pdfPageIndex: number; text: string }>;
-}
-
-/** Result payload written by local folder source ingestion. */
+/**
+ * Result payload written by local folder source ingestion.
+ */
 export interface SourceIngestionResult {
   ok: boolean;
   sourceDirectory: string;
@@ -44,7 +40,9 @@ export interface SourceIngestionResult {
   errors: Array<{ path: string; error: string }>;
 }
 
-/** Result payload for copying current citation caches beside an article. */
+/**
+ * Result payload for copying current citation caches beside an article.
+ */
 export interface CitationSnapshotResult extends CitationAssetPaths {
   ok: boolean;
   copied: string[];
@@ -125,8 +123,10 @@ function uniqueCiteKey(base: string, used: Set<string>): string {
 /**
  * Builds a local source registry record from extracted document text.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
- * @param document - Extracted local source document used to build a source record.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
+ * @param document - Extracted local source document used to build a source
+ *   record.
  * @param usedKeys - Mutable citekey set used to avoid duplicates.
  */
 function sourceRecordFromDocument(
@@ -148,7 +148,8 @@ function sourceRecordFromDocument(
     basename(document.path, extname(document.path));
 
   const year = extractYear(`${document.path}\n${document.text.slice(0, 4000)}`);
-  // A source keeps its citekey across re-ingests, so `[@key]` markers in articles stay valid.
+  // A source keeps its citekey across re-ingests, so `[@key]` markers in
+  // articles stay valid.
   const base = citeKeyBase(title);
 
   const preferred =
@@ -158,7 +159,7 @@ function sourceRecordFromDocument(
 
   const citeKey = uniqueCiteKey(preferred, usedKeys);
 
-  return {
+  const record: LocalSourceRecord = {
     sourceId,
     sourceFingerprint,
     citeKey,
@@ -174,8 +175,11 @@ function sourceRecordFromDocument(
       year: year ? "medium" : "low",
     },
     extractionNotes: `Generated from local project source ${document.path}; verify missing metadata before publication.`,
-    ...(document.pages ? { pages: document.pages } : {}),
   };
+
+  if (document.pages) record.pages = document.pages;
+
+  return record;
 }
 
 /**
@@ -199,7 +203,8 @@ function sourceBibtex(
 /**
  * Resolves explicit source paths or scans the default local sources folder.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param paths - Optional explicit local source paths to ingest.
  */
 function sourceInputs(projectRoot: string, paths?: string[]): string[] {
@@ -217,9 +222,11 @@ function sourceInputs(projectRoot: string, paths?: string[]): string[] {
 }
 
 /**
- * Ingests local source files into `.academic-writer` source and bibliography caches.
+ * Ingests local source files into `.academic-writer` source and bibliography
+ * caches.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param paths - Optional explicit local source paths to ingest.
  * @param signal - Optional abort signal forwarded to subprocesses.
  */
@@ -263,52 +270,39 @@ export async function ingestSources(
   const sourcesFile = join(projectRoot, sourcesPath);
   const bibliographyFile = join(projectRoot, bibliographyPath);
   const existing = readSourceRegistry(sourcesFile);
-
-  const isLocal = (record: Record<string, unknown>) =>
-    record.sourceType === "local-file";
-
   const ingestedPaths = new Set(documents.map((document) => document.path));
 
   // Only records this run re-reads (or whose file is gone) are replaced; Zotero
   // records and local files outside this run stay untouched.
   const retained = existing.filter(
-    (record) =>
-      !isLocal(record) ||
-      (typeof record.path === "string" &&
-        !ingestedPaths.has(record.path) &&
-        existsSync(resolve(projectRoot, record.path))),
+    (entry) =>
+      !isValid(StoredLocalSourceSchema, entry) ||
+      (!ingestedPaths.has(entry.path) &&
+        existsSync(resolve(projectRoot, entry.path))),
   );
 
   const usedKeys = new Set(
-    retained.flatMap((record) =>
-      typeof record.citeKey === "string" ? [record.citeKey] : [],
-    ),
+    retained.flatMap((entry) => stringField(entry, "citeKey") ?? []),
   );
 
   const previousKeys = new Map<string, string>();
 
-  for (const record of existing) {
-    if (!isLocal(record) || typeof record.citeKey !== "string") continue;
-
-    for (const id of [record.sourceId, record.path])
-      if (typeof id === "string") previousKeys.set(id, record.citeKey);
+  for (const entry of existing) {
+    if (!isValid(StoredLocalSourceSchema, entry)) continue;
+    previousKeys.set(entry.sourceId, entry.citeKey);
+    previousKeys.set(entry.path, entry.citeKey);
   }
 
   const sources = documents.map((document) =>
     sourceRecordFromDocument(projectRoot, document, usedKeys, previousKeys),
   );
 
-  const merged: Array<Record<string, unknown>> = [
-    ...retained,
-    ...sources.map((source) => ({ ...source })),
-  ];
+  const merged: JsonObject[] = [...retained, ...sources];
 
   const localKeys = new Set([
-    ...existing
-      .filter(isLocal)
-      .flatMap((record) =>
-        typeof record.citeKey === "string" ? [record.citeKey] : [],
-      ),
+    ...existing.flatMap((entry) =>
+      isValid(StoredLocalSourceSchema, entry) ? [entry.citeKey] : [],
+    ),
     ...sources.map((record) => record.citeKey),
   ]);
 
@@ -318,14 +312,14 @@ export async function ingestSources(
       )
     : [];
 
-  const localEntries = merged.flatMap((record) =>
-    isLocal(record)
+  const localEntries = merged.flatMap((entry) =>
+    isValid(StoredLocalSourceSchema, entry)
       ? [
           sourceBibtex({
-            citeKey: String(record.citeKey),
-            workTitle: String(record.workTitle ?? ""),
-            path: String(record.path ?? ""),
-            year: typeof record.year === "string" ? record.year : null,
+            citeKey: entry.citeKey,
+            workTitle: entry.workTitle ?? "",
+            path: entry.path,
+            year: entry.year ?? null,
           }),
         ]
       : [],
@@ -340,18 +334,19 @@ export async function ingestSources(
   );
   markResearchNotesStale(
     projectRoot,
-    merged.flatMap((record) =>
-      typeof record.sourceId === "string"
-        ? [
-            {
-              sourceId: record.sourceId,
-              ...(typeof record.sourceFingerprint === "string"
-                ? { sourceFingerprint: record.sourceFingerprint }
-                : {}),
-            },
-          ]
-        : [],
-    ),
+    merged.flatMap((entry) => {
+      const sourceId = stringField(entry, "sourceId");
+
+      if (sourceId === undefined) return [];
+
+      const sourceFingerprint = stringField(entry, "sourceFingerprint");
+
+      return [
+        sourceFingerprint === undefined
+          ? { sourceId }
+          : { sourceId, sourceFingerprint },
+      ];
+    }),
   );
 
   return {
@@ -365,21 +360,25 @@ export async function ingestSources(
   };
 }
 
-/** Reads the source registry; a malformed file is an error rather than something to overwrite. */
-function readSourceRegistry(path: string): Array<Record<string, unknown>> {
+/**
+ * Reads the source registry; a malformed file is an error rather than something
+ * to overwrite.
+ */
+function readSourceRegistry(path: string): JsonObject[] {
   if (!existsSync(path)) return [];
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
 
-  if (!Array.isArray(value))
-    throw new Error(`${path} must contain a JSON array`);
+  const value = parseJsonText(readFileSync(path, "utf-8"));
 
-  return value.filter(
-    (entry): entry is Record<string, unknown> =>
-      typeof entry === "object" && entry !== null && !Array.isArray(entry),
-  );
+  if (!isValid(Type.Array(JsonObjectSchema), value))
+    throw new Error(`${path} must contain a JSON array of objects`);
+
+  return value;
 }
 
-/** Splits a BibTeX file into entries keyed by citekey; non-entry blocks keep an empty key. */
+/**
+ * Splits a BibTeX file into entries keyed by citekey; non-entry blocks keep an
+ * empty key.
+ */
 function bibEntries(text: string): Array<{ key: string; text: string }> {
   return text
     .split(/^(?=@)/m)
@@ -394,8 +393,10 @@ function bibEntries(text: string): Array<{ key: string; text: string }> {
 /**
  * Copies current citation caches into article-local frozen citation assets.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
- * @param article - Article markdown path, relative to the project root unless absolute.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
+ * @param article - Article markdown path, relative to the project root unless
+ *   absolute.
  */
 export function snapshotCitationAssets(
   projectRoot: string,
@@ -427,62 +428,33 @@ export function snapshotCitationAssets(
 }
 
 /**
- * Writes the current-run sources cache and bibliography from extracted source records.
+ * Result of writing the sources cache.
+ */
+export interface SourcesCacheWrite {
+  ok: true;
+  sourcesPath: string;
+  bibliographyPath: string;
+  count: number;
+}
+
+/**
+ * Writes the current-run sources cache and bibliography from extracted source
+ * records.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param sources - Source registry records to serialize.
  * @param bibliography - Concatenated BibTeX entries.
  */
 export function writeSourcesCache(
   projectRoot: string,
-  sources: unknown[],
+  sources: JsonValue[],
   bibliography: string,
-): { ok: true; sourcesPath: string; bibliographyPath: string; count: number } {
-  const normalizedSources = sources.map((value) => {
-    if (typeof value !== "object" || value === null || Array.isArray(value))
-      throw Error("Each source cache record must be an object");
-    const source = value as Record<string, unknown>;
-
-    if (source.sourceType === "zotero") {
-      const libraryId =
-          typeof source.libraryId === "string" && source.libraryId.trim()
-            ? source.libraryId
-            : undefined,
-        itemKey =
-          typeof source.itemKey === "string" && source.itemKey.trim()
-            ? source.itemKey
-            : undefined;
-
-      if (libraryId && itemKey) {
-        const sourceId = `zotero:${libraryId}:${itemKey}`;
-
-        if (source.sourceId != null && source.sourceId !== sourceId)
-          throw Error("Zotero sourceId must match libraryId and itemKey");
-
-        return { ...source, sourceId };
-      }
-
-      if (source.sourceId != null)
-        throw Error("Zotero sourceId requires confirmed libraryId and itemKey");
-
-      return { ...source, sourceId: null };
-    }
-
-    if (source.sourceType === "local-file") {
-      if (
-        typeof source.sourceFingerprint !== "string" ||
-        source.sourceId !== `local:${source.sourceFingerprint}`
-      )
-        throw Error("Local sourceId must match its sourceFingerprint");
-
-      return source;
-    }
-
-    throw Error("Source record needs sourceType zotero or local-file");
-  });
-
+): SourcesCacheWrite {
+  const normalizedSources = sources.map(normalizeSourceCacheRecord);
   const sourcesPath = ".academic-writer/sources.json";
   const bibliographyPath = ".academic-writer/bibliography.bib";
+
   writeProjectTextFile(
     projectRoot,
     sourcesPath,

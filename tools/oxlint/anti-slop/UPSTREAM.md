@@ -6,5 +6,4 @@
 - Entry points: `index.ts` (generic). `effect/index.ts` is present but not registered (no direct `effect` dependency).
 - Local deviations: none.
 - Dependencies: `oxlint` and `@oxlint/plugins` pinned together at 1.87.0 (root `package.json`).
-- Config: `.oxlintrc.json`; run with `mise run oxlint`.
-- Baseline at install: `oxlint extensions` reports 1,309 findings (1,051 `require-readable-spacing`, autofixable). `oxlint` is deliberately not part of `mise run lint` until that baseline is cleaned.
+- Config: `.oxlintrc.json`; run through `mise run lint` (`mise run fmt` applies autofixes).

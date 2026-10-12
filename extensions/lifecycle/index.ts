@@ -1,22 +1,22 @@
+import type { ProfileData } from "../lib/types.js";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { execFile } from "node:child_process";
 import { appendFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+
 import { errorMessage } from "../lib/fs-safe.js";
 import { getProfilePath, loadProfile } from "../lib/profile.js";
 import { summarizeRuns } from "../lib/runs.js";
-import type { ProfileData } from "../lib/types.js";
 
 /**
  * Condenses run-state details for the session dashboard.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ *
  * @returns A compact run count and last-run label for dashboard rendering.
  */
-function runSummary(projectDir: string): {
-  active: number;
-  last: string | null;
-} {
+function runSummary(projectDir: string): RunLine {
   const runs = summarizeRuns(projectDir);
 
   return {
@@ -27,7 +27,17 @@ function runSummary(projectDir: string): {
   };
 }
 
-/** Lifecycle reasons that should display the session dashboard. */
+/**
+ * Dashboard-ready run counts.
+ */
+interface RunLine {
+  active: number;
+  last: string | null;
+}
+
+/**
+ * Lifecycle reasons that should display the session dashboard.
+ */
 const DASHBOARD_REASONS = new Set(["startup", "new", "resume"]);
 
 /**

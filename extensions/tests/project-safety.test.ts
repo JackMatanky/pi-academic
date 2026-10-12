@@ -13,19 +13,30 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
+
+import { Type } from "typebox";
+
 import { resolveInside, withFileLock } from "../lib/fs-safe.js";
 import {
   loadProfile,
   serializeProfileMd,
   updateProfile,
 } from "../lib/profile.js";
+import {
+  JsonObjectSchema,
+  parseJsonText,
+  parseWith,
+  type JsonValue,
+} from "../lib/schema.js";
+import { ParagraphSchema } from "../pi-academic-writer/article.js";
 import { auditCitations } from "../pi-academic-writer/citation-audit.js";
 import { assembleDocxJson } from "../pi-academic-writer/docx-assembly.js";
+import { type OutlineItem } from "../pi-academic-writer/research-core.js";
+import { migrateArticleOutline } from "../pi-academic-writer/research-outline.js";
 import {
   ingestSources,
   snapshotCitationAssets,
 } from "../pi-academic-writer/source-registry.js";
-import { migrateArticleOutline } from "../pi-academic-writer/research-outline.js";
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "project-safety-")));
@@ -39,8 +50,23 @@ function write(root: string, path: string, content: string): void {
   writeFileSync(join(root, path), content);
 }
 
-const readJson = (root: string, path: string): unknown =>
-  JSON.parse(readFileSync(join(root, path), "utf8"));
+const readJson = (root: string, path: string): JsonValue =>
+  parseJsonText(readFileSync(join(root, path), "utf8"));
+
+const CiteKeyRecords = Type.Array(
+  Type.Object({ citeKey: Type.String(), sourceType: Type.String() }),
+);
+
+const AssembledArticle = Type.Object({
+  title: Type.String(),
+  thesis: Type.String(),
+  sections: Type.Array(
+    Type.Object({
+      title: Type.String(),
+      paragraphs: Type.Array(ParagraphSchema),
+    }),
+  ),
+});
 
 test("resolveInside accepts project paths and rejects escapes, including through symlinks", (t) => {
   const root = project(t);
@@ -89,7 +115,12 @@ test("re-ingesting keeps Zotero records, existing citekeys and foreign BibTeX en
   const original = first.sources[0]?.citeKey;
   assert.equal(original, "notes_2020", "the year is not doubled");
 
-  const registry = readJson(root, ".academic-writer/sources.json") as object[];
+  const registry = parseWith(
+    Type.Array(JsonObjectSchema),
+    readJson(root, ".academic-writer/sources.json"),
+    "registry",
+  );
+
   writeFileSync(
     join(root, ".academic-writer/sources.json"),
     JSON.stringify([
@@ -110,10 +141,11 @@ test("re-ingesting keeps Zotero records, existing citekeys and foreign BibTeX en
   write(root, ".academic-writer/sources/a.md", "# Another Note 2020\n");
   const second = await ingestSources(root);
 
-  const merged = readJson(root, ".academic-writer/sources.json") as Array<{
-    citeKey: string;
-    sourceType: string;
-  }>;
+  const merged = parseWith(
+    CiteKeyRecords,
+    readJson(root, ".academic-writer/sources.json"),
+    "registry",
+  );
 
   assert.deepEqual(merged.map((record) => record.citeKey).sort(), [
     "another_note_2020",
@@ -199,11 +231,11 @@ test("assembleDocxJson keeps subheadings, turns [^n] into footnotes and leaves c
 
   assert.equal(result.ok, true, result.error ?? "");
 
-  const data = readJson(root, "out.json") as {
-    title: string;
-    thesis: string;
-    sections: Array<{ title: string; paragraphs: unknown[] }>;
-  };
+  const data = parseWith(
+    AssembledArticle,
+    readJson(root, "out.json"),
+    "article",
+  );
 
   assert.equal(data.title, "Title");
   assert.equal(data.thesis, "The thesis line.");
@@ -291,9 +323,8 @@ test("updateProfile keeps unknown fields and sections, quotes awkward values and
   const profile = loadProfile(root);
   assert.equal(profile?.fieldOfStudy, "Line one\nLine two");
   assert.equal(profile?.citationStyle, "");
-  const fields: Record<string, unknown> = { ...profile };
-  assert.equal(fields.customKey, "kept");
-  assert.deepEqual(fields.extraSections, { "Custom Notes": { a: 1 } });
+  assert.deepEqual(profile?.extraFrontmatter, { customKey: "kept" });
+  assert.deepEqual(profile?.extraSections, { "Custom Notes": { a: 1 } });
 
   assert.throws(() => updateProfile(root, { abstractLanguages: "English" }));
   assert.throws(() => updateProfile(root, { tools: [1] }));
@@ -325,12 +356,8 @@ test("migrating an article to an outline does not treat code fences as headings"
   const outline = migrateArticleOutline(root, "articles/a.md", {});
   const titles: string[] = [];
 
-  const walk = (items: unknown[]): void => {
-    for (const item of items as Array<{
-      kind: string;
-      title?: string;
-      items?: unknown[];
-    }>) {
+  const walk = (items: OutlineItem[]): void => {
+    for (const item of items) {
       if (item.kind === "section") {
         titles.push(item.title ?? "");
         walk(item.items ?? []);

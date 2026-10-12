@@ -1,273 +1,425 @@
-import { existsSync } from "node:fs";
+import type { Static } from "typebox";
+
+import { existsSync, readFileSync } from "node:fs";
+
+import { Type } from "typebox";
+
 import { errorMessage } from "../lib/fs-safe.js";
-import { diagnoseChapterCoverage } from "./coverage.js";
 import {
-  obj,
-  arr,
-  read,
-  sources,
+  isValid,
+  JsonValueSchema,
+  parseJsonText,
+  readJsonFile,
+  type JsonValue,
+} from "../lib/schema.js";
+import { diagnoseChapterCoverage, type CoverageFinding } from "./coverage.js";
+import {
+  readSourceRefs,
+  type Note,
+  type Outline,
+  type OutlineItem,
   type Point,
   type Section,
 } from "./research-core.js";
-import { parseNote, library, fresh } from "./research-notes.js";
-import { outlinePath, frozenPath, getOutline } from "./research-outline.js";
+import { fresh, library, parseNote } from "./research-notes.js";
+import { frozenPath, getOutline, outlinePath } from "./research-outline.js";
 
-export function queryResearch(
-  r: string,
-  args: {
-    operation: string;
-    article?: string;
-    sectionId?: string;
-    noteId?: string;
-    sourceId?: string;
-    tag?: string;
-    limit?: number;
-  },
-): unknown {
-  const allowed: Record<string, string[]> = {
-    section_bundle: ["operation", "article", "sectionId"],
-    note_by_id: ["operation", "noteId"],
-    notes_by_source: ["operation", "sourceId", "limit"],
-    notes_by_tag: ["operation", "tag", "limit"],
-    outline_summary: ["operation", "article"],
+/**
+ * Parameters of `academic_writer_query_research`.
+ */
+export const ResearchQuerySchema = Type.Object({
+  operation: Type.Union([
+    Type.Literal("section_bundle"),
+    Type.Literal("note_by_id"),
+    Type.Literal("notes_by_source"),
+    Type.Literal("notes_by_tag"),
+    Type.Literal("outline_summary"),
+  ]),
+  article: Type.Optional(Type.String()),
+  sectionId: Type.Optional(Type.String()),
+  noteId: Type.Optional(Type.String()),
+  sourceId: Type.Optional(Type.String()),
+  tag: Type.Optional(Type.String()),
+  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+});
+
+/**
+ * A research query: one operation plus the parameters that operation takes.
+ */
+export type ResearchQuery = Static<typeof ResearchQuerySchema>;
+
+/**
+ * Counts and structure of an outline, without its content.
+ */
+export interface OutlineSummary {
+  thesis: { text: string; status: "proposed" | "approved" };
+  status: "draft" | "approved";
+  sections: Array<{ id: string; title: string; depth: number }>;
+  pointCount: number;
+  evidenceUseCount: number;
+}
+
+/**
+ * One section with its direct points and the frozen notes it cites.
+ */
+export interface SectionBundle {
+  section: Section;
+  directPoints: Point[];
+  notes: Note[];
+}
+
+/**
+ * What `queryResearch` returns for each operation.
+ */
+export type ResearchQueryResult =
+  | Note
+  | Note[]
+  | OutlineSummary
+  | SectionBundle;
+
+const ALLOWED_PARAMETERS: Record<ResearchQuery["operation"], string[]> = {
+  section_bundle: ["operation", "article", "sectionId"],
+  note_by_id: ["operation", "noteId"],
+  notes_by_source: ["operation", "sourceId", "limit"],
+  notes_by_tag: ["operation", "tag", "limit"],
+  outline_summary: ["operation", "article"],
+};
+
+const NoteSnapshotSchema = Type.Object({ notes: Type.Array(JsonValueSchema) });
+
+function summarizeOutline(outline: Outline): OutlineSummary {
+  const sections: OutlineSummary["sections"] = [];
+  let pointCount = 0;
+  let evidenceUseCount = 0;
+
+  const walk = (items: OutlineItem[], depth: number) => {
+    for (const item of items) {
+      if (item.kind === "section") {
+        sections.push({ id: item.id, title: item.title, depth });
+        walk(item.items, depth + 1);
+      } else {
+        pointCount += 1;
+        evidenceUseCount += item.noteUses.length;
+      }
+    }
   };
 
-  const valid = allowed[args.operation];
+  walk(outline.items, 0);
 
-  if (!valid) throw Error("Unsupported operation");
+  return {
+    thesis: outline.thesis,
+    status: outline.status,
+    sections,
+    pointCount,
+    evidenceUseCount,
+  };
+}
 
-  for (const [k, v] of Object.entries(args))
-    if (v !== undefined && !valid.includes(k))
-      throw Error("Irrelevant parameter: " + k);
+function findSection(items: OutlineItem[], id: string): Section | undefined {
+  for (const item of items) {
+    if (item.kind !== "section") continue;
 
-  if (args.operation === "note_by_id") {
-    if (!args.noteId) throw Error("noteId required");
-    const n = library(r).find((x) => x.id === args.noteId);
+    if (item.id === id) return item;
 
-    if (!n) throw Error("Unknown noteId");
+    const nested = findSection(item.items, id);
 
-    return n;
+    if (nested) return nested;
+  }
+
+  return undefined;
+}
+
+function citedNoteIds(items: OutlineItem[], ids: Set<string>): Set<string> {
+  for (const item of items) {
+    if (item.kind === "section") citedNoteIds(item.items, ids);
+    else for (const use of item.noteUses) ids.add(use.noteId);
+  }
+
+  return ids;
+}
+
+/**
+ * Answers a fixed-scope query over the note library and outlines.
+ *
+ * @throws When a parameter is missing or irrelevant to the operation, or when
+ *   the requested note, section or frozen snapshot does not exist.
+ */
+export function queryResearch(
+  projectRoot: string,
+  query: ResearchQuery,
+): ResearchQueryResult {
+  const allowed = ALLOWED_PARAMETERS[query.operation];
+
+  for (const [key, value] of Object.entries(query))
+    if (value !== undefined && !allowed.includes(key))
+      throw new Error("Irrelevant parameter: " + key);
+
+  if (query.operation === "note_by_id") {
+    if (!query.noteId) throw new Error("noteId required");
+
+    const note = library(projectRoot).find(
+      (candidate) => candidate.id === query.noteId,
+    );
+
+    if (!note) throw new Error("Unknown noteId");
+
+    return note;
   }
 
   if (
-    args.operation === "notes_by_source" ||
-    args.operation === "notes_by_tag"
+    query.operation === "notes_by_source" ||
+    query.operation === "notes_by_tag"
   ) {
-    if (args.operation === "notes_by_source" && !args.sourceId)
-      throw Error("sourceId required");
+    const { sourceId, tag } = query;
 
-    if (args.operation === "notes_by_tag" && !args.tag)
-      throw Error("tag required");
-    const limit = Math.min(100, Math.max(1, Math.floor(args.limit ?? 20)));
+    if (query.operation === "notes_by_source" && !sourceId)
+      throw new Error("sourceId required");
 
-    return library(r)
-      .filter((n) =>
-        args.operation === "notes_by_source"
-          ? n.sourceRef === args.sourceId
-          : n.tags.includes(args.tag!),
+    if (query.operation === "notes_by_tag" && !tag)
+      throw new Error("tag required");
+
+    const limit = Math.min(100, Math.max(1, Math.floor(query.limit ?? 20)));
+
+    return library(projectRoot)
+      .filter((note) =>
+        query.operation === "notes_by_source"
+          ? note.sourceRef === sourceId
+          : tag !== undefined && note.tags.includes(tag),
       )
       .slice(0, limit);
   }
 
-  if (!args.article) throw Error("article required");
-  const o = getOutline(r, args.article);
+  if (!query.article) throw new Error("article required");
 
-  if (args.operation === "outline_summary") {
-    const sections: Array<{ id: string; title: string; depth: number }> = [];
+  const outline = getOutline(projectRoot, query.article);
 
-    let points = 0,
-      evidence = 0;
+  if (query.operation === "outline_summary") return summarizeOutline(outline);
 
-    const walk = (xs: Array<Section | Point>, d: number) =>
-      xs.forEach((n) =>
-        n.kind === "section"
-          ? (sections.push({ id: n.id, title: n.title, depth: d }),
-            walk(n.items, d + 1))
-          : (points++, (evidence += n.noteUses.length)),
-      );
+  if (!query.sectionId) throw new Error("sectionId required");
 
-    walk(o.items, 0);
+  if (outline.status !== "approved")
+    throw new Error("section_bundle requires approved outline");
 
-    return {
-      thesis: o.thesis,
-      status: o.status,
-      sections,
-      pointCount: points,
-      evidenceUseCount: evidence,
-    };
-  }
+  const snapshotPath = frozenPath(projectRoot, query.article);
 
-  if (!args.sectionId) throw Error("sectionId required");
+  if (!existsSync(snapshotPath))
+    throw new Error("Frozen notes snapshot missing");
 
-  if (o.status !== "approved")
-    throw Error("section_bundle requires approved outline");
-  const sp = frozenPath(r, args.article);
+  const frozen = readJsonFile(
+    snapshotPath,
+    NoteSnapshotSchema,
+    "snapshot",
+  ).notes.map(parseNote);
 
-  if (!existsSync(sp)) throw Error("Frozen notes snapshot missing");
+  const section = findSection(outline.items, query.sectionId);
 
-  const snap = obj(read(sp), "snapshot"),
-    frozen = arr(snap.notes, "snapshot notes").map(parseNote);
+  if (!section) throw new Error("Unknown sectionId");
 
-  let target: Section | undefined;
+  const directPoints = section.items.filter(
+    (item): item is Point => item.kind === "point",
+  );
 
-  const find = (xs: Array<Section | Point>) =>
-    xs.forEach((n) => {
-      if (n.kind === "section") {
-        if (n.id === args.sectionId) target = n;
-        find(n.items);
-      }
-    });
+  const ids = citedNoteIds([section], new Set());
+  const notes = frozen.filter((note) => ids.has(note.id));
 
-  find(o.items);
+  if (notes.length !== ids.size)
+    throw new Error("Frozen note reference missing");
 
-  if (!target) throw Error("Unknown sectionId");
-
-  const points = target.items.filter((n): n is Point => n.kind !== "section"),
-    ids = new Set<string>();
-
-  const collect = (xs: Array<Section | Point>) =>
-    xs.forEach((n) =>
-      n.kind === "section"
-        ? collect(n.items)
-        : n.noteUses.forEach((u) => ids.add(u.noteId)),
-    );
-
-  collect([target]);
-  const notes = frozen.filter((n) => ids.has(n.id));
-
-  if (notes.length !== ids.size) throw Error("Frozen note reference missing");
-
-  return { section: target, directPoints: points, notes };
+  return { section, directPoints, notes };
 }
 
+/**
+ * One advisory finding about an outline.
+ */
+export interface OutlineFinding extends CoverageFinding {
+  nodeId?: string;
+}
+
+/**
+ * The result of diagnosing an outline: findings, or why it could not be read.
+ */
+export type OutlineDiagnosis =
+  | { status: "advisory"; artifact: string; findings: OutlineFinding[] }
+  | { status: "error"; artifact: string; reason: string; findings: [] };
+
+/**
+ * An outline node read leniently, so incomplete drafts can be diagnosed.
+ */
+const DraftNodeSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  kind: Type.Optional(Type.String()),
+  title: Type.Optional(Type.String()),
+  purpose: Type.Optional(Type.String()),
+  thesisContribution: Type.Optional(Type.String()),
+  role: Type.Optional(Type.String()),
+  claim: Type.Optional(Type.String()),
+  reasoning: Type.Optional(Type.String()),
+  items: Type.Optional(Type.Array(JsonValueSchema)),
+  noteUses: Type.Optional(Type.Array(JsonValueSchema)),
+});
+
+const DraftNoteUseSchema = Type.Object({
+  noteId: Type.Optional(Type.String()),
+  function: Type.Optional(Type.String()),
+  handling: Type.Optional(Type.String()),
+});
+
+const DraftOutlineSchema = Type.Object({
+  items: Type.Optional(Type.Array(JsonValueSchema)),
+});
+
+/**
+ * Reports missing fields and unresolved, unverified or stale note links in an
+ * outline. Findings are advisory; they never change approval.
+ */
 export function diagnoseOutline(
-  r: string,
-  a: string,
+  projectRoot: string,
+  article: string,
   evidenceMapJson?: string,
-): Record<string, unknown> {
-  const path = outlinePath(r, a);
+): OutlineDiagnosis {
+  const path = outlinePath(projectRoot, article);
 
   try {
-    const raw = read(path) as Record<string, unknown>;
-    const notes = library(r);
-    const registry = sources(r);
-    const byId = new Map(notes.map((note) => [note.id, note]));
+    const draft = parseJsonText(readFileSync(path, "utf8"));
 
-    const findings: Array<{
-      code: string;
-      path: string;
-      nodeId?: string;
-      explanation: string;
-    }> = [];
+    if (!isValid(DraftOutlineSchema, draft))
+      throw new Error("outline must be a JSON object with an items array");
+
+    const notesById = new Map(
+      library(projectRoot).map((note) => [note.id, note]),
+    );
+
+    const registry = readSourceRefs(projectRoot);
+    const findings: OutlineFinding[] = [];
 
     const add = (
       code: string,
       at: string,
       explanation: string,
       nodeId?: string,
-    ) =>
-      findings.push({
-        code,
-        path: at,
-        ...(nodeId ? { nodeId } : {}),
-        explanation,
-      });
+    ) => {
+      const finding: OutlineFinding = { code, path: at, explanation };
 
-    const walk = (items: unknown, at: string): void => {
-      if (!Array.isArray(items)) return;
-      items.forEach((value, index) => {
-        if (!value || typeof value !== "object" || Array.isArray(value)) return;
-        const node = value as Record<string, unknown>;
+      if (nodeId) finding.nodeId = nodeId;
+      findings.push(finding);
+    };
+
+    const requireFields = (
+      fields: Record<string, string | undefined>,
+      kind: string,
+      at: string,
+      nodeId: string | undefined,
+    ) => {
+      for (const [field, value] of Object.entries(fields))
+        if (!value)
+          add(
+            "missing-required-field",
+            `${at}.${field}`,
+            `${kind} is missing ${field}.`,
+            nodeId,
+          );
+    };
+
+    const diagnoseNoteUse = (
+      raw: JsonValue,
+      at: string,
+      nodeId: string | undefined,
+    ) => {
+      if (!isValid(DraftNoteUseSchema, raw)) return;
+
+      requireFields(
+        { function: raw.function, handling: raw.handling },
+        "Note use",
+        at,
+        nodeId,
+      );
+
+      const note = raw.noteId ? notesById.get(raw.noteId) : undefined;
+
+      if (!note) {
+        add(
+          "unresolved-note-reference",
+          `${at}.noteId`,
+          `No research note resolves noteId ${String(raw.noteId)}.`,
+          nodeId,
+        );
+
+        return;
+      }
+
+      const { state } = fresh(note, registry).review;
+
+      if (state !== "verified")
+        add(
+          state === "stale" ? "stale-note-link" : "unverified-note-link",
+          `${at}.noteId`,
+          `Linked note ${note.id} is ${state}.`,
+          nodeId,
+        );
+    };
+
+    const walk = (items: JsonValue[], at: string): void => {
+      items.forEach((raw, index) => {
+        if (!isValid(DraftNodeSchema, raw)) return;
+
         const nodePath = `${at}[${index}]`;
-        const id = typeof node.id === "string" ? node.id : undefined;
 
-        if (node.kind === "section") {
-          for (const field of ["title", "purpose", "thesisContribution"])
-            if (typeof node[field] !== "string" || !node[field])
-              add(
-                "missing-required-field",
-                `${nodePath}.${field}`,
-                `Section is missing ${field}.`,
-                id,
-              );
-          walk(node.items, `${nodePath}.items`);
-        } else if (node.kind === "point") {
-          for (const field of ["role", "claim", "reasoning"])
-            if (typeof node[field] !== "string" || !node[field])
-              add(
-                "missing-required-field",
-                `${nodePath}.${field}`,
-                `Point is missing ${field}.`,
-                id,
-              );
+        if (raw.kind === "section") {
+          requireFields(
+            {
+              title: raw.title,
+              purpose: raw.purpose,
+              thesisContribution: raw.thesisContribution,
+            },
+            "Section",
+            nodePath,
+            raw.id,
+          );
+          walk(raw.items ?? [], `${nodePath}.items`);
 
-          if (!Array.isArray(node.noteUses)) {
-            if (node.role !== "transition")
-              add(
-                "missing-note-use",
-                `${nodePath}.noteUses`,
-                "Argument point has no note-use list.",
-                id,
-              );
+          return;
+        }
 
-            return;
-          }
+        if (raw.kind !== "point") return;
 
-          const noteUses = node.noteUses;
+        requireFields(
+          { role: raw.role, claim: raw.claim, reasoning: raw.reasoning },
+          "Point",
+          nodePath,
+          raw.id,
+        );
 
-          if (noteUses.length === 0 && node.role !== "transition")
+        const noteUses = raw.noteUses;
+
+        if (noteUses === undefined) {
+          if (raw.role !== "transition")
             add(
               "missing-note-use",
               `${nodePath}.noteUses`,
-              "Argument point has no linked evidence note.",
-              id,
+              "Argument point has no note-use list.",
+              raw.id,
             );
-          noteUses.forEach((use, useIndex) => {
-            if (!use || typeof use !== "object" || Array.isArray(use)) return;
-            const fields = use as Record<string, unknown>;
 
-            for (const field of ["function", "handling"])
-              if (typeof fields[field] !== "string" || !fields[field])
-                add(
-                  "missing-required-field",
-                  `${nodePath}.noteUses[${useIndex}].${field}`,
-                  `Note use is missing ${field}.`,
-                  id,
-                );
-            const noteId = (use as Record<string, unknown>).noteId;
-            const usePath = `${nodePath}.noteUses[${useIndex}].noteId`;
-
-            const note =
-              typeof noteId === "string" ? byId.get(noteId) : undefined;
-
-            if (!note)
-              add(
-                "unresolved-note-reference",
-                usePath,
-                `No research note resolves noteId ${String(noteId)}.`,
-                id,
-              );
-            else {
-              const current = fresh(note, registry);
-
-              if (current.review.state !== "verified")
-                add(
-                  current.review.state === "stale"
-                    ? "stale-note-link"
-                    : "unverified-note-link",
-                  usePath,
-                  `Linked note ${note.id} is ${current.review.state}.`,
-                  id,
-                );
-            }
-          });
+          return;
         }
+
+        if (noteUses.length === 0 && raw.role !== "transition")
+          add(
+            "missing-note-use",
+            `${nodePath}.noteUses`,
+            "Argument point has no linked evidence note.",
+            raw.id,
+          );
+
+        noteUses.forEach((use, useIndex) =>
+          diagnoseNoteUse(use, `${nodePath}.noteUses[${useIndex}]`, raw.id),
+        );
       });
     };
 
-    walk(raw.items, "$.items");
+    walk(draft.items ?? [], "$.items");
 
-    const coverageFindings =
+    const coverage =
       evidenceMapJson === undefined
         ? []
         : diagnoseChapterCoverage(evidenceMapJson);
@@ -275,13 +427,13 @@ export function diagnoseOutline(
     return {
       status: "advisory",
       artifact: path,
-      findings: [...findings, ...coverageFindings],
+      findings: [...findings, ...coverage],
     };
-  } catch (error) {
+  } catch (cause) {
     return {
       status: "error",
       artifact: path,
-      reason: errorMessage(error),
+      reason: errorMessage(cause),
       findings: [],
     };
   }

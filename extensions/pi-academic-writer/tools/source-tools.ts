@@ -1,17 +1,22 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { Type } from "typebox";
+
 import { auditCitations } from "../citation-audit.js";
 import { resolveCslStyle } from "../csl-resolver.js";
 import { extractDocument } from "../documents.js";
+import { lintProse } from "../prose-lint.js";
 import {
   ingestSources,
   snapshotCitationAssets,
   writeSourcesCache,
 } from "../source-registry.js";
-import { lintProse } from "../prose-lint.js";
 import { fail, parseJsonArray, registerTool } from "../tool-kit.js";
 
-/** Source extraction and ingestion, citation cache, CSL, citation audit and prose lint tools. */
+/**
+ * Source extraction and ingestion, citation cache, CSL, citation audit and
+ * prose lint tools.
+ */
 export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_extract_document",

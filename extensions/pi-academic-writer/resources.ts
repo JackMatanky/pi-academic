@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+
 import { PACKAGE_ROOT } from "../lib/paths.js";
 
 /**
@@ -7,8 +8,8 @@ import { PACKAGE_ROOT } from "../lib/paths.js";
  *
  * @param language - Optional language selector for language-specific resources.
  */
-function normalizeLanguage(language: unknown): "english" | "hebrew" {
-  if (typeof language !== "string") return "hebrew";
+function normalizeLanguage(language: string | undefined): "english" | "hebrew" {
+  if (language === undefined) return "hebrew";
   const normalized = language.trim().toLowerCase();
 
   return normalized.startsWith("en") || normalized === "english"
@@ -17,16 +18,18 @@ function normalizeLanguage(language: unknown): "english" | "hebrew" {
 }
 
 /**
- * Resolves a stable Academic Writer resource name to its package/project file path.
+ * Resolves a stable Academic Writer resource name to its package/project file
+ * path.
  *
  * @param name - Stable packaged resource name.
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param language - Optional language selector for language-specific resources.
  */
 export function resolveResourcePath(
   name: string,
   projectRoot: string,
-  language?: unknown,
+  language?: string,
 ): string {
   switch (name) {
     case "thresholds": {

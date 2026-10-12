@@ -1,8 +1,12 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, extname, join, relative } from "node:path";
+
 import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
 
-/** Deterministic article output paths derived from a researcher-provided subject. */
+/**
+ * Deterministic article output paths derived from a researcher-provided
+ * subject.
+ */
 export interface ArticlePaths {
   slug: string;
   markdown: string;
@@ -15,7 +19,9 @@ export interface ArticlePaths {
   notesSnapshot: string;
 }
 
-/** Project article or corpus file metadata returned by listing tools. */
+/**
+ * Project article or corpus file metadata returned by listing tools.
+ */
 export interface ProjectFile {
   name: string;
   path: string;
@@ -23,7 +29,9 @@ export interface ProjectFile {
   mtimeMs: number;
 }
 
-/** Newest-first file listing for an Academic Writer project directory. */
+/**
+ * Newest-first file listing for an Academic Writer project directory.
+ */
 export interface ProjectFileList {
   kind: "articles" | "past_articles";
   dir: string;
@@ -31,16 +39,20 @@ export interface ProjectFileList {
   files: ProjectFile[];
 }
 
-/** Article-local citation asset paths used for frozen snapshots. */
+/**
+ * Article-local citation asset paths used for frozen snapshots.
+ */
 export interface CitationAssetPaths {
   sources: string;
   bibliography: string;
 }
 
 /**
- * Returns a project-relative path, falling back to the basename for the root itself.
+ * Returns a project-relative path, falling back to the basename for the root
+ * itself.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param path - File path to read, write, or resolve.
  */
 export function toRelative(projectRoot: string, path: string): string {
@@ -89,7 +101,8 @@ export function articlePaths(subject: string): ArticlePaths {
 /**
  * Derives article-local source and bibliography snapshot paths.
  *
- * @param article - Article markdown path, relative to the project root unless absolute.
+ * @param article - Article markdown path, relative to the project root unless
+ *   absolute.
  */
 export function citationAssetPaths(article: string): CitationAssetPaths {
   const base = article.replace(/\.[^./]+$/, "");
@@ -103,7 +116,8 @@ export function citationAssetPaths(article: string): CitationAssetPaths {
 /**
  * Lists project article or corpus files in newest-first order.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param kind - Project file bucket to list.
  * @param limit - Maximum number of files to return.
  */
@@ -141,9 +155,19 @@ export function listProjectFiles(
 }
 
 /**
- * Writes UTF-8 text to a project-relative path, creating parent directories as needed.
+ * Result of writing a project text file.
+ */
+export interface ProjectTextWrite {
+  ok: true;
+  path: string;
+}
+
+/**
+ * Writes UTF-8 text to a project-relative path, creating parent directories as
+ * needed.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param relativePath - Project-relative output path.
  * @param content - Text content to write.
  */
@@ -151,7 +175,7 @@ export function writeProjectTextFile(
   projectRoot: string,
   relativePath: string,
   content: string,
-): { ok: true; path: string } {
+): ProjectTextWrite {
   writeFileAtomic(resolveInside(projectRoot, relativePath), content);
 
   return { ok: true, path: relativePath };

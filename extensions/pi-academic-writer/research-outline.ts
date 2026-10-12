@@ -1,272 +1,223 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+
+import { Type } from "typebox";
+
 import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
 import { fenceAfter } from "../lib/markdown.js";
 import {
-  obj,
-  strict,
-  str,
-  arr,
-  read,
-  save,
-  slug,
-  sources,
+  isValid,
+  JsonValueSchema,
+  parseJsonText,
+  parseWith,
+  readJsonFile,
+  type JsonValue,
+} from "../lib/schema.js";
+import {
+  articleSlug,
+  CITABLE_NOTE_KINDS,
+  OutlineShellSchema,
+  PointSchema,
+  readSourceRefs,
+  saveJson,
+  SectionShellSchema,
   type Note,
+  type Outline,
+  type OutlineItem,
   type Point,
   type Section,
-  type Outline,
+  type SourceRef,
 } from "./research-core.js";
-import { parseNote, library, fresh } from "./research-notes.js";
+import { fresh, library, parseNote } from "./research-notes.js";
 
+const SectionKind = Type.Object({ kind: Type.Literal("section") });
+
+const PointKind = Type.Object({ kind: Type.Literal("point") });
+
+const NoteSnapshotSchema = Type.Object({
+  notes: Type.Array(JsonValueSchema),
+});
+
+/**
+ * Discriminates an outline's raw JSON value by its approval status.
+ */
+const StatusProbe = Type.Object({ status: Type.Literal("approved") });
+
+/**
+ * Decodes an outline and checks it against the note library.
+ *
+ * Approved outlines must have an approved thesis and only cite verified,
+ * citable notes; drafts may leave evidence unresolved. Points without claim and
+ * reasoning are accepted only as migrated drafts.
+ *
+ * @throws With the first rule the outline breaks.
+ */
 export function validateOutline(
-  value: unknown,
-  ns: Note[],
-  sourceRegistry?: Array<Record<string, unknown>>,
+  value: JsonValue,
+  notes: Note[],
+  sourceRegistry?: SourceRef[],
   allowMigratedUnmapped = false,
 ): Outline {
-  const d = obj(value, "outline");
-  strict(
-    d,
-    [
-      "schemaVersion",
-      "article",
-      "researchQuestion",
-      "thesis",
-      "status",
-      "items",
-    ],
-    "outline",
-  );
+  const shell = parseWith(OutlineShellSchema, value, "outline");
+  const approved = shell.status === "approved";
+  const nodeIds = new Set<string>();
+  const primaryNotes = new Set<string>();
+  const referencedNotes = new Set<string>();
+  let hasUnmapped = false;
+  let hasUnresolved = false;
 
-  if (d.schemaVersion !== 1) throw Error("Unsupported outline schemaVersion");
-  const a = obj(d.article, "article");
-  strict(a, ["slug", "title", "targetLanguage", "citationStyle"], "article");
+  const decodePoint = (raw: JsonValue): Point => {
+    const point = parseWith(PointSchema, raw, "point");
 
-  const article = {
-    slug: str(a.slug, "slug"),
-    title: str(a.title, "title"),
-    targetLanguage: str(a.targetLanguage, "targetLanguage"),
-    citationStyle: str(a.citationStyle, "citationStyle"),
+    if (nodeIds.has(point.id))
+      throw new Error("Duplicate node id: " + point.id);
+    nodeIds.add(point.id);
+
+    if (!point.claim || !point.reasoning) {
+      if (
+        point.claim ||
+        point.reasoning ||
+        !allowMigratedUnmapped ||
+        shell.status !== "draft" ||
+        !point.draftText
+      )
+        throw new Error(
+          "Claim/reasoning-free points are migration-only drafts",
+        );
+      hasUnmapped = true;
+    }
+
+    for (const use of point.noteUses) {
+      const note = notes.find((candidate) => candidate.id === use.noteId);
+
+      const current =
+        note && sourceRegistry ? fresh(note, sourceRegistry) : note;
+
+      if (!current) {
+        hasUnresolved = true;
+
+        if (approved) throw new Error("Unknown note: " + use.noteId);
+      } else if (!CITABLE_NOTE_KINDS.includes(current.kind)) {
+        throw new Error(
+          "Non-citable note kind used as outline evidence: " + use.noteId,
+        );
+      } else if (current.review.state !== "verified") {
+        hasUnresolved = true;
+
+        if (approved) throw new Error("Note not verified: " + use.noteId);
+      }
+
+      if (use.coverage === "primary") {
+        if (primaryNotes.has(use.noteId))
+          throw new Error("Duplicate primary note use: " + use.noteId);
+        primaryNotes.add(use.noteId);
+      } else {
+        referencedNotes.add(use.noteId);
+      }
+    }
+
+    if (point.noteUses.length === 0 && point.role !== "transition")
+      hasUnresolved = true;
+
+    if (point.role === "transition" && point.noteUses.length > 0)
+      throw new Error("Transition cannot use notes");
+
+    return point;
   };
 
-  const t = obj(d.thesis, "thesis");
-  strict(t, ["text", "status"], "thesis");
+  const decodeItems = (raws: JsonValue[]): OutlineItem[] =>
+    raws.map((raw): OutlineItem => {
+      if (isValid(SectionKind, raw)) {
+        const section = parseWith(SectionShellSchema, raw, "section");
 
-  if (
-    !["proposed", "approved"].includes(String(t.status)) ||
-    !["draft", "approved"].includes(String(d.status))
-  )
-    throw Error("Invalid status");
+        if (nodeIds.has(section.id))
+          throw new Error("Duplicate node id: " + section.id);
+        nodeIds.add(section.id);
 
-  const ids = new Set<string>(),
-    prim = new Set<string>(),
-    refs = new Set<string>();
-
-  let unmapped = false,
-    unresolved = false;
-
-  const nodes = (xs: unknown[]): Array<Section | Point> =>
-    xs.map((raw) => {
-      const n = obj(raw, "node");
-
-      if (n.kind === "section") {
-        strict(
-          n,
-          [
-            "id",
-            "kind",
-            "title",
-            "purpose",
-            "thesisContribution",
-            "targetWordCount",
-            "items",
-          ],
-          "section",
-        );
-        const id = str(n.id, "section id");
-
-        if (ids.has(id)) throw Error("Duplicate node id: " + id);
-        ids.add(id);
-
-        return {
-          id,
-          kind: "section",
-          title: str(n.title, "title"),
-          purpose: str(n.purpose, "purpose"),
-          thesisContribution: str(n.thesisContribution, "thesisContribution"),
-          ...(n.targetWordCount === undefined
-            ? {}
-            : { targetWordCount: Number(n.targetWordCount) }),
-          items: nodes(arr(n.items, "items")) as Array<Section | Point>,
-        };
+        return { ...section, items: decodeItems(section.items) };
       }
 
-      if (n.kind !== "point") throw Error("Node kind must be section or point");
-      strict(
-        n,
-        [
-          "id",
-          "kind",
-          "role",
-          "claim",
-          "reasoning",
-          "noteUses",
-          "targetParagraphCount",
-          "draftText",
-        ],
-        "point",
-      );
-      const id = str(n.id, "point id");
+      if (isValid(PointKind, raw)) return decodePoint(raw);
 
-      if (ids.has(id)) throw Error("Duplicate node id: " + id);
-      ids.add(id);
-
-      const role = str(n.role, "role"),
-        claim = n.claim === undefined ? undefined : str(n.claim, "claim"),
-        reasoning =
-          n.reasoning === undefined ? undefined : str(n.reasoning, "reasoning"),
-        draftText =
-          n.draftText === undefined ? undefined : str(n.draftText, "draftText");
-
-      if (!claim || !reasoning) {
-        if (
-          claim ||
-          reasoning ||
-          !allowMigratedUnmapped ||
-          d.status !== "draft" ||
-          !draftText
-        )
-          throw Error("Claim/reasoning-free points are migration-only drafts");
-        unmapped = true;
-      }
-
-      const noteUses = arr(n.noteUses, "noteUses").map((v) => {
-        const u = obj(v, "note use");
-        strict(u, ["noteId", "function", "handling", "coverage"], "note use");
-
-        const nid = str(u.noteId, "noteId"),
-          coverage = u.coverage;
-
-        if (coverage !== "primary" && coverage !== "reference")
-          throw Error("Invalid coverage");
-
-        const note = ns.find((x) => x.id === nid),
-          currentNote =
-            note && sourceRegistry ? fresh(note, sourceRegistry) : note;
-
-        if (!currentNote) {
-          unresolved = true;
-
-          if (d.status === "approved") throw Error("Unknown note: " + nid);
-        } else if (
-          !["quotation", "paraphrase", "summary"].includes(currentNote.kind)
-        ) {
-          throw Error("Non-citable note kind used as outline evidence: " + nid);
-        } else if (currentNote.review.state !== "verified") {
-          unresolved = true;
-
-          if (d.status === "approved") throw Error("Note not verified: " + nid);
-        }
-
-        if (coverage === "primary") {
-          if (prim.has(nid)) throw Error("Duplicate primary note use: " + nid);
-          prim.add(nid);
-        } else refs.add(nid);
-
-        return {
-          noteId: nid,
-          function: str(u.function, "function"),
-          handling: str(u.handling, "handling"),
-          coverage: coverage as "primary" | "reference",
-        };
-      });
-
-      if (!noteUses.length && role !== "transition") unresolved = true;
-
-      if (role === "transition" && noteUses.length)
-        throw Error("Transition cannot use notes");
-
-      return {
-        id,
-        kind: "point",
-        role,
-        ...(claim ? { claim } : {}),
-        ...(reasoning ? { reasoning } : {}),
-        noteUses,
-        ...(n.targetParagraphCount === undefined
-          ? {}
-          : { targetParagraphCount: Number(n.targetParagraphCount) }),
-        ...(draftText ? { draftText } : {}),
-      };
+      throw new Error("Node kind must be section or point");
     });
 
-  const items = nodes(arr(d.items, "items"));
+  const items = decodeItems(shell.items);
 
-  for (const id of refs)
-    if (!prim.has(id)) throw Error("Reference use requires primary use: " + id);
+  for (const noteId of referencedNotes)
+    if (!primaryNotes.has(noteId))
+      throw new Error("Reference use requires primary use: " + noteId);
 
   if (
-    d.status === "approved" &&
-    (t.status !== "approved" || unmapped || unresolved)
+    approved &&
+    (shell.thesis.status !== "approved" || hasUnmapped || hasUnresolved)
   )
-    throw Error("Approval requires approved thesis and resolved evidence");
+    throw new Error("Approval requires approved thesis and resolved evidence");
 
-  return {
-    schemaVersion: 1,
-    article,
-    researchQuestion: str(d.researchQuestion, "researchQuestion"),
-    thesis: {
-      text: str(t.text, "thesis"),
-      status: t.status as Outline["thesis"]["status"],
-    },
-    status: d.status as Outline["status"],
-    items,
-  };
+  return { ...shell, items };
 }
 
-export function outlinePath(r: string, a: string): string {
-  return join(r, "articles", slug(a) + ".outline.json");
+/**
+ * Path of an article's canonical outline JSON.
+ */
+export function outlinePath(projectRoot: string, article: string): string {
+  return join(projectRoot, "articles", articleSlug(article) + ".outline.json");
 }
 
-export function frozenPath(r: string, a: string): string {
-  return join(r, "articles", slug(a) + ".notes.json");
+/**
+ * Path of an article's frozen note snapshot.
+ */
+export function frozenPath(projectRoot: string, article: string): string {
+  return join(projectRoot, "articles", articleSlug(article) + ".notes.json");
 }
 
-export function writeOutline(r: string, x: unknown): Outline {
-  const d = obj(x, "outline"),
-    ns = library(r),
-    registry = d.status === "approved" ? sources(r) : undefined,
-    o = validateOutline(x, ns, registry, true);
+function collectUnmapped(items: OutlineItem[]): Point[] {
+  return items.flatMap((item) => {
+    if (item.kind === "section") return collectUnmapped(item.items);
 
-  const collectUnmapped = (outline: Outline): Point[] => {
-    const found: Point[] = [];
+    return item.role === "unmapped" ? [item] : [];
+  });
+}
 
-    const walk = (items: Array<Section | Point>) =>
-      items.forEach((node) =>
-        node.kind === "section"
-          ? walk(node.items)
-          : node.role === "unmapped"
-            ? found.push(node)
-            : undefined,
-      );
+function readOutlineJson(path: string): JsonValue {
+  return parseWith(
+    JsonValueSchema,
+    parseJsonText(readFileSync(path, "utf8")),
+    path,
+  );
+}
 
-    walk(outline.items);
+/**
+ * Validates and saves an outline. Unmapped points are only accepted when they
+ * are preserved from a migrated draft.
+ */
+export function writeOutline(projectRoot: string, value: JsonValue): Outline {
+  const notes = library(projectRoot);
 
-    return found;
-  };
+  const registry = isValid(StatusProbe, value)
+    ? readSourceRefs(projectRoot)
+    : undefined;
 
-  const unmapped = collectUnmapped(o);
+  const outline = validateOutline(value, notes, registry, true);
+  const unmapped = collectUnmapped(outline.items);
 
-  if (unmapped.length) {
-    const path = outlinePath(r, o.article.slug);
+  if (unmapped.length > 0) {
+    const path = outlinePath(projectRoot, outline.article.slug);
 
     if (!existsSync(path))
-      throw Error("Unmapped points can only come from article migration");
-    const previous = validateOutline(read(path), ns, undefined, true);
-    const previousUnmapped = collectUnmapped(previous);
+      throw new Error("Unmapped points can only come from article migration");
 
-    if (previous.status !== "draft" || !previousUnmapped.length)
-      throw Error("Unmapped points can only come from article migration");
+    const previous = validateOutline(
+      readOutlineJson(path),
+      notes,
+      undefined,
+      true,
+    );
+
+    const previousUnmapped = collectUnmapped(previous.items);
+
+    if (previous.status !== "draft" || previousUnmapped.length === 0)
+      throw new Error("Unmapped points can only come from article migration");
 
     for (const point of unmapped)
       if (
@@ -274,212 +225,260 @@ export function writeOutline(r: string, x: unknown): Outline {
           (old) => JSON.stringify(old) === JSON.stringify(point),
         )
       )
-        throw Error(
+        throw new Error(
           "Unmapped points must be preserved from the migrated draft",
         );
   }
 
-  save(outlinePath(r, o.article.slug), o);
+  saveJson(outlinePath(projectRoot, outline.article.slug), outline);
 
-  return o;
+  return outline;
 }
 
-export function getOutline(r: string, a: string): Outline {
-  const p = outlinePath(r, a);
+/**
+ * Loads an article's outline, validating approved ones against the frozen note
+ * snapshot when one exists.
+ *
+ * @throws When the outline is missing or invalid.
+ */
+export function getOutline(projectRoot: string, article: string): Outline {
+  const path = outlinePath(projectRoot, article);
 
-  if (!existsSync(p)) throw Error("Outline missing: " + p);
-  const value = read(p);
-  const raw = obj(value, "outline");
-  let notes = library(r);
+  if (!existsSync(path)) throw new Error("Outline missing: " + path);
 
-  const snapshot = frozenPath(r, a),
-    hasSnapshot = raw.status === "approved" && existsSync(snapshot);
+  const value = readOutlineJson(path);
+  const approved = isValid(StatusProbe, value);
+  const snapshot = frozenPath(projectRoot, article);
+  const hasSnapshot = approved && existsSync(snapshot);
 
-  if (hasSnapshot) {
-    notes = arr(
-      obj(read(snapshot), "notes snapshot").notes,
-      "snapshot notes",
-    ).map(parseNote);
-  }
+  const notes = hasSnapshot
+    ? readJsonFile(snapshot, NoteSnapshotSchema, "notes snapshot").notes.map(
+        parseNote,
+      )
+    : library(projectRoot);
 
   return validateOutline(
     value,
     notes,
-    raw.status === "approved" && !hasSnapshot ? sources(r) : undefined,
+    approved && !hasSnapshot ? readSourceRefs(projectRoot) : undefined,
     true,
   );
 }
 
-export function renderOutline(r: string, a: string): string {
-  const o = getOutline(r, a),
-    lines = [
-      "<!-- Generated from canonical outline JSON; do not edit. -->",
-      "<!-- Status: " + o.status + " -->",
-      "# " + o.article.title,
-      "",
-      "Research question: " + o.researchQuestion,
-      "",
-      "Thesis (" + o.thesis.status + "): " + o.thesis.text,
-      "",
-    ];
+/**
+ * Renders the outline as read-only Markdown next to the article.
+ */
+export function renderOutline(projectRoot: string, article: string): string {
+  const outline = getOutline(projectRoot, article);
 
-  const walk = (items: Array<Section | Point>, d: number) => {
+  const lines = [
+    "<!-- Generated from canonical outline JSON; do not edit. -->",
+    "<!-- Status: " + outline.status + " -->",
+    "# " + outline.article.title,
+    "",
+    "Research question: " + outline.researchQuestion,
+    "",
+    "Thesis (" + outline.thesis.status + "): " + outline.thesis.text,
+    "",
+  ];
+
+  const walk = (items: OutlineItem[], depth: number) => {
     let sectionIndex = 0;
-    items.forEach((n) => {
-      if (n.kind === "section") {
+
+    for (const item of items) {
+      if (item.kind === "section") {
+        sectionIndex += 1;
         lines.push(
-          "#".repeat(Math.min(d + 1, 6)) +
-            " " +
-            ++sectionIndex +
-            ". " +
-            n.title,
+          "#".repeat(Math.min(depth + 1, 6)) +
+            ` ${sectionIndex}. ${item.title}`,
           "",
-          "<!-- " + n.purpose + " | " + n.thesisContribution + " -->",
+          `<!-- ${item.purpose} | ${item.thesisContribution} -->`,
           "",
         );
-        walk(n.items, d + 1);
-      } else {
-        lines.push("- " + n.role + (n.claim ? ": " + n.claim : " (unmapped)"));
-
-        if (n.reasoning) lines.push("  - Reasoning: " + n.reasoning);
-
-        for (const u of n.noteUses)
-          lines.push(
-            "  - Note " +
-              u.noteId +
-              " (" +
-              u.coverage +
-              "): " +
-              u.function +
-              "; " +
-              u.handling,
-          );
-
-        if (n.draftText) lines.push("  - Draft text: " + n.draftText);
+        walk(item.items, depth + 1);
+        continue;
       }
-    });
+
+      lines.push(
+        "- " + item.role + (item.claim ? ": " + item.claim : " (unmapped)"),
+      );
+
+      if (item.reasoning) lines.push("  - Reasoning: " + item.reasoning);
+
+      for (const use of item.noteUses)
+        lines.push(
+          `  - Note ${use.noteId} (${use.coverage}): ${use.function}; ${use.handling}`,
+        );
+
+      if (item.draftText) lines.push("  - Draft text: " + item.draftText);
+    }
   };
 
-  walk(o.items, 1);
-  const p = join(r, "articles", slug(a) + ".outline.md");
-  mkdirSync(dirname(p), { recursive: true });
-  writeFileAtomic(p, lines.join("\n").trimEnd() + "\n");
+  walk(outline.items, 1);
 
-  return p;
+  const path = join(
+    projectRoot,
+    "articles",
+    articleSlug(article) + ".outline.md",
+  );
+
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileAtomic(path, lines.join("\n").trimEnd() + "\n");
+
+  return path;
 }
 
-export function snapshotNotes(r: string, a: string): string {
-  const o = getOutline(r, a);
+/**
+ * Freezes the notes an approved outline cites into an article-local file.
+ */
+export function snapshotNotes(projectRoot: string, article: string): string {
+  const outline = getOutline(projectRoot, article);
 
-  if (o.status !== "approved") throw Error("Outline must be approved");
-  const ids = new Set<string>();
+  if (outline.status !== "approved")
+    throw new Error("Outline must be approved");
 
-  const walk = (xs: Array<Section | Point>) =>
-    xs.forEach((n) =>
-      n.kind === "section"
-        ? walk(n.items)
-        : n.noteUses.forEach((u) => ids.add(u.noteId)),
-    );
+  const noteIds = new Set<string>();
 
-  walk(o.items);
+  const collect = (items: OutlineItem[]) => {
+    for (const item of items) {
+      if (item.kind === "section") collect(item.items);
+      else for (const use of item.noteUses) noteIds.add(use.noteId);
+    }
+  };
 
-  const ns = library(r),
-    chosen = [...ids].map((id) => {
-      const n = ns.find((x) => x.id === id);
+  collect(outline.items);
 
-      if (!n) throw Error("Missing note: " + id);
-      const c = fresh(n, sources(r));
+  const notes = library(projectRoot);
+  const registry = readSourceRefs(projectRoot);
 
-      if (c.review.state !== "verified")
-        throw Error("Stale or unchecked note: " + id);
+  const chosen = [...noteIds].map((id) => {
+    const note = notes.find((candidate) => candidate.id === id);
 
-      return c;
-    });
+    if (!note) throw new Error("Missing note: " + id);
 
-  const p = frozenPath(r, a);
-  save(p, { schemaVersion: 1, article: o.article, notes: chosen });
+    const current = fresh(note, registry);
 
-  return p;
+    if (current.review.state !== "verified")
+      throw new Error("Stale or unchecked note: " + id);
+
+    return current;
+  });
+
+  const path = frozenPath(projectRoot, article);
+
+  saveJson(path, {
+    schemaVersion: 1,
+    article: outline.article,
+    notes: chosen,
+  });
+
+  return path;
 }
 
+/**
+ * Optional article metadata for a migrated outline.
+ */
+export interface OutlineMigrationOptions {
+  title?: string | undefined;
+  targetLanguage?: string | undefined;
+  citationStyle?: string | undefined;
+}
+
+/**
+ * Turns an article's headings and paragraphs into a draft outline of unmapped
+ * points, leaving the article untouched.
+ *
+ * @throws When the outline already exists or the article is missing.
+ */
 export function migrateArticleOutline(
-  r: string,
-  a: string,
-  m: { title?: string; targetLanguage?: string; citationStyle?: string },
+  projectRoot: string,
+  article: string,
+  options: OutlineMigrationOptions,
 ): Outline {
-  const out = outlinePath(r, a);
+  const outputPath = outlinePath(projectRoot, article);
 
-  if (existsSync(out)) throw Error("Outline already exists: " + out);
-  const md = resolveInside(r, a);
+  if (existsSync(outputPath))
+    throw new Error("Outline already exists: " + outputPath);
 
-  if (!existsSync(md)) throw Error("Article Markdown missing: " + a);
+  const articlePath = resolveInside(projectRoot, article);
 
-  const source = readFileSync(md, "utf8"),
-    roots: Array<Section | Point> = [],
-    stack: Array<{ level: number; section: Section }> = [];
+  if (!existsSync(articlePath))
+    throw new Error("Article Markdown missing: " + article);
 
-  let pending: string[] = [],
-    seq = 0;
+  const roots: OutlineItem[] = [];
+  const stack: Array<{ level: number; section: Section }> = [];
+  let pending: string[] = [];
+  let sequence = 0;
+
+  const place = (item: OutlineItem) => {
+    const parent = stack.at(-1);
+
+    if (parent) parent.section.items.push(item);
+    else roots.push(item);
+  };
 
   const flush = () => {
     const text = pending.join("\n");
+
     pending = [];
 
-    if (text.trim()) {
-      const point: Point = {
-        id: "unmapped-" + ++seq,
-        kind: "point",
-        role: "unmapped",
-        noteUses: [],
-        draftText: text,
-      };
+    if (!text.trim()) return;
 
-      if (stack.length) stack[stack.length - 1]!.section.items.push(point);
-      else roots.push(point);
-    }
+    sequence += 1;
+    place({
+      id: `unmapped-${sequence}`,
+      kind: "point",
+      role: "unmapped",
+      noteUses: [],
+      draftText: text,
+    });
   };
 
   let fence: string | null = null;
 
-  for (const line of source.split(/\r?\n/)) {
+  for (const line of readFileSync(articlePath, "utf8").split(/\r?\n/)) {
     const inCode = fence !== null;
+
     fence = fenceAfter(line, fence);
 
-    const h =
+    const heading =
       inCode || fence !== null ? null : /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
 
-    if (h) {
+    if (heading?.[1] && heading[2]) {
       flush();
+      sequence += 1;
 
-      const level = h[1]!.length,
-        s: Section = {
-          id: "section-" + ++seq,
-          kind: "section",
-          title: h[2]!,
-          purpose: "Requires researcher review",
-          thesisContribution: "Unassigned",
-          items: [],
-        };
+      const level = heading[1].length;
 
-      while (stack.length && stack[stack.length - 1]!.level >= level)
+      const section: Section = {
+        id: `section-${sequence}`,
+        kind: "section",
+        title: heading[2],
+        purpose: "Requires researcher review",
+        thesisContribution: "Unassigned",
+        items: [],
+      };
+
+      while ((stack.at(-1)?.level ?? 0) >= level && stack.length > 0)
         stack.pop();
-
-      if (stack.length) stack[stack.length - 1]!.section.items.push(s);
-      else roots.push(s);
-      stack.push({ level, section: s });
-    } else if (!line.trim() && fence === null) flush();
-    else pending.push(line);
+      place(section);
+      stack.push({ level, section });
+    } else if (!line.trim() && fence === null) {
+      flush();
+    } else {
+      pending.push(line);
+    }
   }
 
   flush();
 
-  const value: Outline = {
+  const outline: Outline = {
     schemaVersion: 1,
     article: {
-      slug: slug(a),
-      title: m.title ?? basename(a).replace(/\.[^.]+$/, ""),
-      targetLanguage: m.targetLanguage ?? "unknown",
-      citationStyle: m.citationStyle ?? "unknown",
+      slug: articleSlug(article),
+      title: options.title ?? basename(article).replace(/\.[^.]+$/, ""),
+      targetLanguage: options.targetLanguage ?? "unknown",
+      citationStyle: options.citationStyle ?? "unknown",
     },
     researchQuestion: "Requires researcher input",
     thesis: { text: "Requires researcher input", status: "proposed" },
@@ -487,7 +486,7 @@ export function migrateArticleOutline(
     items: roots,
   };
 
-  save(out, value);
+  saveJson(outputPath, outline);
 
-  return value;
+  return outline;
 }

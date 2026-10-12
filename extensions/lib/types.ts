@@ -1,118 +1,76 @@
-/** Parsed `.academic-writer/profile.md` data used by extensions and lifecycle hooks. */
-export interface ProfileData {
-  fieldOfStudy?: string;
-  citationStyle?: string;
-  targetLanguage?: string;
-  styleFingerprint?: StyleFingerprint;
-  tools?: Record<string, ToolConfig>;
-  articleStructure?: ArticleStructure;
-  outputFormatPreferences?: OutputFormatPreferences;
-  sources?: Array<{ id: string; title?: string; type?: string }>;
-  abstractLanguages?: string[];
-  analyzedArticles?: string[];
-}
+import type { Static } from "typebox";
 
-/** Optional project-specific integration scope saved in the profile. */
-export interface IntegrationScope {
-  id?: string;
-  key?: string;
-  name?: string;
-}
+import { Type } from "typebox";
 
-/** User-configured integration metadata from the profile. */
-export interface ToolConfig {
-  enabled: boolean;
-  path?: string;
-  mode?: string;
-  collection?: IntegrationScope;
-  notebook?: IntegrationScope;
-}
+import { JsonObjectSchema } from "./schema.js";
 
-/** Structured author voice profile mined from past articles. */
-export interface StyleFingerprint {
-  sentenceLevel?: SentenceLevel;
-  vocabularyAndRegister?: VocabularyAndRegister;
-  paragraphStructure?: ParagraphStructureConfig;
-  toneAndVoice?: ToneAndVoice;
-  transitions?: Transitions;
-  citations?: Citations;
-  rhetoricalPatterns?: RhetoricalPatterns;
-  representativeExcerpts?: string[];
-  // Flat format fields
-  averageSentenceLength?: string;
-  vocabularyComplexity?: string;
-  passiveVoiceFrequency?: string;
-  paragraphStructureFlat?: string;
-  citationDensity?: string;
-  toneDescriptors?: string[];
-  preferredTransitions?: string[];
-  sampleExcerpts?: string[];
-}
+const IntegrationScopeSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  key: Type.Optional(Type.String()),
+  name: Type.Optional(Type.String()),
+});
 
-/** Sentence-level voice characteristics. */
-interface SentenceLevel {
-  averageLength?: string;
-  structureVariety?: string;
-  commonOpeners?: string[];
-  passiveVoice?: string;
-}
+/**
+ * Optional project-specific integration scope saved in the profile.
+ */
+export type IntegrationScope = Static<typeof IntegrationScopeSchema>;
 
-/** Vocabulary and register preferences. */
-interface VocabularyAndRegister {
-  complexity?: string;
-  registerLevel?: string;
-  firstPersonUsage?: string;
-  hebrewConventions?: string;
-}
+/**
+ * Schema for user-configured integration metadata from the profile.
+ */
+export const ToolConfigSchema = Type.Object({
+  enabled: Type.Boolean(),
+  path: Type.Optional(Type.String()),
+  mode: Type.Optional(Type.String()),
+  collection: Type.Optional(IntegrationScopeSchema),
+  notebook: Type.Optional(IntegrationScopeSchema),
+});
 
-/** Paragraph-level structure and evidence handling. */
-interface ParagraphStructureConfig {
-  pattern?: string;
-  argumentProgression?: string;
-  evidenceIntroduction?: string;
-  evidenceAnalysis?: string;
-}
+/**
+ * User-configured integration metadata from the profile.
+ */
+export type ToolConfig = Static<typeof ToolConfigSchema>;
 
-/** Tone, stance, and hedging preferences. */
-interface ToneAndVoice {
-  descriptors?: string[];
-  authorStance?: string;
-  hedgingPatterns?: string[];
-}
+const OutputFormatPreferencesSchema = Type.Object({
+  stylePackage: Type.Optional(Type.String()),
+  font: Type.Optional(Type.String()),
+  bodySize: Type.Optional(Type.Number()),
+  titleSize: Type.Optional(Type.Number()),
+  lineSpacing: Type.Optional(Type.Number()),
+  margins: Type.Optional(Type.String()),
+  rtl: Type.Optional(Type.Boolean()),
+});
 
-/** Preferred transition phrases grouped by role. */
-interface Transitions {
-  preferred?: Record<string, string[]>;
-}
+/**
+ * Schema for a parsed `.academic-writer/profile.md`.
+ *
+ * The style fingerprint and article structure are produced by agents and read
+ * back verbatim, so they are kept as JSON objects rather than a fixed shape.
+ */
+export const ProfileDataSchema = Type.Object({
+  fieldOfStudy: Type.Optional(Type.String()),
+  citationStyle: Type.Optional(Type.String()),
+  targetLanguage: Type.Optional(Type.String()),
+  updatedAt: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String()),
+  abstractLanguages: Type.Optional(Type.Array(Type.String())),
+  analyzedArticles: Type.Optional(Type.Array(Type.String())),
+  tools: Type.Optional(Type.Record(Type.String(), ToolConfigSchema)),
+  outputFormatPreferences: Type.Optional(OutputFormatPreferencesSchema),
+  styleFingerprint: Type.Optional(JsonObjectSchema),
+  articleStructure: Type.Optional(JsonObjectSchema),
+  sources: Type.Optional(
+    Type.Array(
+      Type.Object({
+        id: Type.String(),
+        title: Type.Optional(Type.String()),
+        type: Type.Optional(Type.String()),
+      }),
+    ),
+  ),
+});
 
-/** Citation density and integration preferences. */
-interface Citations {
-  integrationStyle?: string;
-  density?: string;
-  footnotesPerParagraph?: string;
-  quoteLengthPreference?: string;
-}
-
-/** Common rhetorical moves in the researcher's writing. */
-interface RhetoricalPatterns {
-  common?: string[];
-  emphasisTechniques?: string[];
-}
-
-/** Preferred article-level structure. */
-interface ArticleStructure {
-  sections?: string[];
-  introPattern?: string;
-  conclusionPattern?: string;
-}
-
-/** Default document formatting preferences. */
-interface OutputFormatPreferences {
-  stylePackage?: string;
-  font?: string;
-  bodySize?: number;
-  titleSize?: number;
-  lineSpacing?: number;
-  margins?: string;
-  rtl?: boolean;
-}
+/**
+ * Parsed `.academic-writer/profile.md` data used by extensions and hooks.
+ */
+export type ProfileData = Static<typeof ProfileDataSchema>;

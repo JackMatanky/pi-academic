@@ -8,7 +8,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+
 import { errorMessage } from "../lib/fs-safe.js";
+import { JsonObjectSchema, parseJsonText, parseWith } from "../lib/schema.js";
 import { defaultReference } from "./pandoc.js";
 import {
   loadStarterDesign,
@@ -28,16 +30,27 @@ export interface RenderedStyle {
   package: string;
   format: StyleFormat;
   design: StyleDesign;
-  /** Absolute paths handed to Pandoc; `engine` is the package's PDF engine, if any. */
+  /**
+   * Absolute paths handed to Pandoc; `engine` is the package's PDF engine, if
+   * any.
+   */
   assets: NativeAssets;
-  /** Assets Academic Writer produced from design.json rather than read from the package. */
+  /**
+   * Assets Academic Writer produced from design.json rather than read from the
+   * package.
+   */
   generated: ("referenceDocument" | "preamble")[];
-  /** Pandoc flags that apply the assets (the PDF engine is chosen by the caller). */
+  /**
+   * Pandoc flags that apply the assets (the PDF engine is chosen by the
+   * caller).
+   */
   args: string[];
   warnings: string[];
 }
 
-/** Run `work` in a fresh scratch directory under `.academic-writer/runs/`. */
+/**
+ * Run `work` in a fresh scratch directory under `.academic-writer/runs/`.
+ */
 export async function withScratchDir<T>(
   projectRoot: string,
   prefix: string,
@@ -129,12 +142,17 @@ export async function renderDocumentStyle(
 export interface PackageCheck {
   package: string;
   ok: boolean;
-  /** One entry per format that failed validation or rendering. */
+  /**
+   * One entry per format that failed validation or rendering.
+   */
   errors: { format: StyleFormat; message: string }[];
   warnings: string[];
 }
 
-/** Validate a package for every format and report every warning, without keeping output. */
+/**
+ * Validate a package for every format and report every warning, without keeping
+ * output.
+ */
 export async function checkStylePackage(
   projectRoot: string,
   packageName: string,
@@ -169,7 +187,10 @@ export async function checkStylePackage(
   };
 }
 
-/** Names of the packages under `.academic-writer/styles/` that contain a design.json. */
+/**
+ * Names of the packages under `.academic-writer/styles/` that contain a
+ * design.json.
+ */
 export function listStylePackages(projectRoot: string): string[] {
   const root = join(projectRoot, ".academic-writer", "styles");
 
@@ -194,7 +215,8 @@ export interface InstalledStarter {
 /**
  * Copy the starter into `.academic-writer/styles/<name>/`: its design.json plus
  * editable native starting points under `native/`. The native files are not
- * referenced from design.json; the researcher opts in by adding `formats` entries.
+ * referenced from design.json; the researcher opts in by adding `formats`
+ * entries.
  */
 export async function installStarterPackage(
   projectRoot: string,
@@ -214,9 +236,11 @@ export async function installStarterPackage(
     );
   }
 
-  const starter = JSON.parse(
-    readFileSync(join(STARTER_DIR, "design.json"), "utf8"),
-  ) as Record<string, unknown>;
+  const starter = parseWith(
+    JsonObjectSchema,
+    parseJsonText(readFileSync(join(STARTER_DIR, "design.json"), "utf8")),
+    "starter design",
+  );
 
   const design = loadStarterDesign();
   const nativeDir = join(directory, "native");

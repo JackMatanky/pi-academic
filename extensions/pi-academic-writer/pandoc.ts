@@ -3,11 +3,15 @@ import { spawn } from "node:child_process";
 export interface PandocOptions {
   cwd?: string | undefined;
   signal?: AbortSignal | undefined;
-  /** Piped to Pandoc's standard input. */
+  /**
+   * Piped to Pandoc's standard input.
+   */
   input?: string | undefined;
 }
 
-/** Run Pandoc and resolve with its raw standard output. */
+/**
+ * Run Pandoc and resolve with its raw standard output.
+ */
 export function runPandoc(
   args: readonly string[],
   options: PandocOptions = {},
@@ -38,7 +42,9 @@ export function runPandoc(
   return promise;
 }
 
-/** Pandoc's built-in reference document for DOCX or ODT. */
+/**
+ * Pandoc's built-in reference document for DOCX or ODT.
+ */
 export function defaultReference(
   kind: "docx" | "odt",
   options: PandocOptions = {},

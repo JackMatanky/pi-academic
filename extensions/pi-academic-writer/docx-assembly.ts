@@ -1,4 +1,7 @@
+import type { ArticleData, ArticleFormat, Paragraph } from "./article.js";
+
 import { readFileSync } from "node:fs";
+
 import {
   errorMessage,
   resolveInside,
@@ -6,11 +9,26 @@ import {
 } from "../lib/fs-safe.js";
 import { fenceAfter } from "../lib/markdown.js";
 
-type Paragraph =
-  | string
-  | { text: string; footnotes: Array<{ after: string; text: string }> };
+/**
+ * A section of an assembled article; assembly always titles its sections.
+ */
+interface Section {
+  title: string;
+  paragraphs: Paragraph[];
+}
 
-/** Deterministic DOCX JSON assembly result. */
+/**
+ * Overrides for an assembled article.
+ */
+export interface AssemblyOptions {
+  title?: string | undefined;
+  targetLanguage?: string | undefined;
+  format?: ArticleFormat | undefined;
+}
+
+/**
+ * Deterministic DOCX JSON assembly result.
+ */
 export interface DocxAssemblyResult {
   ok: boolean;
   input: string;
@@ -32,12 +50,14 @@ function countWords(text: string): number {
   return matches?.length ?? 0;
 }
 
-/** Parses article markdown into the JSON shape consumed by the DOCX generator. */
+/**
+ * Parses article markdown into the JSON shape consumed by the DOCX generator.
+ */
 function parseMarkdownArticle(
   markdown: string,
   targetLanguage?: string,
   titleOverride?: string,
-): Record<string, unknown> {
+): ArticleData & { title: string; sections: Section[] } {
   const definitions = new Map<string, string>();
   const body: string[] = [];
   const source = markdown.split(/\r?\n/);
@@ -68,9 +88,9 @@ function parseMarkdownArticle(
 
   let title: string | undefined;
   let thesis: string | null = null;
-  const sections: Array<{ title: string; paragraphs: Paragraph[] }> = [];
+  const sections: Section[] = [];
 
-  let current: { title: string; paragraphs: Paragraph[] } = {
+  let current: Section = {
     title: "Body",
     paragraphs: [],
   };
@@ -83,7 +103,8 @@ function parseMarkdownArticle(
 
     if (!text) return;
 
-    // The italic thesis line is only recognised between the title and the first section.
+    // The italic thesis line is only recognised between the title and the first
+    // section.
     if (
       thesis === null &&
       sections.length === 0 &&
@@ -116,7 +137,8 @@ function parseMarkdownArticle(
         continue;
       }
 
-      // The DOCX schema has one section level, so deeper headings become sections too.
+      // The DOCX schema has one section level, so deeper headings become
+      // sections too.
       if (current.paragraphs.length > 0 || sections.length > 0)
         sections.push(current);
       current = { title: text, paragraphs: [] };
@@ -143,10 +165,11 @@ function parseMarkdownArticle(
 }
 
 /**
- * Converts `[^id]` references into the `{text, footnotes:[{after, text}]}` paragraph shape.
+ * Converts `[^id]` references into the `{text, footnotes:[{after, text}]}`
+ * paragraph shape.
  *
- * Each footnote anchors on the text since the previous reference, so the generator's
- * forward search always finds it. Unknown references stay literal.
+ * Each footnote anchors on the text since the previous reference, so the
+ * generator's forward search always finds it. Unknown references stay literal.
  */
 function withFootnotes(
   text: string,
@@ -190,11 +213,7 @@ export function assembleDocxJson(
   projectRoot: string,
   input: string,
   output: string,
-  options: {
-    title?: string;
-    targetLanguage?: string;
-    format?: Record<string, unknown>;
-  },
+  options: AssemblyOptions,
 ): DocxAssemblyResult {
   try {
     const markdown = readFileSync(resolveInside(projectRoot, input), "utf-8");
@@ -205,22 +224,20 @@ export function assembleDocxJson(
       options.title,
     );
 
-    data.format = {
-      ...(data.format as Record<string, unknown>),
-      ...options.format,
-    };
+    const article = { ...data, format: { ...data.format, ...options.format } };
+
     writeFileAtomic(
       resolveInside(projectRoot, output),
-      `${JSON.stringify(data, null, 2)}\n`,
+      `${JSON.stringify(article, null, 2)}\n`,
     );
 
     return {
       ok: true,
       input,
       output,
-      title: String(data.title),
-      totalWords: Number(data.totalWords),
-      sections: Array.isArray(data.sections) ? data.sections.length : 0,
+      title: data.title,
+      totalWords: data.totalWords ?? 0,
+      sections: data.sections.length,
     };
   } catch (error) {
     return {

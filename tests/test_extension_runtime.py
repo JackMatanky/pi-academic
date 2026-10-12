@@ -1258,10 +1258,16 @@ class TestExtensionRuntime(unittest.TestCase):
             capped = self.call_tool(
                 root,
                 "academic_writer_query_research",
-                {"operation": "notes_by_tag", "tag": "common", "limit": 101},
+                {"operation": "notes_by_tag", "tag": "common", "limit": 100},
             )
             self.assertEqual(len(default_list["details"]["value"]), 20)
             self.assertEqual(len(capped["details"]["value"]), 100)
+            over_limit = self.call_tool(
+                root,
+                "academic_writer_query_research",
+                {"operation": "notes_by_tag", "tag": "common", "limit": 101},
+            )
+            self.assertTrue(over_limit["isError"])
             self.assertFalse(
                 self.call_tool(
                     root,

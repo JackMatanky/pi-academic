@@ -1,15 +1,18 @@
 import type { ExplicitProps } from "./style-design.js";
-import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import type { BuiltReference } from "./style-docx.js";
 import type { Document, Element } from "@xmldom/xmldom";
+
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import { ownerOf } from "./xml.js";
+
 import {
+  COMPONENT_NAMES,
   pageSizeMm,
   type ComponentName,
   type ComponentStyle,
   type StyleDesign,
 } from "./style-design.js";
-import type { BuiltReference } from "./style-docx.js";
+import { elementsByTagNameNS, isElement, ownerOf } from "./xml.js";
 
 const NS = {
   office: "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
@@ -19,9 +22,13 @@ const NS = {
 
 interface OdtTarget {
   name: string;
-  /** Text styles take run properties only. */
+  /**
+   * Text styles take run properties only.
+   */
   family: "paragraph" | "text";
-  /** Created when the reference document does not define it. */
+  /**
+   * Created when the reference document does not define it.
+   */
   create?: string;
 }
 
@@ -108,19 +115,17 @@ function childByName(
   local: string,
 ): Element | undefined {
   for (let node = parent.firstChild; node; node = node.nextSibling) {
-    if (
-      node.nodeType === 1 &&
-      (node as Element).localName === local &&
-      node.namespaceURI === ns
-    ) {
-      return node as Element;
-    }
+    if (isElement(node) && node.localName === local && node.namespaceURI === ns)
+      return node;
   }
 
   return undefined;
 }
 
-/** Return `style:<local>`, keeping paragraph-properties ahead of text-properties. */
+/**
+ * Return `style:<local>`, keeping paragraph-properties ahead of
+ * text-properties.
+ */
 function ensureProps(
   style: Element,
   local: "paragraph-properties" | "text-properties",
@@ -139,8 +144,12 @@ function ensureProps(
 }
 
 function set(el: Element, qname: string, value: string): void {
-  const [prefix] = qname.split(":") as [keyof typeof NS];
-  el.setAttributeNS(NS[prefix], qname, value);
+  const [prefix = ""] = qname.split(":");
+  const namespace = new Map<string, string>(Object.entries(NS)).get(prefix);
+
+  if (!namespace) throw new Error(`Unknown ODT namespace prefix: ${qname}`);
+
+  el.setAttributeNS(namespace, qname, value);
 }
 
 function applyParagraph(style: Element, props: ComponentStyle): void {
@@ -258,29 +267,20 @@ function applyText(style: Element, props: ComponentStyle): void {
 }
 
 function findStyle(doc: Document, name: string): Element | undefined {
-  const all = doc.getElementsByTagNameNS(NS.style, "style");
-
-  for (let i = 0; i < all.length; i++) {
-    const style = all[i] as Element;
-
-    if (style.getAttributeNS(NS.style, "name") === name) return style;
-  }
-
-  return undefined;
+  return elementsByTagNameNS(doc, NS.style, "style").find(
+    (style) => style.getAttributeNS(NS.style, "name") === name,
+  );
 }
 
 function patchPage(doc: Document, design: StyleDesign): void {
   const master = doc.getElementsByTagNameNS(NS.style, "master-page")[0];
   const layoutName = master?.getAttributeNS(NS.style, "page-layout-name");
-  const layouts = doc.getElementsByTagNameNS(NS.style, "page-layout");
-  let layout: Element | undefined;
 
-  for (let i = 0; i < layouts.length; i++) {
-    const candidate = layouts[i] as Element;
-
-    if (candidate.getAttributeNS(NS.style, "name") === layoutName)
-      layout = candidate;
-  }
+  const layout = elementsByTagNameNS(doc, NS.style, "page-layout")
+    .filter(
+      (candidate) => candidate.getAttributeNS(NS.style, "name") === layoutName,
+    )
+    .at(-1);
 
   const props =
     layout && childByName(layout, NS.style, "page-layout-properties");
@@ -295,7 +295,8 @@ function patchPage(doc: Document, design: StyleDesign): void {
   set(props, "fo:margin-top", mm(m.top));
   set(props, "fo:margin-left", mm(m.left));
   set(props, "fo:margin-right", mm(m.right));
-  // Word measures the footer from the page edge; ODF puts it inside the bottom margin.
+  // Word measures the footer from the page edge; ODF puts it inside the bottom
+  // margin.
   const footerDistance = design.page.footerDistanceMm;
   const footerStyle = childByName(layout, NS.style, "footer-style");
 
@@ -316,7 +317,9 @@ function patchPage(doc: Document, design: StyleDesign): void {
   }
 }
 
-/** Apply a style design to a Pandoc-compatible reference ODT. */
+/**
+ * Apply a style design to a Pandoc-compatible reference ODT.
+ */
 export function buildOdtReference(
   design: StyleDesign,
   base: Uint8Array,
@@ -333,10 +336,11 @@ export function buildOdtReference(
   if (!officeStyles)
     throw new Error("ODT reference has no office:styles section");
 
-  for (const [name, props] of Object.entries(design.components) as [
-    ComponentName,
-    ComponentStyle,
-  ][]) {
+  for (const name of COMPONENT_NAMES) {
+    const props = design.components[name];
+
+    if (!props) continue;
+
     const reason = UNSUPPORTED[name];
 
     if (reason) {

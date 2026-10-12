@@ -6,7 +6,9 @@ import {
   type LatexContext,
 } from "./latex-context.js";
 
-/** Lists, tables, captions, figures and code. */
+/**
+ * Lists, tables, captions, figures and code.
+ */
 export function applyBlocks(ctx: LatexContext): void {
   const { out, color, unsupported, wholly, get } = ctx;
   const lists = [get("orderedList"), get("bulletList")];

@@ -1,5 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { Type } from "typebox";
+
 import {
   loadProfile,
   migrateJsonProfile,
@@ -9,7 +11,9 @@ import { fail, parseJsonObject, registerTool } from "../tool-kit.js";
 
 const PROFILE_PATH = ".academic-writer/profile.md";
 
-/** Profile migration, read and patch tools. */
+/**
+ * Profile migration, read and patch tools.
+ */
 export function registerProfileTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_migrate_profile",

@@ -6,11 +6,11 @@ import type {
 } from "./style-design.js";
 
 export const HEADING_COMMANDS = [
-  "section",
-  "subsection",
-  "subsubsection",
-  "paragraph",
-  "subparagraph",
+  ["heading1", "section"],
+  ["heading2", "subsection"],
+  ["heading3", "subsubsection"],
+  ["heading4", "paragraph"],
+  ["heading5", "subparagraph"],
 ] as const;
 
 export const GEOMETRY_PAPER = {
@@ -30,7 +30,9 @@ export const num = (value: number) => `${+value.toFixed(3)}`;
 
 export const line = (size: number) => num(size * 1.2);
 
-/** Font size, weight, shape and colour commands for one component. */
+/**
+ * Font size, weight, shape and colour commands for one component.
+ */
 export function fontCommands(
   props: ComponentStyle,
   color: string | undefined,
@@ -51,25 +53,37 @@ export function fontCommands(
   return out;
 }
 
-/** Shared state for the section builders that make up a preamble. */
+/**
+ * Shared state for the section builders that make up a preamble.
+ */
 export interface LatexContext {
   design: StyleDesign;
   explicit: ExplicitProps;
-  /** Preamble lines in output order. */
+  /**
+   * Preamble lines in output order.
+   */
   out: string[];
   warnings: string[];
   get(name: ComponentName): ComponentStyle | undefined;
-  /** Registers a colour (once) and returns its name, or undefined for no colour. */
+  /**
+   * Registers a colour (once) and returns its name, or undefined for no colour.
+   */
   color(id: string, value: string | undefined): string | undefined;
-  /** Warns about properties the researcher changed that LaTeX cannot express. */
+  /**
+   * Warns about properties the researcher changed that LaTeX cannot express.
+   */
   unsupported(
     name: ComponentName,
     keys: readonly (keyof ComponentStyle)[],
     reason: string,
   ): void;
-  /** Warns that a component the researcher changed cannot be expressed at all. */
+  /**
+   * Warns that a component the researcher changed cannot be expressed at all.
+   */
   wholly(name: ComponentName, reason: string): void;
-  /** Colour definitions, emitted after xcolor is loaded. */
+  /**
+   * Colour definitions, emitted after xcolor is loaded.
+   */
   colors: Map<string, string>;
 }
 

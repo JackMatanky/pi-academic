@@ -1,8 +1,12 @@
 import { readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
+
 import { errorMessage, isInside } from "../lib/fs-safe.js";
 
-type Unit = {
+/**
+ * One heading or paragraph-sized block of an article.
+ */
+export interface ReverseOutlineUnit {
   id: string;
   ordinal: number;
   headingPath: string[];
@@ -10,12 +14,23 @@ type Unit = {
   endLine: number;
   text: string;
   hasCitationMarker: boolean;
-};
+}
 
+/**
+ * An article segmented into exact paragraph units, or why it could not be.
+ */
+export type ReverseOutlineResult =
+  | { status: "advisory"; artifact: string; units: ReverseOutlineUnit[] }
+  | { status: "error"; artifact: string; reason: string; units: [] };
+
+/**
+ * Segments an article under `articles/` into paragraph units with their heading
+ * path and line range. Read-only; fenced code is skipped.
+ */
 export function reverseOutline(
   root: string,
   article: string,
-): Record<string, unknown> {
+): ReverseOutlineResult {
   const path = resolve(root, article);
 
   if (
@@ -28,71 +43,75 @@ export function reverseOutline(
       reason: "Article must be a Markdown file inside project articles/.",
       units: [],
     };
+
   let source: string;
-  let newline: string;
 
   try {
     source = readFileSync(path, "utf8");
-    newline = source.includes("\r\n") ? "\r\n" : "\n";
-  } catch (error) {
+  } catch (cause) {
     return {
       status: "error",
       artifact: path,
-      reason: errorMessage(error),
+      reason: errorMessage(cause),
       units: [],
     };
   }
 
+  const newline = source.includes("\r\n") ? "\r\n" : "\n";
   const lines = source.split(/\r?\n/);
   const headings: Array<{ level: number; text: string }> = [];
-  const units: Unit[] = [];
+  const units: ReverseOutlineUnit[] = [];
   let paragraph: string[] = [];
   let paragraphStart = 0;
   let fence: string | null = null;
 
   const flush = (endLine: number): void => {
-    if (paragraph.length) {
-      const text = paragraph.join(newline);
-      units.push({
-        id: `unit-${units.length + 1}`,
-        ordinal: units.length + 1,
-        headingPath: headings.map((h) => h.text),
-        startLine: paragraphStart,
-        endLine,
-        text,
-        hasCitationMarker: /\[@[^\]]+\]/.test(text),
-      });
-      paragraph = [];
-    }
+    if (paragraph.length === 0) return;
+
+    const text = paragraph.join(newline);
+
+    units.push({
+      id: `unit-${units.length + 1}`,
+      ordinal: units.length + 1,
+      headingPath: headings.map((heading) => heading.text),
+      startLine: paragraphStart,
+      endLine,
+      text,
+      hasCitationMarker: /\[@[^\]]+\]/.test(text),
+    });
+    paragraph = [];
   };
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
-    const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
+  lines.forEach((line, index) => {
+    const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1]?.[0];
 
-    if (fenceMatch) {
-      flush(i);
-      const marker = fenceMatch[1]![0]!;
+    if (marker) {
+      flush(index);
 
       if (fence === null) fence = marker;
       else if (fence === marker) fence = null;
-      continue;
+
+      return;
     }
 
-    if (fence !== null) continue;
+    if (fence !== null) return;
+
     const heading = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
 
-    if (heading) {
-      flush(i);
-      const level = heading[1]!.length;
+    if (heading?.[1] && heading[2]) {
+      flush(index);
+
+      const level = heading[1].length;
+
       headings.length = level - 1;
-      headings[level - 1] = { level, text: heading[2]! };
-    } else if (/^\s*$/.test(line)) flush(i);
-    else {
-      if (!paragraph.length) paragraphStart = i + 1;
+      headings[level - 1] = { level, text: heading[2] };
+    } else if (/^\s*$/.test(line)) {
+      flush(index);
+    } else {
+      if (paragraph.length === 0) paragraphStart = index + 1;
       paragraph.push(line);
     }
-  }
+  });
 
   flush(paragraphStart + paragraph.length - 1);
 

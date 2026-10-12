@@ -1,46 +1,22 @@
+import type { ArticleData, ArticleFormat, Paragraph } from "./article.js";
+import type { StyleDesign } from "./style-design.js";
+
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+
 import { unzipSync } from "fflate";
+
 import { resolveInside } from "../lib/fs-safe.js";
+import { parseJsonText } from "../lib/schema.js";
+import { paragraphParts, parseArticle } from "./article.js";
 import { withScratchDir } from "./document-style.js";
 import { defaultReference, runPandoc } from "./pandoc.js";
-import type { StyleDesign } from "./style-design.js";
 import { buildDocxReference } from "./style-docx.js";
 
-interface Footnote {
-  after: string;
-  text: string;
-}
-
-type Paragraph = string | { text: string; footnotes?: Footnote[] };
-
-interface Section {
-  title?: string;
-  paragraphs: Paragraph[];
-}
-
-interface ArticleFormat {
-  font?: string;
-  bodySize?: number;
-  titleSize?: number;
-  headingSize?: number;
-  lineSpacing?: number;
-  /** Page margins in inches, as in the original generator. */
-  margins?: number;
-  isRtl?: boolean;
-}
-
-export interface ArticleData {
-  title?: string;
-  thesis?: string;
-  abstract?: { primary?: string; secondary?: string };
-  sections: Section[];
-  totalWords?: number;
-  format?: ArticleFormat;
-}
-
 export interface GenerateDocxOptions {
-  /** A style package's DOCX reference; replaces the format-derived one. */
+  /**
+   * A style package's DOCX reference; replaces the format-derived one.
+   */
   referenceDoc?: string | undefined;
   signal?: AbortSignal | undefined;
 }
@@ -51,49 +27,6 @@ export interface GenerateDocxResult {
   sections: number;
   footnotes: number;
   totalWords: number;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-/** Validate the article payload at the trust boundary. */
-export function parseArticle(raw: unknown): ArticleData {
-  if (!isObject(raw) || !Array.isArray(raw.sections)) {
-    throw new Error("article JSON must be an object with a sections array");
-  }
-
-  raw.sections.forEach((section: unknown, i: number) => {
-    if (!isObject(section) || !Array.isArray(section.paragraphs)) {
-      throw new Error(
-        `sections[${i}] must be an object with a paragraphs array`,
-      );
-    }
-
-    section.paragraphs.forEach((paragraph: unknown, j: number) => {
-      const ok =
-        typeof paragraph === "string" ||
-        (isObject(paragraph) &&
-          typeof paragraph.text === "string" &&
-          (paragraph.footnotes === undefined ||
-            (Array.isArray(paragraph.footnotes) &&
-              paragraph.footnotes.every(
-                (f: unknown) =>
-                  isObject(f) &&
-                  typeof f.after === "string" &&
-                  typeof f.text === "string",
-              ))));
-
-      if (!ok) {
-        throw new Error(
-          `sections[${i}].paragraphs[${j}] must be a string or {text, footnotes:[{after, text}]}`,
-        );
-      }
-    });
-  });
-
-  // Shape verified above.
-  return raw as unknown as ArticleData;
 }
 
 /**
@@ -117,17 +50,25 @@ export function cleanRtlText(text: string, trimOrphan = true): string {
   return out;
 }
 
-/** Make user text literal in Pandoc markdown: every ASCII punctuation mark is backslash-escaped. */
+/**
+ * Make user text literal in Pandoc markdown: every ASCII punctuation mark is
+ * backslash-escaped.
+ */
 export function escapeMarkdown(text: string): string {
   return escapeRaw(text).trim();
 }
 
-/** Like escapeMarkdown but keeps the boundary spaces, for concatenating segments. */
+/**
+ * Like escapeMarkdown but keeps the boundary spaces, for concatenating
+ * segments.
+ */
 function escapeRaw(text: string): string {
   return text.replace(/\s+/g, " ").replace(/[!-/:-@[-`{-~]/g, "\\$&");
 }
 
-/** The styles the original generator produced, expressed as a style design. */
+/**
+ * The styles the original generator produced, expressed as a style design.
+ */
 export function formatDesign(format: ArticleFormat = {}): StyleDesign {
   const font = format.font ?? "David";
   const body = format.bodySize ?? 11;
@@ -207,14 +148,13 @@ export function formatDesign(format: ArticleFormat = {}): StyleDesign {
       footer: { alignment: "center" },
       pageNumber: { fontFamily: font, fontSizePt: body },
     },
-    formats: {},
   };
 }
 
 /**
- * Convert the paragraph into markdown, inserting each footnote right after
- * the first occurrence of its `after` marker at or past the previous one.
- * Markers that cannot be found are skipped, as before.
+ * Convert the paragraph into markdown, inserting each footnote right after the
+ * first occurrence of its `after` marker at or past the previous one. Markers
+ * that cannot be found are skipped, as before.
  */
 function paragraphMarkdown(
   paragraph: Paragraph,
@@ -224,12 +164,9 @@ function paragraphMarkdown(
   const clean = (text: string, trim = true) =>
     rtl ? cleanRtlText(text, trim) : text;
 
-  const text = clean(
-    typeof paragraph === "string" ? paragraph : paragraph.text,
-  );
-
-  const notes =
-    typeof paragraph === "string" ? [] : (paragraph.footnotes ?? []);
+  const parts = paragraphParts(paragraph);
+  const text = clean(parts.text);
+  const notes = parts.footnotes;
 
   let cursor = 0;
   let out = "";
@@ -257,10 +194,18 @@ function div(style: string, text: string, dir?: "ltr"): string {
   return `::: {custom-style="${style}"${direction}}\n${escapeMarkdown(text)}\n:::`;
 }
 
+/**
+ * An article rendered as Pandoc markdown, with its footnote count.
+ */
+export interface ArticleMarkdown {
+  markdown: string;
+  footnotes: number;
+}
+
 export function articleMarkdown(
   data: ArticleData,
   rtl: boolean,
-): { markdown: string; footnotes: number } {
+): ArticleMarkdown {
   const clean = (text: string) => (rtl ? cleanRtlText(text) : text);
   const blocks: string[] = [];
   const definitions: string[] = [];
@@ -319,7 +264,9 @@ function assertFootnoteCapable(path: string): void {
   }
 }
 
-/** Generate a DOCX with real footnotes from the article JSON, using Pandoc. */
+/**
+ * Generate a DOCX with real footnotes from the article JSON, using Pandoc.
+ */
 export async function generateDocx(
   inputPath: string,
   outputPath: string,
@@ -328,7 +275,7 @@ export async function generateDocx(
 ): Promise<GenerateDocxResult> {
   const source = resolveInside(cwd, inputPath);
   const output = resolveInside(cwd, outputPath);
-  const data = parseArticle(JSON.parse(readFileSync(source, "utf8")));
+  const data = parseArticle(parseJsonText(readFileSync(source, "utf8")));
   const rtl = data.format?.isRtl ?? true;
   const { markdown, footnotes } = articleMarkdown(data, rtl);
 

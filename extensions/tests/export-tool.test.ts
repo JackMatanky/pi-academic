@@ -1,3 +1,9 @@
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ToolDefinition,
+} from "@earendil-works/pi-coding-agent";
+
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
@@ -14,27 +20,25 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
+
 import { strFromU8, unzipSync } from "fflate";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+
+import {
+  isValid,
+  JsonObjectSchema,
+  parseWith,
+  type JsonObject,
+} from "../lib/schema.js";
 import piAcademicWriter from "../pi-academic-writer/index.js";
 import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
 
-type Params = Record<string, unknown>;
+type Params = JsonObject;
 
 interface ToolResult {
   content: { text: string }[];
-  details: Record<string, unknown>;
+  details: JsonObject;
   isError?: boolean;
-}
-
-interface Tool {
-  execute(
-    id: string,
-    params: Params,
-    signal: undefined,
-    onUpdate: undefined,
-    ctx: { cwd: string },
-  ): Promise<ToolResult>;
 }
 
 const realPandoc = spawnSync("which", ["pandoc"], {
@@ -43,18 +47,60 @@ const realPandoc = spawnSync("which", ["pandoc"], {
 
 const needsPandoc = { skip: realPandoc ? false : "pandoc is not installed" };
 
-const tools = new Map<string, Tool>();
+const tools = new Map<string, Pick<ToolDefinition, "execute">>();
 
-// Only registerTool is exercised by these tools.
-piAcademicWriter({
-  registerTool: (tool: Tool & { name: string }) => tools.set(tool.name, tool),
-} as unknown as ExtensionAPI);
+// The extension only registers tools and, for MCP-name lookup, lists active
+// ones.
+const extensionApi: Partial<ExtensionAPI> = {
+  registerTool: (definition) => {
+    tools.set(definition.name, { execute: definition.execute });
+  },
+  getActiveTools: () => [],
+};
 
-function tool(name: string): Tool {
-  const found = tools.get(name);
-  assert.ok(found, `${name} is not registered`);
+// SAFETY: `extensionApi` implements the only two members the tools call.
+piAcademicWriter(extensionApi as ExtensionAPI);
 
-  return found;
+/**
+ * Runs a registered tool, turning thrown failures into error results.
+ */
+async function callTool(
+  cwd: string,
+  name: string,
+  params: Params,
+): Promise<ToolResult> {
+  const definition = tools.get(name);
+
+  assert.ok(definition, `${name} is not registered`);
+
+  try {
+    // SAFETY: the tools read only `cwd` from the context.
+    const context = { cwd } as ExtensionContext;
+
+    const result = await definition.execute(
+      "t",
+      params,
+      undefined,
+      undefined,
+      context,
+    );
+
+    return {
+      content: result.content.flatMap((part) =>
+        part.type === "text" ? [{ text: part.text }] : [],
+      ),
+      details: isValid(JsonObjectSchema, result.details) ? result.details : {},
+      isError: false,
+    };
+  } catch (cause) {
+    if (!(cause instanceof ToolFailure)) throw cause;
+
+    return {
+      content: [{ text: cause.text }],
+      details: cause.details,
+      isError: true,
+    };
+  }
 }
 
 const STUB = `#!/bin/sh
@@ -79,7 +125,9 @@ if [ -n "$out" ]; then : > "$out"; fi
 interface Harness {
   root: string;
   run(name: string, params: Params): Promise<ToolResult>;
-  /** One argv array per recorded (non-passthrough) pandoc invocation. */
+  /**
+   * One argv array per recorded (non-passthrough) pandoc invocation.
+   */
   invocations(): string[][];
 }
 
@@ -133,24 +181,7 @@ function harness(
 
   return {
     root,
-    run: async (name, params) => {
-      try {
-        return {
-          ...(await tool(name).execute("t", params, undefined, undefined, {
-            cwd: root,
-          })),
-          isError: false,
-        };
-      } catch (error) {
-        if (!(error instanceof ToolFailure)) throw error;
-
-        return {
-          content: [{ text: error.text }],
-          details: error.details,
-          isError: true,
-        };
-      }
-    },
+    run: (name, params) => callTool(root, name, params),
     invocations: () =>
       existsSync(log)
         ? readFileSync(log, "utf8")
@@ -164,7 +195,7 @@ function harness(
 function writePackage(
   root: string,
   name: string,
-  design: Record<string, unknown>,
+  design: JsonObject,
   files: Record<string, string> = {},
 ) {
   const dir = join(root, ".academic-writer", "styles", name);
@@ -186,28 +217,30 @@ function setProfileStylePackage(root: string, name: string) {
   );
 }
 
-const exportParams = (formats: string[], extra: Params = {}): Params => ({
+const exportParams = (formats: string[], extra: Params = {}) => ({
   article: "articles/essay.md",
   citationStyle: "inline-parenthetical",
   formats,
   ...extra,
 });
 
-interface Entry {
-  format: string;
-  ok: boolean;
-  error?: string;
-  engine?: string;
-  style?: {
-    package: string;
-    generated: string[];
-    native: Record<string, string>;
-    warnings: string[];
-  };
-}
+const EntrySchema = Type.Object({
+  format: Type.String(),
+  ok: Type.Boolean(),
+  error: Type.Optional(Type.String()),
+  engine: Type.Optional(Type.String()),
+  style: Type.Optional(
+    Type.Object({
+      package: Type.String(),
+      generated: Type.Array(Type.String()),
+      native: Type.Record(Type.String(), Type.String()),
+      warnings: Type.Array(Type.String()),
+    }),
+  ),
+});
 
-const entries = (result: ToolResult): Entry[] =>
-  result.details.results as Entry[];
+const entries = (result: ToolResult) =>
+  parseWith(Type.Array(EntrySchema), result.details.results ?? null, "results");
 
 test("without a style package no style flags are passed and the pdf engine is detected", async (t) => {
   const both = harness(t, { engines: ["xelatex", "tectonic"] });

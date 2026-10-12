@@ -1,9 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { accessSync, constants } from "node:fs";
 import { delimiter, join } from "node:path";
+
 import { buildStatus, type AcademicWriterStatus } from "./status.js";
 
-/** Health payload extending status data with local command availability. */
+/**
+ * Health payload extending status data with local command availability.
+ */
 export interface HealthStatus extends AcademicWriterStatus {
   commands: Record<string, boolean>;
   pandocVersion: string | null;
@@ -41,7 +44,8 @@ export function commandExists(command: string): boolean {
 /**
  * Picks the installed PDF engine Pandoc should use when none is configured.
  *
- * @returns `xelatex` when installed, else `tectonic`, else undefined (Pandoc's own default).
+ * @returns `xelatex` when installed, else `tectonic`, else undefined (Pandoc's
+ *   own default).
  */
 export function selectPdfEngine(): "xelatex" | "tectonic" | undefined {
   if (commandExists("xelatex")) return "xelatex";
@@ -54,7 +58,8 @@ export function selectPdfEngine(): "xelatex" | "tectonic" | undefined {
 /**
  * Builds deterministic local health data without probing network/MCP servers.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  */
 export function buildHealth(projectRoot: string): HealthStatus {
   return {

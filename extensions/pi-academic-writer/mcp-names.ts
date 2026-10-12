@@ -1,8 +1,12 @@
-/** Known MCP server config keys this package's skills/agents scaffold into `.mcp.json`. */
+/**
+ * Known MCP server config keys this package's skills/agents scaffold into
+ * `.mcp.json`.
+ */
 export const KNOWN_MCP_SERVERS = ["zotero", "notebooklm-mcp", "sefaria"];
 
 /**
- * Sanitizes one MCP server/tool name part per oh-my-pi's tool-bridge naming algorithm.
+ * Sanitizes one MCP server/tool name part per oh-my-pi's tool-bridge naming
+ * algorithm.
  *
  * @param value - Raw server or tool name part to sanitize.
  */
@@ -17,9 +21,11 @@ function sanitizeMcpNamePart(value: string): string {
 }
 
 /**
- * Builds candidate oh-my-pi MCP tool names for a bare logical tool name across known servers.
+ * Builds candidate oh-my-pi MCP tool names for a bare logical tool name across
+ * known servers.
  *
- * @param logicalName - Bare MCP tool name as documented in this package's skills/agents.
+ * @param logicalName - Bare MCP tool name as documented in this package's
+ *   skills/agents.
  */
 export function candidateMcpToolNames(logicalName: string): string[] {
   return KNOWN_MCP_SERVERS.map((server) => {

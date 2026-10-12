@@ -1,247 +1,245 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+
+import { Type } from "typebox";
+
 import { withFileLock } from "../lib/fs-safe.js";
 import {
-  kinds,
-  obj,
-  strict,
-  str,
-  arr,
-  read,
-  save,
-  sources,
+  JsonValueSchema,
+  parseWith,
+  readJsonFile,
+  type JsonValue,
+} from "../lib/schema.js";
+import {
+  NoteInputSchema,
+  NoteUpsertSchema,
+  readSourceRefs,
+  saveJson,
   type Note,
+  type NoteInput,
+  type SourceRef,
 } from "./research-core.js";
 
-export function noteFile(r: string): string {
-  return join(r, ".academic-writer", "research-notes.json");
+const NoteLibrarySchema = Type.Object(
+  {
+    schemaVersion: Type.Literal(1),
+    notes: Type.Array(JsonValueSchema),
+  },
+  { additionalProperties: false },
+);
+
+/**
+ * Path of the project's research-note library.
+ */
+export function noteFile(projectRoot: string): string {
+  return join(projectRoot, ".academic-writer", "research-notes.json");
 }
 
-export function parseNote(x: unknown): Note {
-  const n = obj(x, "note");
-  strict(
-    n,
-    [
-      "id",
-      "kind",
-      "coreStatement",
-      "sourceRef",
-      "anchor",
-      "researcherNote",
-      "tags",
-      "review",
-      "createdAt",
-    ],
-    "note",
-  );
-  const kind = str(n.kind, "kind");
+/**
+ * Applies the evidence rules of each note kind and fills in defaults.
+ *
+ * @throws When a quotation, paraphrase or summary lacks what it must carry.
+ */
+export function buildNote(input: NoteInput): Note {
+  const { kind, sourceRef, anchor, researcherNote } = input;
 
-  if (!kinds.includes(kind)) throw Error("Invalid note kind");
+  if (kind === "quotation" && !(sourceRef && anchor?.textQuote?.exact))
+    throw new Error("Quotation requires sourceRef, locator, exact quote");
 
-  const sourceRef =
-    n.sourceRef === undefined ? undefined : str(n.sourceRef, "sourceRef");
-
-  let anchor: Note["anchor"];
-
-  if (n.anchor !== undefined) {
-    const a = obj(n.anchor, "anchor");
-    strict(
-      a,
-      ["locator", "pdfPageIndex", "textQuote", "sourceFingerprint"],
-      "anchor",
-    );
-    const l = obj(a.locator, "locator");
-    strict(l, ["display"], "locator");
-    anchor = { locator: { display: str(l.display, "locator.display") } };
-
-    if (a.pdfPageIndex !== undefined) {
-      if (!Number.isInteger(a.pdfPageIndex) || (a.pdfPageIndex as number) < 0)
-        throw Error("pdfPageIndex must be zero-based");
-      anchor.pdfPageIndex = a.pdfPageIndex as number;
-    }
-
-    if (a.textQuote !== undefined) {
-      const q = obj(a.textQuote, "textQuote");
-      strict(q, ["exact", "prefix", "suffix"], "textQuote");
-      anchor.textQuote = {
-        exact: str(q.exact, "quote"),
-        ...(q.prefix === undefined ? {} : { prefix: str(q.prefix, "prefix") }),
-        ...(q.suffix === undefined ? {} : { suffix: str(q.suffix, "suffix") }),
-      };
-    }
-
-    if (a.sourceFingerprint !== undefined)
-      anchor.sourceFingerprint = str(a.sourceFingerprint, "fingerprint");
-  }
-
-  const researcherNote =
-    n.researcherNote === undefined
-      ? undefined
-      : str(n.researcherNote, "researcherNote");
-
-  if (
-    kind === "quotation" &&
-    (!sourceRef || !anchor?.locator || !anchor.textQuote?.exact)
-  )
-    throw Error("Quotation requires sourceRef, locator, exact quote");
-
-  if (kind === "paraphrase" && (!sourceRef || !researcherNote))
-    throw Error("Paraphrase requires sourceRef and researcherNote");
+  if (kind === "paraphrase" && !(sourceRef && researcherNote))
+    throw new Error("Paraphrase requires sourceRef and researcherNote");
 
   if (
     kind === "summary" &&
-    (!sourceRef || !researcherNote || !/^synthesis:/i.test(researcherNote))
+    !(sourceRef && researcherNote && /^synthesis:/i.test(researcherNote))
   )
-    throw Error("Summary requires researcherNote labeled Synthesis:");
-  const tags = arr(n.tags ?? [], "tags").map((t) => str(t, "tag"));
-  const rv = obj(n.review ?? { state: "unchecked" }, "review");
-  strict(rv, ["state"], "review");
+    throw new Error("Summary requires researcherNote labeled Synthesis:");
 
-  if (!["unchecked", "verified", "stale"].includes(String(rv.state)))
-    throw Error("Invalid review state");
-  const createdAt = str(n.createdAt, "createdAt");
+  if (!Number.isFinite(Date.parse(input.createdAt)))
+    throw new Error("createdAt must be ISO-8601 date-time");
 
-  if (
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
-      createdAt,
-    ) ||
-    !Number.isFinite(Date.parse(createdAt))
-  )
-    throw Error("createdAt must be ISO-8601 date-time");
-
-  return {
-    id: str(n.id, "id"),
-    kind: kind as Note["kind"],
-    coreStatement: str(n.coreStatement, "coreStatement"),
-    ...(sourceRef ? { sourceRef } : {}),
-    ...(anchor ? { anchor } : {}),
-    ...(researcherNote ? { researcherNote } : {}),
-    tags,
-    review: { state: rv.state as Note["review"]["state"] },
-    createdAt,
+  const note: Note = {
+    id: input.id,
+    kind,
+    coreStatement: input.coreStatement,
+    tags: input.tags ?? [],
+    review: input.review ?? { state: "unchecked" },
+    createdAt: input.createdAt,
   };
+
+  if (sourceRef) note.sourceRef = sourceRef;
+
+  if (anchor) note.anchor = anchor;
+
+  if (researcherNote) note.researcherNote = researcherNote;
+
+  return note;
 }
 
-export function library(r: string): Note[] {
-  const p = noteFile(r);
-
-  if (!existsSync(p)) return [];
-  const d = obj(read(p), "library");
-  strict(d, ["schemaVersion", "notes"], "library");
-
-  if (d.schemaVersion !== 1) throw Error("Unsupported note schema");
-
-  return arr(d.notes, "notes").map(parseNote);
+/**
+ * Decodes one stored note.
+ */
+export function parseNote(value: JsonValue): Note {
+  return buildNote(parseWith(NoteInputSchema, value, "note"));
 }
 
-export function fresh(n: Note, src: Array<Record<string, unknown>>): Note {
-  if (!n.sourceRef) return n;
-  const s = src.find((x) => x.sourceId === n.sourceRef);
+/**
+ * Loads the note library; a missing file is an empty library.
+ */
+export function library(projectRoot: string): Note[] {
+  const path = noteFile(projectRoot);
 
-  if (!s) throw Error("Unknown sourceRef: " + n.sourceRef);
+  if (!existsSync(path)) return [];
 
-  const fp =
-      typeof s.sourceFingerprint === "string" ? s.sourceFingerprint : undefined,
-    nfp = n.anchor?.sourceFingerprint;
+  const { notes } = readJsonFile(path, NoteLibrarySchema, "library");
 
-  if (s.sourceType === "local-file" && !fp)
-    throw Error("Source registry fingerprint is missing");
-
-  return fp && fp !== nfp ? { ...n, review: { state: "stale" } } : n;
+  return notes.map(parseNote);
 }
 
-export function writeResearchNotes(root: string, input: unknown[]): Note[] {
-  return withFileLock(noteFile(root), () => {
-    const old = library(root),
-      map = new Map(old.map((n) => [n.id, n])),
-      batch = new Set<string>(),
-      src = sources(root),
-      saved: Note[] = [];
+/**
+ * Marks a note stale when its source's fingerprint no longer matches the one
+ * the note was anchored to.
+ *
+ * @throws When the note cites a source missing from the registry, or a local
+ *   source without a fingerprint.
+ */
+export function fresh(note: Note, registry: SourceRef[]): Note {
+  if (!note.sourceRef) return note;
 
-    for (const v of input) {
-      const x = obj(v, "upsert"),
-        id = x.id === undefined ? randomUUID() : str(x.id, "id"),
-        prev = map.get(id),
-        n = parseNote({
-          ...x,
-          id,
-          createdAt: x.createdAt ?? prev?.createdAt ?? new Date().toISOString(),
-          review: { state: "unchecked" },
-        });
+  const source = registry.find((entry) => entry.sourceId === note.sourceRef);
 
-      if (batch.has(id)) throw Error("Duplicate note ID: " + id);
-      batch.add(id);
+  if (!source) throw new Error("Unknown sourceRef: " + note.sourceRef);
+
+  const fingerprint = source.sourceFingerprint ?? undefined;
+
+  if (source.sourceType === "local-file" && !fingerprint)
+    throw new Error("Source registry fingerprint is missing");
+
+  return fingerprint && fingerprint !== note.anchor?.sourceFingerprint
+    ? { ...note, review: { state: "stale" } }
+    : note;
+}
+
+function saveLibrary(projectRoot: string, notes: Note[]): void {
+  saveJson(noteFile(projectRoot), { schemaVersion: 1, notes });
+}
+
+/**
+ * Creates or updates notes. Edited notes go back to `unchecked`; unchanged ones
+ * keep their review state.
+ */
+export function writeResearchNotes(
+  projectRoot: string,
+  upserts: JsonValue[],
+): Note[] {
+  return withFileLock(noteFile(projectRoot), () => {
+    const byId = new Map(library(projectRoot).map((note) => [note.id, note]));
+    const seen = new Set<string>();
+    const registry = readSourceRefs(projectRoot);
+    const saved: Note[] = [];
+
+    for (const raw of upserts) {
+      const upsert = parseWith(NoteUpsertSchema, raw, "upsert");
+      const id = upsert.id ?? randomUUID();
+      const previous = byId.get(id);
+
+      const candidate = buildNote({
+        ...upsert,
+        id,
+        createdAt:
+          upsert.createdAt ?? previous?.createdAt ?? new Date().toISOString(),
+        review: { state: "unchecked" },
+      });
+
+      if (seen.has(id)) throw new Error("Duplicate note ID: " + id);
+      seen.add(id);
 
       const unchanged =
-        prev !== undefined &&
-        JSON.stringify({ ...prev, review: undefined }) ===
-          JSON.stringify({ ...n, review: undefined });
+        previous !== undefined &&
+        JSON.stringify({ ...previous, review: undefined }) ===
+          JSON.stringify({ ...candidate, review: undefined });
 
       const current = fresh(
-        unchanged && prev ? { ...n, review: prev.review } : n,
-        src,
+        unchanged ? { ...candidate, review: previous.review } : candidate,
+        registry,
       );
 
-      map.set(id, current);
+      byId.set(id, current);
       saved.push(current);
     }
 
-    save(noteFile(root), { schemaVersion: 1, notes: [...map.values()] });
+    saveLibrary(projectRoot, [...byId.values()]);
 
     return saved;
   });
 }
 
+/**
+ * Marks notes verified or unchecked; staleness is re-evaluated.
+ */
 export function reviewResearchNotes(
-  root: string,
-  ids: string[],
+  projectRoot: string,
+  noteIds: string[],
   state: "unchecked" | "verified",
 ): Note[] {
-  return withFileLock(noteFile(root), () => {
-    const ns = library(root),
-      set = new Set(ids),
-      found = ns.filter((n) => set.has(n.id));
+  return withFileLock(noteFile(projectRoot), () => {
+    const notes = library(projectRoot);
+    const wanted = new Set(noteIds);
 
-    if (found.length !== set.size) throw Error("Unknown noteIds");
+    if (notes.filter((note) => wanted.has(note.id)).length !== wanted.size)
+      throw new Error("Unknown noteIds");
 
-    const src = sources(root),
-      updated = ns.map((n) =>
-        set.has(n.id) ? fresh({ ...n, review: { state } }, src) : n,
-      );
+    const registry = readSourceRefs(projectRoot);
 
-    save(noteFile(root), { schemaVersion: 1, notes: updated });
+    const updated = notes.map((note) =>
+      wanted.has(note.id)
+        ? fresh({ ...note, review: { state } }, registry)
+        : note,
+    );
 
-    return updated.filter((n) => set.has(n.id));
+    saveLibrary(projectRoot, updated);
+
+    return updated.filter((note) => wanted.has(note.id));
   });
 }
 
+/**
+ * A source as re-read by ingestion: identity plus current fingerprint.
+ */
+export interface RefreshedSource {
+  sourceId: string;
+  sourceFingerprint?: string;
+}
+
+/**
+ * Marks notes stale when their source vanished or its content changed.
+ */
 export function markResearchNotesStale(
-  root: string,
-  refreshed: Array<{ sourceId: string; sourceFingerprint?: string }>,
+  projectRoot: string,
+  refreshed: RefreshedSource[],
 ): void {
-  const path = noteFile(root);
+  const path = noteFile(projectRoot);
+
   withFileLock(path, () => {
     if (!existsSync(path)) return;
-    const current = library(root);
 
-    const next = current.map((note) => {
+    const next = library(projectRoot).map((note): Note => {
       if (!note.sourceRef) return note;
 
       const source = refreshed.find(
         (entry) => entry.sourceId === note.sourceRef,
       );
 
-      if (
-        !source ||
-        (source.sourceFingerprint &&
-          note.anchor?.sourceFingerprint !== source.sourceFingerprint)
-      )
-        return { ...note, review: { state: "stale" as const } };
+      const changed =
+        source?.sourceFingerprint !== undefined &&
+        note.anchor?.sourceFingerprint !== source.sourceFingerprint;
 
-      return note;
+      return !source || changed
+        ? { ...note, review: { state: "stale" } }
+        : note;
     });
 
-    save(path, { schemaVersion: 1, notes: next });
+    saveLibrary(projectRoot, next);
   });
 }

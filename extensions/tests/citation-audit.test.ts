@@ -10,13 +10,17 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
+
 import {
   auditCitations,
   type CitationAuditDetails,
   type CitationAuditResult,
 } from "../pi-academic-writer/citation-audit.js";
 
-/** Narrow to a full audit result; invalid project/article paths return only an error. */
+/**
+ * Narrow to a full audit result; invalid project/article paths return only an
+ * error.
+ */
 function details(result: CitationAuditResult): CitationAuditDetails {
   assert.ok("markers" in result, "expected a full audit result");
 

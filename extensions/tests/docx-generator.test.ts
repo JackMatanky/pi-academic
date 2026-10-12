@@ -10,15 +10,19 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
+
 import { strFromU8, unzipSync, zipSync, strToU8 } from "fflate";
+
+import {
+  parseArticle,
+  type ArticleData,
+} from "../pi-academic-writer/article.js";
 import {
   articleMarkdown,
   cleanRtlText,
   escapeMarkdown,
   generateDocx,
   formatDesign,
-  parseArticle,
-  type ArticleData,
 } from "../pi-academic-writer/docx-generator.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
@@ -39,7 +43,10 @@ function part(path: string, entry: string): string {
   return strFromU8(data);
 }
 
-/** Text of every w:t run, entity-decoded and joined, to compare against source text. */
+/**
+ * Text of every w:t run, entity-decoded and joined, to compare against source
+ * text.
+ */
 function runText(xml: string): string {
   return [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)]
     .map((m) => m[1] ?? "")

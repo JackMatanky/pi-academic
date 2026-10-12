@@ -1,70 +1,93 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Static, TSchema } from "typebox";
-import { errorMessage } from "../lib/fs-safe.js";
 
-/** What a tool hands back on success: text for the model and structured details for callers. */
+import { errorMessage } from "../lib/fs-safe.js";
+import {
+  assertValid,
+  isValid,
+  JsonArraySchema,
+  JsonObjectSchema,
+  parseJsonText,
+  type JsonObject,
+  type JsonValue,
+} from "../lib/schema.js";
+
+/**
+ * What a tool hands back on success: text for the model and structured details
+ * for callers.
+ */
 export interface ToolOutput {
   text: string;
   details?: object;
 }
 
-/** Per-call context: the project directory and the abort signal. */
+/**
+ * Per-call context: the project directory and the abort signal.
+ */
 export interface ToolContext {
   cwd: string;
   signal: AbortSignal | undefined;
 }
 
 /**
- * A failed tool call. Pi marks a call as an error only when `execute` throws, so
- * failures are thrown; the structured details ride along on the error and are
- * appended to the message because the model sees only the message.
+ * A failed tool call. Pi marks a call as an error only when `execute` throws,
+ * so failures are thrown; the structured details ride along on the error and
+ * are appended to the message because the model sees only the message.
  */
-export class ToolFailure extends Error {
+export class ToolFailure<Details extends object = object> extends Error {
   readonly text: string;
-  readonly details: { ok: false } & Record<string, unknown>;
+  readonly details: Details & { ok: false };
 
-  constructor(text: string, details: object = {}) {
-    const extra = Object.fromEntries(
-      Object.entries(details).filter(
-        ([key]) => key !== "ok" && key !== "error",
-      ),
+  constructor(text: string, details?: Details) {
+    const extra = Object.entries(details ?? {}).filter(
+      ([key]) => key !== "ok" && key !== "error",
     );
 
     super(
-      Object.keys(extra).length > 0
-        ? `${text}\n${JSON.stringify(extra)}`
+      extra.length > 0
+        ? `${text}\n${JSON.stringify(Object.fromEntries(extra))}`
         : text,
     );
     this.name = "ToolFailure";
     this.text = text;
-    this.details = { ...details, ok: false };
+    this.details = Object.assign({}, details, { ok: false as const });
   }
 }
 
-/** Throws a {@link ToolFailure}. */
-export function fail(text: string, details: object = {}): never {
+/**
+ * Throws a {@link ToolFailure}.
+ */
+export function fail<Details extends object>(
+  text: string,
+  details?: Details,
+): never {
   throw new ToolFailure(text, details);
 }
 
-/** Parses a JSON object string, or returns null for arrays, primitives and invalid JSON. */
-export function parseJsonObject(value: string): Record<string, unknown> | null {
-  const parsed = parseJson(value);
-
-  return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
-    ? (parsed as Record<string, unknown>)
-    : null;
+/**
+ * Parses a JSON object string, or returns null for arrays, primitives and
+ * invalid JSON.
+ */
+export function parseJsonObject(value: string): JsonObject | null {
+  return parseJsonAs(JsonObjectSchema, value);
 }
 
-/** Parses a JSON array string, or returns null for objects, primitives and invalid JSON. */
-export function parseJsonArray(value: string): unknown[] | null {
-  const parsed = parseJson(value);
-
-  return Array.isArray(parsed) ? parsed : null;
+/**
+ * Parses a JSON array string, or returns null for objects, primitives and
+ * invalid JSON.
+ */
+export function parseJsonArray(value: string): JsonValue[] | null {
+  return parseJsonAs(JsonArraySchema, value);
 }
 
-function parseJson(value: string): unknown {
+function parseJsonAs<S extends TSchema>(
+  schema: S,
+  text: string,
+): Static<S> | null {
   try {
-    return JSON.parse(value) as unknown;
+    const parsed = parseJsonText(text);
+
+    return isValid(schema, parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -75,7 +98,10 @@ interface ToolSpec<S extends TSchema> {
   label: string;
   description: string;
   parameters: S;
-  /** Prefix for unexpected errors, e.g. "CSL resolution failed". Defaults to `<label> failed`. */
+  /**
+   * Prefix for unexpected errors, e.g. "CSL resolution failed". Defaults to
+   * `<label> failed`.
+   */
   failure?: string;
   run(
     params: Static<S>,
@@ -84,8 +110,9 @@ interface ToolSpec<S extends TSchema> {
 }
 
 /**
- * Registers a tool whose handler returns {@link ToolOutput} and reports problems by throwing.
- * Every error, expected or not, reaches Pi as a thrown {@link ToolFailure}.
+ * Registers a tool whose handler returns {@link ToolOutput} and reports problems
+ * by throwing. Every error, expected or not, reaches Pi as a thrown
+ * {@link ToolFailure}.
  */
 export function registerTool<S extends TSchema>(
   pi: ExtensionAPI,
@@ -98,22 +125,19 @@ export function registerTool<S extends TSchema>(
     parameters: spec.parameters,
     execute: async (_id, params, signal, _onUpdate, ctx) => {
       try {
-        // SAFETY: Pi validated `params` against `spec.parameters`; the cast only bridges
-        // the two installed copies of typebox's `Static` type.
-        const output = await spec.run(params as Static<S>, {
-          cwd: ctx.cwd,
-          signal,
-        });
+        assertValid(spec.parameters, params, "Invalid tool parameters");
+
+        const output = await spec.run(params, { cwd: ctx.cwd, signal });
 
         return {
           content: [{ type: "text" as const, text: output.text }],
           details: output.details ?? {},
         };
-      } catch (error) {
-        if (error instanceof ToolFailure) throw error;
+      } catch (cause) {
+        if (cause instanceof ToolFailure) throw cause;
         throw new ToolFailure(
-          `${spec.failure ?? `${spec.label} failed`}: ${errorMessage(error)}`,
-          { error: errorMessage(error) },
+          `${spec.failure ?? `${spec.label} failed`}: ${errorMessage(cause)}`,
+          { error: errorMessage(cause) },
         );
       }
     },

@@ -9,12 +9,25 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
-/** Returns the message of an unknown thrown value. */
-export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+/**
+ * Returns the message of a thrown value.
+ */
+export function errorMessage(cause: unknown): string {
+  return cause instanceof Error ? cause.message : String(cause);
 }
 
-/** Returns whether `child` is `parent` or lies below it (lexical check). */
+/**
+ * Returns whether a thrown value is a Node system error carrying a `code`.
+ */
+export function isErrnoException(
+  cause: unknown,
+): cause is NodeJS.ErrnoException {
+  return cause instanceof Error && "code" in cause;
+}
+
+/**
+ * Returns whether `child` is `parent` or lies below it (lexical check).
+ */
 export function isInside(parent: string, child: string): boolean {
   const rel = relative(parent, child);
 
@@ -25,7 +38,8 @@ export function isInside(parent: string, child: string): boolean {
 }
 
 /**
- * Resolves a project-relative or absolute path and rejects anything outside the project.
+ * Resolves a project-relative or absolute path and rejects anything outside the
+ * project.
  *
  * Symlinks are resolved through the nearest existing ancestor, so a link inside
  * the project that points outside it is rejected as well.
@@ -52,7 +66,7 @@ export function resolveInside(projectRoot: string, path: string): string {
 
       return target;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      if (!isErrnoException(error) || error.code !== "ENOENT") throw error;
       const parent = dirname(existing);
 
       if (parent === existing) return target;
@@ -61,7 +75,10 @@ export function resolveInside(projectRoot: string, path: string): string {
   }
 }
 
-/** Writes a file through a temporary sibling and rename, so readers never see a partial file. */
+/**
+ * Writes a file through a temporary sibling and rename, so readers never see a
+ * partial file.
+ */
 export function writeFileAtomic(
   path: string,
   content: string | Uint8Array,
@@ -81,8 +98,8 @@ export function writeFileAtomic(
 /**
  * Runs `fn` while holding an exclusive directory lock next to `path`.
  *
- * Serialises read-modify-write cycles across processes (parallel subagents).
- * A lock older than `staleMs` is assumed abandoned and taken over.
+ * Serialises read-modify-write cycles across processes (parallel subagents). A
+ * lock older than `staleMs` is assumed abandoned and taken over.
  */
 export function withFileLock<T>(
   path: string,
@@ -98,7 +115,7 @@ export function withFileLock<T>(
       mkdirSync(lock);
       break;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (!isErrnoException(error) || error.code !== "EEXIST") throw error;
 
       try {
         if (Date.now() - statSync(lock).mtimeMs > staleMs) {

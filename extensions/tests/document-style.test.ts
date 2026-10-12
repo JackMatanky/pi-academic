@@ -1,3 +1,5 @@
+import type { JsonObject } from "../lib/schema.js";
+
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
@@ -12,7 +14,9 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
+
 import { strFromU8, unzipSync } from "fflate";
+
 import {
   checkStylePackage,
   installStarterPackage,
@@ -33,11 +37,14 @@ function project(t: TestContext): string {
   return root;
 }
 
-/** Write a package whose design.json is `design`, merged over name/schemaVersion. */
+/**
+ * Write a package whose design.json is `design`, merged over
+ * name/schemaVersion.
+ */
 function writePackage(
   root: string,
   name: string,
-  design: Record<string, unknown>,
+  design: JsonObject,
   files: Record<string, string> = {},
 ): string {
   const dir = join(root, ".academic-writer", "styles", name);
@@ -65,7 +72,7 @@ function zipEntry(path: string, entry: string): string {
 test("invalid designs name the field and the correction", (t) => {
   const root = project(t);
 
-  const cases: [Record<string, unknown>, RegExp][] = [
+  const cases: [JsonObject, RegExp][] = [
     [{ components: { body: { color: "red" } } }, /components\.body\.color/],
     [
       { components: { body: { lineSpacing: 5 } } },

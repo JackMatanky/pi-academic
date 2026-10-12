@@ -1,7 +1,10 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+
 import { Type } from "typebox";
+
 import { PACKAGE_ROOT } from "../../lib/paths.js";
 import { buildHealth } from "../commands.js";
 import { candidateMcpToolNames } from "../mcp-names.js";
@@ -10,7 +13,9 @@ import { resolveResourcePath } from "../resources.js";
 import { buildStatus } from "../status.js";
 import { fail, registerTool } from "../tool-kit.js";
 
-/** Resource, status, health, path and MCP-name lookup tools. */
+/**
+ * Resource, status, health, path and MCP-name lookup tools.
+ */
 export function registerCoreTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_read_resource",
@@ -202,7 +207,8 @@ export function registerCoreTools(pi: ExtensionAPI): void {
           "Bare MCP tool name as documented in this package's skills/agents, e.g. zotero_get_item_fulltext.",
       }),
     }),
-    // A missing connection is an answer, not a failure: callers branch on live_name.
+    // A missing connection is an answer, not a failure: callers branch on
+    // live_name.
     run: ({ logical_name: logicalName }) => {
       const live = new Set(pi.getActiveTools());
 

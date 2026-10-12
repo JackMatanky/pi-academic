@@ -1,7 +1,21 @@
+import type { SchemaViolation } from "../lib/schema.js";
+import type { JsonObject, JsonValue } from "../lib/schema.js";
+import type { Static } from "typebox";
+
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+
+import { Type } from "typebox";
+
 import { errorMessage, isInside } from "../lib/fs-safe.js";
 import { PACKAGE_ROOT } from "../lib/paths.js";
+import {
+  assertValid,
+  firstViolation,
+  isValid,
+  JsonObjectSchema,
+  parseJsonText,
+} from "../lib/schema.js";
 
 export type StyleFormat = "docx" | "odt" | "latex" | "pdf";
 
@@ -14,7 +28,101 @@ export const STYLE_FORMATS: readonly StyleFormat[] = [
   "pdf",
 ];
 
-export const COMPONENT_NAMES = [
+const NonNegative = Type.Number({ minimum: 0 });
+
+const Alignment = Type.Union([
+  Type.Literal("left"),
+  Type.Literal("right"),
+  Type.Literal("center"),
+  Type.Literal("justify"),
+]);
+
+/**
+ * Properties a component may set; each value is checked by its kind.
+ */
+const ComponentStyleSchema = Type.Object(
+  {
+    fontFamily: Type.Optional(
+      Type.String({ pattern: "^[\\p{L}\\p{N}_ .-]+$" }),
+    ),
+    fontSizePt: Type.Optional(NonNegative),
+    lineSpacing: Type.Optional(
+      Type.Number({ exclusiveMinimum: 0, maximum: 3 }),
+    ),
+    bold: Type.Optional(Type.Boolean()),
+    italic: Type.Optional(Type.Boolean()),
+    underline: Type.Optional(Type.Boolean()),
+    color: Type.Optional(Type.String({ pattern: "^#[0-9A-Fa-f]{6}$" })),
+    shading: Type.Optional(Type.String({ pattern: "^#[0-9A-Fa-f]{6}$" })),
+    alignment: Type.Optional(Alignment),
+    spaceBeforePt: Type.Optional(NonNegative),
+    spaceAfterPt: Type.Optional(NonNegative),
+    indentLeftMm: Type.Optional(NonNegative),
+    indentRightMm: Type.Optional(NonNegative),
+    firstLineIndentMm: Type.Optional(NonNegative),
+    hangingIndentMm: Type.Optional(NonNegative),
+    keepWithNext: Type.Optional(Type.Boolean()),
+    pageBreakBefore: Type.Optional(Type.Boolean()),
+    borderWidthPt: Type.Optional(NonNegative),
+    borderColor: Type.Optional(Type.String({ pattern: "^#[0-9A-Fa-f]{6}$" })),
+    cellPaddingMm: Type.Optional(NonNegative),
+  },
+  { additionalProperties: false },
+);
+
+/**
+ * One component's style properties.
+ */
+export type ComponentStyle = Static<typeof ComponentStyleSchema>;
+
+const ComponentsSchema = Type.Object(
+  {
+    title: Type.Optional(ComponentStyleSchema),
+    subtitle: Type.Optional(ComponentStyleSchema),
+    abstractHeading: Type.Optional(ComponentStyleSchema),
+    abstractBody: Type.Optional(ComponentStyleSchema),
+    body: Type.Optional(ComponentStyleSchema),
+    heading1: Type.Optional(ComponentStyleSchema),
+    heading2: Type.Optional(ComponentStyleSchema),
+    heading3: Type.Optional(ComponentStyleSchema),
+    heading4: Type.Optional(ComponentStyleSchema),
+    heading5: Type.Optional(ComponentStyleSchema),
+    heading6: Type.Optional(ComponentStyleSchema),
+    blockQuote: Type.Optional(ComponentStyleSchema),
+    footnoteReference: Type.Optional(ComponentStyleSchema),
+    footnoteText: Type.Optional(ComponentStyleSchema),
+    citation: Type.Optional(ComponentStyleSchema),
+    bibliography: Type.Optional(ComponentStyleSchema),
+    orderedList: Type.Optional(ComponentStyleSchema),
+    bulletList: Type.Optional(ComponentStyleSchema),
+    table: Type.Optional(ComponentStyleSchema),
+    tableHeader: Type.Optional(ComponentStyleSchema),
+    tableBody: Type.Optional(ComponentStyleSchema),
+    caption: Type.Optional(ComponentStyleSchema),
+    figure: Type.Optional(ComponentStyleSchema),
+    header: Type.Optional(ComponentStyleSchema),
+    footer: Type.Optional(ComponentStyleSchema),
+    pageNumber: Type.Optional(ComponentStyleSchema),
+    hyperlink: Type.Optional(ComponentStyleSchema),
+    code: Type.Optional(ComponentStyleSchema),
+  },
+  { additionalProperties: false },
+);
+
+/**
+ * Style properties by component.
+ */
+export type ComponentStyles = Static<typeof ComponentsSchema>;
+
+/**
+ * A component of the document that a style package can style.
+ */
+export type ComponentName = keyof ComponentStyles;
+
+/**
+ * Every styleable component, in document order.
+ */
+export const COMPONENT_NAMES: readonly ComponentName[] = [
   "title",
   "subtitle",
   "abstractHeading",
@@ -43,89 +151,77 @@ export const COMPONENT_NAMES = [
   "pageNumber",
   "hyperlink",
   "code",
-] as const;
+];
 
-export type ComponentName = (typeof COMPONENT_NAMES)[number];
+/**
+ * What kind of value each component property takes, for error messages.
+ */
+const PROP_KINDS = new Map<string, string>([
+  ["fontFamily", "font"],
+  ["lineSpacing", "spacing"],
+  ["bold", "boolean"],
+  ["italic", "boolean"],
+  ["underline", "boolean"],
+  ["color", "color"],
+  ["shading", "color"],
+  ["alignment", "alignment"],
+  ["keepWithNext", "boolean"],
+  ["pageBreakBefore", "boolean"],
+  ["borderColor", "color"],
+]);
 
-export interface ComponentStyle {
-  fontFamily?: string;
-  fontSizePt?: number;
-  lineSpacing?: number;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  color?: string;
-  shading?: string;
-  alignment?: "left" | "right" | "center" | "justify";
-  spaceBeforePt?: number;
-  spaceAfterPt?: number;
-  indentLeftMm?: number;
-  indentRightMm?: number;
-  firstLineIndentMm?: number;
-  hangingIndentMm?: number;
-  keepWithNext?: boolean;
-  pageBreakBefore?: boolean;
-  borderWidthPt?: number;
-  borderColor?: string;
-  cellPaddingMm?: number;
-}
+const PageSchema = Type.Object(
+  {
+    size: Type.Optional(
+      Type.Union([
+        Type.Literal("A4"),
+        Type.Literal("Letter"),
+        Type.Literal("Legal"),
+      ]),
+    ),
+    orientation: Type.Optional(
+      Type.Union([Type.Literal("portrait"), Type.Literal("landscape")]),
+    ),
+    marginsMm: Type.Optional(
+      Type.Object(
+        {
+          top: Type.Optional(NonNegative),
+          right: Type.Optional(NonNegative),
+          bottom: Type.Optional(NonNegative),
+          left: Type.Optional(NonNegative),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    headerDistanceMm: Type.Optional(NonNegative),
+    footerDistanceMm: Type.Optional(NonNegative),
+  },
+  { additionalProperties: false },
+);
 
-type PropKind =
-  | "number"
-  | "spacing"
-  | "boolean"
-  | "font"
-  | "color"
-  | "alignment";
-
-const PROP_KINDS: Record<keyof ComponentStyle, PropKind> = {
-  fontFamily: "font",
-  fontSizePt: "number",
-  lineSpacing: "spacing",
-  bold: "boolean",
-  italic: "boolean",
-  underline: "boolean",
-  color: "color",
-  shading: "color",
-  alignment: "alignment",
-  spaceBeforePt: "number",
-  spaceAfterPt: "number",
-  indentLeftMm: "number",
-  indentRightMm: "number",
-  firstLineIndentMm: "number",
-  hangingIndentMm: "number",
-  keepWithNext: "boolean",
-  pageBreakBefore: "boolean",
-  borderWidthPt: "number",
-  borderColor: "color",
-  cellPaddingMm: "number",
-};
+type PageInput = Static<typeof PageSchema>;
 
 export interface PageStyle {
   size: "A4" | "Letter" | "Legal";
   orientation: "portrait" | "landscape";
   marginsMm: { top: number; right: number; bottom: number; left: number };
-  headerDistanceMm?: number | undefined;
-  footerDistanceMm?: number | undefined;
+  headerDistanceMm?: number;
+  footerDistanceMm?: number;
 }
 
-/** File names (relative to the package) that replace generated native assets. */
-export interface FormatConfig {
-  docx?: { referenceDocument?: string };
-  odt?: { referenceDocument?: string };
-  latex?: { template?: string; preamble?: string };
-  pdf?: { template?: string; preamble?: string; engine?: PdfEngine };
-}
-
+/**
+ * A style package's design: page setup and per-component style.
+ */
 export interface StyleDesign {
   schemaVersion: 1;
   name: string;
   page: PageStyle;
-  components: Partial<Record<ComponentName, ComponentStyle>>;
-  formats: FormatConfig;
+  components: ComponentStyles;
 }
 
-/** Absolute native asset paths declared by the package for one format. */
+/**
+ * Absolute native asset paths declared by the package for one format.
+ */
 export interface NativeAssets {
   referenceDocument?: string;
   template?: string;
@@ -133,27 +229,29 @@ export interface NativeAssets {
   engine?: PdfEngine;
 }
 
-/** Component properties the researcher changed relative to the shipped starter. */
-export type ExplicitProps = ReadonlyMap<
-  ComponentName,
-  ReadonlySet<keyof ComponentStyle>
->;
+/**
+ * Component properties the researcher changed relative to the shipped starter.
+ */
+export type ExplicitProps = ReadonlyMap<ComponentName, ReadonlySet<string>>;
 
 function changedProps(
-  starter: StyleDesign["components"],
-  own: StyleDesign["components"],
+  starter: ComponentStyles,
+  own: ComponentStyles,
 ): ExplicitProps {
-  const changed = new Map<ComponentName, ReadonlySet<keyof ComponentStyle>>();
+  const changed = new Map<ComponentName, ReadonlySet<string>>();
 
-  for (const [key, props] of Object.entries(own)) {
-    const component = key as ComponentName;
-    const base = starter[component] ?? {};
+  for (const component of COMPONENT_NAMES) {
+    const props = own[component];
 
-    const keys = (Object.keys(props) as (keyof ComponentStyle)[]).filter(
-      (prop) => props[prop] !== base[prop],
-    );
+    if (!props) continue;
 
-    if (keys.length) changed.set(component, new Set(keys));
+    const base = new Map(Object.entries(starter[component] ?? {}));
+
+    const keys = Object.entries(props)
+      .filter(([key, value]) => base.get(key) !== value)
+      .map(([key]) => key);
+
+    if (keys.length > 0) changed.set(component, new Set(keys));
   }
 
   return changed;
@@ -161,10 +259,15 @@ function changedProps(
 
 export interface LoadedStyle {
   design: StyleDesign;
-  /** Real path of the package directory. */
+  /**
+   * Real path of the package directory.
+   */
   dir: string;
   native: Partial<Record<StyleFormat, NativeAssets>>;
-  /** Per component, the properties the researcher set to something other than the starter's value. */
+  /**
+   * Per component, the properties the researcher set to something other than
+   * the starter's value.
+   */
   explicit: ExplicitProps;
 }
 
@@ -175,168 +278,167 @@ export const STARTER_DIR = join(
   "academic-default",
 );
 
-const PAGE_KEYS = [
-  "size",
-  "orientation",
-  "marginsMm",
-  "headerDistanceMm",
-  "footerDistanceMm",
-];
-
-const SIDES = ["top", "right", "bottom", "left"] as const;
-
 function fail(name: string, field: string, correction: string): never {
   throw new Error(`Style package '${name}', ${field}: ${correction}`);
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function isNonNegative(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0;
-}
-
-function readJsonObject(path: string, name: string, label: string) {
-  let parsed: unknown;
+/**
+ * Reads `design.json` as a JSON object.
+ */
+function readDesignJson(path: string, name: string, label: string): JsonObject {
+  let parsed: JsonValue;
 
   try {
-    parsed = JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    fail(
+    parsed = parseJsonText(readFileSync(path, "utf8"));
+  } catch (cause) {
+    return fail(
       name,
       label,
-      `create a valid JSON design file (${errorMessage(error)})`,
+      `create a valid JSON design file (${errorMessage(cause)})`,
     );
   }
 
-  if (!isObject(parsed)) fail(name, label, "use a JSON object");
+  if (!isValid(JsonObjectSchema, parsed))
+    return fail(name, label, "use a JSON object");
 
   return parsed;
 }
 
-function checkProp(
-  name: string,
-  field: string,
-  kind: PropKind,
-  value: unknown,
-): void {
-  const valid =
-    kind === "number"
-      ? isNonNegative(value)
-      : kind === "spacing"
-        ? typeof value === "number" &&
-          Number.isFinite(value) &&
-          value > 0 &&
-          value <= 3
-        : kind === "boolean"
-          ? typeof value === "boolean"
-          : kind === "font"
-            ? typeof value === "string" && /^[\p{L}\p{N}_ .-]+$/u.test(value)
-            : kind === "color"
-              ? typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value)
-              : typeof value === "string" &&
-                ["left", "right", "center", "justify"].includes(value);
-
-  if (!valid) fail(name, field, `use a valid value for this ${kind} property`);
+/**
+ * A design field and what to change about it.
+ */
+interface Correction {
+  field: string;
+  correction: string;
 }
 
+/**
+ * Turns a schema violation into the field path and correction a researcher can
+ * act on.
+ */
+function describeViolation(
+  violation: SchemaViolation,
+  section: "page" | "components",
+): Correction {
+  const path = [section, ...violation.path.filter(Boolean)];
+  const field = path.join(".");
+  const unexpected = violation.unexpectedKeys[0] ?? "";
+
+  if (violation.keyword === "additionalProperties") {
+    if (section === "components" && path.length === 1)
+      return {
+        field: `components.${unexpected}`,
+        correction: "use only the documented component names",
+      };
+
+    if (section === "components")
+      return {
+        field: `${field}.${unexpected}`,
+        correction: "remove the unknown property",
+      };
+
+    if (path[1] === "marginsMm")
+      return {
+        field: `page.marginsMm.${unexpected}`,
+        correction: "use a non-negative finite number and a known side",
+      };
+
+    return { field: `page.${unexpected}`, correction: "remove unknown keys" };
+  }
+
+  if (violation.keyword === "type" && violation.message === "must be object")
+    return { field, correction: "use an object" };
+
+  if (section === "components") {
+    const kind = PROP_KINDS.get(path[2] ?? "") ?? "number";
+
+    return {
+      field,
+      correction: `use a valid value for this ${kind} property`,
+    };
+  }
+
+  switch (path[1]) {
+    case "size":
+      return { field, correction: "use A4, Letter, or Legal" };
+    case "orientation":
+      return { field, correction: "use portrait or landscape" };
+    case "marginsMm":
+      return {
+        field,
+        correction: "use a non-negative finite number and a known side",
+      };
+    default:
+      return {
+        field,
+        correction: "use a non-negative finite millimeter value",
+      };
+  }
+}
+
+/**
+ * Checks the `page` section of a design.
+ */
+function validatePage(name: string, raw: JsonValue | undefined): PageInput {
+  const page = raw ?? {};
+  const violation = firstViolation(PageSchema, page);
+
+  if (violation) {
+    const { field, correction } = describeViolation(violation, "page");
+
+    return fail(name, field, correction);
+  }
+
+  assertValid(PageSchema, page, "page");
+
+  return page;
+}
+
+/**
+ * Checks the `components` section of a design.
+ */
 function validateComponents(
   name: string,
-  raw: unknown,
-): Partial<Record<ComponentName, ComponentStyle>> {
-  if (!isObject(raw)) fail(name, "components", "use an object");
-  const out: Partial<Record<ComponentName, ComponentStyle>> = {};
+  raw: JsonValue | undefined,
+): ComponentStyles {
+  const components = raw ?? {};
+  const violation = firstViolation(ComponentsSchema, components);
 
-  for (const [key, props] of Object.entries(raw)) {
-    if (!(COMPONENT_NAMES as readonly string[]).includes(key)) {
-      fail(
-        name,
-        `components.${key}`,
-        "use only the documented component names",
-      );
-    }
+  if (violation) {
+    const { field, correction } = describeViolation(violation, "components");
 
-    if (!isObject(props)) fail(name, `components.${key}`, "use an object");
-
-    for (const [prop, value] of Object.entries(props)) {
-      const kind = (PROP_KINDS as Record<string, PropKind | undefined>)[prop];
-
-      if (!kind) {
-        fail(name, `components.${key}.${prop}`, "remove the unknown property");
-      }
-
-      checkProp(name, `components.${key}.${prop}`, kind, value);
-    }
-
-    // Every key and value was validated against PROP_KINDS above.
-    out[key as ComponentName] = props as ComponentStyle;
+    return fail(name, field, correction);
   }
 
-  return out;
+  assertValid(ComponentsSchema, components, "components");
+
+  return components;
 }
 
-function validatePage(name: string, raw: unknown): Partial<PageStyle> {
-  if (!isObject(raw)) fail(name, "page", "use an object");
+const StringSchema = Type.String();
 
-  for (const key of Object.keys(raw)) {
-    if (!PAGE_KEYS.includes(key))
-      fail(name, `page.${key}`, "remove unknown keys");
-  }
-
-  if (
-    raw.size !== undefined &&
-    !["A4", "Letter", "Legal"].includes(String(raw.size))
-  ) {
-    fail(name, "page.size", "use A4, Letter, or Legal");
-  }
-
-  if (
-    raw.orientation !== undefined &&
-    !["portrait", "landscape"].includes(String(raw.orientation))
-  ) {
-    fail(name, "page.orientation", "use portrait or landscape");
-  }
-
-  const margins = raw.marginsMm ?? {};
-
-  if (!isObject(margins)) fail(name, "page.marginsMm", "use an object");
-
-  for (const [side, value] of Object.entries(margins)) {
-    if (!(SIDES as readonly string[]).includes(side) || !isNonNegative(value)) {
-      fail(
-        name,
-        `page.marginsMm.${side}`,
-        "use a non-negative finite number and a known side",
-      );
-    }
-  }
-
-  for (const key of ["headerDistanceMm", "footerDistanceMm"]) {
-    if (raw[key] !== undefined && !isNonNegative(raw[key])) {
-      fail(name, `page.${key}`, "use a non-negative finite millimeter value");
-    }
-  }
-
-  // Keys and value types were validated above.
-  return raw as Partial<PageStyle>;
-}
-
-/** Resolve a relative asset inside the package; reject traversal and symlink escape. */
+/**
+ * Resolve a relative asset inside the package; reject traversal and symlink
+ * escape.
+ */
 function resolveAsset(
   dir: string,
   name: string,
   field: string,
-  value: unknown,
+  value: JsonValue,
   suffix: string,
 ): string {
   if (
-    typeof value !== "string" ||
+    !isValid(StringSchema, value) ||
     isAbsolute(value) ||
     value.split(/[\\/]/).includes("..") ||
     !value.endsWith(suffix)
   ) {
-    fail(name, field, `use a relative ${suffix} file inside the package`);
+    return fail(
+      name,
+      field,
+      `use a relative ${suffix} file inside the package`,
+    );
   }
 
   const path = resolve(dir, value);
@@ -347,36 +449,46 @@ function resolveAsset(
 
     if (!statSync(real).isFile()) throw new Error("not a file");
   } catch {
-    fail(name, field, "create the referenced file inside the package");
+    return fail(name, field, "create the referenced file inside the package");
   }
 
   if (!isInside(dir, real)) {
-    fail(name, field, "the referenced file must stay inside the package");
+    return fail(
+      name,
+      field,
+      "the referenced file must stay inside the package",
+    );
   }
 
   return real;
 }
 
+/**
+ * The native asset keys each format accepts, with the suffix each file needs.
+ */
+const FORMAT_OPTIONS: Record<StyleFormat, Record<string, string | null>> = {
+  docx: { referenceDocument: ".docx" },
+  odt: { referenceDocument: ".odt" },
+  latex: { template: ".tex", preamble: ".tex" },
+  pdf: { template: ".tex", preamble: ".tex", engine: null },
+};
+
 function validateFormats(
   name: string,
   dir: string,
-  raw: unknown,
+  raw: JsonValue | undefined,
   formats: ReadonlySet<StyleFormat>,
 ): Partial<Record<StyleFormat, NativeAssets>> {
-  if (!isObject(raw)) fail(name, "formats", "use an object");
+  const configured = raw ?? {};
 
-  for (const key of Object.keys(raw)) {
-    if (!(STYLE_FORMATS as readonly string[]).includes(key)) {
-      fail(name, "formats", "use only docx, odt, latex, and pdf");
+  if (!isValid(JsonObjectSchema, configured))
+    return fail(name, "formats", "use an object");
+
+  for (const key of Object.keys(configured)) {
+    if (!STYLE_FORMATS.some((format) => format === key)) {
+      return fail(name, "formats", "use only docx, odt, latex, and pdf");
     }
   }
-
-  const options: Record<StyleFormat, Record<string, string | null>> = {
-    docx: { referenceDocument: ".docx" },
-    odt: { referenceDocument: ".odt" },
-    latex: { template: ".tex", preamble: ".tex" },
-    pdf: { template: ".tex", preamble: ".tex", engine: null },
-  };
 
   const out: Partial<Record<StyleFormat, NativeAssets>> = {};
   const wanted = new Set(formats);
@@ -384,19 +496,20 @@ function validateFormats(
   if (wanted.has("pdf")) wanted.add("latex");
 
   for (const format of wanted) {
-    const cfg = raw[format] ?? {};
+    const cfg = configured[format] ?? {};
 
-    if (!isObject(cfg)) fail(name, `formats.${format}`, "use an object");
+    if (!isValid(JsonObjectSchema, cfg))
+      return fail(name, `formats.${format}`, "use an object");
 
     for (const key of Object.keys(cfg)) {
-      if (!(key in options[format])) {
-        fail(name, `formats.${format}`, `remove unknown key '${key}'`);
+      if (!(key in FORMAT_OPTIONS[format])) {
+        return fail(name, `formats.${format}`, `remove unknown key '${key}'`);
       }
     }
 
     const assets: NativeAssets = {};
 
-    for (const [key, suffix] of Object.entries(options[format])) {
+    for (const [key, suffix] of Object.entries(FORMAT_OPTIONS[format])) {
       const value = cfg[key];
 
       if (value === undefined) continue;
@@ -404,7 +517,7 @@ function validateFormats(
 
       if (key === "engine") {
         if (value !== "xelatex" && value !== "tectonic") {
-          fail(name, field, "use xelatex or tectonic");
+          return fail(name, field, "use xelatex or tectonic");
         }
 
         assets.engine = value;
@@ -422,46 +535,56 @@ function validateFormats(
 
   // PDF inherits LaTeX template/preamble unless it declares its own.
   if (out.pdf && out.latex) {
-    out.pdf = {
-      ...(out.latex.template ? { template: out.latex.template } : {}),
-      ...(out.latex.preamble ? { preamble: out.latex.preamble } : {}),
-      ...Object.fromEntries(
-        Object.entries(out.pdf).filter(([, v]) => v !== undefined),
-      ),
-    };
+    const inherited: NativeAssets = {};
+
+    if (out.latex.template) inherited.template = out.latex.template;
+
+    if (out.latex.preamble) inherited.preamble = out.latex.preamble;
+    out.pdf = { ...inherited, ...out.pdf };
   }
 
   return out;
 }
 
-/** Load the shipped starter design, which supplies defaults for every package. */
+/**
+ * The page of a package merged over the starter's.
+ */
+function mergePage(page: PageInput, base: PageStyle): PageStyle {
+  const merged: PageStyle = {
+    size: page.size ?? base.size,
+    orientation: page.orientation ?? base.orientation,
+    marginsMm: { ...base.marginsMm, ...page.marginsMm },
+  };
+
+  const header = page.headerDistanceMm ?? base.headerDistanceMm;
+  const footer = page.footerDistanceMm ?? base.footerDistanceMm;
+
+  if (header !== undefined) merged.headerDistanceMm = header;
+
+  if (footer !== undefined) merged.footerDistanceMm = footer;
+
+  return merged;
+}
+
+/**
+ * Load the shipped starter design, which supplies defaults for every package.
+ */
 export function loadStarterDesign(): StyleDesign {
-  const raw = readJsonObject(
+  const raw = readDesignJson(
     join(STARTER_DIR, "design.json"),
     "academic-default",
     "starter design.json",
   );
 
-  const page = validatePage("academic-default", raw.page);
-
   return {
     schemaVersion: 1,
     name: "academic-default",
-    page: {
-      size: page.size ?? "A4",
-      orientation: page.orientation ?? "portrait",
-      marginsMm: {
-        top: 25.4,
-        right: 25.4,
-        bottom: 25.4,
-        left: 25.4,
-        ...page.marginsMm,
-      },
-      headerDistanceMm: page.headerDistanceMm,
-      footerDistanceMm: page.footerDistanceMm,
-    },
-    components: validateComponents("academic-default", raw.components ?? {}),
-    formats: {},
+    page: mergePage(validatePage("academic-default", raw.page), {
+      size: "A4",
+      orientation: "portrait",
+      marginsMm: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
+    }),
+    components: validateComponents("academic-default", raw.components),
   };
 }
 
@@ -491,9 +614,9 @@ export function loadStylePackage(
         "package path must remain inside .academic-writer/styles",
       );
     }
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Style package")) {
-      throw error;
+  } catch (cause) {
+    if (cause instanceof Error && cause.message.startsWith("Style package")) {
+      throw cause;
     }
 
     return fail(
@@ -503,7 +626,7 @@ export function loadStylePackage(
     );
   }
 
-  const raw = readJsonObject(join(dir, "design.json"), name, "design.json");
+  const raw = readDesignJson(join(dir, "design.json"), name, "design.json");
   const allowed = ["schemaVersion", "name", "page", "components", "formats"];
 
   if (
@@ -519,21 +642,17 @@ export function loadStylePackage(
   }
 
   const starter = loadStarterDesign();
-  const page = validatePage(name, raw.page ?? {});
-  const own = validateComponents(name, raw.components ?? {});
-  const components: StyleDesign["components"] = { ...starter.components };
+  const page = validatePage(name, raw.page);
+  const own = validateComponents(name, raw.components);
+  const components: ComponentStyles = { ...starter.components };
 
-  for (const [key, props] of Object.entries(own)) {
-    const component = key as ComponentName;
-    components[component] = { ...components[component], ...props };
+  for (const component of COMPONENT_NAMES) {
+    const props = own[component];
+
+    if (props) components[component] = { ...components[component], ...props };
   }
 
-  const native = validateFormats(
-    name,
-    dir,
-    raw.formats ?? {},
-    new Set(formats),
-  );
+  const native = validateFormats(name, dir, raw.formats, new Set(formats));
 
   return {
     dir,
@@ -542,17 +661,8 @@ export function loadStylePackage(
     design: {
       schemaVersion: 1,
       name,
-      page: {
-        size: page.size ?? starter.page.size,
-        orientation: page.orientation ?? starter.page.orientation,
-        marginsMm: { ...starter.page.marginsMm, ...page.marginsMm },
-        headerDistanceMm:
-          page.headerDistanceMm ?? starter.page.headerDistanceMm,
-        footerDistanceMm:
-          page.footerDistanceMm ?? starter.page.footerDistanceMm,
-      },
+      page: mergePage(page, starter.page),
       components,
-      formats: (raw.formats ?? {}) as FormatConfig,
     },
   };
 }
@@ -563,7 +673,9 @@ export const PAGE_DIMENSIONS_MM: Record<PageStyle["size"], [number, number]> = {
   Legal: [215.9, 355.6],
 };
 
-/** Page width and height in millimeters after applying orientation. */
+/**
+ * Page width and height in millimeters after applying orientation.
+ */
 export function pageSizeMm(page: PageStyle): [number, number] {
   const [width, height] = PAGE_DIMENSIONS_MM[page.size];
 

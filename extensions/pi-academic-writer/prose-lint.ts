@@ -1,6 +1,10 @@
-/** Advisory English prose-pattern checks for Markdown text. */
+/**
+ * Advisory English prose-pattern checks for Markdown text.
+ */
 
-/** One contextual match from the deterministic prose rules. */
+/**
+ * One contextual match from the deterministic prose rules.
+ */
 export interface ProseLintFinding {
   id: string;
   line: number;
@@ -10,7 +14,9 @@ export interface ProseLintFinding {
   relatedLines?: number[];
 }
 
-/** Stable result envelope returned by the prose lint tool. */
+/**
+ * Stable result envelope returned by the prose lint tool.
+ */
 export interface ProseLintResult {
   file: string;
   language: "english";
@@ -67,7 +73,10 @@ const urlPattern = /https?:\/\/\S+/giu;
 
 const wordPattern = /[\p{L}\p{N}_’'-]+/gu;
 
-/** The characters Python's `str.splitlines` treats as line boundaries, besides `\r\n`. */
+/**
+ * The characters Python's `str.splitlines` treats as line boundaries, besides
+ * `\r\n`.
+ */
 const LINE_BREAKS = [
   "\n",
   "\r",
@@ -80,6 +89,7 @@ const LINE_BREAKS = [
   "\u2028",
   "\u2029",
 ];
+
 const lineBreakPattern = new RegExp(`\\r\\n|[${LINE_BREAKS.join("")}]`, "u");
 
 function visibleLines(text: string): Array<[number, string]> {
@@ -199,7 +209,9 @@ function repeatedOpenings(lines: Array<[number, string]>): ProseLintFinding[] {
   return findings;
 }
 
-/** Return stable, read-only advisory findings for English Markdown prose. */
+/**
+ * Return stable, read-only advisory findings for English Markdown prose.
+ */
 export function lintProse(text: string, fileName = "<stdin>"): ProseLintResult {
   const lines = visibleLines(text);
   const findings: ProseLintFinding[] = [];

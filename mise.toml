@@ -31,9 +31,10 @@ description = "Install npm deps (root + extensions/) and sync Python deps via uv
 run = ["npm install", "npm --prefix extensions install", "uv sync"]
 
 [tasks.fmt]
-description = "Format Python, TypeScript, JSON, YAML, and TOML"
+description = "Format Python, TypeScript, JSON, YAML, and TOML; apply Oxlint autofixes"
 run = [
   "uv run ruff format .",
+  "npx oxlint --fix extensions",
   "npx oxfmt --write \"**/*.{ts,js,json,yml,yaml}\"",
   "taplo format mise.toml",
 ]
@@ -46,19 +47,12 @@ run = [
   "taplo check mise.toml",
 ]
 
-[tasks.oxlint]
-description = "Oxlint + vendored anti-slop rules over extensions/ (not yet in `lint`: baseline findings unresolved)"
-run = "npx oxlint extensions"
-
-[tasks.oxlint-fix]
-description = "Apply Oxlint autofixes (anti-slop readable-spacing)"
-run = "npx oxlint --fix extensions"
-
 [tasks.lint]
-description = "Lint Python, TypeScript, JSON/YAML formatting, and TOML"
+description = "Lint Python and TypeScript (Oxlint + anti-slop, tsc), and check formatting"
 run = [
   "mise run fmt-check",
   "uv run ruff check --select E9,F63,F7,F82 .",
+  "npx oxlint extensions",
   "npm run typecheck",
 ]
 [tasks.test]

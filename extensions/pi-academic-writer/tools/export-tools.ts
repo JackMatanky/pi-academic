@@ -1,14 +1,20 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { Type } from "typebox";
+
 import {
   errorMessage,
   resolveInside,
   writeFileAtomic,
 } from "../../lib/fs-safe.js";
 import { loadProfile } from "../../lib/profile.js";
+import { parseWith } from "../../lib/schema.js";
+import { ArticleFormatSchema } from "../article.js";
 import { auditCitations } from "../citation-audit.js";
+import { selectPdfEngine } from "../commands.js";
 import {
   checkStylePackage,
   installStarterPackage,
@@ -17,10 +23,9 @@ import {
   withScratchDir,
   type RenderedStyle,
 } from "../document-style.js";
+import { assembleDocxJson } from "../docx-assembly.js";
 import { cleanRtlText, generateDocx } from "../docx-generator.js";
 import { runPandoc } from "../pandoc.js";
-import { selectPdfEngine } from "../commands.js";
-import { assembleDocxJson } from "../docx-assembly.js";
 import { citationAssetPaths } from "../project-files.js";
 import { STYLE_FORMATS, type StyleFormat } from "../style-design.js";
 import {
@@ -30,12 +35,18 @@ import {
   type ToolOutput,
 } from "../tool-kit.js";
 
-/** Per-format style details returned by `academic_writer_export_article`. */
+/**
+ * Per-format style details returned by `academic_writer_export_article`.
+ */
 interface StyleSummary {
   package: string;
-  /** Assets generated from design.json. */
+  /**
+   * Assets generated from design.json.
+   */
   generated: string[];
-  /** Native assets used as supplied, by role. */
+  /**
+   * Native assets used as supplied, by role.
+   */
   native: Record<string, string>;
   warnings: string[];
 }
@@ -50,11 +61,14 @@ interface ExportResult {
 }
 
 const isStyleFormat = (value: string): value is StyleFormat =>
-  (STYLE_FORMATS as readonly string[]).includes(value);
+  STYLE_FORMATS.some((format) => format === value);
 
 const REMOTE_REFERENCE = /^[a-z][a-z0-9+.-]*:\/\//i;
 
-/** Pandoc fetches URLs given as `--csl=` or `--bibliography=`; exports stay local. */
+/**
+ * Pandoc fetches URLs given as `--csl=` or `--bibliography=`; exports stay
+ * local.
+ */
 function assertLocalReference(value: string, label: string): void {
   if (REMOTE_REFERENCE.test(value)) {
     fail(`Export failed: ${label} must be a local file, not a URL: ${value}`, {
@@ -85,7 +99,9 @@ function summarizeStyle(style: RenderedStyle): StyleSummary {
   };
 }
 
-/** Export, DOCX generation, style package and typography tools. */
+/**
+ * Export, DOCX generation, style package and typography tools.
+ */
 export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "academic_writer_export_article",
@@ -171,7 +187,8 @@ export function registerExportTools(pi: ExtensionAPI): void {
         });
       }
 
-      // The audit resolved the article inside the project; `./` keeps a leading `-` from being a flag.
+      // The audit resolved the article inside the project; `./` keeps a leading
+      // `-` from being a flag.
       const input = audit.article.startsWith("-")
         ? `./${audit.article}`
         : audit.article;
@@ -223,10 +240,15 @@ export function registerExportTools(pi: ExtensionAPI): void {
             let style: RenderedStyle | undefined;
             let engine: string | undefined;
 
-            const detail = () => ({
-              ...(engine ? { engine } : {}),
-              ...(style ? { style: summarizeStyle(style) } : {}),
-            });
+            const detail = () => {
+              const found: Pick<ExportResult, "engine" | "style"> = {};
+
+              if (engine) found.engine = engine;
+
+              if (style) found.style = summarizeStyle(style);
+
+              return found;
+            };
 
             try {
               if (stylePackage) {
@@ -247,8 +269,9 @@ export function registerExportTools(pi: ExtensionAPI): void {
                 if (engine) args.push(`--pdf-engine=${engine}`);
               }
 
-              // Pandoc writes into the scratch directory; the real output is replaced
-              // only after it succeeds, so a failure never clobbers or fakes a result.
+              // Pandoc writes into the scratch directory; the real output is
+              // replaced only after it succeeds, so a failure never clobbers or
+              // fakes a result.
               const scratchOutput = join(
                 dir,
                 `export.${format === "latex" ? "tex" : format}`,
@@ -330,23 +353,26 @@ export function registerExportTools(pi: ExtensionAPI): void {
       ),
     }),
     run: (params, { cwd }) => {
-      const format =
+      const formatJson =
         params.formatJson === undefined
           ? undefined
           : parseJsonObject(params.formatJson);
 
-      if (format === null) {
+      if (formatJson === null) {
         return fail("DOCX JSON assembly failed: formatJson must be an object", {
           ok: false,
         });
       }
 
+      const format =
+        formatJson === undefined
+          ? undefined
+          : parseWith(ArticleFormatSchema, formatJson, "formatJson");
+
       const result = assembleDocxJson(cwd, params.input, params.output, {
-        ...(params.title ? { title: params.title } : {}),
-        ...(params.targetLanguage
-          ? { targetLanguage: params.targetLanguage }
-          : {}),
-        ...(format ? { format } : {}),
+        title: params.title,
+        targetLanguage: params.targetLanguage,
+        format,
       });
 
       if (!result.ok) {
@@ -390,6 +416,14 @@ export function registerExportTools(pi: ExtensionAPI): void {
         params.stylePackage ??
         loadProfile(cwd)?.outputFormatPreferences?.stylePackage;
 
+      const generate = (referenceDoc?: string) =>
+        generateDocx(params.input, params.output, cwd, {
+          referenceDoc,
+          signal,
+        });
+
+      const noWarnings: string[] = [];
+
       const { result, warnings } = stylePackage
         ? await withScratchDir(cwd, "style-docx", async (dir) => {
             const style = await renderDocumentStyle(
@@ -401,24 +435,11 @@ export function registerExportTools(pi: ExtensionAPI): void {
             );
 
             return {
-              result: await generateDocx(params.input, params.output, cwd, {
-                ...(style.assets.referenceDocument
-                  ? { referenceDoc: style.assets.referenceDocument }
-                  : {}),
-                ...(signal ? { signal } : {}),
-              }),
+              result: await generate(style.assets.referenceDocument),
               warnings: style.warnings,
             };
           })
-        : {
-            result: await generateDocx(
-              params.input,
-              params.output,
-              cwd,
-              signal ? { signal } : {},
-            ),
-            warnings: [] as string[],
-          };
+        : { result: await generate(), warnings: noWarnings };
 
       return {
         text: [

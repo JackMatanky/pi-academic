@@ -12,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, test } from "node:test";
+
 import { resolveCslStyle } from "../pi-academic-writer/csl-resolver.js";
 
 const projects: string[] = [];
@@ -28,7 +29,10 @@ afterEach(() => {
     rmSync(project, { recursive: true, force: true });
 });
 
-/** A temp project; realpath'd because macOS tmpdir is a symlink and the resolver returns real paths. */
+/**
+ * A temp project; realpath'd because macOS tmpdir is a symlink and the resolver
+ * returns real paths.
+ */
 function project(): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "csl-resolver-")));
   projects.push(root);
@@ -128,19 +132,18 @@ test("style IDs fall back from Zotero to the CSL repository and report both fail
   ]);
   const other = project();
   globalThis.fetch = async () => new Response("not found", { status: 404 });
-  await assert.rejects(
-    resolveCslStyle("absent", other, true),
-    (error: unknown) => {
-      assert.ok(error instanceof Error);
-      assert.match(
-        error.message,
-        /CSL style id not found via Zotero or citation-style-language\/styles: absent/,
-      );
-      assert.equal((error.message.match(/\(404\)/g) ?? []).length, 2);
 
-      return true;
-    },
+  const failure = await resolveCslStyle("absent", other, true).then(
+    () => undefined,
+    (cause: Error) => cause,
   );
+
+  assert.ok(failure instanceof Error);
+  assert.match(
+    failure.message,
+    /CSL style id not found via Zotero or citation-style-language\/styles: absent/,
+  );
+  assert.equal((failure.message.match(/\(404\)/g) ?? []).length, 2);
   assert.equal(
     existsSync(join(other, ".academic-writer", "csl", "absent.csl")),
     false,

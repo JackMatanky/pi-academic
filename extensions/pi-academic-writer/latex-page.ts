@@ -6,7 +6,9 @@ import {
   type LatexContext,
 } from "./latex-context.js";
 
-/** Page geometry, packages, fonts and document-wide body text settings. */
+/**
+ * Page geometry, packages, fonts and document-wide body text settings.
+ */
 export function applyPageAndBody(ctx: LatexContext): void {
   const { out, color, unsupported, get, design } = ctx;
   const { page } = design;
@@ -22,7 +24,8 @@ export function applyPageAndBody(ctx: LatexContext): void {
 
   if (page.orientation === "landscape") geometry.push("landscape");
 
-  // Word measures the footer from the page edge; LaTeX measures footskip from the text block.
+  // Word measures the footer from the page edge; LaTeX measures footskip from
+  // the text block.
   if (page.footerDistanceMm !== undefined && page.footerDistanceMm < m.bottom) {
     geometry.push(`footskip=${num(m.bottom - page.footerDistanceMm)}mm`);
   }

@@ -1,6 +1,4 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { errorMessage } from "../lib/fs-safe.js";
-import { fenceAfter } from "../lib/markdown.js";
 import { homedir } from "node:os";
 import {
   basename,
@@ -13,7 +11,20 @@ import {
   sep,
 } from "node:path";
 
-/** An audit with an article path resolved inside the project. */
+import { Type } from "typebox";
+
+import { errorMessage } from "../lib/fs-safe.js";
+import { fenceAfter } from "../lib/markdown.js";
+import {
+  isValid,
+  JsonObjectSchema,
+  parseJsonText,
+  type JsonValue,
+} from "../lib/schema.js";
+
+/**
+ * An audit with an article path resolved inside the project.
+ */
 export interface CitationAuditDetails {
   ok: boolean;
   article: string;
@@ -31,7 +42,9 @@ export interface CitationAuditDetails {
   error?: string;
 }
 
-/** Invalid project/article paths return only an error, as in the Python CLI. */
+/**
+ * Invalid project/article paths return only an error, as in the Python CLI.
+ */
 export type CitationAuditResult =
   | CitationAuditDetails
   | { ok: false; error: string };
@@ -39,6 +52,8 @@ export type CitationAuditResult =
 // Pandoc keys start with a letter, digit or underscore, may contain internal
 // punctuation only when an alphanumeric follows, and `@` must not follow a word
 // character (so e-mail addresses are not citations).
+const StringSchema = Type.String();
+
 const bracketPattern = /\[((?:[^[\]]|\\.)*)\]/gu;
 
 const citationStart = /(?<![\p{L}\p{N}_\\])@/u;
@@ -48,7 +63,10 @@ const citeKeyPattern =
 
 const bibliographyKeyPattern = /@[\p{L}\p{N}_]+\s*\{\s*([^,\s]+)\s*,/gu;
 
-/** Blanks front matter, fenced code and inline code, which Pandoc never parses for citations. */
+/**
+ * Blanks front matter, fenced code and inline code, which Pandoc never parses
+ * for citations.
+ */
 function stripCode(markdown: string): string {
   const lines = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---(?=\r?\n|$)/, "");
   let fence: string | null = null;
@@ -74,7 +92,8 @@ function isFile(path: string): boolean {
   }
 }
 
-// Resolves symlinks in the nearest existing ancestor, so a missing leaf is still checked.
+// Resolves symlinks in the nearest existing ancestor, so a missing leaf is
+// still checked.
 function resolveRealPath(path: string): string {
   if (existsSync(path)) return realpathSync(path);
   const parent = dirname(path);
@@ -82,24 +101,29 @@ function resolveRealPath(path: string): string {
   return parent === path ? path : join(resolveRealPath(parent), basename(path));
 }
 
-function collectCiteKeys(value: unknown, keys: Set<string>): void {
+/**
+ * Collects every non-blank `citeKey` anywhere in a source registry.
+ */
+function collectCiteKeys(value: JsonValue, keys: Set<string>): void {
   if (Array.isArray(value)) {
     for (const item of value) collectCiteKeys(item, keys);
-  } else if (value !== null && typeof value === "object") {
-    const record = value as Record<string, unknown>;
 
-    if (typeof record.citeKey === "string" && record.citeKey.trim()) {
-      keys.add(record.citeKey.trim());
-    }
-
-    for (const item of Object.values(record)) {
-      if (item !== null && typeof item === "object")
-        collectCiteKeys(item, keys);
-    }
+    return;
   }
+
+  if (!isValid(JsonObjectSchema, value)) return;
+
+  const citeKey = value.citeKey;
+
+  if (isValid(StringSchema, citeKey) && citeKey.trim())
+    keys.add(citeKey.trim());
+
+  for (const item of Object.values(value)) collectCiteKeys(item, keys);
 }
 
-/** Audit Markdown citation markers against article-local or project-wide assets. */
+/**
+ * Audit Markdown citation markers against article-local or project-wide assets.
+ */
 export function auditCitations(
   article: string,
   citationStyle: string,
@@ -243,10 +267,7 @@ export function auditCitations(
     const sourceKeys = new Set<string>();
 
     try {
-      collectCiteKeys(
-        JSON.parse(readFileSync(sources, "utf8")) as unknown,
-        sourceKeys,
-      );
+      collectCiteKeys(parseJsonText(readFileSync(sources, "utf8")), sourceKeys);
     } catch (error) {
       result.ok = false;
       result.error = `Could not read ${result.sourcesPath}: ${errorMessage(error)}`;

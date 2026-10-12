@@ -1,4 +1,3 @@
-import type { ComponentName } from "./style-design.js";
 import {
   ALIGN_COMMAND,
   HEADING_COMMANDS,
@@ -7,12 +6,13 @@ import {
   type LatexContext,
 } from "./latex-context.js";
 
-/** Section headings, title, subtitle and abstract. */
+/**
+ * Section headings, title, subtitle and abstract.
+ */
 export function applyHeadings(ctx: LatexContext): void {
   const { out, warnings, color, unsupported, wholly, get, explicit } = ctx;
   // Headings: Pandoc's LaTeX writer has no command for level 6.
-  HEADING_COMMANDS.forEach((command, index) => {
-    const name = `heading${index + 1}` as ComponentName;
+  HEADING_COMMANDS.forEach(([name, command], index) => {
     const props = get(name);
 
     if (!props) return;

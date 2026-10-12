@@ -1,5 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { Type } from "typebox";
+
 import { writeProjectTextFile } from "../project-files.js";
 import { fail, registerTool } from "../tool-kit.js";
 

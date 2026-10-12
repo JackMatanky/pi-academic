@@ -13,45 +13,47 @@ import {
 import { homedir } from "node:os";
 import { basename, extname, isAbsolute, join, relative, sep } from "node:path";
 
-const POPULAR_STYLES: Record<string, string> = {
-  apa: "apa",
-  "apa-7": "apa",
-  "apa-7th": "apa",
-  "apa-7th-edition": "apa",
-  "american-psychological-association": "apa",
-  mla: "modern-language-association",
-  "modern-language-association": "modern-language-association",
-  chicago: "chicago-notes-bibliography",
-  "chicago-18": "chicago-notes-bibliography",
-  "chicago-notes": "chicago-notes-bibliography",
-  "chicago-notes-bibliography": "chicago-notes-bibliography",
-  "chicago-note-bibliography": "chicago-notes-bibliography",
-  "chicago-fullnote-bibliography": "chicago-fullnote-bibliography",
-  "chicago-18-notes-bibliography": "chicago-notes-bibliography",
-  "chicago-18-notes-and-bibliography": "chicago-notes-bibliography",
-  "chicago-author-date": "chicago-author-date",
-  "chicago-18-author-date": "chicago-author-date",
-  turabian: "turabian-fullnote-bibliography",
-  "turabian-notes": "turabian-fullnote-bibliography",
-  harvard: "harvard-cite-them-right",
-  "harvard-cite-them-right": "harvard-cite-them-right",
-  ieee: "ieee",
-  nature: "nature",
-  vancouver: "vancouver",
-  ama: "american-medical-association",
-  "american-medical-association": "american-medical-association",
-  apsa: "american-political-science-association",
-  "american-political-science-association":
-    "american-political-science-association",
-  asa: "american-sociological-association",
-  "american-sociological-association": "american-sociological-association",
-  mhra: "modern-humanities-research-association",
-  "modern-humanities-research-association":
-    "modern-humanities-research-association",
-  "elsevier-harvard": "elsevier-harvard",
-  cell: "cell",
-  science: "science",
-};
+const POPULAR_STYLES = new Map(
+  Object.entries({
+    apa: "apa",
+    "apa-7": "apa",
+    "apa-7th": "apa",
+    "apa-7th-edition": "apa",
+    "american-psychological-association": "apa",
+    mla: "modern-language-association",
+    "modern-language-association": "modern-language-association",
+    chicago: "chicago-notes-bibliography",
+    "chicago-18": "chicago-notes-bibliography",
+    "chicago-notes": "chicago-notes-bibliography",
+    "chicago-notes-bibliography": "chicago-notes-bibliography",
+    "chicago-note-bibliography": "chicago-notes-bibliography",
+    "chicago-fullnote-bibliography": "chicago-fullnote-bibliography",
+    "chicago-18-notes-bibliography": "chicago-notes-bibliography",
+    "chicago-18-notes-and-bibliography": "chicago-notes-bibliography",
+    "chicago-author-date": "chicago-author-date",
+    "chicago-18-author-date": "chicago-author-date",
+    turabian: "turabian-fullnote-bibliography",
+    "turabian-notes": "turabian-fullnote-bibliography",
+    harvard: "harvard-cite-them-right",
+    "harvard-cite-them-right": "harvard-cite-them-right",
+    ieee: "ieee",
+    nature: "nature",
+    vancouver: "vancouver",
+    ama: "american-medical-association",
+    "american-medical-association": "american-medical-association",
+    apsa: "american-political-science-association",
+    "american-political-science-association":
+      "american-political-science-association",
+    asa: "american-sociological-association",
+    "american-sociological-association": "american-sociological-association",
+    mhra: "modern-humanities-research-association",
+    "modern-humanities-research-association":
+      "modern-humanities-research-association",
+    "elsevier-harvard": "elsevier-harvard",
+    cell: "cell",
+    science: "science",
+  }),
+);
 
 const ZOTERO_STYLE_BASE = "https://www.zotero.org/styles";
 
@@ -100,7 +102,7 @@ function styleId(style: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  return POPULAR_STYLES[key] ?? raw;
+  return POPULAR_STYLES.get(key) ?? raw;
 }
 
 function safeCacheName(id: string): string {
@@ -222,7 +224,10 @@ async function downloadStyle(
   );
 }
 
-/** Resolve an alias, style ID, local .csl path, or URL to an absolute project-cached/local style path. */
+/**
+ * Resolve an alias, style ID, local .csl path, or URL to an absolute
+ * project-cached/local style path.
+ */
 export async function resolveCslStyle(
   style: string,
   projectRoot: string,

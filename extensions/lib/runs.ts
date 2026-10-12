@@ -1,13 +1,23 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-/** Project-relative directory containing persisted run-state JSON files. */
+import { Type } from "typebox";
+
+import { tryReadJsonFile } from "./schema.js";
+
+/**
+ * Project-relative directory containing persisted run-state JSON files.
+ */
 const RUNS_RELATIVE_DIR = ".academic-writer/runs";
 
-/** Run statuses considered active in dashboards and status tools. */
+/**
+ * Run statuses considered active in dashboards and status tools.
+ */
 const ACTIVE_STATUSES = new Set(["planned", "running", "blocked"]);
 
-/** Project run metadata stored in `.academic-writer/runs/<run-id>.json`. */
+/**
+ * Project run metadata stored in `.academic-writer/runs/<run-id>.json`.
+ */
 export interface RunInfo {
   runId: string;
   status: string;
@@ -16,7 +26,9 @@ export interface RunInfo {
   path: string;
 }
 
-/** Sorted run-state summary for dashboards and status tools. */
+/**
+ * Sorted run-state summary for dashboards and status tools.
+ */
 export interface RunSummary {
   dir: string;
   active: RunInfo[];
@@ -24,50 +36,31 @@ export interface RunSummary {
 }
 
 /**
- * Reads JSON without letting malformed run files break session startup.
- *
- * @param path - File path to read, write, or resolve.
+ * The fields of a run-state file this package reads.
  */
-function readJson(path: string): unknown | null {
-  try {
-    return JSON.parse(readFileSync(path, "utf-8")) as unknown;
-  } catch {
-    return null;
-  }
-}
+const RunFileSchema = Type.Object({
+  runId: Type.Optional(Type.String()),
+  status: Type.Optional(Type.String()),
+  title: Type.Optional(Type.String()),
+  updatedAt: Type.Optional(Type.String()),
+});
 
 /**
- * Converts one run-state JSON file into a typed summary row.
- *
- * @param path - File path to read, write, or resolve.
+ * Converts one run-state JSON file into a typed summary row. A malformed file
+ * never breaks session startup: it is summarized with fallbacks.
  */
 function readRun(
   path: string,
   relativePath: string,
   fallbackRunId: string,
 ): RunInfo & { mtimeMs: number } {
-  const data = readJson(path);
-
-  const isRun =
-    data !== null && typeof data === "object" && !Array.isArray(data);
+  const data = tryReadJsonFile(path, RunFileSchema);
 
   return {
-    runId:
-      isRun && "runId" in data && typeof data.runId === "string"
-        ? data.runId
-        : fallbackRunId,
-    status:
-      isRun && "status" in data && typeof data.status === "string"
-        ? data.status
-        : "unknown",
-    title:
-      isRun && "title" in data && typeof data.title === "string"
-        ? data.title
-        : null,
-    updatedAt:
-      isRun && "updatedAt" in data && typeof data.updatedAt === "string"
-        ? data.updatedAt
-        : null,
+    runId: data?.runId ?? fallbackRunId,
+    status: data?.status ?? "unknown",
+    title: data?.title ?? null,
+    updatedAt: data?.updatedAt ?? null,
     path: relativePath,
     mtimeMs: statSync(path).mtimeMs,
   };

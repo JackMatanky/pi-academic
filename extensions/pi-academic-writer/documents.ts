@@ -2,20 +2,29 @@ import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { extname } from "node:path";
 import { promisify } from "node:util";
+
 import { DOMParser } from "@xmldom/xmldom";
 import { strFromU8, unzipSync } from "fflate";
 import { extractText, getDocumentProxy } from "unpdf";
+
 import { errorMessage, resolveInside } from "../lib/fs-safe.js";
 import { commandExists } from "./commands.js";
 import { toRelative } from "./project-files.js";
 
-/** Promisified `execFile` used for bounded external extraction commands. */
+/**
+ * Promisified `execFile` used for bounded external extraction commands.
+ */
 const execFileAsync = promisify(execFile);
 
-/** Largest `word/document.xml` the DOM fallback inflates; guards against zip bombs. */
+/**
+ * Largest `word/document.xml` the DOM fallback inflates; guards against zip
+ * bombs.
+ */
 const MAX_DOCX_XML_BYTES = 64 * 1024 * 1024;
 
-/** Plain-text extraction result for one source or article document. */
+/**
+ * Plain-text extraction result for one source or article document.
+ */
 export interface ExtractedDocument {
   ok: boolean;
   path: string;
@@ -28,9 +37,11 @@ export interface ExtractedDocument {
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 /**
- * Reads DOCX body text without Pandoc: one blank-line-separated block per paragraph.
+ * Reads DOCX body text without Pandoc: one blank-line-separated block per
+ * paragraph.
  *
  * @param path - Path of the .docx file.
+ *
  * @returns The paragraph text, or an error when the file is not a DOCX archive.
  */
 function extractDocxParagraphs(path: string): string {
@@ -86,10 +97,13 @@ async function extractDocxWithPandoc(
 }
 
 /**
- * Extracts plain text from markdown/text/PDF/DOCX using package dev deps when needed.
+ * Extracts plain text from markdown/text/PDF/DOCX using package dev deps when
+ * needed.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
- * @param inputPath - Input document path, relative to the project root unless absolute.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
+ * @param inputPath - Input document path, relative to the project root unless
+ *   absolute.
  * @param signal - Optional abort signal forwarded to subprocesses.
  */
 export async function extractDocument(

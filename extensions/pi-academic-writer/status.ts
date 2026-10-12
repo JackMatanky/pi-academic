@@ -1,26 +1,39 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import type { ToolConfig } from "../lib/types.js";
+
+import { existsSync, readdirSync } from "node:fs";
 import { extname, join } from "node:path";
+
+import { Type } from "typebox";
+
 import { errorMessage } from "../lib/fs-safe.js";
 import { PACKAGE_ROOT } from "../lib/paths.js";
 import { loadProfile } from "../lib/profile.js";
 import { summarizeRuns, type RunSummary } from "../lib/runs.js";
-import type { ToolConfig } from "../lib/types.js";
+import { tryReadJsonFile } from "../lib/schema.js";
 
-/** File extensions counted as local project source documents. */
+/**
+ * File extensions counted as local project source documents.
+ */
 const SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
-/** Existence metadata for project-local Academic Writer files. */
+/**
+ * Existence metadata for project-local Academic Writer files.
+ */
 interface FileState {
   exists: boolean;
   path: string;
 }
 
-/** Directory metadata for project-local files. */
+/**
+ * Directory metadata for project-local files.
+ */
 interface DirectoryState extends FileState {
   count: number;
 }
 
-/** Full status payload returned by `academic_writer_status`. */
+/**
+ * Full status payload returned by `academic_writer_status`.
+ */
 export interface AcademicWriterStatus {
   ok: boolean;
   profile: FileState;
@@ -32,48 +45,37 @@ export interface AcademicWriterStatus {
   pastArticles: DirectoryState;
   runs: RunSummary;
   tools: Record<string, ToolConfig>;
-  /** Set when profile.md exists but cannot be parsed. */
+  /**
+   * Set when profile.md exists but cannot be parsed.
+   */
   profileError?: string;
   agents: string[];
 }
 
 /**
- * Reads optional project JSON without surfacing parse failures in status output.
- *
- * @param path - File path to read, write, or resolve.
+ * A source registry: a bare array, or an object wrapping a `sources` array.
  */
-function readJson(path: string): unknown | null {
-  try {
-    return JSON.parse(readFileSync(path, "utf-8")) as unknown;
-  } catch {
-    return null;
-  }
-}
+const SourceRegistrySchema = Type.Union([
+  Type.Array(Type.Unknown()),
+  Type.Object({ sources: Type.Array(Type.Unknown()) }),
+]);
 
 /**
- * Counts sources from either the current array shape or a wrapped object shape.
- *
- * @param value - Raw value to parse or normalize.
+ * Counts registered sources; an unreadable registry counts as none.
  */
-function countSources(value: unknown): number {
-  if (Array.isArray(value)) return value.length;
+function countSources(path: string): number {
+  const registry = tryReadJsonFile(path, SourceRegistrySchema);
 
-  if (
-    value !== null &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    "sources" in value
-  ) {
-    if (Array.isArray(value.sources)) return value.sources.length;
-  }
+  if (registry === null) return 0;
 
-  return 0;
+  return Array.isArray(registry) ? registry.length : registry.sources.length;
 }
 
 /**
  * Builds a relative-path file existence record.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  */
 function fileState(projectRoot: string, relativePath: string): FileState {
   const path = join(projectRoot, relativePath);
@@ -84,7 +86,8 @@ function fileState(projectRoot: string, relativePath: string): FileState {
 /**
  * Counts matching files in an optional project-local directory.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  * @param matches - Predicate that selects files or directory entries to count.
  */
 function directoryState(
@@ -101,7 +104,8 @@ function directoryState(
 /**
  * Builds the project-local status object shown by the status tool.
  *
- * @param projectRoot - Absolute project root used to resolve project-relative files.
+ * @param projectRoot - Absolute project root used to resolve project-relative
+ *   files.
  */
 export function buildStatus(projectRoot: string): AcademicWriterStatus {
   const profile = fileState(projectRoot, ".academic-writer/profile.md");
@@ -110,7 +114,7 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
 
   const sources = {
     exists: existsSync(sourcesPath),
-    count: countSources(readJson(sourcesPath)),
+    count: countSources(sourcesPath),
     path: ".academic-writer/sources.json",
   };
 
@@ -134,7 +138,7 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
     profileError = errorMessage(error);
   }
 
-  return {
+  const status: AcademicWriterStatus = {
     ok: profile.exists,
     profile,
     voice,
@@ -155,7 +159,10 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
     ),
     runs: summarizeRuns(projectRoot),
     tools,
-    ...(profileError ? { profileError } : {}),
     agents,
   };
+
+  if (profileError) status.profileError = profileError;
+
+  return status;
 }

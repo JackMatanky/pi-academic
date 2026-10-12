@@ -1,5 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { Type, type Static, type TSchema } from "typebox";
+
 import { reviewResearchNotes, writeResearchNotes } from "../research-notes.js";
 import {
   migrateArticleOutline,
@@ -7,7 +9,11 @@ import {
   snapshotNotes,
   writeOutline,
 } from "../research-outline.js";
-import { diagnoseOutline, queryResearch } from "../research-query.js";
+import {
+  diagnoseOutline,
+  queryResearch,
+  ResearchQuerySchema,
+} from "../research-query.js";
 import { reverseOutline } from "../reverse-outline.js";
 import {
   fail,
@@ -16,15 +22,17 @@ import {
   registerTool,
 } from "../tool-kit.js";
 
-/** A research-library tool: runs `run` and returns its value as JSON. */
-function registerResearchTool<S extends TSchema>(
+/**
+ * A research-library tool: runs `run` and returns its value as JSON.
+ */
+function registerResearchTool<S extends TSchema, Result>(
   pi: ExtensionAPI,
   spec: {
     name: string;
     label: string;
     description: string;
     parameters: S;
-    run: (params: Static<S>, cwd: string) => unknown;
+    run: (params: Static<S>, cwd: string) => Result;
   },
 ): void {
   registerTool(pi, {
@@ -44,7 +52,9 @@ function registerResearchTool<S extends TSchema>(
   });
 }
 
-/** Research-note library, argument-outline and reverse-outline tools. */
+/**
+ * Research-note library, argument-outline and reverse-outline tools.
+ */
 export function registerResearchTools(pi: ExtensionAPI): void {
   registerResearchTool(pi, {
     name: "academic_writer_write_research_notes",
@@ -102,21 +112,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     name: "academic_writer_query_research",
     label: "Query Research Notes",
     description: "Retrieve fixed-scope research note and outline bundles.",
-    parameters: Type.Object({
-      operation: Type.Union([
-        Type.Literal("section_bundle"),
-        Type.Literal("note_by_id"),
-        Type.Literal("notes_by_source"),
-        Type.Literal("notes_by_tag"),
-        Type.Literal("outline_summary"),
-      ]),
-      article: Type.Optional(Type.String()),
-      sectionId: Type.Optional(Type.String()),
-      noteId: Type.Optional(Type.String()),
-      sourceId: Type.Optional(Type.String()),
-      tag: Type.Optional(Type.String()),
-      limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
-    }),
+    parameters: ResearchQuerySchema,
     run: (params, cwd) => queryResearch(cwd, params),
   });
   registerResearchTool(pi, {
@@ -152,9 +148,9 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     }),
     run: ({ article, title, targetLanguage, citationStyle }, cwd) =>
       migrateArticleOutline(cwd, article, {
-        ...(title === undefined ? {} : { title }),
-        ...(targetLanguage === undefined ? {} : { targetLanguage }),
-        ...(citationStyle === undefined ? {} : { citationStyle }),
+        title,
+        targetLanguage,
+        citationStyle,
       }),
   });
 }
