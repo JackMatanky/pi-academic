@@ -339,7 +339,162 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 > 2. **I'd like to adjust some things** — Tell me what to change and I'll update before saving.
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
-…
+### 25-Dimension Style Analysis
 
-…
+Full rubric (all 30 dimensions across categories A–I): see `references/profile-schema.md`. Save the confirmed result as the profile's `## Style Fingerprint` (the dimension object) and `## Article Structure` (category I) blocks.
+
+### Stage 1 voice fingerprint
+
+After the past articles are analyzed, read the `dispatch_contract` resource (`academic_writer_read_resource`) for the call shape on this harness, then:
+
+1. Dispatch `voice-profile-builder` in corpus fingerprint mode on `past-articles/`. It writes `.voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
+2. Dispatch `voice-profile-builder` in transcript distillation mode with only that fingerprint as input, to seed the four-section `AUTHOR_VOICE.md` at the project root.
+3. Say: "✓ Voice fingerprint created from N past articles. You can write articles now, or run `/skill:academic-voice` for a deeper profile (recommended)."
+
+The researcher is not required to run the Stage 2 interview. They can start writing immediately with the fingerprint.
+
+---
+
+## Phase 3: Research Sources
+
+**If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.academic-writer/sources/` with `academic_writer_ingest_sources`.**
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Let's index your research library. Have you added sources to Zotero yet?"
+>
+> 1. **Yes, index my sources now** — I'll enrich and index the configured Zotero collection, or the whole library if no collection was selected.
+>
+>    ```text
+>    Source Indexing
+>    ───────────────
+>    → Uses tools.zotero.collection when set
+>    → Otherwise lists all items in your library
+>    → Runs zotero_get_item_metadata(format="json") on each
+>       (extracts title, author, TOC)
+>    → Saves minimal metadata to profile
+>       (id, title, type only)
+>    ```
+>
+> 2. **Skip — I'll add sources later** — Run /skill:academic-setup again (choose Update → Sources) after adding items.
+>
+>    ```text
+>    Skip Sources
+>    ────────────
+>    ⚠ Articles won't have source metadata yet
+>    → Add items via the Zotero desktop app, then re-run this step
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+If **"Yes"**: list and enrich the configured scope.
+
+If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` and enrich only those items. Otherwise call `zotero_get_collections()` first, then `zotero_get_collection_items(collection_key=KEY)` per collection to list all items (or `zotero_get_recent(limit=100)` for a flat recent-items view). `zotero_get_collection_items` pages at 50 items per call — when its response reports more items, follow the `Pass offset=N` hint until the listing is complete.
+
+For each item ID, call `zotero_get_item_metadata(format="json")`.
+
+Tell the researcher: "Enriching your sources — extracting titles, authors, and table of contents from each document. This may take a moment..."
+
+After enrichment, re-list and build the sources array (id + title + type only — never raw JSON).
+
+**If Zotero is NOT enabled**: set sources to `[]`, then call `academic_writer_ingest_sources` for any files under `.academic-writer/sources/`.
+
+---
+
+## Phase 4: Save Profile
+
+Use the Write tool to save `.academic-writer/profile.md`:
+
+```markdown
+# Academic Writer Profile
+
+---
+fieldOfStudy: FIELD_HERE
+citationStyle: SELECTED_CITATION_STYLE
+targetLanguage: Hebrew
+abstractLanguages:
+  - Hebrew
+analyzedArticles: []
+createdAt: ISO_TIMESTAMP
+updatedAt: ISO_TIMESTAMP
+---
+
+## Tools
+
+```json
+{
+  "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "optional Zotero collection key", "name": "optional display name" } },
+  "notebooklm": { "enabled": false, "mode": "mcp-config", "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" } },
+  "sefaria": { "enabled": false, "mode": "mcp-config" }
+}
+` ` `
+
+## Output Format Preferences
+
+```json
+{ "csl": "optional CSL style id or popular alias", "cslPath": "optional custom .csl path or URL", "stylePackage": "optional name of a package under .academic-writer/styles/" }
+` ` `
+
+## Style Fingerprint
+
+```json
+{ ... full 25-dimension fingerprint object ... }
+` ` `
+
+## Article Structure
+
+```json
+{ ... article structure object ... }
+` ` `
+
+## Sources
+
+```json
+[]
+` ` `
+```
+
+(Replace ` ` ` with actual backtick triplets when writing the file. Profile schema: `references/profile-schema.md`.)
+
+---
+
+## Completion
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Setup is complete. What would you like to do next?"
+>
+> 1. **Write my first article** — Launch /skill:academic-write to start writing.
+>
+>    ```text
+>    Write Article
+>    ─────────────
+>    → /skill:academic-write
+>    → Conversational pipeline:
+>       subject → sources → thesis
+>       → outline → write → .docx
+>    ```
+>
+> 2. **Check system health** — Run /skill:academic-health to verify everything is working.
+> 3. **I'm done for now** — Profile saved. Run /skill:academic-write anytime to start writing.
+>
+>    ```text
+>    Profile saved to:
+>      .academic-writer/profile.md
+>
+>    Key commands:
+>      /skill:academic-write   ← write an article
+>      /skill:academic-health  ← check everything
+>      /skill:academic-setup   ← change integrations
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+Show a summary table:
+
+> | Setting | Value |
+> |---------|-------|
+> | Field | [field] |
+> | Language | [language] |
+> | Citation style | [style] |
+> | Style fingerprint | ✓ Analyzed / — Skipped |
+> | Sources indexed | [N] documents |
 > | Tools enabled | [list] |

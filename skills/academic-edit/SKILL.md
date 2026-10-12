@@ -62,7 +62,7 @@ For migration, show the draft mapping and unmapped paragraphs. Migration does no
 
 Resolve the article Markdown path. If `articles/<slug>.outline.json` exists, read its canonical recursive structure. Otherwise, for an existing Markdown article call `academic_writer_migrate_article_outline({article: MD_PATH, title, targetLanguage, citationStyle})`; it preserves Markdown and creates draft-only unmapped points containing exact existing paragraphs. For non-Markdown input first preserve a Markdown copy for migration; do not pretend conversion is a reviewed outline. A migration conflict means inspect the existing outline rather than overwrite it.
 
-For structural or argument/evidence changes, edit the canonical outline JSON first using academic_writer_write_outline (draft status), mapping affected points to reviewed note IDs and direct claims/reasoning. Call academic_writer_render_outline({article: MD_PATH}), present generated Markdown and the exact selected note texts, original sources and locators. Require explicit researcher confirmation of selected source-backed notes before academic_writer_review_research_notes({noteIds, state: "verified"}). Obtain explicit approval of the thesis/outline before setting both statuses approved and rerendering. Then snapshot citations and selected notes via academic_writer_snapshot_citations and academic_writer_snapshot_notes; if either fails, do not dispatch. No new…
+For structural or argument/evidence changes, edit the canonical outline JSON first using academic_writer_write_outline (draft status), mapping affected points to reviewed note IDs and direct claims/reasoning. Call academic_writer_render_outline({article: MD_PATH}), present generated Markdown and the exact selected note texts, original sources and locators. Require explicit researcher confirmation of selected source-backed notes before academic_writer_review_research_notes({noteIds, state: "verified"}). Obtain explicit approval of the thesis/outline before setting both statuses approved and rerendering. Then snapshot citations and selected notes via academic_writer_snapshot_citations and academic_writer_snapshot_notes; if either fails, do not dispatch. No new current-run source may enter the article context after this freeze.
 After rendering the revised outline and before researcher approval, call `academic_writer_diagnose_outline({article: MD_PATH})` and address its findings. If the current deep-reader evidence map includes `chapter_coverage`, pass that map as `evidenceMapJson`; coverage is not part of the canonical outline schema. The result is advisory only: it does not judge argument quality or approve the outline.
 
 Dispatch only affected section IDs with direct point children (nested sections are independent tasks) via section_bundle. Provide each section-writer MD_PATH, sectionId, edit instructions, current target prose and contextual article details only; it reads frozen notes and source metadata itself. The existing article Markdown remains the preserved text source until the selected units actually pass the full paragraph/auditor pipeline. Replace only those units; leave unaffected paragraphs, citations, and headings unchanged. Mechanical citation/tone-only edits that do not change the argument still use the auditor gate for altered cited sentences and do not rewrite other paragraphs.
@@ -144,6 +144,8 @@ For multiple sections being edited, **spawn one `section-writer` per section in 
 
 **Use your subagent-dispatch tool to spawn `auditor` subagents in parallel** — one per section that needs citation work. Under OMP, batch them in one `task` call; under pi, issue sibling `subagent` calls.
 
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
 Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
 
 The auditor verifies every footnote and returns specific fix instructions. Apply fixes, then re-audit. Pass the `auditor_result` schema as `outputSchema`.
@@ -172,8 +174,8 @@ Show the current recursive outline and selected original paragraphs. Reorder, sp
    - Missing counterargument engagement
    - Logical gaps between sections
 
-2. **Spawn research subagents in parallel** to find additional evidence (one batched `task` call under OMP; sibling `subagent` calls under pi):
-   - If `tools.zotero.enabled`: one subagent for Zotero document reads, passing `tools.zotero.collection` when configured so searches stay in the project collection
+2. **Spawn research subagents in parallel** to find additional evidence (one batched `task` call under OMP; sibling `subagent` calls under pi; call shape in the `dispatch_contract` resource):
+   - If `tools.zotero.enabled`: one `agent: "deep-reader"` dispatch for Zotero document reads, passing `tools.zotero.collection` when configured so searches stay in the project collection
 
 3. Draft new evidence integration and re-run citation audit
 
@@ -186,6 +188,8 @@ Show the current recursive outline and selected original paragraphs. Reorder, sp
 ### Mode G: Full Review
 
 **Use your subagent-dispatch tool to spawn the `synthesizer` subagent** on the complete article. Pass as prompt: allSections, thesis, styleFingerprint, tools.
+
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
 This runs:
 

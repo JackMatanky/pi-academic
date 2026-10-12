@@ -48,14 +48,29 @@ test("no skill or agent ends a section with a dangling log or mark-complete stub
   }
 });
 
-test("the write skill has no ellipsis placeholder lines", () => {
-  const lines = readRepo("skills/academic-write/SKILL.md").split("\n");
+const authoredDocs = [...promptFiles, "AGENTS.md", "README.md"];
 
-  for (const [index, line] of lines.entries())
-    assert.ok(
-      line.trim() !== "…" && line.trim() !== "...",
-      `placeholder at skills/academic-write/SKILL.md:${index + 1}`,
-    );
+test("no skill, agent or doc has an ellipsis placeholder line", () => {
+  for (const file of authoredDocs) {
+    const content = readRepo(file);
+
+    for (const [index, line] of content.split("\n").entries())
+      assert.notEqual(line.trim(), "…", `placeholder at ${file}:${index + 1}`);
+
+    for (const { line, text } of proseLines(content))
+      assert.notEqual(text.trim(), "...", `placeholder at ${file}:${line}`);
+  }
+});
+
+test("no skill, agent or doc has a line cut off mid-sentence by an ellipsis", () => {
+  // A line that is 700+ characters and ends in an ellipsis was truncated by a
+  // tool, not written that way.
+  for (const file of authoredDocs)
+    for (const [index, line] of readRepo(file).split("\n").entries())
+      assert.ok(
+        line.length < 700 || !/(…|\.\.\.)$/.test(line),
+        `${file}:${index + 1} looks truncated: ...${line.slice(-60)}`,
+      );
 });
 
 test("the write skill and its references keep Steps 8.5 through 9b", () => {

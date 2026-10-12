@@ -172,7 +172,7 @@ This package doesn't hardcode a specific model provider for prose drafting — p
 
 **Scoped libraries:** During setup or `/skill:academic-setup`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
 
-**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from Pi's normal MCP config stack. Local Zotero, NotebookLM, and Sefaria setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
+**MCP configuration:** Academic Writer does not store MCP server credentials in `.academic-writer/profile.md` and does not require shell-exported environment variables. MCP servers are read from the harness's normal MCP config stack (pi: `.mcp.json`, `.pi/mcp.json`, `~/.config/mcp/mcp.json`; omp: `.omp/mcp.json`, `~/.omp/agent/mcp.json`, plus a root `.mcp.json`). Local Zotero, NotebookLM, and Sefaria setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
 ```json
 {

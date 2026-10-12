@@ -18,7 +18,7 @@ Run it in Phase 0 before checking for an existing profile. It is idempotent:
 
 `.academic-writer/profile.md` uses markdown with YAML frontmatter + JSON sections:
 
-```markdown
+````markdown
 # Academic Writer Profile
 
 ---
@@ -81,7 +81,7 @@ updatedAt: ISO_TIMESTAMP
 []
 ```
 
-```text
+````
 
 ## 25-Dimension Style Analysis Rubric
 

@@ -25,6 +25,8 @@ or specified explicitly.
 
 ## Workflow
 
+Wherever a step below says to dispatch `voice-profile-builder`, read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
 ### `:voice init`
 
 1. Read `.voice/fingerprint.md`. If missing or `> NEEDS CORPUS`, tell the user to run `/skill:academic-setup` first and stop.

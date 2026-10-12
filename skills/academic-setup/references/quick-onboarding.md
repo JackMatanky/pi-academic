@@ -336,11 +336,59 @@ updatedAt: ISO_TIMESTAMP
 null
 ` ` `
 
-…
+## Sources
+
+```json
+[]
 ` ` `
 ```
 
-…
+(Replace ` ` ` with actual backtick triplets when writing the file.)
 
-…
+---
+
+## Completion
+
+Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+> "Setup complete. What would you like to do next?"
+>
+> 1. **Write my first article** — /skill:academic-write. Start the writing pipeline now.
+>
+>    ```text
+>    /skill:academic-write
+>    ─────────────────────
+>    Conversational pipeline:
+>    subject → sources → thesis
+>    → outline → write → .docx
+>    ```
+>
+> 2. **Run deeper setup** — /skill:academic-setup (full setup). Full style analysis (25 dimensions) and source indexing.
+>
+>    ```text
+>    /skill:academic-setup
+>    ─────────────────────
+>    → Deep 25-dimension fingerprint
+>    → Article structure analysis
+>    → Zotero source indexing
+>    ```
+>
+> 3. **Done for now** — Profile saved. Run /skill:academic-write anytime.
+>
+>    ```text
+>    Key commands:
+>      /skill:academic-write   ← write
+>      /skill:academic-health  ← check
+>      /skill:academic-setup   ← change integrations
+>    ```
+>
+Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+
+Show summary table:
+
+> | Setting | Value |
+> |---------|-------|
+> | Field | [field] |
+> | Language | [language] |
+> | Citation style | [style] |
+> | Tools enabled | [list] |
 > | Style fingerprint | ✓ Analyzed / — Skipped |

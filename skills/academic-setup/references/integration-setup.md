@@ -3,7 +3,7 @@
 # Integration Setup (Zotero, NotebookLM, Sefaria)
 
 > Loaded on demand by `init` Phase 1. Each tool has detection command, configuration block, and registration steps.
-> MCP server credentials/configuration belong in standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json`), not in `.academic-writer/profile.md`.
+> MCP server credentials/configuration belong in standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json` under pi; `.omp/mcp.json`, `~/.omp/agent/mcp.json` under omp), not in `.academic-writer/profile.md`.
 
 ## Detection Commands
 

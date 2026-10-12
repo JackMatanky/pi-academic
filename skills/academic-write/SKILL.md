@@ -186,6 +186,8 @@ Update the run state for this phase.
 
 **Use your subagent-dispatch tool to spawn the `architect` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
 
+Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+
 Update the run state for this phase.
 
 Present the architect's output to researcher:
@@ -207,13 +209,13 @@ Otherwise spawn the architect in Mode B with approved thesis, deep read, note ID
 
 Call academic_writer_render_outline({article: MD_PATH}) to generate articles/<slug>.outline.md from canonical JSON. Present the generated Markdown with nested argument points, evidence handling and unresolved gaps. Iterate JSON through academic_writer_write_outline, rerender, and present the changed outline; never parse generated Markdown back into JSON.
 Call `academic_writer_diagnose_outline({article: MD_PATH})` after rendering each draft revision and before asking for outline approval. If the deep-reader supplied an evidence map containing `chapter_coverage`, pass its full JSON as `evidenceMapJson` too; coverage belongs to that separate map, not the canonical outline schema. Address findings with the researcher and deep-reader as appropriate. Findings are advisory: an empty list does not establish argument quality or approve the outline.
-Present the canonical outline as one ordered, readable argument map, not only generated Markdown or internal fields. For each section show purpose and thesis contribution; for each point show claim, reasoning, chosen evidence, and analytical role. Call out unsupported claims and gaps. Separate source findings from provisional themes, groupings, counterpositions, missing-perspective questions, and other outline suggestions; do not infer absence from search silence. Review reasoning, evidence roles, transition-vs-factual points, repetition, uneven coverage, and possible alternative perspectives as discussion prompts, without a numerical score or auto-pass. Collect edits conversationally, persist them to the canonical outline, rerender, and show the changed map…
+Present the canonical outline as one ordered, readable argument map, not only generated Markdown or internal fields. For each section show purpose and thesis contribution; for each point show claim, reasoning, chosen evidence, and analytical role. Call out unsupported claims and gaps. Separate source findings from provisional themes, groupings, counterpositions, missing-perspective questions, and other outline suggestions; do not infer absence from search silence. Review reasoning, evidence roles, transition-vs-factual points, repetition, uneven coverage, and possible alternative perspectives as discussion prompts, without a numerical score or auto-pass. Collect edits conversationally, persist them to the canonical outline, rerender, and show the changed map; never ask the researcher to edit JSON or generated Markdown.
 
 At approval, summarize what is ready, the specific unresolved issue(s), and the next action. Require explicit approval of the thesis and complete outline before approval state or either article-local snapshot is changed. Keep note verification separate from argument approval. If approval or snapshot creation fails, preserve prior valid snapshots and do not dispatch writers against mutable project data.
 
-Present each selected candidate as a compact evidence card showing its material kind, exact material, source title/identity, available locator, and optional researcher relevance note. Preserve quotations verbatim; label paraphrases and summaries; keep interpretation separate. Missing source or location is unresolved, not a field to infer. Before marking notes verified, show the exact selected source-backed material, source, and locator and obtain explicit confirmation for each card. The researcher must be able to correct or exclude each card; batch confirmation is acceptable only if every card is visible and independently selectable. Mark verified only the explicitly confirmed IDs. Generic outline approval, silence, NotebookLM output, or missing locators are…
+Present each selected candidate as a compact evidence card showing its material kind, exact material, source title/identity, available locator, and optional researcher relevance note. Preserve quotations verbatim; label paraphrases and summaries; keep interpretation separate. Missing source or location is unresolved, not a field to infer. Before marking notes verified, show the exact selected source-backed material, source, and locator and obtain explicit confirmation for each card. The researcher must be able to correct or exclude each card; batch confirmation is acceptable only if every card is visible and independently selectable. Mark verified only the explicitly confirmed IDs. Generic outline approval, silence, NotebookLM output, or missing locators are not verification.
 
-After explicit approval of the thesis and complete rendered outline, call academic_writer_write_outline to set thesis.status and outline status to "approved", then rerender. Call academic_writer_snapshot_citations({article: MD_PATH}) and academic_writer_snapshot_notes({article: MD_PATH}) at this post-approval boundary. Both must succeed before dispatch; on failure stop and repair/seek approval rather than drafting from mutable caches. No subsequent current-run source addition may enter this article context. Use frozen article-local .sources.json, .bibliography.bib, and .notes.json for writing and audit; note anchors are retrieval leads, never proof. Log approval and asset paths.
+After explicit approval of the thesis and complete rendered outline, call academic_writer_write_outline to set thesis.status and outline status to "approved", then rerender. Call academic_writer_snapshot_citations({article: MD_PATH}) and academic_writer_snapshot_notes({article: MD_PATH}) at this post-approval boundary. Both must succeed before dispatch; on failure stop and repair/seek approval rather than drafting from mutable caches. No subsequent current-run source addition may enter this article context. Use frozen article-local .sources.json, .bibliography.bib, and .notes.json for writing and audit; note anchors are retrieval leads, never proof. Record the approval and asset paths in the run state.
 
 ---
 
@@ -253,7 +255,7 @@ Update the run state for this phase.
 
 ### Step 8: Synthesis + Full-Article Repetition Check
 
-**Use your subagent-dispatch tool to spawn the `synthesizer` subagent.** Pass the following as the prompt:
+**Use your subagent-dispatch tool to spawn the `synthesizer` subagent.** Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness. Pass the following as the prompt:
 
 - All completed section texts
 - The thesis statement

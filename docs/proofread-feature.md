@@ -77,4 +77,4 @@ Re-verified after fixes: `npm run build` → exit 0; `python3 tests/test_plugin_
 
 ## Future upgrade path (Option B, not built)
 
-`changes.json` schema + DOCX native tracked-changes renderer + `/apply` accept/reject round-trip. Feasible — `generate-docx.py` already manipulates raw OXML (`OxmlElement`), so Word `w:ins`/`w:del`/comments are reachable with the existing `python-docx` + `lxml` stack. Only the report-rendering layer would change; the `proofreader` agent's output is already a structured change list.
+`changes.json` schema + DOCX native tracked-changes renderer + `/apply` accept/reject round-trip. Feasible but needs a new renderer: DOCX generation goes through Pandoc (`docx-generator.ts`), which does not emit Word tracked changes, so `w:ins`/`w:del`/comments would mean post-processing the generated OOXML (the package already patches OOXML for style reference documents in `style-docx.ts`). Only the report-rendering layer would change; the `proofreader` agent's output is already a structured change list.
