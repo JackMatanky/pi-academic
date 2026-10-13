@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
+
+import { test, type TestContext } from "vitest";
 
 import { fail, ToolFailure } from "../pi-academic-writer/tool-kit.js";
 import { createToolHarness } from "./helpers.js";
@@ -19,7 +20,7 @@ const CORE_TOOLS = [
 function scratch(t: TestContext): string {
   const dir = mkdtempSync(join(tmpdir(), "aw-kit-"));
 
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
   return dir;
 }

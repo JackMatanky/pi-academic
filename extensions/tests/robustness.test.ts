@@ -11,17 +11,17 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { test, type TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { strToU8, zipSync } from "fflate";
+import { test, type TestContext } from "vitest";
 
 import { extractDocument } from "../pi-academic-writer/documents.js";
 
 function scratch(t: TestContext): string {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "robustness-")));
 
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
   return dir;
 }
@@ -51,7 +51,7 @@ async function withFailingPandoc<T>(
   const previous = process.env.PATH;
 
   process.env.PATH = [bin, "/usr/bin", "/bin"].join(delimiter);
-  t.after(() => {
+  t.onTestFinished(() => {
     process.env.PATH = previous;
   });
 
@@ -113,7 +113,7 @@ test("withFileLock serialises read-modify-write across processes", async (t) => 
   const counter = join(dir, "counter.json");
 
   const lockModule = fileURLToPath(
-    new URL("../lib/fs-safe.js", import.meta.url),
+    new URL("../lib/fs-safe.ts", import.meta.url),
   );
 
   writeFileSync(counter, "0");

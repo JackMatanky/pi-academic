@@ -23,17 +23,16 @@ import piAcademicWriter from "../pi-academic-writer/index.js";
 import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
 
 /**
- * The repository root. Compiled tests live in
- * `<root>/.aw-ts-test/extensions/tests/`.
+ * The repository root. Vitest runs these tests in place from
+ * `extensions/tests/`.
  */
 export const repoRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..",
   "..",
-  "..",
 );
 
-const SKIPPED_DIRS = new Set(["node_modules", ".git", ".venv", ".aw-ts-test"]);
+const SKIPPED_DIRS = new Set(["node_modules", ".git", ".venv"]);
 
 /**
  * Reads a UTF-8 file relative to the repository root.

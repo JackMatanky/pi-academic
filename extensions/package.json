@@ -10,9 +10,6 @@
   },
   "type": "module",
   "main": "index.js",
-  "scripts": {
-    "test": "rm -rf ../.aw-ts-test && tsc --noEmit false --allowImportingTsExtensions false --outDir ../.aw-ts-test/extensions && cp -R ../templates ../skills ../agents ../.aw-ts-test/ && cp ../thresholds.json ../.aw-ts-test/ && node --test \"../.aw-ts-test/extensions/tests/*.test.js\""
-  },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.82.1",
     "@earendil-works/pi-tui": "^0.82.1",

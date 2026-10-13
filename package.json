@@ -16,6 +16,7 @@
   },
   "type": "module",
   "scripts": {
+    "test": "vp test run",
     "typecheck": "cd extensions && npx tsc --noEmit"
   },
   "dependencies": {

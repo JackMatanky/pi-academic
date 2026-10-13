@@ -12,9 +12,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
 
 import { Type } from "typebox";
+import { test, type TestContext } from "vitest";
 
 import { resolveInside, withFileLock } from "../lib/fs-safe.js";
 import {
@@ -41,7 +41,7 @@ import {
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "project-safety-")));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
   return root;
 }

@@ -38,9 +38,9 @@ description = "Check formatting, Vite+ lint rules, and strict TypeScript types"
 run = ["mise run fmt-check", "npx vp lint extensions", "npm run typecheck"]
 
 [tasks.test]
-description = "Run the TypeScript suite through Vite+"
+description = "Run the Vitest suite through Vite+"
 alias = "t"
-run = "cd extensions && ../node_modules/.bin/vp run test"
+run = "npm test"
 
 [tasks.typecheck]
 description = "Strict TypeScript check on extensions/"

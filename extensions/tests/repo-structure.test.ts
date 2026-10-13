@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
+
+import { test } from "vitest";
 
 import { parseJsonText } from "../lib/schema.js";
 import { readRepo, repoFiles, repoRoot } from "./helpers.js";

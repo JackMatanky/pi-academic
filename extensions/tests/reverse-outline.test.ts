@@ -8,13 +8,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
+
+import { test, type TestContext } from "vitest";
 
 import { reverseOutline } from "../pi-academic-writer/reverse-outline.js";
 
 function fixture(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), "reverse-outline-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "articles"));
   writeFileSync(
     join(root, "articles", "essay.md"),
@@ -57,7 +58,7 @@ test("traversal outside articles/ is refused", (t) => {
 test("a symlink escaping articles/ is refused without reading the target", (t) => {
   const root = fixture(t);
   const outside = mkdtempSync(join(tmpdir(), "reverse-outside-"));
-  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
   writeFileSync(
     join(outside, "secret.md"),
     "# Secret\n\nExternal contents [@hidden].\n",

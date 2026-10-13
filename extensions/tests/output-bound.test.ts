@@ -12,7 +12,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
+
+import { test, type TestContext } from "vitest";
 
 import {
   boundOutput,
@@ -23,7 +24,7 @@ import {
 function project(t: TestContext, withState: boolean): string {
   const root = mkdtempSync(join(tmpdir(), "aw-bound-"));
 
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
   if (withState) mkdirSync(join(root, ".academic-writer"));
 
@@ -96,7 +97,7 @@ test("output spills stay inside the project when the state directory is a symlin
   const root = project(t, false);
   const outside = mkdtempSync(join(tmpdir(), "aw-outside-"));
 
-  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
   symlinkSync(outside, join(root, ".academic-writer"));
 
   const out = boundOutput(root, "tool", "x\n".repeat(3000));
@@ -109,7 +110,7 @@ test("output spills stay inside the project when the spill directory is a symlin
   const root = project(t, true);
   const outside = mkdtempSync(join(tmpdir(), "aw-outside-"));
 
-  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
   mkdirSync(join(root, ".academic-writer", "runs"));
   symlinkSync(outside, spillDir(root));
 

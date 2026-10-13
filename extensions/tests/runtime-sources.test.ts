@@ -9,9 +9,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
 
 import { Type } from "typebox";
+import { test, type TestContext } from "vitest";
 
 import {
   isValid,
@@ -28,7 +28,7 @@ const { callTool } = createToolHarness();
 function scratch(t: TestContext): string {
   const dir = mkdtempSync(join(tmpdir(), "aw-sources-"));
 
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
   return dir;
 }

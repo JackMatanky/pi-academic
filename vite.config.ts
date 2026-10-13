@@ -1,6 +1,9 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+  test: {
+    include: ["extensions/tests/**/*.test.ts"],
+  },
   fmt: {
     printWidth: 80,
     jsdoc: {
@@ -34,7 +37,6 @@ export default defineConfig({
       ".roo/**",
       ".windsurf/**",
       "tools/oxlint/anti-slop/**",
-      ".aw-ts-test/**",
       ".aw-runtime-*/**",
       ".academic-writer/**",
       "past-articles/**",
@@ -59,10 +61,7 @@ export default defineConfig({
       ".roo/**",
       ".windsurf/**",
       "tools/oxlint/anti-slop/**",
-      ".aw-ts-test/**",
       ".aw-runtime-*/**",
-      "extensions/dist/**",
-      "extensions/node_modules/**",
     ],
     jsPlugins: ["./tools/oxlint/anti-slop/index.ts"],
     rules: {

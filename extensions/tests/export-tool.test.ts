@@ -15,10 +15,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
 
 import { strFromU8, unzipSync } from "fflate";
 import { Type } from "typebox";
+import { test, type TestContext } from "vitest";
 
 import { parseWith, type JsonObject } from "../lib/schema.js";
 import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
@@ -30,7 +30,7 @@ const realPandoc = spawnSync("which", ["pandoc"], {
   encoding: "utf8",
 }).stdout.trim();
 
-const needsPandoc = { skip: realPandoc ? false : "pandoc is not installed" };
+const needsPandoc = { skip: !realPandoc };
 
 const { callTool, definitions } = createToolHarness();
 
@@ -92,7 +92,7 @@ function harness(
     STUB_FAIL_EXT: options.failExt ?? "",
     STUB_PASSTHROUGH: options.passthrough ? "1" : "",
   });
-  t.after(() => {
+  t.onTestFinished(() => {
     for (const key of [
       "PATH",
       "REAL_PANDOC",
@@ -667,11 +667,7 @@ const hasEngine = ["xelatex", "tectonic"].some(
 
 test(
   "a styled PDF with footnotes, tables, lists, quotes, and captions actually builds",
-  {
-    skip:
-      realPandoc && hasEngine ? false : "pandoc and a PDF engine are required",
-    timeout: 180_000,
-  },
+  { skip: !(realPandoc && hasEngine), timeout: 180_000 },
   async (t) => {
     const h = harness(t, { passthrough: true });
 
@@ -750,7 +746,7 @@ test("exporting without a style package creates no styles directory", async (t) 
 test("every path-taking tool rejects paths outside the project", async (t) => {
   const h = harness(t);
   const outside = join(h.root, "..", `outside-${process.pid}`);
-  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
 
   const attempts: Array<[string, Params]> = [
     [

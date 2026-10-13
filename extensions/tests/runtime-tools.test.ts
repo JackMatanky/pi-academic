@@ -12,9 +12,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { test, type TestContext } from "node:test";
 
 import { Type } from "typebox";
+import { test, type TestContext } from "vitest";
 
 import { isValid, parseJsonText, type JsonValue } from "../lib/schema.js";
 import { createToolHarness, get, type ToolResult } from "./helpers.js";
@@ -24,7 +24,7 @@ const { callTool, definitions } = createToolHarness();
 function scratch(t: TestContext): string {
   const dir = mkdtempSync(join(tmpdir(), "aw-runtime-"));
 
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
   return dir;
 }
@@ -51,7 +51,7 @@ function stubPandoc(t: TestContext, root: string, script: string): string {
   process.env.PANDOC_LOG = log;
   delete process.env.PANDOC_NO_OUTPUT;
 
-  t.after(() => {
+  t.onTestFinished(() => {
     if (previous === undefined) delete process.env.PATH;
     else process.env.PATH = previous;
 

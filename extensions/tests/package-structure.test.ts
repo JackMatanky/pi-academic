@@ -10,9 +10,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
 
 import { Type } from "typebox";
+import { test } from "vitest";
 
 import { isValid, parseJsonText } from "../lib/schema.js";
 import { resolveResourcePath } from "../pi-academic-writer/resources.js";
@@ -176,7 +176,7 @@ test("[test_thresholds_resource_honors_project_override] read_resource prefers t
   const { callTool } = createToolHarness();
   const root = mkdtempSync(join(tmpdir(), "aw-thresholds-"));
 
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
   const packaged = await callTool(root, "academic_writer_read_resource", {
     name: "thresholds",
@@ -219,7 +219,7 @@ const PACKAGED_RESOURCES = {
 test("[test_packaged_prompt_resources_exist] packaged prompt resources resolve to existing files", (t) => {
   const root = mkdtempSync(join(tmpdir(), "aw-resources-"));
 
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
   for (const [resource, path] of Object.entries(PACKAGED_RESOURCES)) {
     assert.ok(isFile(path), `missing resource file for ${resource}`);

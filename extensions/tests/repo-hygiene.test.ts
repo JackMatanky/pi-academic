@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
+
+import { test } from "vitest";
 
 import { createToolHarness, readRepo, repoFiles, repoRoot } from "./helpers.js";
 

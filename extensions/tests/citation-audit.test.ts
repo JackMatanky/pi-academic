@@ -9,7 +9,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
+
+import { test, type TestContext } from "vitest";
 
 import {
   analyzeCitationText,
@@ -27,7 +28,7 @@ function details(result: CitationAuditResult): CitationAuditDetails {
 
 function fixture(t: TestContext, article = "Text [@smith2020, p. 4].") {
   const root = mkdtempSync(join(tmpdir(), "citation-audit-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "articles"));
   mkdirSync(join(root, ".academic-writer"));
   writeFileSync(join(root, "articles", "essay.md"), article);
@@ -190,7 +191,7 @@ test("invalid JSON and missing articles report operational errors", (t) => {
 test("article paths cannot escape the project via traversal or symlinks", (t) => {
   const root = fixture(t);
   const outside = mkdtempSync(join(tmpdir(), "citation-outside-"));
-  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
   symlinkSync(outside, join(root, "articles", "outside"));
 
   for (const article of [

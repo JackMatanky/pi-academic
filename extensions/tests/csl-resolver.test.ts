@@ -11,7 +11,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterEach, test } from "node:test";
+
+import { afterEach, test } from "vitest";
 
 import { resolveCslStyle } from "../pi-academic-writer/csl-resolver.js";
 

@@ -11,7 +11,7 @@ With [mise](https://mise.jdx.dev) (recommended — pins Node 26, hk, Taplo, and 
 - `mise install` — provisions tools and (via the `postinstall` hook) installs npm deps in both `.` and `extensions/`
 - `mise run fmt` — formats TS/JS, JSON/YAML, and TOML with Vite+ and Taplo
 - `mise run lint` — checks formatting, runs Vite+ lint rules (including vendored anti-slop rules), and strict TypeScript
-- `mise run test` (alias `t`) — runs the TypeScript `node:test` suite through `vp run test`
+- `mise run test` (alias `t`) — runs the Vitest suite through Vite+ (`vp test`)
 - `mise run typecheck` — strict TS check on `extensions/`
 - `mise run ci` — lint + test
 - `mise run install-hooks` — installs hk-managed pre-commit/pre-push hooks (run once after cloning, or use `hk install --global`)
@@ -21,7 +21,7 @@ Without mise, the equivalent raw commands:
 - `npm install && npm --prefix extensions install` — installs runtime/peer development dependencies, Vite+, and extension dependencies
 - `npx vp fmt --check "**/*.{ts,js,json,yml,yaml}" && taplo check mise.toml` — formatting checks
 - `npx vp lint extensions && npm run typecheck` — lint and strict TS check
-- `cd extensions && ../node_modules/.bin/vp run test` — compile `extensions/` and run the TypeScript tests (needs `pandoc`; the PDF build test also needs `xelatex` or `tectonic` and is skipped without one)
+- `npm test` — runs the Vitest suite via `vp test` (needs `pandoc`; the PDF build test also needs `xelatex` or `tectonic` and is skipped without one)
 
 ## Source layout
 

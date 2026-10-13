@@ -9,9 +9,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
 
 import { strFromU8, unzipSync, zipSync, strToU8 } from "fflate";
+import { test, type TestContext } from "vitest";
 
 import {
   parseArticle,
@@ -27,11 +27,11 @@ import {
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 
-const needsPandoc = { skip: hasPandoc ? false : "pandoc is not installed" };
+const needsPandoc = { skip: !hasPandoc };
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "docx-generator-")));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
   return root;
 }

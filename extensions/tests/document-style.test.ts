@@ -13,9 +13,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
 
 import { strFromU8, unzipSync } from "fflate";
+import { test, type TestContext } from "vitest";
 
 import {
   checkStylePackage,
@@ -28,11 +28,11 @@ import { loadStylePackage } from "../pi-academic-writer/style-design.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 
-const needsPandoc = { skip: hasPandoc ? false : "pandoc is not installed" };
+const needsPandoc = { skip: !hasPandoc };
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "document-style-")));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
   return root;
 }
@@ -162,39 +162,43 @@ test("omitted properties merge from the starter and explicit components are trac
   );
 });
 
-test("the starter installs editable native files and never overwrites", async (t) => {
-  const root = project(t);
+test(
+  "the starter installs editable native files and never overwrites",
+  needsPandoc,
+  async (t) => {
+    const root = project(t);
 
-  if (!hasPandoc) return t.skip("pandoc is not installed");
-  const installed = await installStarterPackage(root);
-  assert.deepEqual(installed.files, [
-    "design.json",
-    "native/reference.docx",
-    "native/reference.odt",
-    "native/preamble.tex",
-  ]);
-  assert.deepEqual(listStylePackages(root), ["academic-default"]);
-  const dir = installed.directory;
-  assert.match(
-    zipEntry(join(dir, "native", "reference.docx"), "word/footnotes.xml"),
-    /footnote/,
-  );
-  assert.match(
-    zipEntry(join(dir, "native", "reference.odt"), "styles.xml"),
-    /Heading_20_1/,
-  );
-  assert.match(
-    readFileSync(join(dir, "native", "preamble.tex"), "utf8"),
-    /\\usepackage\[a4paper/,
-  );
-  await assert.rejects(installStarterPackage(root), /already exists/);
-  const second = await installStarterPackage(root, "journal");
-  assert.equal(
-    JSON.parse(readFileSync(join(second.directory, "design.json"), "utf8"))
-      .name,
-    "journal",
-  );
-});
+    const installed = await installStarterPackage(root);
+    assert.deepEqual(installed.files, [
+      "design.json",
+      "native/reference.docx",
+      "native/reference.odt",
+      "native/preamble.tex",
+    ]);
+    assert.deepEqual(listStylePackages(root), ["academic-default"]);
+    const dir = installed.directory;
+    assert.match(
+      zipEntry(join(dir, "native", "reference.docx"), "word/footnotes.xml"),
+      /footnote/,
+    );
+    assert.match(
+      zipEntry(join(dir, "native", "reference.odt"), "styles.xml"),
+      /Heading_20_1/,
+    );
+    assert.match(
+      readFileSync(join(dir, "native", "preamble.tex"), "utf8"),
+      /\\usepackage\[a4paper/,
+    );
+
+    await assert.rejects(installStarterPackage(root), /already exists/);
+    const second = await installStarterPackage(root, "journal");
+    assert.equal(
+      JSON.parse(readFileSync(join(second.directory, "design.json"), "utf8"))
+        .name,
+      "journal",
+    );
+  },
+);
 
 test(
   "docx: styles, page, footer and footnotes reach a real Pandoc document",

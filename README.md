@@ -269,7 +269,7 @@ With [mise](https://mise.jdx.dev) (recommended — pins the toolchain, including
 mise install           # provisions tools and npm-installs both trees
 mise run fmt           # Vite+ formats TS/JS/JSON/YAML; Taplo formats TOML
 mise run lint          # formatting checks + Vite+ anti-slop lint + strict TS
-mise run test          # TypeScript node:test suite through Vite+
+mise run test          # Vitest suite through Vite+
 mise run ci            # lint + test
 mise run install-hooks # install hk-managed pre-commit/pre-push hooks
 ```
@@ -280,7 +280,7 @@ Without mise:
 npm install && npm --prefix extensions install  # dependencies + local Vite+
 npx vp fmt --check "**/*.{ts,js,json,yml,yaml}" && taplo check mise.toml
 npx vp lint extensions && npm run typecheck     # lint + strict TS check
-cd extensions && ../node_modules/.bin/vp run test # TS tests; PDF also needs xelatex/tectonic
+npm test                                        # Vitest via vp test; PDF also needs xelatex/tectonic
 ```
 
 **Versioning is automatic.** Every push to `main` triggers CI that bumps the patch version in `package.json`, tags the release, and creates a GitHub Release. Do not bump versions manually.

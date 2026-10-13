@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, type TestContext } from "node:test";
+
+import { test, type TestContext } from "vitest";
 
 import lifecycle from "../lifecycle/index.js";
 import { repoRoot } from "./helpers.js";
@@ -84,7 +85,7 @@ function setup(options: { zod?: boolean; tools?: string[] }): Fake {
 function project(t: TestContext): string {
   const root = mkdtempSync(join(tmpdir(), "aw-life-"));
 
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   cpSync(
     join(repoRoot, "tests", "e2e", "fixture-project", ".academic-writer"),
     join(root, ".academic-writer"),

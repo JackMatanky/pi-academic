@@ -11,7 +11,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+
+import { test } from "vitest";
 
 import { createToolHarness } from "./helpers.js";
 
@@ -33,7 +34,7 @@ const outline = {
 
 test("structured write tools validate nested parameters before changing files", async (t) => {
   const root = mkdtempSync(join(tmpdir(), "aw-structured-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, ".academic-writer"));
   mkdirSync(join(root, "articles"));
   writeFileSync(
