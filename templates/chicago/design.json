@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "name": "chicago",
+  "page": {
+    "size": "Letter"
+  },
+  "components": {
+    "title": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": false,
+      "alignment": "center",
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 12
+    },
+    "body": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "lineSpacing": 2.0,
+      "alignment": "left",
+      "firstLineIndentMm": 12.7,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 0
+    },
+    "heading1": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": true,
+      "italic": false,
+      "alignment": "center",
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 18,
+      "spaceAfterPt": 6,
+      "keepWithNext": true
+    },
+    "heading2": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": true,
+      "italic": false,
+      "alignment": "left",
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 12,
+      "spaceAfterPt": 0,
+      "keepWithNext": true
+    },
+    "heading3": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": true,
+      "alignment": "left",
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 12,
+      "spaceAfterPt": 0,
+      "keepWithNext": true
+    },
+    "heading4": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": true,
+      "alignment": "left",
+      "indentLeftMm": 12.7,
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 0,
+      "keepWithNext": true
+    },
+    "heading5": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": true,
+      "alignment": "left",
+      "indentLeftMm": 12.7,
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 0,
+      "keepWithNext": true
+    },
+    "heading6": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": true,
+      "alignment": "left",
+      "indentLeftMm": 12.7,
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 0,
+      "keepWithNext": true
+    },
+    "blockQuote": {
+      "fontSizePt": 12,
+      "lineSpacing": 1.0,
+      "indentLeftMm": 12.7,
+      "indentRightMm": 0,
+      "spaceBeforePt": 12,
+      "spaceAfterPt": 12
+    },
+    "footnoteText": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 10,
+      "lineSpacing": 1.0,
+      "firstLineIndentMm": 12.7,
+      "spaceAfterPt": 4
+    },
+    "bibliography": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "lineSpacing": 1.0,
+      "hangingIndentMm": 12.7,
+      "indentLeftMm": 12.7,
+      "spaceAfterPt": 12
+    },
+    "header": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "alignment": "right"
+    },
+    "pageNumber": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12
+    }
+  },
+  "formats": {}
+}

@@ -162,6 +162,27 @@ test("omitted properties merge from the starter and explicit components are trac
   );
 });
 
+test("packaged style starters install their own design merged over the starter", async (t) => {
+  const root = project(t);
+
+  const installed = await installStarterPackage(root, "apa-7");
+
+  const written = JSON.parse(
+    readFileSync(join(installed.directory, "design.json"), "utf8"),
+  );
+
+  assert.equal(written.name, "apa-7");
+  assert.equal(written.components.body.lineSpacing, 2);
+
+  const loaded = loadStylePackage(root, "apa-7", []);
+  const merged = loaded.design.components;
+  assert.equal(loaded.design.page.size, "Letter");
+  assert.equal(merged.body?.lineSpacing, 2);
+  assert.equal(merged.body?.alignment, "left");
+  assert.equal(merged.heading1?.alignment, "center");
+  assert.equal(merged.table?.cellPaddingMm, 1.5);
+});
+
 test(
   "the starter installs editable native files and never overwrites",
   needsPandoc,

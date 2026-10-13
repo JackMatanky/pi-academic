@@ -271,12 +271,7 @@ export interface LoadedStyle {
   explicit: ExplicitProps;
 }
 
-export const STARTER_DIR = join(
-  PACKAGE_ROOT,
-  "templates",
-  "document-styles",
-  "academic-default",
-);
+export const STARTER_DIR = join(PACKAGE_ROOT, "templates", "academic-default");
 
 function fail(name: string, field: string, correction: string): never {
   throw new Error(`Style package '${name}', ${field}: ${correction}`);

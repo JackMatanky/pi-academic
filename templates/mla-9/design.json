@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "name": "mla-9",
+  "page": {
+    "size": "Letter"
+  },
+  "components": {
+    "title": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": false,
+      "alignment": "center",
+      "lineSpacing": 2.0,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 12
+    },
+    "body": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "lineSpacing": 2.0,
+      "alignment": "left",
+      "firstLineIndentMm": 12.7,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 0
+    },
+    "blockQuote": {
+      "fontSizePt": 12,
+      "lineSpacing": 2.0,
+      "indentLeftMm": 12.7,
+      "indentRightMm": 0,
+      "spaceBeforePt": 0,
+      "spaceAfterPt": 0
+    },
+    "footnoteText": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "lineSpacing": 2.0
+    },
+    "bibliography": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "lineSpacing": 2.0,
+      "hangingIndentMm": 12.7,
+      "indentLeftMm": 12.7,
+      "spaceAfterPt": 0
+    },
+    "header": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "alignment": "right"
+    },
+    "pageNumber": {
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12
+    }
+  },
+  "formats": {}
+}

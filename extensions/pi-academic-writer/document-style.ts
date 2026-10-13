@@ -13,7 +13,6 @@ import { errorMessage } from "../lib/fs-safe.js";
 import { JsonObjectSchema, parseJsonText, parseWith } from "../lib/schema.js";
 import { defaultReference } from "./pandoc.js";
 import {
-  loadStarterDesign,
   loadStylePackage,
   STARTER_DIR,
   STYLE_FORMATS,
@@ -236,13 +235,24 @@ export async function installStarterPackage(
     );
   }
 
+  const templateDir = join(STARTER_DIR, "..", name);
+
   const starter = parseWith(
     JsonObjectSchema,
-    parseJsonText(readFileSync(join(STARTER_DIR, "design.json"), "utf8")),
+    parseJsonText(
+      readFileSync(
+        join(
+          existsSync(join(templateDir, "design.json"))
+            ? templateDir
+            : STARTER_DIR,
+          "design.json",
+        ),
+        "utf8",
+      ),
+    ),
     "starter design",
   );
 
-  const design = loadStarterDesign();
   const nativeDir = join(directory, "native");
   mkdirSync(nativeDir, { recursive: true });
   const files = ["design.json"];
@@ -250,6 +260,7 @@ export async function installStarterPackage(
     join(directory, "design.json"),
     `${JSON.stringify({ ...starter, name }, null, 2)}\n`,
   );
+  const design = loadStylePackage(projectRoot, name, []).design;
   const unchanged = new Map();
   writeFileSync(
     join(nativeDir, "reference.docx"),
