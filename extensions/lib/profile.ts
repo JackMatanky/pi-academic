@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { Type } from "typebox";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
-import { errorMessage, writeFileAtomic } from "./fs-safe.js";
+import { errorMessage, writeFileAtomic, withFileLock } from "./fs-safe.js";
 import {
   isValid,
   JsonObjectSchema,
@@ -397,33 +397,37 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
  * @returns The updated profile, or null when there is no profile.
  * @throws When the patched profile would not be valid.
  */
-export function updateProfile(
+export async function updateProfile(
   projectDir: string,
   patch: JsonObject,
-): Profile | null {
+): Promise<Profile | null> {
   const profilePath = getProfilePath(projectDir);
 
   if (!existsSync(profilePath)) return null;
 
-  const parts = splitProfileText(readFileSync(profilePath, "utf-8"));
+  return withFileLock(profilePath, () => {
+    if (!existsSync(profilePath)) return null;
 
-  for (const key of EDITABLE_KEYS) {
-    const value = patch[key];
+    const parts = splitProfileText(readFileSync(profilePath, "utf-8"));
 
-    if (value === undefined) continue;
+    for (const key of EDITABLE_KEYS) {
+      const value = patch[key];
 
-    if (value === null) delete parts.known[key];
-    else parts.known[key] = value;
-  }
+      if (value === undefined) continue;
 
-  if (patch.updatedAt === undefined)
-    parts.known.updatedAt = new Date().toISOString();
+      if (value === null) delete parts.known[key];
+      else parts.known[key] = value;
+    }
 
-  const profile = assembleProfile(parts);
+    if (patch.updatedAt === undefined)
+      parts.known.updatedAt = new Date().toISOString();
 
-  writeFileAtomic(profilePath, serializeProfileMd(profile));
+    const profile = assembleProfile(parts);
 
-  return profile;
+    writeFileAtomic(profilePath, serializeProfileMd(profile));
+
+    return profile;
+  });
 }
 
 /**

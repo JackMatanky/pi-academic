@@ -1,6 +1,7 @@
 /**
  * Advisory English prose-pattern checks for Markdown text.
  */
+import { fenceAfter } from "../lib/markdown.js";
 
 /**
  * One contextual match from the deterministic prose rules.
@@ -61,8 +62,6 @@ const rules: Rule[] = [
   },
 ];
 
-const fencePattern = /^ {0,3}(`{3,}|~{3,})/u;
-
 const inlineCodePattern = /(`+).*?\1/gu;
 
 const linkPattern = /!?\[([^\]]+)\]\([^)]*\)/gu;
@@ -96,8 +95,7 @@ function visibleLines(text: string): Array<[number, string]> {
   const lines = text.split(lineBreakPattern);
   const visible: Array<[number, string]> = [];
   let inFrontmatter = lines[0]?.trim() === "---";
-  let fenceCharacter: string | undefined;
-  let fenceLength = 0;
+  let fence: string | null = null;
 
   for (const [index, line] of lines.entries()) {
     const lineNumber = index + 1;
@@ -111,24 +109,10 @@ function visibleLines(text: string): Array<[number, string]> {
       continue;
     }
 
-    const fence = fencePattern.exec(line)?.[1];
+    const openFence = fence;
+    fence = fenceAfter(line, fence);
 
-    if (fenceCharacter !== undefined) {
-      if (
-        fence !== undefined &&
-        fence[0] === fenceCharacter &&
-        fence.length >= fenceLength
-      ) {
-        fenceCharacter = undefined;
-        fenceLength = 0;
-      }
-
-      continue;
-    }
-
-    if (fence !== undefined) {
-      fenceCharacter = fence[0];
-      fenceLength = fence.length;
+    if (openFence !== null || fence !== null) {
       continue;
     }
 

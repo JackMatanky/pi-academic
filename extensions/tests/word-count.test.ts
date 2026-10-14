@@ -131,3 +131,38 @@ test("[test_count_words_tool] registered tool returns details and formatted text
   assert.equal(result.details.ok, true);
   assert.equal(result.details.markdownWords, 3);
 });
+
+test("[test_parse_bib_entries_multiline_at_symbol] does not truncate entry when abstract has newline starting with @online", (t) => {
+  const root = scratch(t);
+  mkdirSync(join(root, "articles"));
+  mkdirSync(join(root, ".academic-writer"));
+
+  const md = `# Title
+
+Claim supported by [@smith2020].
+`;
+
+  writeFileSync(join(root, "articles", "test.md"), md);
+
+  const bib = `@article{smith2020,
+  author = {Smith, John},
+  title = {A Study},
+  abstract = {First line of abstract.
+@online resources were consulted extensively during this project.},
+  year = {2020}
+}
+
+@online{web2021,
+  title = {Online Resource},
+  year = {2021}
+}
+`;
+
+  writeFileSync(join(root, ".academic-writer", "bibliography.bib"), bib);
+
+  const counts = calculateArticleWordCount(root, "articles/test.md", "apa");
+
+  assert.equal(counts.citationCount, 1);
+  assert.equal(counts.bibliographyEntriesCount, 1);
+  assert.equal(counts.bibliographyWords, 17);
+});

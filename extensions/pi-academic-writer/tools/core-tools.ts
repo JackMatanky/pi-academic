@@ -1,7 +1,7 @@
 import type { Harness } from "../../lib/harness.js";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { Type } from "typebox";
@@ -14,9 +14,8 @@ import {
   listProjectFiles,
   writeProjectTextFile,
 } from "../project-files.js";
-import { resolveResourcePath } from "../resources.js";
+import { loadResource } from "../resources.js";
 import { buildStatus } from "../status.js";
-import { thresholdsDefaultJson } from "../thresholds-default.js";
 import { fail, registerTool } from "../tool-kit.js";
 
 /**
@@ -49,48 +48,11 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
       ),
     }),
     run: ({ name, language, includePath }, { cwd }) => {
-      if (name === "thresholds") {
-        const override = join(cwd, ".academic-writer", "thresholds.json");
-
-        if (existsSync(override)) {
-          const content = readFileSync(override, "utf-8");
-
-          return {
-            text: includePath
-              ? `RESOURCE_PATH: ${override}\n---\n${content}`
-              : content,
-            details: { ok: true, name, path: override, source: "project" },
-          };
-        }
-
-        const path =
-          "extensions/pi-academic-writer/thresholds-default.ts (package default)";
-
-        const content = thresholdsDefaultJson();
-
-        return {
-          text: includePath
-            ? `RESOURCE_PATH: ${path}\n---\n${content}`
-            : content,
-          details: { ok: true, name, path, source: "package" },
-        };
-      }
-
-      const path = resolveResourcePath(name, cwd, language);
-
-      if (!existsSync(path)) {
-        return fail(`Academic Writer resource not found: ${name}`, {
-          ok: false,
-          name,
-          path,
-        });
-      }
-
-      const content = readFileSync(path, "utf-8");
+      const { content, path, source } = loadResource(name, cwd, language);
 
       return {
         text: includePath ? `RESOURCE_PATH: ${path}\n---\n${content}` : content,
-        details: { ok: true, name, path, source: "package" },
+        details: { ok: true, name, path, source },
       };
     },
   });

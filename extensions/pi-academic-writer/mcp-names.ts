@@ -2,7 +2,12 @@
  * Known MCP server config keys this package's skills/agents scaffold into
  * `.mcp.json`.
  */
-export const KNOWN_MCP_SERVERS = ["zotero", "notebooklm-mcp", "sefaria"];
+export const KNOWN_MCP_SERVERS = [
+  "zotero",
+  "notebooklm-mcp",
+  "notebooklm",
+  "sefaria",
+];
 
 /**
  * Sanitizes one MCP server/tool name part per oh-my-pi's tool-bridge naming

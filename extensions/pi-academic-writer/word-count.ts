@@ -114,19 +114,38 @@ function separateFootnotes(markdown: string): SeparatedFootnotes {
  */
 function parseBibEntries(bibText: string): Map<string, string> {
   const entries = new Map<string, string>();
-  const blocks = bibText.split(/^(?=@)/m);
+  const entryStartPattern = /@\w+\s*\{\s*([^,\s]+)\s*,/g;
 
-  for (const block of blocks) {
-    const trimmed = block.trim();
+  let match: RegExpExecArray | null;
 
-    if (!trimmed.startsWith("@")) continue;
-
-    const match = /^@\w+\s*\{\s*([^,\s]+)\s*,([\s\S]*)\}\s*$/.exec(trimmed);
-
-    if (!match) continue;
-
+  while ((match = entryStartPattern.exec(bibText)) !== null) {
     const key = match[1] ?? "";
-    const body = match[2] ?? "";
+    const bodyStart = match.index + match[0].length;
+    let depth = 1;
+    let i = bodyStart;
+
+    while (i < bibText.length && depth > 0) {
+      const char = bibText[i];
+
+      if (char === "\\") {
+        i += 2;
+        continue;
+      }
+
+      if (char === "{") {
+        depth += 1;
+      } else if (char === "}") {
+        depth -= 1;
+      }
+
+      if (depth === 0) break;
+      i += 1;
+    }
+
+    if (depth !== 0) break;
+
+    const body = bibText.slice(bodyStart, i);
+    entryStartPattern.lastIndex = i + 1;
 
     // Clean BibTeX syntax into printable word-like text:
     // field = {Value}, field = "Value" -> Value

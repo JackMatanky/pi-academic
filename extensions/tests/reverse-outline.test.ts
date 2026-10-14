@@ -94,3 +94,46 @@ test("a symlink to an article inside articles/ keeps working", (t) => {
     ["First paragraph."],
   );
 });
+
+test("mixed-length fences and nested-looking code lines are completely ignored", (t) => {
+  const root = fixture(t);
+
+  const markdown = [
+    "# Code Analysis",
+    "",
+    "Introductory paragraph before code block.",
+    "",
+    "````markdown",
+    "Here is an example code block:",
+    "```typescript",
+    "const greeting = 'hello'; // [@citeInCode]",
+    "```",
+    "Still inside the outer markdown fence.",
+    "````",
+    "",
+    "Paragraph after code block with citation [@realCite].",
+    "",
+  ].join("\n");
+
+  writeFileSync(join(root, "articles", "code.md"), markdown);
+
+  const result = reverseOutline(root, "articles/code.md");
+
+  assert.equal(result.status, "advisory");
+
+  if (result.status !== "advisory") return;
+  assert.equal(result.units.length, 2);
+  assert.deepEqual(
+    result.units.map((unit) => unit.text),
+    [
+      "Introductory paragraph before code block.",
+      "Paragraph after code block with citation [@realCite].",
+    ],
+  );
+  assert.equal(result.units[0]?.startLine, 3);
+  assert.equal(result.units[0]?.endLine, 3);
+  assert.equal(result.units[0]?.hasCitationMarker, false);
+  assert.equal(result.units[1]?.startLine, 13);
+  assert.equal(result.units[1]?.endLine, 13);
+  assert.equal(result.units[1]?.hasCitationMarker, true);
+});

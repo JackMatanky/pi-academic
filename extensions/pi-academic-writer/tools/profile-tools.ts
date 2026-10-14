@@ -73,8 +73,8 @@ export function registerProfileTools(pi: ExtensionAPI): void {
       "Patch recognized .academic-writer/profile.md fields using a structured object. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
     parameters: Type.Object({ fieldsJson: ProfilePatchSchema }),
     failure: "Profile update failed",
-    run: ({ fieldsJson }, { cwd }) => {
-      const profile = updateProfile(cwd, fieldsJson);
+    run: async ({ fieldsJson }, { cwd }) => {
+      const profile = await updateProfile(cwd, fieldsJson);
 
       if (!profile) {
         return fail("Profile update failed: profile missing", {

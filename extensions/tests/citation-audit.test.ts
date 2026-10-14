@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import {
   mkdtempSync,
   mkdirSync,
-  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -184,7 +183,7 @@ test("invalid JSON and missing articles report operational errors", (t) => {
   const absent = auditCitations("articles/missing.md", "chicago", root);
   assert.deepEqual(absent, {
     status: "error",
-    error: `Article not found: ${join(realpathSync(root), "articles", "missing.md")}`,
+    error: `Article not found: ${join(root, "articles", "missing.md")}`,
   });
 });
 
@@ -201,7 +200,7 @@ test("article paths cannot escape the project via traversal or symlinks", (t) =>
   ]) {
     assert.deepEqual(auditCitations(article, "chicago", root), {
       status: "error",
-      error: `Path must stay inside project root: ${article}`,
+      error: `Path must stay inside the project: ${article}`,
     });
   }
 });
@@ -260,4 +259,25 @@ test("key resolution compares decoded records without the filesystem", () => {
     ),
     { missingFromSources: ["c"], missingFromBibliography: ["b"] },
   );
+});
+
+test("analyzer ignores BOM and frontmatter closed with ... delimiter", () => {
+  const analysis = analyzeCitationText(
+    "\uFEFF---\ntitle: Document [@frontmatter]\n...\nText [@smith2020].",
+    "chicago",
+  );
+
+  assert.deepEqual(analysis.markers, ["[@smith2020]"]);
+  assert.deepEqual(analysis.citationKeys, ["smith2020"]);
+});
+
+test("analyzer masks email addresses so they are not treated as narrative citations", () => {
+  const analysis = analyzeCitationText(
+    "Contact author@example.com or user.name@domain.org. According to @doe2021, this holds.",
+    "chicago",
+  );
+
+  assert.deepEqual(analysis.citationKeys, ["doe2021"]);
+  assert.ok(!analysis.citationKeys.includes("example.com"));
+  assert.ok(!analysis.citationKeys.includes("domain.org"));
 });

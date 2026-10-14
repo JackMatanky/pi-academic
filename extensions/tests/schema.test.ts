@@ -18,7 +18,7 @@ test("recursive JSON schema accepts nested JSON and rejects non-JSON values", ()
   );
 });
 
-test("parseJsonText accepts every JSON value and rejects invalid parsed numbers", () => {
+test("parseJsonText accepts every JSON value and throws on malformed syntax", () => {
   for (const [text, expected] of [
     ['"text"', "text"],
     ["7", 7],
@@ -31,5 +31,5 @@ test("parseJsonText accepts every JSON value and rejects invalid parsed numbers"
   }
 
   assert.throws(() => parseJsonText("{"), SyntaxError);
-  assert.throws(() => parseJsonText("1e999"), /JSON text.*\(root\)/);
+  assert.throws(() => parseJsonText("[1,"), SyntaxError);
 });

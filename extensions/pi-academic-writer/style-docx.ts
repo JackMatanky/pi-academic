@@ -661,21 +661,38 @@ function serialize(doc: Document): Uint8Array {
 function addPart(entries: Record<string, Uint8Array>) {
   entries["word/footer1.xml"] = strToU8(footerXml());
   const rels = parse(entries, "word/_rels/document.xml.rels");
-  const rel = rels.createElementNS(REL, "Relationship");
-  rel.setAttribute("Id", FOOTER_REL_ID);
-  rel.setAttribute("Type", `${R}/footer`);
-  rel.setAttribute("Target", "footer1.xml");
-  rootOf(rels).appendChild(rel);
-  entries["word/_rels/document.xml.rels"] = serialize(rels);
-  const types = parse(entries, "[Content_Types].xml");
-  const override = types.createElementNS(CT, "Override");
-  override.setAttribute("PartName", "/word/footer1.xml");
-  override.setAttribute(
-    "ContentType",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml",
+  const relsRoot = rootOf(rels);
+
+  const hasFooterRel = elementChildren(relsRoot).some(
+    (el) => el.getAttribute("Id") === FOOTER_REL_ID,
   );
-  rootOf(types).appendChild(override);
-  entries["[Content_Types].xml"] = serialize(types);
+
+  if (!hasFooterRel) {
+    const rel = rels.createElementNS(REL, "Relationship");
+    rel.setAttribute("Id", FOOTER_REL_ID);
+    rel.setAttribute("Type", `${R}/footer`);
+    rel.setAttribute("Target", "footer1.xml");
+    relsRoot.appendChild(rel);
+    entries["word/_rels/document.xml.rels"] = serialize(rels);
+  }
+
+  const types = parse(entries, "[Content_Types].xml");
+  const typesRoot = rootOf(types);
+
+  const hasFooterType = elementChildren(typesRoot).some(
+    (el) => el.getAttribute("PartName") === "/word/footer1.xml",
+  );
+
+  if (!hasFooterType) {
+    const override = types.createElementNS(CT, "Override");
+    override.setAttribute("PartName", "/word/footer1.xml");
+    override.setAttribute(
+      "ContentType",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml",
+    );
+    typesRoot.appendChild(override);
+    entries["[Content_Types].xml"] = serialize(types);
+  }
 }
 
 export interface BuiltReference {

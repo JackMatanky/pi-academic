@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -17,6 +18,7 @@ import {
   parseArticle,
   type ArticleData,
 } from "../pi-academic-writer/article.js";
+import { assembleDocxJson } from "../pi-academic-writer/docx-assembly.js";
 import {
   articleMarkdown,
   cleanRtlText,
@@ -69,7 +71,7 @@ async function build(
   return { root, out: join(root, "a.docx") };
 }
 
-test("footnotes follow the cursor: first match at or after the previous one, missing markers skipped", () => {
+test("footnotes follow the cursor, unmatched markers are placed at cursor rather than dropped", () => {
   const { markdown, footnotes } = articleMarkdown(
     {
       sections: [
@@ -92,10 +94,10 @@ test("footnotes follow the cursor: first match at or after the previous one, mis
     false,
   );
 
-  assert.equal(footnotes, 2);
+  assert.equal(footnotes, 5);
   assert.equal(
     markdown,
-    "Hello world[^1]\\, then more\\. Later[^2] again\\.\n\n[^1]: one\n\n[^2]: two\n",
+    "Hello world[^1][^2]\\, then more\\. Later[^3][^4][^5] again\\.\n\n[^1]: one\n\n[^2]: skipped\n\n[^3]: two\n\n[^4]: behind the cursor\\, so skipped\n\n[^5]: empty marker is skipped\n",
   );
 });
 
@@ -325,5 +327,63 @@ test(
       styles.match(/w:styleId="Heading1"[\s\S]*?<\/w:style>/)?.[0] ?? "",
       /w:ascii="Times New Roman"/,
     );
+  },
+);
+
+test(
+  "docx: Hebrew quote enclosing a footnote preserves the footnote definition and reference",
+  needsPandoc,
+  async (t) => {
+    const root = project(t);
+    writeFileSync(
+      join(root, "article.md"),
+      [
+        "# כותרת",
+        "",
+        '"טקסט [^1] בדיקה"',
+        "",
+        "[^1]: הערת שוליים לבדיקה",
+        "",
+      ].join("\n"),
+    );
+
+    const assembled = assembleDocxJson(root, "article.md", "article.json", {
+      targetLanguage: "Hebrew",
+    });
+
+    assert.equal(assembled.ok, true, assembled.error ?? "");
+    const res = await generateDocx("article.json", "article.docx", root);
+    assert.equal(res.ok, true);
+    assert.equal(res.footnotes, 1);
+    const doc = part(join(root, "article.docx"), "word/document.xml");
+    assert.match(doc, /w:footnoteReference/);
+    assert.match(
+      part(join(root, "article.docx"), "word/footnotes.xml"),
+      /הערת שוליים לבדיקה/,
+    );
+  },
+);
+
+test(
+  "docx: generateDocx creates nested output directory if it does not exist",
+  needsPandoc,
+  async (t) => {
+    const root = project(t);
+    writeFileSync(
+      join(root, "a.json"),
+      JSON.stringify({
+        title: "Title",
+        sections: [{ paragraphs: ["Body text."] }],
+      }),
+    );
+
+    const res = await generateDocx(
+      "a.json",
+      "articles/nested/deep/out.docx",
+      root,
+    );
+
+    assert.equal(res.ok, true);
+    assert.equal(existsSync(join(root, "articles/nested/deep/out.docx")), true);
   },
 );

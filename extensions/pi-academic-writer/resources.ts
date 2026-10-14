@@ -1,6 +1,9 @@
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { PACKAGE_ROOT } from "../lib/paths.js";
+import { thresholdsDefaultJson } from "./thresholds-default.js";
+import { fail } from "./tool-kit.js";
 
 /**
  * Narrows resource language options to the packaged anti-AI pattern files.
@@ -108,4 +111,57 @@ export function resolveResourcePath(
         `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: thresholds, words, scorecard, style_fingerprint_rubric, anti_ai_patterns, voice_profile_load, voice_profile_template, run_state_contract, citation_export_contract, citation_review_gate, dispatch_contract.`,
       );
   }
+}
+
+export interface LoadedResource {
+  content: string;
+  path: string;
+  source: "project" | "package";
+}
+
+/**
+ * Loads an Academic Writer resource by name. Thresholds resolves the project
+ * override (.academic-writer/thresholds.json) when present, falling back to the
+ * package default. All other resources resolve to their packaged files.
+ *
+ * @param name - Stable resource name.
+ * @param projectRoot - Root directory of the project.
+ * @param language - Optional language selector for language-specific resources.
+ */
+export function loadResource(
+  name: string,
+  projectRoot: string,
+  language?: string,
+): LoadedResource {
+  if (name === "thresholds") {
+    const override = join(projectRoot, ".academic-writer", "thresholds.json");
+
+    if (existsSync(override)) {
+      return {
+        content: readFileSync(override, "utf-8"),
+        path: override,
+        source: "project",
+      };
+    }
+
+    return {
+      content: thresholdsDefaultJson(),
+      path: "extensions/pi-academic-writer/thresholds-default.ts (package default)",
+      source: "package",
+    };
+  }
+
+  const path = resolveResourcePath(name, projectRoot, language);
+
+  if (!existsSync(path)) {
+    fail(`Academic Writer resource not found: ${name}`, {
+      ok: false,
+      name,
+      path,
+    });
+  }
+
+  const content = readFileSync(path, "utf-8");
+
+  return { content, path, source: "package" };
 }

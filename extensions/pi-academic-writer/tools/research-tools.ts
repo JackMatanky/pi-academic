@@ -101,7 +101,9 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     label: "Snapshot Article Notes",
     description: "Freeze only outline-selected notes after outline approval.",
     parameters: Type.Object({ article: Type.String({ minLength: 1 }) }),
-    run: ({ article }, cwd) => ({ path: snapshotNotes(cwd, article) }),
+    run: async ({ article }, cwd) => ({
+      path: await snapshotNotes(cwd, article),
+    }),
   });
   registerResearchTool(pi, {
     name: "academic_writer_query_research",

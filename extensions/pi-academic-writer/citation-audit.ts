@@ -1,19 +1,9 @@
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { homedir } from "node:os";
-import {
-  basename,
-  dirname,
-  extname,
-  isAbsolute,
-  join,
-  relative,
-  resolve,
-  sep,
-} from "node:path";
+import { readFileSync, statSync } from "node:fs";
+import { extname, join, relative, resolve } from "node:path";
 
 import { Type } from "typebox";
 
-import { errorMessage } from "../lib/fs-safe.js";
+import { errorMessage, resolveInside } from "../lib/fs-safe.js";
 import { fenceAfter } from "../lib/markdown.js";
 import {
   isValid,
@@ -81,7 +71,13 @@ const bibliographyKeyPattern = /@[\p{L}\p{N}_]+\s*\{\s*([^,\s]+)\s*,/gu;
  * for citations.
  */
 function stripCode(markdown: string): string {
-  const lines = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---(?=\r?\n|$)/, "");
+  const unbom = markdown.startsWith("\uFEFF") ? markdown.slice(1) : markdown;
+
+  const lines = unbom.replace(
+    /^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)(?=\r?\n|$)/,
+    "",
+  );
+
   let fence: string | null = null;
 
   return lines
@@ -103,15 +99,6 @@ function isFile(path: string): boolean {
   } catch {
     return false;
   }
-}
-
-// Resolves symlinks in the nearest existing ancestor, so a missing leaf is
-// still checked.
-function resolveRealPath(path: string): string {
-  if (existsSync(path)) return realpathSync(path);
-  const parent = dirname(path);
-
-  return parent === path ? path : join(resolveRealPath(parent), basename(path));
 }
 
 /**
@@ -182,7 +169,8 @@ export function analyzeCitationText(
   // Pandoc also resolves narrative `@key` outside brackets.
   const prose = text
     .replace(bracketPattern, " ")
-    .replace(/\]\([^)]*\)|<[^>\s]+>|\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, " ");
+    .replace(/\]\([^)]*\)|<[^>\s]+>|\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, " ")
+    .replace(/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, " ");
 
   for (const match of prose.matchAll(citeKeyPattern)) {
     keys.add(match[1] ?? "");
@@ -243,30 +231,9 @@ export function auditCitations(
   projectRoot: string,
 ): CitationAuditResult {
   try {
-    const root = resolveRealPath(resolve(projectRoot));
-
-    const expandedArticle =
-      article === "~"
-        ? homedir()
-        : article.startsWith(`~${sep}`)
-          ? join(homedir(), article.slice(2))
-          : article;
-
-    const articlePath = resolveRealPath(
-      isAbsolute(expandedArticle)
-        ? expandedArticle
-        : resolve(root, expandedArticle),
-    );
-
+    const root = resolve(projectRoot);
+    const articlePath = resolveInside(root, article);
     const articleRelative = relative(root, articlePath);
-
-    if (
-      articleRelative === ".." ||
-      articleRelative.startsWith(`..${sep}`) ||
-      isAbsolute(articleRelative)
-    ) {
-      throw new Error(`Path must stay inside project root: ${article}`);
-    }
 
     if (!isFile(articlePath))
       return { status: "error", error: `Article not found: ${articlePath}` };

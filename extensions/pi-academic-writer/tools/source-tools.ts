@@ -104,8 +104,8 @@ export function registerSourceTools(pi: ExtensionAPI): void {
       }),
     }),
     failure: "Sources cache write failed",
-    run: ({ sourcesJson, bibliography }, { cwd }) => {
-      const result = writeSourcesCache(cwd, sourcesJson, bibliography);
+    run: async ({ sourcesJson, bibliography }, { cwd }) => {
+      const result = await writeSourcesCache(cwd, sourcesJson, bibliography);
 
       return {
         text: `Sources cache written: ${result.sourcesPath}, ${result.bibliographyPath}`,

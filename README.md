@@ -95,6 +95,10 @@ Optional format assets use relative package-local paths: `formats.docx.reference
 
 Run `/skill:academic-setup` to select or install a package (the starter ships with editable native Word, LibreOffice, and LaTeX files under `native/`) and `/skill:academic-export` to choose outputs or make a one-export package override. The `academic_writer_generate_docx` generator, which writes real Word footnotes and right-to-left text for literal-citation articles, uses the same profile package. `academic_writer_style_package` lists, installs the starter, and validates a package for every format, reporting what each format cannot express.
 
+The literal-citation DOCX path creates missing output directories and retains
+footnotes even when a supplied `after` anchor no longer matches the paragraph;
+unmatched notes attach at the current position rather than disappearing.
+
 ## Writing Workflow
 
 **The workflow follows the researcher's decisions:**

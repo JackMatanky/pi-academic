@@ -641,6 +641,49 @@ test("[test_outline_migration_preserves_markdown_and_conflicts] outline migratio
   assert.equal(ok(conflict), false);
 });
 
+test("[test_outline_unmapped_points_property_order_independent] writing outline preserves unmapped points regardless of property order", async (t) => {
+  const root = scratch(t);
+
+  mkdirSync(join(root, "articles"));
+  const articlePath = join(root, "articles", "order-test.md");
+  writeFileSync(articlePath, "# Title\n\nMigrated paragraph text.\n");
+
+  const migrated = await callTool(
+    root,
+    "academic_writer_migrate_article_outline",
+    { article: "articles/order-test.md" },
+  );
+
+  assert.equal(ok(migrated), true);
+
+  const outline = at(migrated, "value");
+  assert.ok(isValid(JsonObjectSchema, outline));
+
+  const firstWrite = await callTool(root, "academic_writer_write_outline", {
+    outlineJson: outline,
+  });
+
+  assert.equal(ok(firstWrite), true);
+
+  const reorderedOutline = structuredClone(outline);
+
+  const originalPoint = get(reorderedOutline, "items", 0);
+
+  assert.ok(isValid(JsonObjectSchema, originalPoint));
+
+  const reversedPoint: JsonObject = Object.fromEntries(
+    Object.entries(originalPoint).reverse(),
+  );
+
+  reorderedOutline.items = [reversedPoint];
+
+  const secondWrite = await callTool(root, "academic_writer_write_outline", {
+    outlineJson: reorderedOutline,
+  });
+
+  assert.equal(ok(secondWrite), true);
+});
+
 test("[test_health_includes_rumdl_field] health reports rumdl detection", async (t) => {
   const root = scratch(t);
 

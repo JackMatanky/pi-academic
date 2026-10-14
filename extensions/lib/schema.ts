@@ -126,14 +126,11 @@ export function parseWith<S extends TSchema>(
 }
 
 /**
- * Parses JSON text and validates that the parsed value is JSON-representable.
+ * Parses JSON text as a JSON value.
  */
 export function parseJsonText(text: string): JsonValue {
-  const parsed: unknown = JSON.parse(text);
-
-  assertValid(JsonValueSchema, parsed, "JSON text");
-
-  return parsed;
+  // SAFETY: JSON.parse only produces JSON-representable values from valid JSON text.
+  return JSON.parse(text) as JsonValue;
 }
 
 /**

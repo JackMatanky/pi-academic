@@ -8,6 +8,7 @@ import {
   writeFileAtomic,
 } from "../lib/fs-safe.js";
 import { fenceAfter } from "../lib/markdown.js";
+import { cleanRtlText } from "./docx-generator.js";
 
 /**
  * A section of an assembled article; assembly always titles its sections.
@@ -58,6 +59,7 @@ function parseMarkdownArticle(
   targetLanguage?: string,
   titleOverride?: string,
 ): ArticleData & { title: string; sections: Section[] } {
+  const isRtl = /hebrew|עברית/i.test(targetLanguage ?? "");
   const definitions = new Map<string, string>();
   const body: string[] = [];
   const source = markdown.split(/\r?\n/);
@@ -116,7 +118,7 @@ function parseMarkdownArticle(
       return;
     }
 
-    current.paragraphs.push(withFootnotes(text, definitions));
+    current.paragraphs.push(withFootnotes(text, definitions, isRtl));
   };
 
   fence = null;
@@ -153,7 +155,6 @@ function parseMarkdownArticle(
 
   if (current.paragraphs.length > 0 || sections.length === 0)
     sections.push(current);
-  const isRtl = (targetLanguage ?? "Hebrew").toLowerCase().startsWith("he");
 
   return {
     title: titleOverride ?? title ?? "Untitled",
@@ -174,16 +175,18 @@ function parseMarkdownArticle(
 function withFootnotes(
   text: string,
   definitions: Map<string, string>,
+  isRtl = false,
 ): Paragraph {
   if (/^ {0,3}(?:`{3,}|~{3,})/.test(text)) return text;
+  const input = isRtl ? cleanRtlText(text, false) : text;
   const notes: Array<{ after: string; text: string }> = [];
   let plain = "";
   let last = 0;
   let segmentStart = 0;
 
-  for (const match of text.matchAll(/\[\^([^\]]+)\]/g)) {
+  for (const match of input.matchAll(/\[\^([^\]]+)\]/g)) {
     const note = definitions.get(match[1] ?? "");
-    plain += text.slice(last, match.index);
+    plain += input.slice(last, match.index);
     last = match.index + match[0].length;
 
     if (note === undefined) {
@@ -199,7 +202,7 @@ function withFootnotes(
     segmentStart = plain.length;
   }
 
-  plain += text.slice(last);
+  plain += input.slice(last);
 
   return notes.length > 0 ? { text: plain, footnotes: notes } : plain;
 }

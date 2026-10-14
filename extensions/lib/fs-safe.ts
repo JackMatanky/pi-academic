@@ -137,7 +137,15 @@ const lockQueues = new Map<string, Promise<void>>();
 export async function withFileLock<T>(
   path: string,
   fn: () => T | Promise<T>,
-  { timeoutMs = 10_000, staleMs = 30_000 } = {},
+  {
+    timeoutMs = 10_000,
+    staleMs = 30_000,
+    signal,
+  }: {
+    timeoutMs?: number | undefined;
+    staleMs?: number | undefined;
+    signal?: AbortSignal | undefined;
+  } = {},
 ): Promise<T> {
   const lock = `${path}.lock`;
   mkdirSync(dirname(path), { recursive: true });
@@ -146,18 +154,56 @@ export async function withFileLock<T>(
   // One promise chain per lock path: waiters acquire in arrival order, so
   // same-process callers do not race each other through the filesystem.
   const previous = lockQueues.get(lock) ?? Promise.resolve();
-  let release!: () => void;
+  const { promise: acquired, resolve: release } = Promise.withResolvers<void>();
 
-  const acquired = new Promise<void>((resolveQueue) => {
-    release = resolveQueue;
+  const nextQueue = previous.catch(() => {}).then(() => acquired);
+  nextQueue.finally(() => {
+    if (lockQueues.get(lock) === nextQueue) lockQueues.delete(lock);
   });
-
-  lockQueues.set(
-    lock,
-    previous.then(() => acquired),
-  );
+  lockQueues.set(lock, nextQueue);
 
   const deadline = Date.now() + timeoutMs;
+
+  if (signal?.aborted) {
+    release();
+    throw signal.reason ?? new Error("Lock acquisition aborted");
+  }
+
+  const remaining = deadline - Date.now();
+
+  if (remaining <= 0) {
+    release();
+    throw new Error(`Timed out locking ${path}`);
+  }
+
+  const { promise: queueRace, reject: rejectQueue } =
+    Promise.withResolvers<never>();
+
+  const queueTimer = setTimeout(() => {
+    rejectQueue(new Error(`Timed out locking ${path}`));
+  }, remaining);
+
+  const onQueueAbort = () => {
+    clearTimeout(queueTimer);
+    rejectQueue(signal?.reason ?? new Error("Lock acquisition aborted"));
+  };
+
+  signal?.addEventListener("abort", onQueueAbort, { once: true });
+
+  try {
+    await Promise.race([previous.catch(() => {}), queueRace]);
+  } catch (queueError) {
+    release();
+    throw queueError;
+  } finally {
+    clearTimeout(queueTimer);
+    signal?.removeEventListener("abort", onQueueAbort);
+  }
+
+  if (signal?.aborted) {
+    release();
+    throw signal.reason ?? new Error("Lock acquisition aborted");
+  }
 
   for (;;) {
     try {
@@ -166,7 +212,7 @@ export async function withFileLock<T>(
     } catch (error) {
       if (!isErrnoException(error) || error.code !== "EEXIST") {
         // The queue entry must not keep later callers waiting forever.
-        release!();
+        release();
         throw error;
       }
 
@@ -181,16 +227,42 @@ export async function withFileLock<T>(
         continue; // lock vanished between checks
       }
 
+      if (signal?.aborted) {
+        release();
+        throw signal.reason ?? new Error("Lock acquisition aborted");
+      }
+
       if (Date.now() > deadline) {
-        release!();
+        release();
         throw new Error(`Timed out locking ${path}`);
       }
 
       // One-shot timer; kept ref'd so a process waiting on another process's
       // lock cannot exit with an unsettled await.
-      await new Promise<void>((resolveWait) => {
-        setTimeout(resolveWait, 25);
-      });
+      const {
+        promise: waitPromise,
+        resolve: resolveWait,
+        reject: rejectWait,
+      } = Promise.withResolvers<void>();
+
+      const onAbort = () => {
+        clearTimeout(timer);
+        rejectWait(signal?.reason ?? new Error("Lock acquisition aborted"));
+      };
+
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolveWait();
+      }, 25);
+
+      signal?.addEventListener("abort", onAbort, { once: true });
+
+      try {
+        await waitPromise;
+      } catch (waitErr) {
+        release();
+        throw waitErr;
+      }
     }
   }
 
@@ -204,9 +276,9 @@ export async function withFileLock<T>(
         rmSync(lock, { recursive: true, force: true });
       }
     } catch {
-      rmSync(lock, { recursive: true, force: true });
+      // Stolen lock or lock directory vanished; do not delete another owner's lock directory.
     }
 
-    release!();
+    release();
   }
 }

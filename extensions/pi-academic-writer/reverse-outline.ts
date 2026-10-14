@@ -7,6 +7,7 @@ import {
   isInside,
   resolveInside,
 } from "../lib/fs-safe.js";
+import { fenceAfter } from "../lib/markdown.js";
 
 /**
  * One heading or paragraph-sized block of an article.
@@ -98,18 +99,14 @@ export function reverseOutline(
   };
 
   lines.forEach((line, index) => {
-    const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1]?.[0];
+    const openFence = fence;
+    fence = fenceAfter(line, fence);
 
-    if (marker) {
-      flush(index);
-
-      if (fence === null) fence = marker;
-      else if (fence === marker) fence = null;
+    if (openFence !== null || fence !== null) {
+      if (openFence === null) flush(index);
 
       return;
     }
-
-    if (fence !== null) return;
 
     const heading = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
 

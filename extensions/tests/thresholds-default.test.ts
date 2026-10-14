@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "vitest";
 
 import { parseJsonText } from "../lib/schema.js";
+import { loadResource } from "../pi-academic-writer/resources.js";
 import {
   THRESHOLDS_DEFAULT,
   thresholdsDefaultJson,
@@ -65,4 +66,43 @@ test("[test_thresholds_read_serves_default_then_override] read_resource serves t
     (overridden.content[0]?.text ?? "").includes('"max": 5'),
     "project override must win",
   );
+});
+
+test("[test_load_resource_override_and_fallback] loadResource serves default, then project override", (t) => {
+  const root = scratch(t);
+
+  const fallback = loadResource("thresholds", root);
+  assert.equal(fallback.source, "package");
+  assert.equal(fallback.content, thresholdsDefaultJson());
+  assert.match(fallback.path, /thresholds-default\.ts/);
+
+  mkdirSync(join(root, ".academic-writer"));
+  writeFileSync(
+    join(root, ".academic-writer", "thresholds.json"),
+    '{"antiAi": {"passThreshold": 42}}\n',
+  );
+
+  const overridden = loadResource("thresholds", root);
+  assert.equal(overridden.source, "project");
+  assert.equal(
+    overridden.path,
+    join(root, ".academic-writer", "thresholds.json"),
+  );
+  assert.ok(overridden.content.includes('"passThreshold": 42'));
+});
+
+test("[test_load_resource_and_tool_missing_resource] missing or unknown resources fail cleanly with details", async (t) => {
+  const root = scratch(t);
+
+  assert.throws(
+    () => loadResource("nonexistent_resource", root),
+    /Unknown Academic Writer resource/,
+  );
+
+  const unknownResult = await callTool(root, "academic_writer_read_resource", {
+    name: "nonexistent_resource",
+  });
+
+  assert.equal(unknownResult.isError, true);
+  assert.equal(unknownResult.details.ok, false);
 });

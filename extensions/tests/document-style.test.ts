@@ -23,8 +23,17 @@ import {
   listStylePackages,
   renderDocumentStyle,
 } from "../pi-academic-writer/document-style.js";
-import { runPandoc } from "../pi-academic-writer/pandoc.js";
-import { loadStylePackage } from "../pi-academic-writer/style-design.js";
+import { formatDesign } from "../pi-academic-writer/docx-generator.js";
+import { defaultReference, runPandoc } from "../pi-academic-writer/pandoc.js";
+import {
+  loadStarterDesign,
+  loadStylePackage,
+} from "../pi-academic-writer/style-design.js";
+import { buildDocxReference } from "../pi-academic-writer/style-docx.js";
+import {
+  buildLatexPreamble,
+  spliceLatexColors,
+} from "../pi-academic-writer/style-latex.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 
@@ -558,3 +567,96 @@ test(
     assert.deepEqual(ok.errors, []);
   },
 );
+
+test(
+  "buildDocxReference is idempotent and does not duplicate footer relationship or content type",
+  needsPandoc,
+  async () => {
+    const base = await defaultReference("docx");
+    const design = formatDesign({});
+    const first = buildDocxReference(design, base, new Map());
+    const second = buildDocxReference(design, first.bytes, new Map());
+
+    const rels = strFromU8(
+      unzipSync(second.bytes)["word/_rels/document.xml.rels"] ??
+        new Uint8Array(),
+    );
+
+    const matches = [...rels.matchAll(/Id="rIdAwFooter1"/g)];
+    assert.equal(matches.length, 1);
+
+    const types = strFromU8(
+      unzipSync(second.bytes)["[Content_Types].xml"] ?? new Uint8Array(),
+    );
+
+    const typeMatches = [...types.matchAll(/PartName="\/word\/footer1\.xml"/g)];
+    assert.equal(typeMatches.length, 1);
+  },
+);
+
+test("spliceLatexColors inserts colors after xcolor when present, or appends xcolor and colors after packages when missing", () => {
+  const withXcolor = [
+    "% Header",
+    "\\usepackage{geometry}",
+    "\\usepackage{xcolor}",
+    "\\usepackage{setspace}",
+  ];
+
+  spliceLatexColors(withXcolor, ["\\definecolor{awbody}{HTML}{112233}"]);
+  assert.deepEqual(withXcolor, [
+    "% Header",
+    "\\usepackage{geometry}",
+    "\\usepackage{xcolor}",
+    "\\definecolor{awbody}{HTML}{112233}",
+    "\\usepackage{setspace}",
+  ]);
+
+  const missingXcolor = [
+    "% Header",
+    "\\usepackage{geometry}",
+    "\\usepackage{setspace}",
+    "\\makeatletter",
+  ];
+
+  spliceLatexColors(missingXcolor, ["\\definecolor{awbody}{HTML}{112233}"]);
+  assert.deepEqual(missingXcolor, [
+    "% Header",
+    "\\usepackage{geometry}",
+    "\\usepackage{setspace}",
+    "\\usepackage{xcolor}",
+    "\\definecolor{awbody}{HTML}{112233}",
+    "\\makeatletter",
+  ]);
+
+  const noPackages = ["% Bare template"];
+  spliceLatexColors(noPackages, ["\\definecolor{awbody}{HTML}{112233}"]);
+  assert.deepEqual(noPackages, [
+    "% Bare template",
+    "\\usepackage{xcolor}",
+    "\\definecolor{awbody}{HTML}{112233}",
+  ]);
+});
+
+test("buildLatexPreamble carries xcolor and color definitions preceding their use", () => {
+  const starter = loadStarterDesign();
+
+  const design = {
+    ...starter,
+    components: {
+      ...starter.components,
+      body: { ...starter.components.body, color: "#112233" },
+    },
+  };
+
+  const preamble = buildLatexPreamble(design, new Map());
+  assert.match(preamble.tex, /\\usepackage\{xcolor\}/);
+  assert.match(preamble.tex, /\\definecolor\{awbody\}\{HTML\}\{112233\}/);
+  const xcolorIdx = preamble.tex.indexOf("\\usepackage{xcolor}");
+
+  const defColorIdx = preamble.tex.indexOf(
+    "\\definecolor{awbody}{HTML}{112233}",
+  );
+
+  assert.ok(xcolorIdx !== -1 && defColorIdx !== -1);
+  assert.ok(defColorIdx > xcolorIdx);
+});

@@ -13,6 +13,29 @@ export interface BuiltPreamble {
 }
 
 /**
+ * Splice color definitions into LaTeX preamble output. If \usepackage{xcolor}
+ * is present, colors are inserted directly after it. Otherwise,
+ * \usepackage{xcolor} and colors are appended after preamble packages.
+ */
+export function spliceLatexColors(
+  out: string[],
+  colors: Iterable<string>,
+): void {
+  const insertAt = out.indexOf("\\usepackage{xcolor}") + 1;
+
+  if (insertAt > 0) {
+    out.splice(insertAt, 0, ...colors);
+  } else {
+    const lastPkg = out.findLastIndex((line) =>
+      line.startsWith("\\usepackage"),
+    );
+
+    const target = lastPkg >= 0 ? lastPkg + 1 : out.length;
+    out.splice(target, 0, "\\usepackage{xcolor}", ...colors);
+  }
+}
+
+/**
  * Generate the preamble `design.json` describes. Components the LaTeX output
  * cannot express are reported in `warnings` rather than dropped.
  */
@@ -28,8 +51,7 @@ export function buildLatexPreamble(
   applyChrome(ctx);
 
   // Colour definitions must precede their first use.
-  const insertAt = ctx.out.indexOf("\\usepackage{xcolor}") + 1;
-  ctx.out.splice(insertAt, 0, ...ctx.colors.values());
+  spliceLatexColors(ctx.out, ctx.colors.values());
 
   return { tex: `${ctx.out.join("\n")}\n`, warnings: ctx.warnings };
 }

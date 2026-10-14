@@ -6,7 +6,11 @@ import { basename, extname, join, resolve } from "node:path";
 
 import { Type } from "typebox";
 
-import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
+import {
+  resolveInside,
+  writeFileAtomic,
+  withFileLock,
+} from "../lib/fs-safe.js";
 import { isValid, JsonObjectSchema, parseJsonText } from "../lib/schema.js";
 import { extractDocument, type ExtractedDocument } from "./documents.js";
 import {
@@ -446,21 +450,32 @@ export interface SourcesCacheWrite {
  * @param sources - Source registry records to serialize.
  * @param bibliography - Concatenated BibTeX entries.
  */
-export function writeSourcesCache(
+export async function persistSourceRegistry(
   projectRoot: string,
   sources: JsonValue[],
   bibliography: string,
-): SourcesCacheWrite {
-  const normalizedSources = sources.map(normalizeSourceCacheRecord);
-  const sourcesPath = ".academic-writer/sources.json";
-  const bibliographyPath = ".academic-writer/bibliography.bib";
+): Promise<SourcesCacheWrite> {
+  const sourcesPath = join(projectRoot, ".academic-writer", "sources.json");
 
-  writeProjectTextFile(
-    projectRoot,
-    sourcesPath,
-    `${JSON.stringify(normalizedSources, null, 2)}\n`,
-  );
-  writeProjectTextFile(projectRoot, bibliographyPath, bibliography);
+  return withFileLock(sourcesPath, () => {
+    const normalizedSources = sources.map(normalizeSourceCacheRecord);
+    const relSourcesPath = ".academic-writer/sources.json";
+    const relBibPath = ".academic-writer/bibliography.bib";
 
-  return { ok: true, sourcesPath, bibliographyPath, count: sources.length };
+    writeProjectTextFile(
+      projectRoot,
+      relSourcesPath,
+      `${JSON.stringify(normalizedSources, null, 2)}\n`,
+    );
+    writeProjectTextFile(projectRoot, relBibPath, bibliography);
+
+    return {
+      ok: true,
+      sourcesPath: relSourcesPath,
+      bibliographyPath: relBibPath,
+      count: sources.length,
+    };
+  });
 }
+
+export const writeSourcesCache = persistSourceRegistry;

@@ -154,6 +154,142 @@ test("withFileLock releases the lock when the callback rejects", async (t) => {
   assert.equal(await withFileLock(target, () => "again"), "again");
 });
 
+test("withFileLock strictly serializes in-process callers and cleans up queue", async (t) => {
+  const root = project(t);
+  const target = join(root, "strict-serialization.json");
+  let active = 0;
+  let maxActive = 0;
+  const events: string[] = [];
+
+  const firstStarted = Promise.withResolvers<void>();
+  const firstGate = Promise.withResolvers<void>();
+
+  const first = withFileLock(target, async () => {
+    active += 1;
+    maxActive = Math.max(maxActive, active);
+    events.push("t1-start");
+    firstStarted.resolve();
+    await firstGate.promise;
+    events.push("t1-end");
+    active -= 1;
+
+    return "t1";
+  });
+
+  const second = withFileLock(target, async () => {
+    active += 1;
+    maxActive = Math.max(maxActive, active);
+    events.push("t2-start");
+    events.push("t2-end");
+    active -= 1;
+
+    return "t2";
+  });
+
+  await firstStarted.promise;
+  assert.equal(active, 1);
+  assert.deepEqual(events, ["t1-start"]);
+
+  firstGate.resolve();
+
+  const results = await Promise.all([first, second]);
+
+  assert.deepEqual(results, ["t1", "t2"]);
+  assert.equal(
+    maxActive,
+    1,
+    "concurrent in-process callers execute strictly sequentially",
+  );
+  assert.deepEqual(events, ["t1-start", "t1-end", "t2-start", "t2-end"]);
+  assert.equal(existsSync(`${target}.lock`), false, "lock is released");
+
+  let followUpExecuted = false;
+
+  const followUp = await withFileLock(target, () => {
+    followUpExecuted = true;
+
+    return "done";
+  });
+
+  assert.equal(followUp, "done");
+  assert.equal(followUpExecuted, true);
+  assert.equal(existsSync(`${target}.lock`), false);
+});
+
+test("withFileLock respects AbortSignal and safely preserves lock directory on foreign ownership", async (t) => {
+  const root = project(t);
+  const target = join(root, "abort-and-stolen.json");
+  const lock = `${target}.lock`;
+
+  const preController = new AbortController();
+  preController.abort(new Error("pre-aborted"));
+  await assert.rejects(
+    withFileLock(target, () => "ok", { signal: preController.signal }),
+    /pre-aborted/,
+  );
+  assert.equal(existsSync(lock), false);
+
+  const firstBlocker = Promise.withResolvers<void>();
+  const abortCtrl = new AbortController();
+
+  const first = withFileLock(target, async () => {
+    await firstBlocker.promise;
+
+    return "first";
+  });
+
+  const queued = withFileLock(target, () => "second", {
+    signal: abortCtrl.signal,
+  });
+
+  const third = withFileLock(target, () => "third");
+
+  abortCtrl.abort(new Error("aborted in queue"));
+  firstBlocker.resolve();
+
+  await assert.rejects(queued, /aborted in queue/);
+  assert.equal(await first, "first");
+  assert.equal(await third, "third");
+  assert.equal(existsSync(lock), false);
+
+  const pollTarget = join(root, "poll-abort.json");
+  const pollLock = `${pollTarget}.lock`;
+  mkdirSync(pollLock, { recursive: true });
+  writeFileSync(join(pollLock, "owner"), "competing-owner");
+
+  const pollAbortCtrl = new AbortController();
+  queueMicrotask(() => pollAbortCtrl.abort(new Error("aborted in poll")));
+  await assert.rejects(
+    withFileLock(pollTarget, () => "never", {
+      signal: pollAbortCtrl.signal,
+      timeoutMs: 10_000,
+    }),
+    /aborted in poll/,
+  );
+  rmSync(pollLock, { recursive: true, force: true });
+
+  const tamperedTarget = join(root, "tampered.json");
+  const tamperedLock = `${tamperedTarget}.lock`;
+
+  const tampered = await withFileLock(tamperedTarget, async () => {
+    writeFileSync(join(tamperedLock, "owner"), "foreign-stealer");
+
+    return "tampered";
+  });
+
+  assert.equal(tampered, "tampered");
+  assert.equal(
+    existsSync(tamperedLock),
+    true,
+    "foreign lock directory preserved",
+  );
+  assert.equal(
+    readFileSync(join(tamperedLock, "owner"), "utf8"),
+    "foreign-stealer",
+  );
+  rmSync(tamperedLock, { recursive: true, force: true });
+});
+
 test("re-ingesting keeps Zotero records, existing citekeys and foreign BibTeX entries", async (t) => {
   const root = project(t);
   write(root, ".academic-writer/sources/n.md", "# Notes 2020\n\nBody.\n");
@@ -341,7 +477,7 @@ test("the citation audit ignores e-mail, code and trailing punctuation but check
   assert.deepEqual(audit.malformedMarkers, []);
 });
 
-test("updateProfile keeps unknown fields and sections, quotes awkward values and rejects bad patches", (t) => {
+test("updateProfile keeps unknown fields and sections, quotes awkward values and rejects bad patches", async (t) => {
   const root = project(t);
   write(
     root,
@@ -362,7 +498,7 @@ test("updateProfile keeps unknown fields and sections, quotes awkward values and
       "",
     ].join("\r\n"),
   );
-  updateProfile(root, {
+  await updateProfile(root, {
     fieldOfStudy: "Line one\nLine two",
     citationStyle: "",
   });
@@ -372,9 +508,9 @@ test("updateProfile keeps unknown fields and sections, quotes awkward values and
   assert.deepEqual(profile?.extraFrontmatter, { customKey: "kept" });
   assert.deepEqual(profile?.extraSections, { "Custom Notes": { a: 1 } });
 
-  assert.throws(() => updateProfile(root, { abstractLanguages: "English" }));
-  assert.throws(() => updateProfile(root, { tools: [1] }));
-  assert.equal(updateProfile(join(root, "nowhere"), {}), null);
+  await assert.rejects(updateProfile(root, { abstractLanguages: "English" }));
+  await assert.rejects(updateProfile(root, { tools: [1] }));
+  assert.equal(await updateProfile(join(root, "nowhere"), {}), null);
   assert.equal(serializeProfileMd({}).includes("abstractLanguages: []"), true);
 });
 

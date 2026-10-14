@@ -3,7 +3,11 @@ import { basename, dirname, join } from "node:path";
 
 import { Type } from "typebox";
 
-import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
+import {
+  resolveInside,
+  writeFileAtomic,
+  withFileLock,
+} from "../lib/fs-safe.js";
 import { fenceAfter } from "../lib/markdown.js";
 import {
   isValid,
@@ -191,7 +195,10 @@ function readOutlineJson(path: string): JsonValue {
  * Validates and saves an outline. Unmapped points are only accepted when they
  * are preserved from a migrated draft.
  */
-export function writeOutline(projectRoot: string, value: JsonValue): Outline {
+export async function writeOutline(
+  projectRoot: string,
+  value: JsonValue,
+): Promise<Outline> {
   const notes = library(projectRoot);
 
   const registry = isValid(StatusProbe, value)
@@ -200,39 +207,45 @@ export function writeOutline(projectRoot: string, value: JsonValue): Outline {
 
   const outline = validateOutline(value, notes, registry, true);
   const unmapped = collectUnmapped(outline.items);
+  const path = outlinePath(projectRoot, outline.article.slug);
 
-  if (unmapped.length > 0) {
-    const path = outlinePath(projectRoot, outline.article.slug);
+  return withFileLock(path, () => {
+    if (unmapped.length > 0) {
+      if (!existsSync(path))
+        throw new Error("Unmapped points can only come from article migration");
 
-    if (!existsSync(path))
-      throw new Error("Unmapped points can only come from article migration");
+      const previous = validateOutline(
+        readOutlineJson(path),
+        notes,
+        undefined,
+        true,
+      );
 
-    const previous = validateOutline(
-      readOutlineJson(path),
-      notes,
-      undefined,
-      true,
-    );
+      const previousUnmapped = collectUnmapped(previous.items);
 
-    const previousUnmapped = collectUnmapped(previous.items);
+      if (previous.status !== "draft" || previousUnmapped.length === 0)
+        throw new Error("Unmapped points can only come from article migration");
 
-    if (previous.status !== "draft" || previousUnmapped.length === 0)
-      throw new Error("Unmapped points can only come from article migration");
-
-    for (const point of unmapped)
-      if (
-        !previousUnmapped.some(
-          (old) => JSON.stringify(old) === JSON.stringify(point),
+      for (const point of unmapped)
+        if (
+          !previousUnmapped.some(
+            (old) =>
+              old.id === point.id &&
+              old.role === point.role &&
+              old.draftText === point.draftText &&
+              old.claim === point.claim &&
+              old.reasoning === point.reasoning,
+          )
         )
-      )
-        throw new Error(
-          "Unmapped points must be preserved from the migrated draft",
-        );
-  }
+          throw new Error(
+            "Unmapped points must be preserved from the migrated draft",
+          );
+    }
 
-  saveJson(outlinePath(projectRoot, outline.article.slug), outline);
+    saveJson(path, outline);
 
-  return outline;
+    return outline;
+  });
 }
 
 /**
@@ -331,7 +344,10 @@ export function renderOutline(projectRoot: string, article: string): string {
 /**
  * Freezes the notes an approved outline cites into an article-local file.
  */
-export function snapshotNotes(projectRoot: string, article: string): string {
+export async function snapshotNotes(
+  projectRoot: string,
+  article: string,
+): Promise<string> {
   const outline = getOutline(projectRoot, article);
 
   if (outline.status !== "approved")
@@ -366,13 +382,15 @@ export function snapshotNotes(projectRoot: string, article: string): string {
 
   const path = frozenPath(projectRoot, article);
 
-  saveJson(path, {
-    schemaVersion: 1,
-    article: outline.article,
-    notes: chosen,
-  });
+  return withFileLock(outlinePath(projectRoot, outline.article.slug), () => {
+    saveJson(path, {
+      schemaVersion: 1,
+      article: outline.article,
+      notes: chosen,
+    });
 
-  return path;
+    return path;
+  });
 }
 
 /**

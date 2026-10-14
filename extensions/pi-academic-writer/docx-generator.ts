@@ -1,8 +1,8 @@
 import type { ArticleData, ArticleFormat, Paragraph } from "./article.js";
 import type { StyleDesign } from "./style-design.js";
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 import { unzipSync } from "fflate";
 
@@ -175,7 +175,14 @@ function paragraphMarkdown(
     const marker = clean(note.after, false);
     const index = marker ? text.indexOf(marker, cursor) : -1;
 
-    if (index < 0) continue;
+    if (index < 0) {
+      definitions.push(
+        `[^${definitions.length + 1}]: ${escapeMarkdown(clean(note.text))}`,
+      );
+      out += `[^${definitions.length}]`;
+      continue;
+    }
+
     const end = index + marker.length;
     out += escapeRaw(text.slice(cursor, end));
     definitions.push(
@@ -275,6 +282,7 @@ export async function generateDocx(
 ): Promise<GenerateDocxResult> {
   const source = resolveInside(cwd, inputPath);
   const output = resolveInside(cwd, outputPath);
+  mkdirSync(dirname(output), { recursive: true });
   const data = parseArticle(parseJsonText(readFileSync(source, "utf8")));
   const rtl = data.format?.isRtl ?? true;
   const { markdown, footnotes } = articleMarkdown(data, rtl);
