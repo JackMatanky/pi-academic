@@ -17,6 +17,8 @@ export interface HealthStatus extends AcademicWriterStatus {
  * Returns whether an executable command is available on the current PATH.
  *
  * @param command - Executable command name to search for on PATH.
+ *
+ * @returns True if command is found and executable on PATH.
  */
 export function commandExists(command: string): boolean {
   const suffixes =
@@ -60,6 +62,8 @@ export function selectPdfEngine(): "xelatex" | "tectonic" | undefined {
  *
  * @param projectRoot - Absolute project root used to resolve project-relative
  *   files.
+ *
+ * @returns Comprehensive local health and command availability status.
  */
 export function buildHealth(projectRoot: string): HealthStatus {
   return {

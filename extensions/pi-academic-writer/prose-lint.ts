@@ -194,7 +194,12 @@ function repeatedOpenings(lines: Array<[number, string]>): ProseLintFinding[] {
 }
 
 /**
- * Return stable, read-only advisory findings for English Markdown prose.
+ * Returns stable, read-only advisory findings for English Markdown prose.
+ *
+ * @param text - Markdown prose text to lint.
+ * @param fileName - File identifier used in result object.
+ *
+ * @returns Linting result with advisory findings.
  */
 export function lintProse(text: string, fileName = "<stdin>"): ProseLintResult {
   const lines = visibleLines(text);

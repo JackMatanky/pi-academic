@@ -30,7 +30,11 @@ const NoteLibrarySchema = Type.Object(
 );
 
 /**
- * Path of the project's research-note library.
+ * Returns the path of the project's research-note library.
+ *
+ * @param projectRoot - Root directory of the project.
+ *
+ * @returns Absolute path to `.academic-writer/research-notes.json`.
  */
 export function noteFile(projectRoot: string): string {
   return join(projectRoot, ".academic-writer", "research-notes.json");
@@ -39,6 +43,9 @@ export function noteFile(projectRoot: string): string {
 /**
  * Applies the evidence rules of each note kind and fills in defaults.
  *
+ * @param input - Raw parsed note input data.
+ *
+ * @returns Validated, fully formed research note.
  * @throws When a quotation, paraphrase or summary lacks what it must carry.
  */
 export function buildNote(input: NoteInput): Note {
@@ -78,7 +85,11 @@ export function buildNote(input: NoteInput): Note {
 }
 
 /**
- * Decodes one stored note.
+ * Decodes one stored note from raw JSON.
+ *
+ * @param value - Raw JSON value representing a note.
+ *
+ * @returns Validated research note.
  */
 export function parseNote(value: JsonValue): Note {
   return buildNote(parseWith(NoteInputSchema, value, "note"));
@@ -86,6 +97,10 @@ export function parseNote(value: JsonValue): Note {
 
 /**
  * Loads the note library; a missing file is an empty library.
+ *
+ * @param projectRoot - Root directory of the project.
+ *
+ * @returns Array of loaded and decoded research notes.
  */
 export function library(projectRoot: string): Note[] {
   const path = noteFile(projectRoot);
@@ -101,6 +116,10 @@ export function library(projectRoot: string): Note[] {
  * Marks a note stale when its source's fingerprint no longer matches the one
  * the note was anchored to.
  *
+ * @param note - Note to evaluate for staleness.
+ * @param registry - Source reference records to compare fingerprints against.
+ *
+ * @returns Same note or fresh copy with `review.state` set to "stale".
  * @throws When the note cites a source missing from the registry, or a local
  *   source without a fingerprint.
  */
@@ -128,6 +147,11 @@ function saveLibrary(projectRoot: string, notes: Note[]): void {
 /**
  * Creates or updates notes. Edited notes go back to `unchecked`; unchanged ones
  * keep their review state.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param upserts - Raw note upsert payloads.
+ *
+ * @returns Array of successfully saved and merged notes.
  */
 export async function writeResearchNotes(
   projectRoot: string,
@@ -177,6 +201,13 @@ export async function writeResearchNotes(
 
 /**
  * Marks notes verified or unchecked; staleness is re-evaluated.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param noteIds - Unique identifiers of notes to update.
+ * @param state - New review state ("unchecked" or "verified").
+ *
+ * @returns Array of updated research notes.
+ * @throws When any ID in `noteIds` is not found in the library.
  */
 export async function reviewResearchNotes(
   projectRoot: string,
@@ -214,6 +245,9 @@ export interface RefreshedSource {
 
 /**
  * Marks notes stale when their source vanished or its content changed.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param refreshed - Current state and fingerprints of re-ingested sources.
  */
 export async function markResearchNotesStale(
   projectRoot: string,

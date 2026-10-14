@@ -222,6 +222,11 @@ function citedNoteIds(items: OutlineItem[], ids: Set<string>): Set<string> {
 /**
  * Answers a fixed-scope query over the note library and outlines.
  *
+ * @param projectRoot - Root directory of the project.
+ * @param query - Typed research query with operation discriminator and
+ *   parameters.
+ *
+ * @returns Matched note, notes array, outline summary, or section bundle.
  * @throws When a parameter is missing or irrelevant to the operation, or when
  *   the requested note, section or frozen snapshot does not exist.
  */
@@ -332,6 +337,12 @@ const DraftOutlineSchema = Type.Object({
 /**
  * Reports missing fields and unresolved, unverified or stale note links in an
  * outline. Findings are advisory; they never change approval.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ * @param evidenceMapJson - Optional raw evidence-map JSON string.
+ *
+ * @returns Advisory findings or error diagnosis for the outline.
  */
 export function diagnoseOutline(
   projectRoot: string,

@@ -97,6 +97,13 @@ function spill(
  * Keeps tool output within what a model can read in one go. Longer output is
  * cut and, when the project has an `.academic-writer/` directory, saved in full
  * so the agent can page through it.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param toolName - Name of the calling tool.
+ * @param text - Raw tool output text.
+ * @param now - Optional timestamp for spill file naming.
+ *
+ * @returns Bounded output string, with truncation notice if spilled.
  */
 export function boundOutput(
   projectRoot: string,

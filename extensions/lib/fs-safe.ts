@@ -12,6 +12,10 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 /**
  * Returns the message of a thrown value.
+ *
+ * @param cause - Unknown thrown value or Error instance.
+ *
+ * @returns Extracted error message or stringified representation.
  */
 export function errorMessage(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
@@ -19,6 +23,10 @@ export function errorMessage(cause: unknown): string {
 
 /**
  * Returns whether a thrown value is a Node system error carrying a `code`.
+ *
+ * @param cause - Unknown thrown value to check.
+ *
+ * @returns True if `cause` is an Error with a string `code` property.
  */
 export function isErrnoException(
   cause: unknown,
@@ -28,6 +36,11 @@ export function isErrnoException(
 
 /**
  * Returns whether `child` is `parent` or lies below it (lexical check).
+ *
+ * @param parent - Directory expected to contain `child`.
+ * @param child - Path to test for containment.
+ *
+ * @returns True if `child` is identical to or within `parent`.
  */
 export function isInside(parent: string, child: string): boolean {
   const rel = relative(parent, child);
@@ -45,6 +58,10 @@ export function isInside(parent: string, child: string): boolean {
  * Symlinks are resolved through the nearest existing ancestor, so a link inside
  * the project that points outside it is rejected as well.
  *
+ * @param projectRoot - Absolute project root path.
+ * @param path - Project-relative or absolute candidate path.
+ *
+ * @returns Verified absolute path strictly within `projectRoot`.
  * @throws When the resolved path escapes `projectRoot`.
  */
 export function resolveInside(projectRoot: string, path: string): string {
@@ -79,6 +96,10 @@ export function resolveInside(projectRoot: string, path: string): string {
 /**
  * Writes a file through a temporary sibling and rename, so readers never see a
  * partial file.
+ *
+ * @param path - Destination file path.
+ * @param content - String or binary payload to persist.
+ * @throws When writing or atomic rename fails.
  */
 export function writeFileAtomic(
   path: string,
@@ -133,6 +154,13 @@ const lockQueues = new Map<string, Promise<void>>();
  * instead of polling each other. A lock older than `staleMs` is assumed
  * abandoned and taken over; ownership is confirmed through a meta file so an
  * active owner is never evicted by a stale-takeover race.
+ *
+ * @param path - Path to file being protected by the lock.
+ * @param fn - Synchronous or asynchronous action to execute under the lock.
+ * @param options - Lock configuration options.
+ *
+ * @returns Result value returned by `fn`.
+ * @throws When lock acquisition times out or is aborted.
  */
 export async function withFileLock<T>(
   path: string,

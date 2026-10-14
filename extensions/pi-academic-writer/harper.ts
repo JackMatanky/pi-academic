@@ -45,6 +45,11 @@ function linterFor(dialect: HarperDialect): LocalLinter {
  * Construction or lint errors propagate; the tool handler converts them to a
  * ToolFailure ("harper unavailable") — there is no silent empty-result
  * fallback.
+ *
+ * @param text - Text content to proofread.
+ * @param dialect - English dialect ("American" or "British").
+ *
+ * @returns Array of spelling and grammar findings.
  */
 export async function lintWithHarper(
   text: string,

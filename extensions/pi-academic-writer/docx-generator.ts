@@ -18,9 +18,12 @@ import { buildDocxReference } from "./style-docx.js";
  */
 export interface GenerateDocxOptions {
   /**
-   * A style package's DOCX reference; replaces the format-derived one.
+   * A style package's DOCX reference; replaces the format-derived one
    */
   referenceDoc?: string | undefined;
+  /**
+   * Optional abort signal forwarded to Pandoc process
+   */
   signal?: AbortSignal | undefined;
 }
 
@@ -28,10 +31,25 @@ export interface GenerateDocxOptions {
  * Result of successfully generating a DOCX article.
  */
 export interface GenerateDocxResult {
+  /**
+   * Indicates successful generation
+   */
   ok: true;
+  /**
+   * Path to output DOCX document
+   */
   output: string;
+  /**
+   * Total number of sections formatted
+   */
   sections: number;
+  /**
+   * Total number of footnotes created
+   */
   footnotes: number;
+  /**
+   * Estimated total word count
+   */
   totalWords: number;
 }
 
@@ -40,6 +58,11 @@ export interface GenerateDocxResult {
  * paired straight quotes around Hebrew text, and no stray directional marks.
  * Orphan leading punctuation (a mark followed by whitespace) is dropped only
  * from paragraph text, never from match markers, so `.NET` is left alone.
+ *
+ * @param text - Hebrew or mixed-language text to normalize.
+ * @param trimOrphan - Whether to drop leading orphan punctuation marks.
+ *
+ * @returns Cleaned and normalized text.
  */
 export function cleanRtlText(text: string, trimOrphan = true): string {
   let out = text
@@ -57,8 +80,12 @@ export function cleanRtlText(text: string, trimOrphan = true): string {
 }
 
 /**
- * Make user text literal in Pandoc markdown: every ASCII punctuation mark is
+ * Makes user text literal in Pandoc markdown: every ASCII punctuation mark is
  * backslash-escaped.
+ *
+ * @param text - Raw user text to escape.
+ *
+ * @returns Markdown-safe escaped text.
  */
 export function escapeMarkdown(text: string): string {
   return escapeRaw(text).trim();
@@ -73,7 +100,11 @@ function escapeRaw(text: string): string {
 }
 
 /**
- * The styles the original generator produced, expressed as a style design.
+ * Converts ArticleFormat settings into a minimal StyleDesign.
+ *
+ * @param format - Article formatting options.
+ *
+ * @returns Equivalent StyleDesign configuration.
  */
 export function formatDesign(format: ArticleFormat = {}): StyleDesign {
   const font = format.font ?? "David";
@@ -287,7 +318,15 @@ function assertFootnoteCapable(path: string): void {
 }
 
 /**
- * Generate a DOCX with real footnotes from the article JSON, using Pandoc.
+ * Generates an Academic Writer DOCX with real footnotes from the article JSON,
+ * using Pandoc.
+ *
+ * @param inputPath - Path to input article JSON.
+ * @param outputPath - Path where output .docx should be written.
+ * @param cwd - Working directory for path resolution.
+ * @param options - Generation options including reference document.
+ *
+ * @returns Result summary with section and footnote counts.
  */
 export async function generateDocx(
   inputPath: string,

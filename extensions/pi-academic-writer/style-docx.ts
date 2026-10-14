@@ -700,13 +700,25 @@ function addPart(entries: Record<string, Uint8Array>) {
  * warnings.
  */
 export interface BuiltReference {
+  /**
+   * Patched OpenXML DOCX archive binary content
+   */
   bytes: Uint8Array;
+  /**
+   * Non-fatal style translation warnings
+   */
   warnings: string[];
 }
 
 /**
- * Apply a style design to a Pandoc-compatible reference DOCX (normally Pandoc's
- * own default, which already carries the footnote parts).
+ * Applies a style design to a Pandoc-compatible reference DOCX (normally
+ * Pandoc's own default, which already carries the footnote parts).
+ *
+ * @param design - Design specification to apply.
+ * @param base - Base reference DOCX binary bytes.
+ * @param explicit - Set of explicitly overridden styling properties.
+ *
+ * @returns Patched reference DOCX bytes and warning list.
  */
 export function buildDocxReference(
   design: StyleDesign,

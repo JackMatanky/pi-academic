@@ -49,7 +49,13 @@ export interface RenderedStyle {
 }
 
 /**
- * Run `work` in a fresh scratch directory under `.academic-writer/runs/`.
+ * Runs `work` in a fresh scratch directory under `.academic-writer/runs/`.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param prefix - Prefix for the temporary directory name.
+ * @param work - Callback receiving the scratch directory path.
+ *
+ * @returns Result value returned by `work`.
  */
 export async function withScratchDir<T>(
   projectRoot: string,
@@ -80,8 +86,16 @@ function nativeNotice(
 }
 
 /**
- * Validate a style package and produce the Pandoc assets for one format,
+ * Validates a style package and produces the Pandoc assets for one format,
  * generating reference documents or a preamble into `outputDir` as needed.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param packageName - Style package directory name.
+ * @param format - Target output style format.
+ * @param outputDir - Writable scratch directory for generated assets.
+ * @param signal - Optional abort signal forwarded to subprocesses.
+ *
+ * @returns Rendered style details, assets, Pandoc args, and warnings.
  */
 export async function renderDocumentStyle(
   projectRoot: string,
@@ -154,8 +168,13 @@ export interface PackageCheck {
 }
 
 /**
- * Validate a package for every format and report every warning, without keeping
- * output.
+ * Validates a package for every format and reports all warnings, without
+ * keeping output assets.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param packageName - Style package directory name.
+ *
+ * @returns Validation check result including errors and warnings.
  */
 export async function checkStylePackage(
   projectRoot: string,
@@ -192,8 +211,12 @@ export async function checkStylePackage(
 }
 
 /**
- * Names of the packages under `.academic-writer/styles/` that contain a
+ * Lists names of the packages under `.academic-writer/styles/` that contain a
  * design.json.
+ *
+ * @param projectRoot - Root directory of the project.
+ *
+ * @returns Sorted list of available style package names.
  */
 export function listStylePackages(projectRoot: string): string[] {
   const root = join(projectRoot, ".academic-writer", "styles");
@@ -220,10 +243,16 @@ export interface InstalledStarter {
 }
 
 /**
- * Generate the starter into `.academic-writer/styles/<name>/`: its design.json
+ * Generates the starter into `.academic-writer/styles/<name>/`: its design.json
  * (serialized from the typed definition in `style-starters.ts`) plus editable
  * native starting points under `native/`. The native files are not referenced
  * from design.json; the researcher opts in by adding `formats` entries.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param name - Name for the installed package; defaults to "academic-default".
+ *
+ * @returns Details of the installed package including directory and files.
+ * @throws When package name is invalid or the directory already exists.
  */
 export async function installStarterPackage(
   projectRoot: string,

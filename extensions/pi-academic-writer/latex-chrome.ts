@@ -1,7 +1,9 @@
 import { fontCommands, type LatexContext } from "./latex-context.js";
 
 /**
- * Running footer, header and hyperlink colours.
+ * Applies running footer, header, and hyperlink colours to the LaTeX preamble.
+ *
+ * @param ctx - Active LaTeX generation context.
  */
 export function applyChrome(ctx: LatexContext): void {
   const { out, color, unsupported, wholly, get } = ctx;

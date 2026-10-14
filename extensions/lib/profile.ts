@@ -27,6 +27,8 @@ const JSON_PROFILE_RELATIVE_PATH = ".academic-writer/profile.json";
  * Returns the project-local `.academic-writer` directory path.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ *
+ * @returns Absolute path to `.academic-writer` directory.
  */
 export function getProfileDirPath(projectDir: string): string {
   return join(projectDir, PROFILE_DIR);
@@ -36,6 +38,8 @@ export function getProfileDirPath(projectDir: string): string {
  * Returns the project-local Academic Writer profile markdown path.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ *
+ * @returns Absolute path to `.academic-writer/profile.md`.
  */
 export function getProfilePath(projectDir: string): string {
   return join(projectDir, PROFILE_RELATIVE_PATH);
@@ -252,8 +256,11 @@ function assembleProfile(parts: ProfileParts): Profile {
 }
 
 /**
- * Parses a profile markdown document.
+ * Parses a profile markdown document into structured profile data.
  *
+ * @param raw - Raw Markdown content of the profile file.
+ *
+ * @returns Parsed structured profile representation.
  * @throws When a JSON section is malformed or a field has the wrong type.
  */
 export function parseProfileMd(raw: string): Profile {
@@ -274,6 +281,10 @@ function formatScalar(text: string): string {
 
 /**
  * Serializes a profile back to markdown.
+ *
+ * @param profile - Structured profile data to serialize.
+ *
+ * @returns Serialized Markdown text ready for disk storage.
  */
 export function serializeProfileMd(profile: Profile): string {
   const lines = ["# Academic Writer Profile", "", "---"];
@@ -332,6 +343,8 @@ export function serializeProfileMd(profile: Profile): string {
  * Migrates the old JSON profile location into the markdown profile format once.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ *
+ * @returns Result status and file paths of the migration.
  */
 export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
   const jsonPath = join(projectDir, JSON_PROFILE_RELATIVE_PATH);
@@ -434,6 +447,8 @@ export async function updateProfile(
  * Loads the project profile if `.academic-writer/profile.md` exists.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ *
+ * @returns Loaded profile data, or null if the file does not exist.
  * @throws When the profile exists but cannot be parsed.
  */
 export function loadProfile(projectDir: string): Profile | null {

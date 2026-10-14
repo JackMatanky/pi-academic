@@ -84,6 +84,11 @@ const SectionWithParagraphs = Type.Object({
 
 /**
  * Validates an article payload and names the offending section or paragraph.
+ *
+ * @param raw - Raw article JSON value.
+ *
+ * @returns Validated typed article data.
+ * @throws When payload or any section/paragraph breaks schema.
  */
 export function parseArticle(raw: JsonValue): ArticleData {
   if (!isValid(ArticleWithSections, raw))
@@ -117,7 +122,11 @@ export interface Footnote {
 const StringSchema = Type.String();
 
 /**
- * A paragraph's text and footnotes, whichever form it was written in.
+ * Returns a paragraph's text and footnotes, whichever form it was written in.
+ *
+ * @param paragraph - Paragraph either as string or structured object.
+ *
+ * @returns Normalized object with plain text and footnote list.
  */
 export function paragraphParts(paragraph: Paragraph): {
   text: string;

@@ -1,8 +1,12 @@
 import type { Document, Element, Node } from "@xmldom/xmldom";
 
 /**
- * Xmldom types `ownerDocument` as nullable; every node we touch comes from a
- * parsed document.
+ * Returns the owner Document of an XML node, throwing if unattached.
+ *
+ * @param node - XML DOM node to inspect.
+ *
+ * @returns Attached owner Document.
+ * @throws When node is not attached to a document.
  */
 export function ownerOf(node: Node): Document {
   if (!node.ownerDocument)
@@ -13,6 +17,11 @@ export function ownerOf(node: Node): Document {
 
 /**
  * Returns the root element of an XML document, throwing if absent.
+ *
+ * @param doc - XML Document instance.
+ *
+ * @returns Root Element of the document.
+ * @throws When document has no root element.
  */
 export function rootOf(doc: Document): Element {
   if (!doc.documentElement) throw new Error("XML document has no root element");
@@ -21,8 +30,12 @@ export function rootOf(doc: Document): Element {
 }
 
 /**
- * `appendChild` that keeps the child's own type, so it can be configured
- * afterwards.
+ * Appends a child node to a parent while retaining the child's concrete type.
+ *
+ * @param parent - DOM node to receive child.
+ * @param child - Child node to append.
+ *
+ * @returns Appended child node preserving its type.
  */
 export function append<T extends Node>(parent: Node, child: T): T {
   parent.appendChild(child);
@@ -32,13 +45,23 @@ export function append<T extends Node>(parent: Node, child: T): T {
 
 /**
  * Narrows an xmldom node to an element.
+ *
+ * @param node - Node to test.
+ *
+ * @returns True if node is an Element (nodeType === 1).
  */
 export function isElement(node: Node): node is Element {
   return node.nodeType === 1;
 }
 
 /**
- * The descendant elements of `parent` with this namespace and local name.
+ * Returns the descendant elements of parent matching namespace and local name.
+ *
+ * @param parent - Parent Document or Element to search within.
+ * @param ns - Namespace URI string.
+ * @param local - Element local name.
+ *
+ * @returns Array of matching Element nodes.
  */
 export function elementsByTagNameNS(
   parent: Document | Element,

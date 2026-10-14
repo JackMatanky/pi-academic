@@ -125,6 +125,11 @@ function collectCiteKeys(value: JsonValue, keys: Set<string>): void {
  * Extracts citation markers, cite keys and text defects from Markdown. Pure:
  * front matter, fenced code and inline code are excluded exactly as Pandoc
  * does, and narrative `@key` resolution applies only in citeproc mode.
+ *
+ * @param markdown - Input article markdown content.
+ * @param citationStyle - Citation style ("inline-parenthetical", "apa", etc.).
+ *
+ * @returns Analysis containing extracted markers, keys, defects, and status.
  */
 export function analyzeCitationText(
   markdown: string,
@@ -197,6 +202,12 @@ export interface CitationKeyResolution {
 /**
  * Resolves citation keys against decoded source records and raw bibliography
  * text. Pure: callers own the filesystem reads and asset selection.
+ *
+ * @param citationKeys - Unique list of citation keys cited in the article.
+ * @param sourceRecords - Sources JSON array or object.
+ * @param bibliographyText - Raw BibTeX bibliography text.
+ *
+ * @returns Resolution showing missing keys from sources or bibliography.
  */
 export function resolveCitationKeys(
   citationKeys: readonly string[],
@@ -223,7 +234,14 @@ export function resolveCitationKeys(
 }
 
 /**
- * Audit Markdown citation markers against article-local or project-wide assets.
+ * Audits Markdown citation markers against article-local or project-wide
+ * assets.
+ *
+ * @param article - Article file name or path relative to project.
+ * @param citationStyle - Citation style ("inline-parenthetical", "apa", etc.).
+ * @param projectRoot - Root directory of the project.
+ *
+ * @returns Audit result with status, markers, and missing key lists.
  */
 export function auditCitations(
   article: string,

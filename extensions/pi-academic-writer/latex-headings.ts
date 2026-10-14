@@ -7,7 +7,10 @@ import {
 } from "./latex-context.js";
 
 /**
- * Section headings, title, subtitle and abstract.
+ * Applies section headings, title, subtitle, and abstract formatting to the
+ * LaTeX preamble.
+ *
+ * @param ctx - Active LaTeX generation context.
  */
 export function applyHeadings(ctx: LatexContext): void {
   const { out, warnings, color, unsupported, wholly, get, explicit } = ctx;

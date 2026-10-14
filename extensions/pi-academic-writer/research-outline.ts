@@ -54,6 +54,13 @@ const StatusProbe = Type.Object({ status: Type.Literal("approved") });
  * citable notes; drafts may leave evidence unresolved. Points without claim and
  * reasoning are accepted only as migrated drafts.
  *
+ * @param value - Raw outline JSON payload.
+ * @param notes - Loaded note library to validate citations against.
+ * @param sourceRegistry - Optional source registry for freshness verification.
+ * @param allowMigratedUnmapped - Whether to accept unmapped points from
+ *   migrated drafts.
+ *
+ * @returns Validated canonical outline.
  * @throws With the first rule the outline breaks.
  */
 export function validateOutline(
@@ -163,6 +170,11 @@ export function validateOutline(
 
 /**
  * Path of an article's canonical outline JSON.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ *
+ * @returns Absolute path to `articles/<slug>.outline.json`.
  */
 export function outlinePath(projectRoot: string, article: string): string {
   return join(projectRoot, "articles", articleSlug(article) + ".outline.json");
@@ -170,6 +182,11 @@ export function outlinePath(projectRoot: string, article: string): string {
 
 /**
  * Path of an article's frozen note snapshot.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ *
+ * @returns Absolute path to `articles/<slug>.notes.json`.
  */
 export function frozenPath(projectRoot: string, article: string): string {
   return join(projectRoot, "articles", articleSlug(article) + ".notes.json");
@@ -194,6 +211,12 @@ function readOutlineJson(path: string): JsonValue {
 /**
  * Validates and saves an outline. Unmapped points are only accepted when they
  * are preserved from a migrated draft.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param value - Raw outline JSON payload.
+ *
+ * @returns Validated and persisted canonical outline.
+ * @throws When outline validation fails or unmapped points are unpreserved.
  */
 export async function writeOutline(
   projectRoot: string,
@@ -252,6 +275,10 @@ export async function writeOutline(
  * Loads an article's outline, validating approved ones against the frozen note
  * snapshot when one exists.
  *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ *
+ * @returns Validated canonical outline.
  * @throws When the outline is missing or invalid.
  */
 export function getOutline(projectRoot: string, article: string): Outline {
@@ -280,6 +307,11 @@ export function getOutline(projectRoot: string, article: string): Outline {
 
 /**
  * Renders the outline as read-only Markdown next to the article.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ *
+ * @returns Path to the generated markdown file.
  */
 export function renderOutline(projectRoot: string, article: string): string {
   const outline = getOutline(projectRoot, article);
@@ -343,6 +375,12 @@ export function renderOutline(projectRoot: string, article: string): string {
 
 /**
  * Freezes the notes an approved outline cites into an article-local file.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ *
+ * @returns Path to the generated snapshot file.
+ * @throws When the outline is not in "approved" status.
  */
 export async function snapshotNotes(
   projectRoot: string,
@@ -406,6 +444,12 @@ export interface OutlineMigrationOptions {
  * Turns an article's headings and paragraphs into a draft outline of unmapped
  * points, leaving the article untouched.
  *
+ * @param projectRoot - Root directory of the project.
+ * @param article - Article file name or relative path.
+ * @param options - Outline options including title, language, and citation
+ *   style.
+ *
+ * @returns Generated draft outline with unmapped points.
  * @throws When the outline already exists or the article is missing.
  */
 export function migrateArticleOutline(

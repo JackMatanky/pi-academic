@@ -8,6 +8,10 @@ import { citationAssetPaths } from "./project-files.js";
 /**
  * Unicode-aware word counter matching Pandoc and Humanities word boundaries
  * (letters, digits, connector punctuation like Hebrew maqaf/geresh).
+ *
+ * @param text - Text content to count words in.
+ *
+ * @returns Count of matching unicode word tokens.
  */
 export function countWords(text: string): number {
   const matches = text.trim().match(/[\p{L}\p{N}]+/gu);
@@ -201,6 +205,8 @@ function estimateCiteprocMarkerWords(
  * @param projectRoot - Absolute project root.
  * @param articlePath - Project-relative or absolute path to article markdown.
  * @param citationStyle - Citation style ("inline-parenthetical", "apa", etc.).
+ *
+ * @returns Detailed word count breakdown across sections and references.
  */
 export function calculateArticleWordCount(
   projectRoot: string,

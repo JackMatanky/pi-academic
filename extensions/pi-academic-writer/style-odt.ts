@@ -318,7 +318,14 @@ function patchPage(doc: Document, design: StyleDesign): void {
 }
 
 /**
- * Apply a style design to a Pandoc-compatible reference ODT.
+ * Applies a style design to a Pandoc-compatible reference ODT.
+ *
+ * @param design - Design specification to apply.
+ * @param base - Base reference ODT binary bytes.
+ * @param explicit - Set of explicitly overridden styling properties.
+ *
+ * @returns Patched reference ODT bytes and warning list.
+ * @throws When the base ODT archive lacks required XML parts.
  */
 export function buildOdtReference(
   design: StyleDesign,

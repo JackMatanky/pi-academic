@@ -37,17 +37,30 @@ export const ALIGN_COMMAND = {
 
 /**
  * Formats a numeric dimension to 3 decimal places without trailing zeroes.
+ *
+ * @param value - Number to format.
+ *
+ * @returns Formatted dimension string.
  */
 export const num = (value: number) => `${+value.toFixed(3)}`;
 
 /**
  * Computes standard 1.2x proportional leading line height for a font size in
  * points.
+ *
+ * @param size - Font size in points.
+ *
+ * @returns Formatted line height string.
  */
 export const line = (size: number) => num(size * 1.2);
 
 /**
- * Font size, weight, shape and colour commands for one component.
+ * Returns font size, weight, shape and colour commands for one component.
+ *
+ * @param props - Styling properties for component.
+ * @param color - Optional LaTeX color command name.
+ *
+ * @returns LaTeX font command string.
  */
 export function fontCommands(
   props: ComponentStyle,
@@ -106,6 +119,11 @@ export interface LatexContext {
 /**
  * Creates a fresh LaTeX generation context with tracking for custom colors and
  * warnings.
+ *
+ * @param design - Style design specification.
+ * @param explicit - Map of explicit component overrides.
+ *
+ * @returns Initialized LaTeX context.
  */
 export function createLatexContext(
   design: StyleDesign,

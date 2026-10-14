@@ -225,8 +225,15 @@ async function downloadStyle(
 }
 
 /**
- * Resolve an alias, style ID, local .csl path, or URL to an absolute
+ * Resolves an alias, style ID, local .csl path, or URL to an absolute
  * project-cached/local style path.
+ *
+ * @param style - Alias ("apa", "chicago"), style ID, local path, or URL.
+ * @param projectRoot - Root directory of the project.
+ * @param download - Whether to download remote styles if not cached.
+ *
+ * @returns Absolute path to the resolved local .csl file.
+ * @throws When style cannot be found or downloaded.
  */
 export async function resolveCslStyle(
   style: string,

@@ -5,6 +5,10 @@
  * line belongs to code when either the incoming or the returned state is
  * non-null, which covers the opening and closing fence lines themselves.
  *
+ * @param line - Current text line to test for opening or closing fences.
+ * @param open - Fence marker active prior to this line, or null if outside
+ *   code.
+ *
  * @returns The fence marker that is open after `line`, or `null`.
  */
 export function fenceAfter(line: string, open: string | null): string | null {

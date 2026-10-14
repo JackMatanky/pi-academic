@@ -7,7 +7,10 @@ import {
 } from "./latex-context.js";
 
 /**
- * Lists, tables, captions, figures and code.
+ * Applies lists, tables, captions, figures, and code block styles to the LaTeX
+ * preamble.
+ *
+ * @param ctx - Active LaTeX generation context.
  */
 export function applyBlocks(ctx: LatexContext): void {
   const { out, color, unsupported, wholly, get } = ctx;

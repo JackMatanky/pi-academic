@@ -87,6 +87,11 @@ export const SourceCacheRecordSchema = Type.Object({
 
 /**
  * Reads a string-valued field of an opaque registry entry.
+ *
+ * @param entry - JSON object representing a source record.
+ * @param key - Field key name to read.
+ *
+ * @returns String value if present and of string type, or undefined.
  */
 export function stringField(
   entry: JsonObject,
@@ -112,6 +117,9 @@ function nonBlank(value: string | undefined): string | undefined {
  * Checks one source record handed over by the researcher and fills in the
  * derived `sourceId` for Zotero records.
  *
+ * @param value - Raw source record JSON object.
+ *
+ * @returns Normalized source record with derived `sourceId` populated.
  * @throws When the record is not an object, has an unknown `sourceType`, or its
  *   `sourceId` does not match the identity fields.
  */

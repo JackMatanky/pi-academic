@@ -7,7 +7,10 @@ import {
 } from "./latex-context.js";
 
 /**
- * Page geometry, packages, fonts and document-wide body text settings.
+ * Applies page geometry, packages, fonts, and document-wide body text settings
+ * to the LaTeX preamble.
+ *
+ * @param ctx - Active LaTeX generation context.
  */
 export function applyPageAndBody(ctx: LatexContext): void {
   const { out, color, unsupported, get, design } = ctx;

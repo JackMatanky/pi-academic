@@ -70,6 +70,8 @@ function readRun(
  * Summarizes active and latest Academic Writer runs for a project.
  *
  * @param projectDir - Absolute project directory used for project-local state.
+ *
+ * @returns Structured summary of active and most recent runs.
  */
 export function summarizeRuns(projectDir: string): RunSummary {
   const runsDir = join(projectDir, RUNS_RELATIVE_DIR);

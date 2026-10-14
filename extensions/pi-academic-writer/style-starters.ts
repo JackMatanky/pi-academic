@@ -565,8 +565,12 @@ export const STYLE_STARTERS: readonly StyleStarter[] = [
 ];
 
 /**
- * The starter definition for `name`; unknown names resolve to
+ * Returns the starter definition for `name`; unknown names resolve to
  * academic-default's design, which is installed under the requested name.
+ *
+ * @param name - Shipped starter package name (e.g. "apa-7", "chicago").
+ *
+ * @returns Matching starter definition or the academic-default fallback.
  */
 export function starterByName(name: string): StyleStarter {
   return (

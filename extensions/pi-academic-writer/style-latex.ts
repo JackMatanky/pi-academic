@@ -11,14 +11,23 @@ import { applyPageAndBody } from "./latex-page.js";
  * Generated LaTeX preamble string and non-fatal style translation warnings.
  */
 export interface BuiltPreamble {
+  /**
+   * Formatted LaTeX preamble TeX markup
+   */
   tex: string;
+  /**
+   * Non-fatal style translation warnings
+   */
   warnings: string[];
 }
 
 /**
- * Splice color definitions into LaTeX preamble output. If \usepackage{xcolor}
+ * Splices color definitions into LaTeX preamble output. If \usepackage{xcolor}
  * is present, colors are inserted directly after it. Otherwise,
  * \usepackage{xcolor} and colors are appended after preamble packages.
+ *
+ * @param out - Output LaTeX preamble line buffer to mutate.
+ * @param colors - Iterable of LaTeX color definitions (e.g. \definecolor).
  */
 export function spliceLatexColors(
   out: string[],
@@ -43,8 +52,13 @@ export function spliceLatexColors(
 }
 
 /**
- * Generate the preamble `design.json` describes. Components the LaTeX output
+ * Generates the preamble `design.json` describes. Components the LaTeX output
  * cannot express are reported in `warnings` rather than dropped.
+ *
+ * @param design - Style design specification.
+ * @param explicit - Explicitly overridden styling properties.
+ *
+ * @returns Generated LaTeX preamble string and warnings.
  */
 export function buildLatexPreamble(
   design: StyleDesign,

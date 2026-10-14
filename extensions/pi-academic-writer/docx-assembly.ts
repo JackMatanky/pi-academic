@@ -212,6 +212,13 @@ function withFootnotes(
  * Writes deterministic DOCX JSON for an article markdown file.
  *
  * Both paths must stay inside the project.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param input - Relative or absolute path to source Markdown file.
+ * @param output - Destination path for assembled JSON.
+ * @param options - Assembly options such as target language and title.
+ *
+ * @returns Assembly result indicating success, word count, and output path.
  */
 export function assembleDocxJson(
   projectRoot: string,

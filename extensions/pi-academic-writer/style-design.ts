@@ -51,29 +51,89 @@ const Alignment = Type.Union([
  */
 const ComponentStyleSchema = Type.Object(
   {
+    /**
+     * Font family name (e.g. "Times New Roman", "Georgia")
+     */
     fontFamily: Type.Optional(
       Type.String({ pattern: "^[\\p{L}\\p{N}_ .-]+$" }),
     ),
+    /**
+     * Font size in points
+     */
     fontSizePt: Type.Optional(NonNegative),
+    /**
+     * Line spacing multiplier (e.g. 1.0, 1.5, 2.0)
+     */
     lineSpacing: Type.Optional(
       Type.Number({ exclusiveMinimum: 0, maximum: 3 }),
     ),
+    /**
+     * Whether text is bold
+     */
     bold: Type.Optional(Type.Boolean()),
+    /**
+     * Whether text is italicized
+     */
     italic: Type.Optional(Type.Boolean()),
+    /**
+     * Whether text has underline
+     */
     underline: Type.Optional(Type.Boolean()),
+    /**
+     * Hex color code for text foreground
+     */
     color: Type.Optional(Type.String({ pattern: "^#[0-9A-Fa-f]{6}$" })),
+    /**
+     * Hex color code for paragraph shading background
+     */
     shading: Type.Optional(Type.String({ pattern: "^#[0-9A-Fa-f]{6}$" })),
+    /**
+     * Paragraph text alignment
+     */
     alignment: Type.Optional(Alignment),
+    /**
+     * Vertical space before paragraph in points
+     */
     spaceBeforePt: Type.Optional(NonNegative),
+    /**
+     * Vertical space after paragraph in points
+     */
     spaceAfterPt: Type.Optional(NonNegative),
+    /**
+     * Left indent margin in millimeters
+     */
     indentLeftMm: Type.Optional(NonNegative),
+    /**
+     * Right indent margin in millimeters
+     */
     indentRightMm: Type.Optional(NonNegative),
+    /**
+     * First line indent in millimeters
+     */
     firstLineIndentMm: Type.Optional(NonNegative),
+    /**
+     * Hanging indent in millimeters
+     */
     hangingIndentMm: Type.Optional(NonNegative),
+    /**
+     * Keep paragraph with next element to prevent orphans
+     */
     keepWithNext: Type.Optional(Type.Boolean()),
+    /**
+     * Insert page break before this element
+     */
     pageBreakBefore: Type.Optional(Type.Boolean()),
+    /**
+     * Table border width in points
+     */
     borderWidthPt: Type.Optional(NonNegative),
+    /**
+     * Hex color code for table borders
+     */
     borderColor: Type.Optional(Type.String({ pattern: "^#[0-9A-Fa-f]{6}$" })),
+    /**
+     * Table cell internal padding in millimeters
+     */
     cellPaddingMm: Type.Optional(NonNegative),
   },
   { additionalProperties: false },
@@ -271,6 +331,9 @@ const PROP_KINDS = new Map<string, string>([
  */
 export const PageSchema = Type.Object(
   {
+    /**
+     * Standard paper size
+     */
     size: Type.Optional(
       Type.Union([
         Type.Literal("A4"),
@@ -278,9 +341,15 @@ export const PageSchema = Type.Object(
         Type.Literal("Legal"),
       ]),
     ),
+    /**
+     * Page orientation
+     */
     orientation: Type.Optional(
       Type.Union([Type.Literal("portrait"), Type.Literal("landscape")]),
     ),
+    /**
+     * Margin boundaries in millimeters
+     */
     marginsMm: Type.Optional(
       Type.Object(
         {
@@ -292,7 +361,13 @@ export const PageSchema = Type.Object(
         { additionalProperties: false },
       ),
     ),
+    /**
+     * Distance from top of page to running header in millimeters
+     */
     headerDistanceMm: Type.Optional(NonNegative),
+    /**
+     * Distance from bottom of page to running footer in millimeters
+     */
     footerDistanceMm: Type.Optional(NonNegative),
   },
   { additionalProperties: false },
@@ -384,7 +459,9 @@ function fail(name: string, field: string, correction: string): never {
 }
 
 /**
- * Load the shipped starter design, which supplies defaults for every package.
+ * Loads the shipped starter design, which supplies defaults for every package.
+ *
+ * @returns Default starter style design.
  */
 export function loadStarterDesign(): StyleDesign {
   const starter = starterByName("academic-default");
@@ -686,8 +763,15 @@ function mergePage(page: PageInput, base: PageStyle): PageStyle {
 }
 
 /**
- * Validate `.academic-writer/styles/<name>/design.json` for the requested
- * formats and merge omitted properties from the shipped starter.
+ * Validates `.academic-writer/styles/<name>/design.json` for the requested
+ * formats and merges omitted properties from the shipped starter.
+ *
+ * @param projectRoot - Root directory of the project.
+ * @param name - Style package name (kebab-case).
+ * @param formats - Target export formats requiring validation.
+ *
+ * @returns Loaded and resolved style package structure.
+ * @throws When package validation fails or design.json is missing/invalid.
  */
 export function loadStylePackage(
   projectRoot: string,
@@ -775,6 +859,10 @@ export const PAGE_DIMENSIONS_MM: Record<PageStyle["size"], [number, number]> = {
 
 /**
  * Page width and height in millimeters after applying orientation.
+ *
+ * @param page - Page style configuration.
+ *
+ * @returns Tuple of [width, height] in millimeters.
  */
 export function pageSizeMm(page: PageStyle): [number, number] {
   const [width, height] = PAGE_DIMENSIONS_MM[page.size];

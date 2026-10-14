@@ -1,7 +1,10 @@
 import { fontCommands, num, type LatexContext } from "./latex-context.js";
 
 /**
- * Block quotes, footnotes, bibliography and citations.
+ * Applies block quotes, footnotes, bibliography, and citation formatting to the
+ * LaTeX preamble.
+ *
+ * @param ctx - Active LaTeX generation context.
  */
 export function applyNotes(ctx: LatexContext): void {
   const { out, warnings, color, unsupported, wholly, get, explicit } = ctx;

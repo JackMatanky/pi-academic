@@ -14,8 +14,17 @@ import {
  * One advisory finding about chapter coverage.
  */
 export interface CoverageFinding {
+  /**
+   * Short unique error or warning code
+   */
   code: string;
+  /**
+   * JSONPath-like locator indicating where in the payload the issue occurred
+   */
   path: string;
+  /**
+   * Explanation describing the issue and remediation
+   */
   explanation: string;
 }
 
@@ -66,6 +75,10 @@ function violationLocator(path: readonly string[]): string {
  * in the map.
  *
  * Malformed input is reported as findings, never thrown.
+ *
+ * @param json - Raw evidence map JSON string.
+ *
+ * @returns Array of coverage advisory findings.
  */
 export function diagnoseChapterCoverage(json: string): CoverageFinding[] {
   const findings: CoverageFinding[] = [];

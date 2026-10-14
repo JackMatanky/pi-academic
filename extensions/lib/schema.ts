@@ -6,9 +6,15 @@ import { Type } from "typebox";
 import Value from "typebox/value";
 
 /**
- * A string enum as a plain JSON-Schema `enum`. `Type.Union` of literals becomes
- * `anyOf`, which Google's tool API rejects; this mirrors pi-ai's `StringEnum`
- * without importing it (omp's pi-ai shim does not export it).
+ * Builds a string enum schema represented as a plain JSON-Schema `enum`.
+ *
+ * `Type.Union` of literals becomes `anyOf`, which Google's tool API rejects;
+ * this mirrors pi-ai's `StringEnum` without importing it.
+ *
+ * @param values - Immutable array of allowed string literal values.
+ * @param options - Optional TypeBox schema options such as description.
+ *
+ * @returns TypeBox string enum schema.
  */
 export function stringEnum<const T extends readonly string[]>(
   values: T,
@@ -70,6 +76,11 @@ export const JsonArraySchema = Type.Array(JsonValueSchema);
 
 /**
  * Returns whether `value` matches `schema`, narrowing it to the schema's type.
+ *
+ * @param schema - TypeBox schema to test against.
+ * @param value - Value to validate.
+ *
+ * @returns True if `value` satisfies `schema`.
  */
 export function isValid<S extends TSchema>(
   schema: S,
@@ -80,6 +91,11 @@ export function isValid<S extends TSchema>(
 
 /**
  * Describes the first schema violation, e.g. `/anchor/locator: must be object`.
+ *
+ * @param schema - TypeBox schema to test against.
+ * @param value - JSON value to validate.
+ *
+ * @returns Formatted violation path and message, or "invalid value".
  */
 export function firstSchemaError(schema: TSchema, value: JsonValue): string {
   const [error] = Value.Errors(schema, value);
@@ -94,6 +110,9 @@ export function firstSchemaError(schema: TSchema, value: JsonValue): string {
  * type so known-typed callers keep their evidence (`JsonValue & Static<S>`) and
  * unknown callers still narrow.
  *
+ * @param schema - TypeBox schema to assert against.
+ * @param value - Value to check.
+ * @param label - Error message prefix naming the failed boundary.
  * @throws With `label` and the first violation when the value does not match.
  */
 export function assertValid<S extends TSchema, T>(
@@ -113,6 +132,11 @@ export function assertValid<S extends TSchema, T>(
 /**
  * Validates a JSON value against `schema` and returns it typed.
  *
+ * @param schema - TypeBox schema to parse with.
+ * @param value - Incoming JSON value.
+ * @param label - Error message prefix naming the failed boundary.
+ *
+ * @returns Typed value conforming to `schema`.
  * @throws With `label` and the first violation when the value does not match.
  */
 export function parseWith<S extends TSchema>(
@@ -127,6 +151,10 @@ export function parseWith<S extends TSchema>(
 
 /**
  * Parses JSON text as a JSON value.
+ *
+ * @param text - Raw JSON string.
+ *
+ * @returns Parsed JSON value.
  */
 export function parseJsonText(text: string): JsonValue {
   // SAFETY: JSON.parse only produces JSON-representable values from valid JSON text.
@@ -134,7 +162,14 @@ export function parseJsonText(text: string): JsonValue {
 }
 
 /**
- * Reads and validates a JSON file.
+ * Reads and validates a JSON file from disk.
+ *
+ * @param path - Absolute or relative file path to read.
+ * @param schema - TypeBox schema to parse with.
+ * @param label - Error message prefix naming the failed boundary.
+ *
+ * @returns Parsed and validated typed content.
+ * @throws When the file cannot be read or fails validation.
  */
 export function readJsonFile<S extends TSchema>(
   path: string,
@@ -147,6 +182,11 @@ export function readJsonFile<S extends TSchema>(
 /**
  * Reads a JSON file that may be absent, unreadable or not shaped as expected;
  * all of those give null.
+ *
+ * @param path - File path to attempt reading.
+ * @param schema - TypeBox schema to validate with.
+ *
+ * @returns Validated typed data, or null on any error.
  */
 export function tryReadJsonFile<S extends TSchema>(
   path: string,
@@ -182,6 +222,11 @@ export interface SchemaViolation {
 
 /**
  * Returns the first schema violation of a JSON value, if any.
+ *
+ * @param schema - TypeBox schema to validate against.
+ * @param value - JSON value to inspect.
+ *
+ * @returns Structured violation details, or undefined if valid.
  */
 export function firstViolation(
   schema: TSchema,

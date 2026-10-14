@@ -26,11 +26,29 @@ const MAX_DOCX_XML_BYTES = 64 * 1024 * 1024;
  * Plain-text extraction result for one source or article document.
  */
 export interface ExtractedDocument {
+  /**
+   * Whether text extraction succeeded
+   */
   ok: boolean;
+  /**
+   * Resolved document path inside the project
+   */
   path: string;
+  /**
+   * Extracted plain text content
+   */
   text: string;
+  /**
+   * Optional array of extracted page-level segments for PDFs
+   */
   pages?: Array<{ pdfPageIndex: number; text: string }>;
+  /**
+   * Optional error message on failure
+   */
   error?: string;
+  /**
+   * Non-fatal warnings encountered during extraction
+   */
   warnings?: string[];
 }
 
@@ -105,6 +123,8 @@ async function extractDocxWithPandoc(
  * @param inputPath - Input document path, relative to the project root unless
  *   absolute.
  * @param signal - Optional abort signal forwarded to subprocesses.
+ *
+ * @returns Extraction result with plain text or failure message.
  */
 export async function extractDocument(
   projectRoot: string,

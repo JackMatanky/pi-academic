@@ -32,6 +32,11 @@ export type ReverseOutlineResult =
 /**
  * Segments an article under `articles/` into paragraph units with their heading
  * path and line range. Read-only; fenced code is skipped.
+ *
+ * @param root - Root directory of the project.
+ * @param article - Article file name or path relative to project.
+ *
+ * @returns Advisory reverse outline units or error result.
  */
 export function reverseOutline(
   root: string,

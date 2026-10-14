@@ -48,6 +48,10 @@ export class ToolFailure<Details extends object = object> extends Error {
 /**
  * Throws a {@link ToolFailure}; bounded tool dispatch retains details in the
  * error text for consumers that do not expose structured details.
+ *
+ * @param text - Failure explanation text.
+ * @param details - Optional structured failure metadata.
+ * @throws ToolFailure unconditionally.
  */
 export function fail<Details extends object>(
   text: string,
@@ -115,6 +119,9 @@ export interface ToolSpec<S extends TSchema> {
  * Registers a tool whose handler returns {@link ToolOutput} and reports problems
  * by throwing. Every error, expected or not, reaches Pi as a thrown
  * {@link ToolFailure}. Output is bounded by {@link boundOutput}.
+ *
+ * @param pi - Extension API instance.
+ * @param spec - Complete specification of the tool.
  */
 export function registerTool<S extends TSchema>(
   pi: ExtensionAPI,

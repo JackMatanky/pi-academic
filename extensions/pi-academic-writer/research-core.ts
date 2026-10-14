@@ -94,8 +94,14 @@ const noteContent = {
  */
 export const NoteInputSchema = Type.Object(
   {
+    /**
+     * Unique note identifier
+     */
     id: NonBlank,
     ...noteContent,
+    /**
+     * ISO timestamp when the note was created
+     */
     createdAt: Type.String({ pattern: ISO_DATE_TIME }),
   },
   { additionalProperties: false },
@@ -106,8 +112,14 @@ export const NoteInputSchema = Type.Object(
  */
 export const NoteUpsertSchema = Type.Object(
   {
+    /**
+     * Optional note identifier for updates; generated if omitted
+     */
     id: Type.Optional(NonBlank),
     ...noteContent,
+    /**
+     * Optional ISO creation timestamp
+     */
     createdAt: Type.Optional(Type.String({ pattern: ISO_DATE_TIME })),
   },
   { additionalProperties: false },
@@ -141,13 +153,37 @@ const NoteUseSchema = Type.Object(
  */
 export const PointSchema = Type.Object(
   {
+    /**
+     * Unique point identifier within the outline
+     */
     id: NonBlank,
+    /**
+     * Discriminator identifying this outline item as a point
+     */
     kind: Type.Literal("point"),
+    /**
+     * Argumentative role (e.g. claim, evidence, counterargument)
+     */
     role: NonBlank,
+    /**
+     * Core claim statement
+     */
     claim: Type.Optional(NonBlank),
+    /**
+     * Reasoning connecting evidence to claim
+     */
     reasoning: Type.Optional(NonBlank),
+    /**
+     * Research note citations supporting this point
+     */
     noteUses: Type.Array(NoteUseSchema),
+    /**
+     * Target paragraph count for drafting
+     */
     targetParagraphCount: Type.Optional(Type.Number()),
+    /**
+     * Unmapped draft prose text from article migration
+     */
     draftText: Type.Optional(NonBlank),
   },
   { additionalProperties: false },
@@ -247,20 +283,32 @@ export type SourceRef = Static<typeof SourceRefSchema>;
 
 /**
  * Writes JSON with a trailing newline, atomically.
+ *
+ * @param path - Destination file path.
+ * @param value - Value to serialize to JSON.
  */
 export function saveJson<Value>(path: string, value: Value): void {
   writeFileAtomic(path, JSON.stringify(value, null, 2) + "\n");
 }
 
 /**
- * Article file name without its extension, used to name its outline files.
+ * Extracts the article slug by stripping directory paths and file extensions.
+ *
+ * @param article - Article markdown file name or path.
+ *
+ * @returns Clean slug suitable for naming companion outline and notes files.
  */
 export function articleSlug(article: string): string {
   return basename(article).replace(/\.[^.]+$/, "");
 }
 
 /**
- * Reads `.academic-writer/sources.json`, or an empty registry when absent.
+ * Reads `.academic-writer/sources.json`, or returns an empty registry when
+ * absent.
+ *
+ * @param projectRoot - Root directory of the project.
+ *
+ * @returns Array of source reference records.
  */
 export function readSourceRefs(projectRoot: string): SourceRef[] {
   const path = join(projectRoot, ".academic-writer", "sources.json");

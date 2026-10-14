@@ -13,7 +13,13 @@ export interface PandocOptions {
 }
 
 /**
- * Run Pandoc and resolve with its raw standard output.
+ * Runs Pandoc and resolves with its raw standard output.
+ *
+ * @param args - Command-line arguments forwarded to Pandoc.
+ * @param options - Spawning and standard-input options.
+ *
+ * @returns Buffer containing stdout from Pandoc.
+ * @throws When Pandoc exits with a non-zero code.
  */
 export function runPandoc(
   args: readonly string[],
@@ -46,7 +52,12 @@ export function runPandoc(
 }
 
 /**
- * Pandoc's built-in reference document for DOCX or ODT.
+ * Extracts Pandoc's built-in reference document for DOCX or ODT.
+ *
+ * @param kind - Format type ("docx" or "odt").
+ * @param options - Spawning options.
+ *
+ * @returns Buffer containing the default reference document.
  */
 export function defaultReference(
   kind: "docx" | "odt",
