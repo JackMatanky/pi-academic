@@ -13,7 +13,7 @@ Run the scorecard workflow of `/skill:academic-review` in pipeline-step mode (it
 
 Present the scorecard to the researcher.
 
-**Word-count gate (before scoring):** count the article's words. If the researcher set a `targetWordCount`, the draft must land within `thresholds.json:article.targetBandPct` (default 15%) of it; otherwise it must fall within `article.minWords`–`article.maxWords` (defaults 2,000–12,000). Outside the band, ask the researcher whether to expand/condense or proceed knowingly — record the decision in the run notes.
+**Word-count gate (before scoring):** call `academic_writer_count_words({article: MD_PATH, citationStyle})` to inspect both markdown words and the expected rendered document total (with footnote, citation expansion, and bibliography words). If the researcher set a `targetWordCount`, the expected document total must land within `thresholds.json:article.targetBandPct` (default 15%) of it; otherwise it must fall within `article.minWords`–`article.maxWords` (defaults 2,000–12,000). Outside the band, ask the researcher whether to expand/condense or proceed knowingly — record the decision in the run notes.
 
 **If score is below the self-review threshold defined in `thresholds.json` (default 40/60)**, ask whether to proceed or address issues first (using a conversational ask).
 **If score meets or exceeds the threshold (default 40/60)**, show the scorecard and continue to DOCX output.

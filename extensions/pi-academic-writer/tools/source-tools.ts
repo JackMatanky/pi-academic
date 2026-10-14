@@ -16,6 +16,7 @@ import {
   writeSourcesCache,
 } from "../source-registry.js";
 import { fail, registerTool } from "../tool-kit.js";
+import { calculateArticleWordCount } from "../word-count.js";
 
 /**
  * Source extraction and ingestion, citation cache, CSL, citation audit and
@@ -215,6 +216,48 @@ export function registerSourceTools(pi: ExtensionAPI): void {
             text: `Citation audit passed: ${audit.citationKeys.length} cite key(s), ${audit.warnings.length} warning(s).`,
             details: audit,
           };
+      }
+    },
+  });
+
+  registerTool(pi, {
+    name: "academic_writer_count_words",
+    effect: "read",
+    label: "Academic Writer Count Words",
+    description:
+      "Calculate markdown word count and estimated rendered document word count with citations, footnotes, and bibliography based on citationStyle.",
+    parameters: Type.Object({
+      article: Type.String({
+        minLength: 1,
+        description:
+          "Path to the article markdown file; relative paths resolve from the project root.",
+      }),
+      citationStyle: Type.String({
+        minLength: 1,
+        description:
+          "inline-parenthetical for literal citation mode; any other value means citeproc mode.",
+      }),
+    }),
+    failure: "Word count failed",
+    run: ({ article, citationStyle }, { cwd }) => {
+      try {
+        const counts = calculateArticleWordCount(cwd, article, citationStyle);
+
+        const lines = [
+          `Markdown source: ${counts.markdownWords} words`,
+          `Body prose: ${counts.bodyWords} words`,
+          `Footnotes: ${counts.footnoteWords} words across ${counts.footnoteCount} note(s)`,
+          `Citations (rendered expansion): ${counts.citationWords} words across ${counts.citationCount} key(s)`,
+          `Bibliography: ${counts.bibliographyWords} words across ${counts.bibliographyEntriesCount} entry/entries`,
+          `Expected document total: ${counts.expectedDocumentWords} words`,
+        ];
+
+        return {
+          text: lines.join("\n"),
+          details: { ok: true, ...counts },
+        };
+      } catch (error) {
+        return fail(`Word count failed: ${errorMessage(error)}`);
       }
     },
   });
