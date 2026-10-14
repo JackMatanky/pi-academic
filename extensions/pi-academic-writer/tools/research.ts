@@ -5,26 +5,20 @@ import { Type, type Static, type TSchema } from "typebox";
 import { stringEnum } from "../../lib/schema.js";
 import { writeProjectTextFile } from "../core/project-files.js";
 import { fail, registerTool, type ToolEffect } from "../core/tool-kit.js";
-import {
-  NoteUpsertSchema,
-  OutlineShellSchema,
-} from "../research/research-core.js";
-import {
-  reviewResearchNotes,
-  writeResearchNotes,
-} from "../research/research-notes.js";
+import { NoteUpsertSchema, OutlineShellSchema } from "../research/core.js";
+import { reviewResearchNotes, writeResearchNotes } from "../research/notes.js";
 import {
   migrateArticleOutline,
   renderOutline,
   snapshotNotes,
   writeOutline,
-} from "../research/research-outline.js";
+} from "../research/outline.js";
 import {
   decodeResearchQuery,
   diagnoseOutline,
   queryResearch,
   ResearchQuerySchema,
-} from "../research/research-query.js";
+} from "../research/query.js";
 import { reverseOutline } from "../research/reverse-outline.js";
 
 /**

@@ -1,4 +1,4 @@
-import type { StyleDesign } from "../styling/style-design.js";
+import type { StyleDesign } from "../styling/design.js";
 import type { ArticleData, ArticleFormat, Paragraph } from "./article.js";
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -11,7 +11,7 @@ import { parseJsonText } from "../../lib/schema.js";
 import { defaultReference, runPandoc } from "../core/pandoc.js";
 import { cleanRtlText } from "../prose/typography.js";
 import { withScratchDir } from "../styling/document-style.js";
-import { buildDocxReference } from "../styling/style-docx.js";
+import { buildDocxReference } from "../styling/docx.js";
 import { paragraphParts, parseArticle } from "./article.js";
 
 /**

@@ -14,7 +14,6 @@ import {
   stringEnum,
   type JsonValue,
 } from "../../lib/schema.js";
-import { diagnoseChapterCoverage, type CoverageFinding } from "./coverage.js";
 import {
   readSourceRefs,
   type Note,
@@ -22,9 +21,10 @@ import {
   type OutlineItem,
   type Point,
   type Section,
-} from "./research-core.js";
-import { fresh, library, parseNote } from "./research-notes.js";
-import { frozenPath, getOutline, outlinePath } from "./research-outline.js";
+} from "./core.js";
+import { diagnoseChapterCoverage, type CoverageFinding } from "./coverage.js";
+import { fresh, library, parseNote } from "./notes.js";
+import { frozenPath, getOutline, outlinePath } from "./outline.js";
 
 /**
  * Parameters of `academic_writer_query_research`.

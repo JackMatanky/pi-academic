@@ -19,7 +19,7 @@ import {
   type Note,
   type NoteInput,
   type SourceRef,
-} from "./research-core.js";
+} from "./core.js";
 
 const NoteLibrarySchema = Type.Object(
   {

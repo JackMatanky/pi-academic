@@ -23,20 +23,20 @@ import {
   runPandoc,
 } from "../pi-academic-writer/core/pandoc.js";
 import {
+  loadStarterDesign,
+  loadStylePackage,
+} from "../pi-academic-writer/styling/design.js";
+import {
   checkStylePackage,
   installStarterPackage,
   listStylePackages,
   renderDocumentStyle,
 } from "../pi-academic-writer/styling/document-style.js";
+import { buildDocxReference } from "../pi-academic-writer/styling/docx.js";
 import {
   buildLatexPreamble,
   spliceLatexColors,
 } from "../pi-academic-writer/styling/latex-preamble.js";
-import {
-  loadStarterDesign,
-  loadStylePackage,
-} from "../pi-academic-writer/styling/style-design.js";
-import { buildDocxReference } from "../pi-academic-writer/styling/style-docx.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 

@@ -19,7 +19,7 @@ const skillNames = (): string[] =>
 
 test("[test_citation_audit_is_wired_into_output_paths] citation audit ships in TypeScript and output skills use it", () => {
   assert.ok(
-    isFile("extensions/pi-academic-writer/citations/citation-audit.ts"),
+    isFile("extensions/pi-academic-writer/citations/audit.ts"),
     "citation audit must ship as TypeScript",
   );
 

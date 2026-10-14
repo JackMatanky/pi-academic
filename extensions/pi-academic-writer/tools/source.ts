@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { Type } from "typebox";
 
-import { auditCitations } from "../citations/citation-audit.js";
+import { auditCitations } from "../citations/audit.js";
 import { resolveCslStyle } from "../citations/csl-resolver.js";
 import { SourceCacheRecordSchema } from "../citations/source-records.js";
 import {

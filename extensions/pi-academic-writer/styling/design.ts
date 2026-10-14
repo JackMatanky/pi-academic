@@ -15,7 +15,7 @@ import {
   JsonObjectSchema,
   parseJsonText,
 } from "../../lib/schema.js";
-import { starterByName } from "./style-starters.js";
+import { starterByName } from "./starters.js";
 
 /**
  * Supported output style formats.

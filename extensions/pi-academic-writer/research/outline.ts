@@ -31,8 +31,8 @@ import {
   type Point,
   type Section,
   type SourceRef,
-} from "./research-core.js";
-import { fresh, library, parseNote } from "./research-notes.js";
+} from "./core.js";
+import { fresh, library, parseNote } from "./notes.js";
 
 const SectionKind = Type.Object({ kind: Type.Literal("section") });
 

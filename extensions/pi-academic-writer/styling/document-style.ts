@@ -10,7 +10,6 @@ import { join } from "node:path";
 
 import { errorMessage } from "../../lib/fs-safe.js";
 import { defaultReference } from "../core/pandoc.js";
-import { buildLatexPreamble } from "./latex-preamble.js";
 import {
   loadStylePackage,
   STYLE_FORMATS,
@@ -18,10 +17,11 @@ import {
   type PdfEngine,
   type StyleDesign,
   type StyleFormat,
-} from "./style-design.js";
-import { buildDocxReference } from "./style-docx.js";
-import { buildOdtReference } from "./style-odt.js";
-import { starterByName } from "./style-starters.js";
+} from "./design.js";
+import { buildDocxReference } from "./docx.js";
+import { buildLatexPreamble } from "./latex-preamble.js";
+import { buildOdtReference } from "./odt.js";
+import { starterByName } from "./starters.js";
 
 /**
  * Format-specific rendered assets and arguments for Pandoc compilation.
@@ -244,9 +244,9 @@ export interface InstalledStarter {
 
 /**
  * Generates the starter into `.academic-writer/styles/<name>/`: its design.json
- * (serialized from the typed definition in `style-starters.ts`) plus editable
- * native starting points under `native/`. The native files are not referenced
- * from design.json; the researcher opts in by adding `formats` entries.
+ * (serialized from the typed definition in `starters.ts`) plus editable native
+ * starting points under `native/`. The native files are not referenced from
+ * design.json; the researcher opts in by adding `formats` entries.
  *
  * @param projectRoot - Root directory of the project.
  * @param name - Name for the installed package; defaults to "academic-default".

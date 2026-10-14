@@ -3,7 +3,7 @@ import type {
   ComponentStyle,
   ExplicitProps,
   StyleDesign,
-} from "./style-design.js";
+} from "./design.js";
 
 /**
  * Component-to-LaTeX sectioning command mappings in descending order.

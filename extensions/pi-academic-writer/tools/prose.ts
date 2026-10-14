@@ -6,7 +6,7 @@ import { errorMessage } from "../../lib/fs-safe.js";
 import { stringEnum } from "../../lib/schema.js";
 import { fail, registerTool } from "../core/tool-kit.js";
 import { lintWithHarper, type HarperDialect } from "../prose/harper.js";
-import { lintProse } from "../prose/prose-lint.js";
+import { lintProse } from "../prose/lint.js";
 import { cleanRtlText } from "../prose/typography.js";
 import { calculateArticleWordCount } from "../prose/word-count.js";
 

@@ -1,4 +1,4 @@
-import type { ExplicitProps } from "./style-design.js";
+import type { ExplicitProps } from "./design.js";
 import type { Document, Element } from "@xmldom/xmldom";
 
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
@@ -11,7 +11,7 @@ import {
   type ComponentName,
   type ComponentStyle,
   type StyleDesign,
-} from "./style-design.js";
+} from "./design.js";
 
 const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 

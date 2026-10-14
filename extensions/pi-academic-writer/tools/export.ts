@@ -15,7 +15,7 @@ import { stringEnum } from "../../lib/schema.js";
 import { ArticleFormatSchema } from "../article/article.js";
 import { assembleDocxJson } from "../article/docx-assembly.js";
 import { generateDocx } from "../article/docx-generator.js";
-import { auditCitations } from "../citations/citation-audit.js";
+import { auditCitations } from "../citations/audit.js";
 import { selectPdfEngine } from "../core/commands.js";
 import { runPandoc } from "../core/pandoc.js";
 import { citationAssetPaths } from "../core/project-files.js";
@@ -25,6 +25,7 @@ import {
   type ToolContext,
   type ToolOutput,
 } from "../core/tool-kit.js";
+import { STYLE_FORMATS, type StyleFormat } from "../styling/design.js";
 import {
   checkStylePackage,
   installStarterPackage,
@@ -33,7 +34,6 @@ import {
   withScratchDir,
   type RenderedStyle,
 } from "../styling/document-style.js";
-import { STYLE_FORMATS, type StyleFormat } from "../styling/style-design.js";
 
 /**
  * Per-format style details returned by `academic_writer_export_article`.

@@ -27,7 +27,7 @@ import {
   extractDocument,
   type ExtractedDocument,
 } from "../parsers/documents.js";
-import { markResearchNotesStale } from "../research/research-notes.js";
+import { markResearchNotesStale } from "../research/notes.js";
 import {
   normalizeSourceCacheRecord,
   StoredLocalSourceSchema,

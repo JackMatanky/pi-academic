@@ -1,4 +1,4 @@
-import type { ComponentStyles, PageInput } from "./style-design.js";
+import type { ComponentStyles, PageInput } from "./design.js";
 
 /**
  * A shipped starter style package: typed source for the `design.json` that

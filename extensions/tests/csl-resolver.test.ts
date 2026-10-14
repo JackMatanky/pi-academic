@@ -14,7 +14,10 @@ import { dirname, join } from "node:path";
 
 import { afterEach, test } from "vitest";
 
-import { resolveCslStyle } from "../pi-academic-writer/citations/csl-resolver.js";
+import {
+  overrideHardlinkForTest,
+  resolveCslStyle,
+} from "../pi-academic-writer/citations/csl-resolver.js";
 
 const projects: string[] = [];
 
@@ -171,4 +174,30 @@ test("invalid download never poisons cache; symlinked cache cannot write outside
     /CSL cache must remain inside the project/,
   );
   assert.equal(existsSync(join(outside, "journal.csl")), false);
+});
+
+test("download falls back to rename when linkSync fails with EXDEV, ENOTSUP, or EPERM", async () => {
+  const root = project();
+
+  globalThis.fetch = async () => new Response(xml);
+
+  for (const code of ["EXDEV", "ENOTSUP", "EPERM"] as const) {
+    const restore = overrideHardlinkForTest(() => {
+      const err = Object.assign(new Error(`${code} failure`), { code });
+
+      throw err;
+    });
+
+    try {
+      const path = await resolveCslStyle(
+        `https://example.org/${code.toLowerCase()}-test.csl`,
+        root,
+      );
+
+      assert.equal(existsSync(path), true);
+      assert.equal(readFileSync(path, "utf8"), xml);
+    } finally {
+      restore();
+    }
+  }
 });

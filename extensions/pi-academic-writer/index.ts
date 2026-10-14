@@ -1,13 +1,13 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { detectHarness } from "../lib/harness.js";
-import { registerCoreTools } from "./tools/core-tools.js";
-import { registerExportTools } from "./tools/export-tools.js";
-import { registerProfileTools } from "./tools/profile-tools.js";
-import { registerProseTools } from "./tools/prose-tools.js";
-import { registerResearchTools } from "./tools/research-tools.js";
-import { registerSourceTools } from "./tools/source-tools.js";
-import { registerVoiceTools } from "./tools/voice-tools.js";
+import { registerCoreTools } from "./tools/core.js";
+import { registerExportTools } from "./tools/export.js";
+import { registerProfileTools } from "./tools/profile.js";
+import { registerProseTools } from "./tools/prose.js";
+import { registerResearchTools } from "./tools/research.js";
+import { registerSourceTools } from "./tools/source.js";
+import { registerVoiceTools } from "./tools/voice.js";
 
 /**
  * Registers the package-aware Academic Writer tools for Pi.

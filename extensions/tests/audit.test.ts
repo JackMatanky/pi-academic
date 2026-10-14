@@ -17,7 +17,7 @@ import {
   resolveCitationKeys,
   type CitationAuditDetails,
   type CitationAuditResult,
-} from "../pi-academic-writer/citations/citation-audit.js";
+} from "../pi-academic-writer/citations/audit.js";
 
 function details(result: CitationAuditResult): CitationAuditDetails {
   if (result.status === "error") throw new Error(result.error);

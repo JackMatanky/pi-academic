@@ -16,6 +16,28 @@ import { basename, extname, isAbsolute, join, relative, sep } from "node:path";
 
 import { isErrnoException } from "../../lib/fs-safe.js";
 
+let hardlink: (existingPath: string, newPath: string) => void = (
+  existingPath,
+  newPath,
+) => linkSync(existingPath, newPath);
+
+/**
+ * Overrides the hardlink implementation for testing non-POSIX environments.
+ * Returns a cleanup callback that restores the original `linkSync`.
+ *
+ * @param fn - Replacement hardlink implementation.
+ */
+export function overrideHardlinkForTest(
+  fn: (existingPath: string, newPath: string) => void,
+): () => void {
+  const original = hardlink;
+  hardlink = fn;
+
+  return () => {
+    hardlink = original;
+  };
+}
+
 const POPULAR_STYLES = new Map(
   Object.entries({
     apa: "apa",
@@ -189,7 +211,7 @@ async function downloadUrl(
     writeFileSync(temporary, bytes, { flag: "wx" });
 
     try {
-      linkSync(temporary, target);
+      hardlink(temporary, target);
     } catch (error) {
       // Filesystems without hardlink support (EXDEV/ENOTSUP/EPERM) fall back
       // to a plain rename; a lost race keeps the winner's file.

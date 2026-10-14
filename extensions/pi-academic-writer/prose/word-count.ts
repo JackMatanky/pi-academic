@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { resolveInside } from "../../lib/fs-safe.js";
-import { analyzeCitationText } from "../citations/citation-audit.js";
+import { analyzeCitationText } from "../citations/audit.js";
 import { citationAssetPaths } from "../core/project-files.js";
 import { parseBibEntries } from "../parsers/bibtex.js";
 
