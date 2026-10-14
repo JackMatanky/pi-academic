@@ -83,13 +83,10 @@ test("[test_skills_frontmatter] every skill has valid frontmatter and the expect
 
 test("[test_agents_frontmatter] every agent has valid frontmatter, comma-separated tools and Input/Output sections", () => {
   const expectedAgents = [
-    "deep-reader.md",
-    "architect.md",
-    "section-writer.md",
-    "auditor.md",
-    "synthesizer.md",
-    "proofreader.md",
-    "voice-profile-builder.md",
+    "academic.md",
+    "editor.md",
+    "researcher.md",
+    "writer.md",
   ];
 
   assert.ok(existsSync(join(repoRoot, "agents")));
@@ -144,10 +141,8 @@ test("[test_agents_frontmatter] every agent has valid frontmatter, comma-separat
       }
     }
 
-    if (!agentFile.startsWith("voice-")) {
-      assert.ok(body.includes("## Input"), `Missing Input section in ${rel}`);
-      assert.ok(body.includes("## Output"), `Missing Output section in ${rel}`);
-    }
+    assert.ok(body.includes("## Input"), `Missing Input section in ${rel}`);
+    assert.ok(body.includes("## Output"), `Missing Output section in ${rel}`);
   }
 });
 
@@ -195,14 +190,6 @@ test("[test_thresholds_resource_honors_project_override] read_resource prefers t
   });
 
   assert.ok(overridden.content[0]?.text.includes('"marker"'));
-
-  const voiceMiner = readRepo("agents/voice-profile-builder.md");
-
-  assert.ok(voiceMiner.includes("academic_writer_read_resource"));
-  assert.ok(
-    !voiceMiner.includes("src/thresholds.json"),
-    "voice-profile-builder must not reference the non-existent src/thresholds.json path",
-  );
 });
 
 const PACKAGED_RESOURCES = {

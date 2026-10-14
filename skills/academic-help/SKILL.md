@@ -2,7 +2,7 @@
 name: academic-help
 description: "Learn what the Academic Writer plugin does and how to use it. Use when you don't know which command to run."
 allowed-tools: read
-metadata: {author: "Yotam Fromm", version: "0.2.23"}
+metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
 # Academic Writer — Help
@@ -22,7 +22,7 @@ Academic Writer is an AI-powered writing assistant built for **Humanities resear
 What makes it different:
 
 - **Your voice, not AI voice** — It analyzes your past publications to learn your writing style (sentence patterns, vocabulary, tone, transitions, rhetorical moves) and checks every paragraph against that fingerprint.
-- **Citation integrity** — Every claim is grounded in your indexed sources. An auditor agent verifies every footnote before it's included. Nothing is fabricated.
+- **Citation integrity** — Every claim is grounded in your indexed sources. The editor agent (audit mode) verifies every footnote before it's included. Nothing is fabricated.
 - **Full audit trail** — Every step of the writing process is logged, so you can see exactly how each paragraph was drafted, checked, and approved.
 
 ---
@@ -146,7 +146,7 @@ The voice system follows a clear 3-tier hierarchy:
 | **Rhetorical patterns** | Common moves, opening/closing strategies |
 | **Representative excerpts** | 5 real passages as style targets |
 
-Every paragraph is scored against this fingerprint. The synthesizer also runs a full-article compliance check at the end.
+Every paragraph is scored against this fingerprint. The editor (review mode) also runs a full-article compliance check at the end.
 
 ## Speed & Parallelism
 
@@ -157,8 +157,8 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 | **Deep read** | Source documents queried in parallel across Zotero and local sources |
 | **Section writing** | One subagent per section, all writing at the same time |
 | **Research** | Zotero + local ingested sources queried by separate subagents in parallel |
-| **Editing multiple sections** | One section-writer subagent per section, all in parallel |
-| **Citation audit (edit)** | One auditor per section, all in parallel |
+| **Editing multiple sections** | One writer subagent per section, all in parallel |
+| **Citation audit (edit)** | One editor (audit mode) per section, all in parallel |
 
 ## Files & Folders
 
@@ -170,7 +170,7 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 | `articles/<slug>.sources.json` | Article-local citation registry snapshot |
 | `articles/<slug>.bibliography.bib` | Article-local BibTeX bibliography snapshot |
 | `past-articles/` | Your published papers for style analysis (never uploaded) |
-| `agents/` | AI agent prompts (deep-reader, architect, section-writer, auditor, synthesizer) |
+| `agents/` | AI agent prompts (academic, researcher, writer, editor) |
 | `references/` | API documentation for integrations |
 
 ---

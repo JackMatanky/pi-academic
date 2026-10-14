@@ -84,19 +84,19 @@ test("[test_section_H_blocks_quantitative_padding] section H blocks quantitative
   );
 });
 
-test("[test_architect_checks_chapter_coverage] architect checks chapter coverage", () => {
-  const text = readRepo("agents/architect.md");
+test("[test_academic_checks_chapter_coverage] academic checks chapter coverage", () => {
+  const text = readRepo("agents/academic.md");
   assert.ok(text.includes("chapter_coverage"), "Missing 'chapter_coverage'");
   assert.ok(
     text.toLowerCase().includes("reject") ||
-      text.toLowerCase().includes("re-spawn") ||
-      text.toLowerCase().includes("return to deep-reader"),
-    "Missing rejection/re-spawn/return to deep-reader",
+      text.toLowerCase().includes("re-dispatch") ||
+      text.toLowerCase().includes("return to the researcher"),
+    "Missing rejection/re-dispatch/return to the researcher",
   );
 });
 
-test("[test_auditor_checks_unsourced_factual_claims] auditor checks unsourced factual claims", () => {
-  const text = readRepo("agents/auditor.md");
+test("[test_editor_audit_checks_unsourced_factual_claims] editor audit checks unsourced factual claims", () => {
+  const text = readRepo("agents/editor.md");
   assert.ok(
     text.includes("Section G") || text.includes("Unsourced Factual"),
     "Missing 'Section G' or 'Unsourced Factual'",
@@ -107,8 +107,8 @@ test("[test_auditor_checks_unsourced_factual_claims] auditor checks unsourced fa
   );
 });
 
-test("[test_auditor_lists_factual_cue_categories] auditor lists factual cue categories", () => {
-  const text = readRepo("agents/auditor.md");
+test("[test_editor_audit_lists_factual_cue_categories] editor audit lists factual cue categories", () => {
+  const text = readRepo("agents/editor.md");
   const cues = ["dating", "dimensions", "technique", "scholarly consensus"];
   cues.forEach((cue) => {
     assert.ok(
@@ -118,8 +118,8 @@ test("[test_auditor_lists_factual_cue_categories] auditor lists factual cue cate
   });
 });
 
-test("[test_deep_reader_has_chapter_enumeration_trigger] deep reader has chapter enumeration trigger", () => {
-  const text = readRepo("agents/deep-reader.md");
+test("[test_researcher_has_chapter_enumeration_trigger] researcher has chapter enumeration trigger", () => {
+  const text = readRepo("agents/researcher.md");
   assert.ok(
     text.includes("לאורך הספרים") ||
       text.includes("across all books") ||
@@ -129,8 +129,8 @@ test("[test_deep_reader_has_chapter_enumeration_trigger] deep reader has chapter
   assert.ok(text.includes("chapter_coverage"), "Missing 'chapter_coverage'");
 });
 
-test("[test_deep_reader_chapter_coverage_schema] deep reader chapter coverage schema", () => {
-  const text = readRepo("agents/deep-reader.md");
+test("[test_researcher_chapter_coverage_schema] researcher chapter coverage schema", () => {
+  const text = readRepo("agents/researcher.md");
   assert.ok(text.includes("covered"), "Missing 'covered'");
   assert.ok(
     text.includes("skipped-irrelevant"),
@@ -138,13 +138,13 @@ test("[test_deep_reader_chapter_coverage_schema] deep reader chapter coverage sc
   );
 });
 
-test("[test_section_writer_loads_banned_terms] section writer loads banned terms", () => {
-  const text = readRepo("agents/section-writer.md");
+test("[test_writer_loads_banned_terms] writer loads banned terms", () => {
+  const text = readRepo("agents/writer.md");
   assert.ok(text.includes("bannedTerms"), "Missing 'bannedTerms'");
 });
 
-test("[test_section_writer_skill_2_rewrites_banned_terms] section writer skill 2 rewrites banned terms", () => {
-  const text = readRepo("agents/section-writer.md");
+test("[test_writer_skill_2_rewrites_banned_terms] writer skill 2 rewrites banned terms", () => {
+  const text = readRepo("agents/writer.md");
   assert.ok(text.includes("Skill 2"), "Missing 'Skill 2'");
   assert.ok(
     text.toLowerCase().includes("replacement"),

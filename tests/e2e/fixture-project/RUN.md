@@ -8,7 +8,7 @@ Pinned inputs for a deterministic smoke test of the write pipeline.
 - **Target language:** Hebrew
 - **Citation style:** inline-parenthetical
 - **Sources:** pre-seeded in `.academic-writer/sources.json`; skip
-  deep-reader because the sources are already mapped.
+  the researcher because the sources are already mapped.
 - **Research notes:** verified, source-anchored notes in
   `.academic-writer/research-notes.json`.
 - **Canonical outline:** approved argument map in
@@ -22,10 +22,10 @@ Pinned inputs for a deterministic smoke test of the write pipeline.
 
 ## Run
 
-`/skill:academic-write` — `section-writer` runs the 8-skill pipeline
+`/skill:academic-write` — the `writer` runs the 8-skill pipeline
 (draft → style → grammar → academic language → language purity → anti-AI →
-repetition → citation audit) per paragraph. The auditor gates each paragraph;
-`synthesizer` does the cross-section pass.
+repetition → citation audit) per paragraph. The editor in audit mode gates each
+paragraph; the editor in review mode does the cross-section pass.
 
 Model choice (which provider drafts prose) is a pi setting
 (`subagents.agentOverrides.<agent>.model`), not a run-time branch. This brief
@@ -33,6 +33,6 @@ covers the pipeline, not a specific model.
 
 ## Pass criteria
 
-- Produces a 3-section Hebrew article; all paragraphs pass the auditor.
+- Produces a 3-section Hebrew article; all paragraphs pass the editor's audit mode.
 - Outline claims map to verified notes in the article's frozen snapshot.
   Citations resolve only to `sources.json` entries; metadata is never invented.

@@ -2,9 +2,12 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { Type } from "typebox";
 
+import { errorMessage } from "../../lib/fs-safe.js";
+import { stringEnum } from "../../lib/schema.js";
 import { auditCitations } from "../citation-audit.js";
 import { resolveCslStyle } from "../csl-resolver.js";
 import { extractDocument } from "../documents.js";
+import { lintWithHarper, type HarperDialect } from "../harper.js";
 import { lintProse } from "../prose-lint.js";
 import { SourceCacheRecordSchema } from "../source-records.js";
 import {
@@ -89,10 +92,10 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Write Sources Cache",
     description:
-      "Write the current-run .academic-writer/sources.json and .academic-writer/bibliography.bib from deep-reader's extracted records. Call before academic_writer_snapshot_citations.",
+      "Write the current-run .academic-writer/sources.json and .academic-writer/bibliography.bib from the researcher's extracted records. Call before academic_writer_snapshot_citations.",
     parameters: Type.Object({
       sourcesJson: Type.Array(SourceCacheRecordSchema, {
-        description: "Structured source records from deep-reader.",
+        description: "Structured source records from the researcher.",
       }),
       bibliography: Type.String({
         description:
@@ -173,7 +176,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     core: true,
     label: "Academic Writer Citation Audit",
     description:
-      "Deterministically verify citation syntax and citeproc keys before DOCX/export/review. Code spans, fenced code, front matter and e-mail addresses are ignored; narrative @key citations are checked. Semantic claim verification still belongs to the auditor agent.",
+      "Deterministically verify citation syntax and citeproc keys before DOCX/export/review. Code spans, fenced code, front matter and e-mail addresses are ignored; narrative @key citations are checked. Semantic claim verification still belongs to the editor agent in audit mode.",
     parameters: Type.Object({
       article: Type.String({
         minLength: 1,
@@ -250,6 +253,50 @@ export function registerSourceTools(pi: ExtensionAPI): void {
         text: `Prose lint completed with ${result.findings.length} advisory match(es).`,
         details: { ok: true, ...result },
       };
+    },
+  });
+
+  registerTool(pi, {
+    name: "academic_writer_proofread",
+    effect: "read",
+    core: true,
+    label: "Academic Writer Harper Proofread",
+    description:
+      "Run the Harper English grammar/spelling linter on text. Findings are advisory; a match alone is never an error. English-only — Hebrew or other languages return zero findings by design (use the inline הגהה sweep and academic_writer_fix_typography for Hebrew).",
+    parameters: Type.Object({
+      text: Type.String({
+        minLength: 1,
+        description: "Text to proofread; it is not modified or stored.",
+      }),
+      dialect: Type.Optional(
+        stringEnum(["American", "British"] as const, {
+          description: 'English dialect. Defaults to "American".',
+        }),
+      ),
+    }),
+    run: async ({ text, dialect }) => {
+      if (!text.trim()) return fail("Text must not be empty.");
+
+      const selected: HarperDialect = dialect ?? "American";
+
+      try {
+        const findings = await lintWithHarper(text, selected);
+
+        return {
+          text: JSON.stringify(
+            findings.length === 0
+              ? {
+                  count: 0,
+                  findings,
+                  note: "English-only scope; other languages are intentionally unchecked.",
+                }
+              : { count: findings.length, findings },
+          ),
+          details: { ok: true, count: findings.length, findings },
+        };
+      } catch (error) {
+        return fail(`harper unavailable: ${errorMessage(error)}`);
+      }
     },
   });
 }

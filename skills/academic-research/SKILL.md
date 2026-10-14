@@ -2,7 +2,7 @@
 name: academic-research
 description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Use when investigating a topic or fact-checking before writing."
 allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool academic_writer_read_resource zotero_search_items zotero_semantic_search notebook_list notebook_query
-metadata: {author: "Yotam Fromm", version: "0.2.23"}
+metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
 # Academic Writer — Research
@@ -52,13 +52,13 @@ Read `dispatch_contract` before spawning an agent. Under OMP, put independent ag
 
 1. **Local sources:** call `academic_writer_ingest_sources` to index files under `.academic-writer/sources/`, then use the returned records and text for relevant evidence.
 
-2. **Zotero:** if enabled, resolve and call `zotero_search_items` directly to find relevant records, scoping by `tools.zotero.collection.key` when configured. For optional semantic discovery, resolve `zotero_semantic_search` and use it only if available. If relevant source IDs are found, dispatch `deep-reader` with `subject`, `selectedSourceIds`, `tools`, and `targetLanguage`; the agent reads those sources and records unchecked candidate notes. Do not dispatch it without the required inputs.
+2. **Zotero:** if enabled, resolve and call `zotero_search_items` directly to find relevant records, scoping by `tools.zotero.collection.key` when configured. For optional semantic discovery, resolve `zotero_semantic_search` and use it only if available. If relevant source IDs are found, dispatch the `researcher` with `subject`, `selectedSourceIds`, `tools`, and `targetLanguage`; the agent reads those sources and records unchecked candidate notes. Do not dispatch it without the required inputs.
 
 3. **NotebookLM:** if enabled, resolve `notebook_list` and `notebook_query` and query the configured notebook directly (or choose a relevant notebook from the list). Treat its response as supplementary leads, not citable evidence.
 
 Each enabled integration may be queried alongside independent local ingest or other searches. Merge and cross-check the returned evidence before answering.
 
-### Zotero deep-reader instructions
+### Zotero researcher instructions
 
 Pass the exact selected Zotero item keys, article subject, profile tools settings, and target language. The reader uses `zotero_get_item_fulltext` for evidence and `zotero_read_pdf_pages` to verify exact page references.
 

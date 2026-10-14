@@ -9,7 +9,11 @@ import { Type } from "typebox";
 import { PACKAGE_ROOT } from "../../lib/paths.js";
 import { buildHealth } from "../commands.js";
 import { candidateMcpToolNames } from "../mcp-names.js";
-import { articlePaths, listProjectFiles } from "../project-files.js";
+import {
+  articlePaths,
+  listProjectFiles,
+  writeProjectTextFile,
+} from "../project-files.js";
 import { resolveResourcePath } from "../resources.js";
 import { buildStatus } from "../status.js";
 import { fail, registerTool } from "../tool-kit.js";
@@ -180,6 +184,60 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
       return {
         text: JSON.stringify(paths, null, 2),
         details: { ok: true, ...paths },
+      };
+    },
+  });
+
+  registerTool(pi, {
+    name: "academic_writer_write_section",
+    effect: "write",
+    label: "Academic Writer Write Section",
+    description:
+      "Persist one approved article section to articles/<slug>/sections/<sectionId>.md. `article` is the article markdown path as returned by academic_writer_article_paths (must start with articles/). Overwrites are allowed — redrafts rewrite the same file. The orchestrating skill assembles these files into the article.",
+    parameters: Type.Object({
+      article: Type.String({
+        minLength: 1,
+        description:
+          "Article markdown path, e.g. articles/<slug>.md, as returned by academic_writer_article_paths.",
+      }),
+      sectionId: Type.String({
+        minLength: 1,
+        description:
+          "Outline section id (letters, digits, underscore, hyphen; must start with a letter or digit).",
+      }),
+      markdown: Type.String({
+        minLength: 1,
+        description:
+          "The section content: the `## <section heading>` line followed by the approved paragraphs.",
+      }),
+    }),
+    run: ({ article, sectionId, markdown }, { cwd }) => {
+      if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(sectionId))
+        return fail(
+          `Invalid sectionId "${sectionId}": use letters, digits, underscores, or hyphens, starting with a letter or digit.`,
+        );
+
+      if (!article.startsWith("articles/"))
+        return fail(
+          `Invalid article path "${article}": it must start with "articles/" (as returned by academic_writer_article_paths).`,
+        );
+
+      const base = article.replace(/\.[^./]+$/, "");
+      const slug = base.slice("articles/".length);
+
+      if (!slug.trim())
+        return fail(
+          `Invalid article path "${article}": it must name a markdown file under articles/ (as returned by academic_writer_article_paths).`,
+        );
+
+      if (!markdown.trim()) return fail("Markdown must not be empty.");
+
+      const target = `${base}/sections/${sectionId}.md`;
+      const result = writeProjectTextFile(cwd, target, markdown);
+
+      return {
+        text: `Section written to ${result.path}`,
+        details: result,
       };
     },
   });

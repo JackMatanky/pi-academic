@@ -311,7 +311,7 @@ Wait for their reply and match it against the options (accept the option number,
 
 Call `academic_writer_list_project_files` with `kind: "past_articles"` and use the returned file list.
 
-**Step 1: Computational extraction** — Run the voice-profile-builder subagent on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its returned metrics directly in the confirmation step below; do not write `/tmp` metrics files.
+**Step 1: Computational extraction** — Run the corpus fingerprint mode from the `academic-voice` skill's `references/profile-builder.md` inline on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its returned metrics directly in the confirmation step below; do not write `/tmp` metrics files.
 
 **Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
@@ -346,10 +346,10 @@ Full rubric (all 30 dimensions across categories A–I): see `references/profile
 
 ### Stage 1 voice fingerprint
 
-After the past articles are analyzed, read the `dispatch_contract` resource (`academic_writer_read_resource`) for the call shape on this harness, then:
+After the past articles are analyzed:
 
-1. Dispatch `voice-profile-builder` in corpus fingerprint mode on `past-articles/`. It writes `.academic-writer/voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
-2. Dispatch `voice-profile-builder` in transcript distillation mode with only that fingerprint as input, to seed the four-section `.academic-writer/voice/profile.md` at the project root.
+1. Execute the corpus fingerprint mode from `references/profile-builder.md` (of the `academic-voice` skill) inline on `past-articles/`. It writes `.academic-writer/voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
+2. Execute the transcript distillation mode from that same reference inline with only that fingerprint as input, to seed the four-section `.academic-writer/voice/profile.md` at the project root.
 3. Say: "✓ Voice fingerprint created from N past articles. You can write articles now, or run `/skill:academic-voice` for a deeper profile (recommended)."
 
 The researcher is not required to run the Stage 2 interview. They can start writing immediately with the fingerprint.

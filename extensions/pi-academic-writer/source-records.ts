@@ -109,7 +109,7 @@ function nonBlank(value: string | undefined): string | undefined {
 }
 
 /**
- * Checks one source record handed over by the deep-reader and fills in the
+ * Checks one source record handed over by the researcher and fills in the
  * derived `sourceId` for Zotero records.
  *
  * @throws When the record is not an object, has an unknown `sourceType`, or its

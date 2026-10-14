@@ -1,6 +1,6 @@
 # Style Fingerprint Compliance Rubric (10 dimensions)
 
-> Loaded on demand by the section-writer per-paragraph pipeline (Skill 2). Pass threshold is `compliance ≥ 0.70`. Threshold for individual dimensions: `thresholds.json:styleFingerprint.passThreshold` (default 7/10).
+> Loaded on demand by the writer per-paragraph pipeline (Skill 2). Pass threshold is `compliance ≥ 0.70`. Threshold for individual dimensions: `thresholds.json:styleFingerprint.passThreshold` (default 7/10).
 
 ## Layers
 

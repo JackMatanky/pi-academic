@@ -47,7 +47,7 @@ omp plugin install github:JackMatanky/academic-writer
 
 To work on the package locally, clone it and run `omp install ./academic-writer`.
 
-The package depends on `typebox` at runtime. Three of the four companion peers
+The package depends on `typebox` and `harper.js` at runtime. Three of the four companion peers
 (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) are unnecessary under OMP —
 it ships native equivalents (`task` subagent dispatch, native MCP discovery,
 native `web_search`). Only `@earendil-works/pi-coding-agent` is needed for local
@@ -113,14 +113,14 @@ For English prose, the `academic_writer_lint_prose` tool reports deterministic, 
 `academic_writer_diagnose_outline` adds read-only advisory checks for required argument fields and note-link resolution/freshness at outline review; it never approves an outline or judges argument quality.
 
 `academic_writer_reverse_outline({article})` returns exact heading/paragraph units with source line ranges and mechanically detected Pandoc citation markers. Use it as an index for substantive review, not as an automated assessment; the reviewer supplies all role, support, and progression judgments. It ignores fenced code and does not modify the article.
-For cross-book assignments, `academic_writer_diagnose_outline` accepts the deep-reader evidence map as optional `evidenceMapJson`; chapter coverage belongs to that separate map, not the canonical outline schema. It checks the coverage structure, status/reason requirements, evidence-ID resolution, and completeness from chapter 1 through each verified `chapter_counts` boundary. A malformed coverage declaration or missing/invalid chapter count produces an advisory finding; absent coverage remains optional.
+For cross-book assignments, `academic_writer_diagnose_outline` accepts the researcher's evidence map as optional `evidenceMapJson`; chapter coverage belongs to that separate map, not the canonical outline schema. It checks the coverage structure, status/reason requirements, evidence-ID resolution, and completeness from chapter 1 through each verified `chapter_counts` boundary. A malformed coverage declaration or missing/invalid chapter count produces an advisory finding; absent coverage remains optional.
 
 ### Check ownership and authority
 
 | Check or decision | Status | Authoritative input and caller | Coverage | Consequence |
 |---|---|---|---|---|
 | Research-note eligibility and outline structure/link freshness | Decisive | Research-note library, source identities, canonical article outline; write/review/snapshot tools | Research-note/outline runtime tests | Invalid, unchecked, stale, or unresolved evidence cannot enter an approved snapshot. |
-| Frozen section evidence and citation-key/mode audit | Decisive for recorded structure and citation integrity | Article-local note snapshot, article text, source registry, bibliography; section writer and export | Research-note bundle and citation-audit tests | Export is blocked for failed citation audit; audit does not prove the cited source supports the prose. |
+| Frozen section evidence and citation-key/mode audit | Decisive for recorded structure and citation integrity | Article-local note snapshot, article text, source registry, bibliography; writer and export | Research-note bundle and citation-audit tests | Export is blocked for failed citation audit; audit does not prove the cited source supports the prose. |
 | Export completion | Decisive per requested format | Pandoc result plus existence of the requested output artifact; export tool | `test_export_passes_citeproc_options_to_pandoc` | A zero-exit process without an output file is reported as failure for that format. |
 | Outline diagnostics, reverse outline, and prose lint | Advisory | Current outline/article text; orchestrator and substantive reviewers | Diagnostic, reverse-outline, and prose-lint tests | Findings guide review; they do not approve or reject the argument or prose. |
 | Claim support, scholarly validity, argument quality, author voice, and researcher approval | Not automated | Original sources, researcher judgment, and contextual agent review | Not established by mechanical tests | Require human/agent evaluation; tool output is not evidence of correctness. |
@@ -171,9 +171,9 @@ All integrations are optional. Choose which to enable during `/skill:academic-se
 | **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                                          | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools` listing `get_text` and `search`); no credentials go in `.academic-writer/profile.md`.                                                                               |
 | **Pandoc**        | DOCX/ODT/LaTeX/PDF export and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
-This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run `section-writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings. Under omp use `task.agentModelOverrides.<agent-name>` or a `@role` alias; the auditor benefits most from a strong model and the proofreader from a cheap one.
+This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run the `writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings. Under omp use `task.agentModelOverrides.<agent-name>` or a `@role` alias; the editor's audit mode benefits most from a strong model.
 
-**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: section-writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and article-local `articles/<slug>.bibliography.bib` is used first, falling back to `.academic-writer/bibliography.bib`. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
+**Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: the writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and article-local `articles/<slug>.bibliography.bib` is used first, falling back to `.academic-writer/bibliography.bib`. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.academic-writer/csl/`.
 
 **Scoped libraries:** During setup or `/skill:academic-setup`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Academic Writer stores only the collection/notebook id and display name in `.academic-writer/profile.md`; credentials stay in MCP config.
 
@@ -299,7 +299,7 @@ Under pi, the integration depends on three community packages by [Nico Bailon](h
 
 - [pi-subagents](https://github.com/nicobailon/pi-subagents) — subagent orchestration, replacing Claude Code's `Agent`/Task tool and `agents/*.md` loading.
 - [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) — MCP server wiring, replacing `plugin.json`'s `mcpServers` key.
-- [pi-web-access](https://github.com/nicobailon/pi-web-access) — the `web_search` tool used by the citation auditor's external-verification check.
+- [pi-web-access](https://github.com/nicobailon/pi-web-access) — the `web_search` tool used by the editor's (audit mode) external-verification check.
 
 Source-library access is provided by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) (54yyyu), replacing the original Candlekeep integration.
 

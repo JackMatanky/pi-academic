@@ -37,7 +37,7 @@ Write `$MD_PATH` first. The markdown must preserve the final synthesized article
 - abstract text from Step 8.5
 - section headings only when `totalWords > 1500`
 - paragraphs separated by blank lines
-- citations unchanged from the approved section-writer output
+- citations unchanged from the approved frozen section files (`articles/<slug>/sections/<sectionId>.md`) the writers wrote
 
 For citeproc mode, resolve the CSL with `academic_writer_resolve_csl` before DOCX/export. Do not write citeproc YAML frontmatter into the markdown; `academic_writer_export_article` passes bibliography and CSL directly to Pandoc.
 

@@ -37,7 +37,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Update Author Voice",
     description:
-      "Overwrite .academic-writer/voice/profile.md with the given content. Used by the academic-voice skill and voice-profile-builder instead of a generic write/edit grant.",
+      "Overwrite .academic-writer/voice/profile.md with the given content. Used by the academic-voice skill instead of a generic write/edit grant.",
     parameters: Type.Object({
       content: Type.String({ description: "Full voice profile content." }),
     }),
@@ -96,7 +96,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Write Voice Fingerprint",
     description:
-      "Write .academic-writer/voice/fingerprint.md. The voice-profile-builder agent's only path to persist its style fingerprint without a generic write grant.",
+      "Write .academic-writer/voice/fingerprint.md. The academic-voice skill's only path to persist its style fingerprint without a generic write grant.",
     parameters: Type.Object({
       content: Type.String({
         description: "Full fingerprint markdown content.",

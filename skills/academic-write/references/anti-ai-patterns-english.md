@@ -8,7 +8,7 @@ The English-only `academic_writer_lint_prose` tool analyzes draft text in memory
 
 Treat each result as an advisory prompt: inspect context and preserve intentional voice, academic qualifications, evidence, and quotations. The linter does not rewrite text, determine authorship, or measure writing quality. No findings do not establish quality. Its checks supplement, and do not replace, the contextual guidance below.
 
-Patterns here have **named numeric caps per article**. The synthesizer's full-article sweep owns article-wide cap enforcement; section-writer only fixes paragraph-local occurrences before handoff. A pattern is not forbidden — it is capped. The cap is the total count allowed across the entire article, not per paragraph.
+Patterns here have **named numeric caps per article**. The editor's (review mode) full-article sweep owns article-wide cap enforcement; the writer only fixes paragraph-local occurrences before handoff. A pattern is not forbidden — it is capped. The cap is the total count allowed across the entire article, not per paragraph.
 
 ## English AI Pattern List
 
@@ -137,5 +137,5 @@ Rate the paragraph 1–10 on each dimension. **Threshold from `thresholds.json >
 ## Application Order
 
 1. **Typography Tier 1** (auto-fix em-dashes, straight quotes) via `academic_writer_fix_typography`.
-2. **Per-paragraph scan** (section-writer Skill 6) — catch formulaic openers, inflated language, and structural tells in the paragraph in isolation.
-3. **Full-article sweep** (synthesizer) — count every named pattern across the finished article. For each pattern exceeding its cap, rewrite the overflow instances.
+2. **Per-paragraph scan** (writer Skill 6) — catch formulaic openers, inflated language, and structural tells in the paragraph in isolation.
+3. **Full-article sweep** (editor, review mode) — count every named pattern across the finished article. For each pattern exceeding its cap, rewrite the overflow instances.

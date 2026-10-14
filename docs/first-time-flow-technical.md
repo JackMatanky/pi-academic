@@ -5,9 +5,9 @@ This document describes the current Pi/oh-my-pi package, not the retired CLI/Cla
 ## Discovery and orchestration
 
 - `package.json` discovers skills under `./skills` for both Pi and OMP.
-- `pi-subagents` discovers agents under `./agents`. The package currently exposes eleven user-facing skills and seven agents.
+- `pi-subagents` discovers agents under `./agents` (via the `pi.subagents.agents` manifest key). The package currently exposes eleven user-facing skills and four agents.
 - Each skill has one `SKILL.md` with its public name and trigger; mode details live in that skill’s `references/` directory and are not independently discovered as skills.
-- The merged `voice-profile-builder` agent selects a named operation (corpus fingerprint or transcript distillation) explicitly. Its tool grants and artifact boundaries are documented in the agent file; interviews and calibration run in chat inside the `academic-voice` skill.
+- The voice profile build runs inline inside the `academic-voice` skill via `references/profile-builder.md`, which selects a named operation (corpus fingerprint or transcript distillation) explicitly. Its tool grants and artifact boundaries are documented there; interviews and calibration run in chat inside the `academic-voice` skill.
 
 ## User-facing routes
 
@@ -24,11 +24,11 @@ This document describes the current Pi/oh-my-pi package, not the retired CLI/Cla
 
 1. Source text is untrusted data. Researcher-reviewed evidence notes and explicit outline approval remain separate decisions.
 2. Only approved outlines and explicit snapshot operations freeze article-local evidence/citation assets. Writers consume frozen section bundles, not mutable project-wide notes.
-3. The section writer remains distinct from the auditor. Every changed factual paragraph still passes independent source verification.
+3. The writer remains distinct from the editor's audit mode. Every changed factual paragraph still passes independent source verification.
 4. Local edits preserve unrequested prose. Structural/evidence changes require the existing approval and snapshot gates.
 5. Review is diagnostic; proofreading applies mechanical-only corrections to a corrected copy and records the changes. Neither mode silently performs the other.
 6. Voice corpus analysis, transcript distillation, interviews, and calibration retain their artifact-specific boundaries and scheduling rules.
 
 ## Core agents
 
-`deep-reader` → `architect` → `section-writer` (with `auditor` hard gate) → `synthesizer`. `proofreader` supplies separate suggestion-only mechanical findings. Voice work uses `voice-profile-builder` in explicit modes; the `academic-voice` skill runs interviews and calibration in chat.
+`researcher` → `academic` → `writer` (with the editor's audit mode as hard gate) → `editor` in review mode. Mechanical proofreading runs inline in the `academic-review` skill (tool-based, suggestion-only). Voice work runs inline in the `academic-voice` skill via `references/profile-builder.md`, which also conducts interviews and calibration in chat.

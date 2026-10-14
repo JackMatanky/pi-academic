@@ -33,15 +33,15 @@ If new files found, show them:
 >
 > I'll extract style patterns from these and merge them into your existing fingerprint."
 
-## Step 2: Spawn Style Miner
+## Step 2: Run the Corpus Fingerprint Mode
 
-Read the profile with `academic_writer_get_profile`, then spawn `voice-profile-builder` with:
+Read the profile with `academic_writer_get_profile`, then execute the corpus fingerprint mode from `references/profile-builder.md` inline, feeding it:
 
 - The new article filenames and current `.academic-writer/voice/fingerprint.md`
 - The existing full `styleFingerprint` object
 - `targetLanguage` and the current `analyzedArticles` list
 
-The agent writes only `.academic-writer/voice/fingerprint.md`. It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not the agent—updates the runtime profile after researcher approval.
+The mode writes only `.academic-writer/voice/fingerprint.md` (via `academic_writer_write_voice_fingerprint`). It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not a subagent—updates the runtime profile after researcher approval.
 
 ## Step 3: Present Diff Report
 

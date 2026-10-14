@@ -15,6 +15,7 @@ const CORE_TOOLS = [
   "academic_writer_audit_citations",
   "academic_writer_read_resource",
   "academic_writer_article_paths",
+  "academic_writer_proofread",
 ];
 
 function scratch(t: TestContext): string {
@@ -39,10 +40,10 @@ test("fail exposes structured diagnostics in the error message", () => {
   );
 });
 
-test("every tool declares an approval tier and exactly the six core tools are essential", () => {
+test("every tool declares an approval tier and exactly the seven core tools are essential", () => {
   const { definitions } = createToolHarness();
 
-  assert.equal(definitions.size, 35);
+  assert.equal(definitions.size, 37);
 
   for (const [name, definition] of definitions)
     assert.ok(definition.approval, `${name} has no approval`);

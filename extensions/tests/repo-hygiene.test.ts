@@ -53,9 +53,7 @@ test("[test_no_academic_writer_root_env_contract] package assets are exposed thr
   }
 
   assert.ok(
-    readRepo("agents/architect.md").includes(
-      "academic_writer_diagnose_outline",
-    ),
+    readRepo("agents/academic.md").includes("academic_writer_diagnose_outline"),
   );
 
   for (const path of [
@@ -69,9 +67,7 @@ test("[test_no_academic_writer_root_env_contract] package assets are exposed thr
   }
 
   assert.ok(
-    readRepo("agents/synthesizer.md").includes(
-      "academic_writer_reverse_outline",
-    ),
+    readRepo("agents/editor.md").includes("academic_writer_reverse_outline"),
   );
   assert.ok(
     readRepo("skills/academic-review/SKILL.md").includes(

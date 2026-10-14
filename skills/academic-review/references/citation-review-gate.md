@@ -14,4 +14,4 @@ Interpretation:
 - In `inline-parenthetical` mode, any Pandoc marker (`[@key]`) is a wrong-mode failure.
 - In citeproc mode, every `[@citeKey]` marker must exist in `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
 
-This gate does not replace the auditor agent's semantic source/claim verification. It only catches broken syntax, invented cite keys, and bibliography drift.
+This gate does not replace the editor agent's (audit mode) semantic source/claim verification. It only catches broken syntax, invented cite keys, and bibliography drift.

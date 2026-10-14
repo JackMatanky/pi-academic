@@ -2,7 +2,7 @@
 name: academic-write
 description: "Write a new academic article or frame an initial research question. Use when starting a new article, or when framing a research question before deciding whether to write."
 allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_migrate_article_outline academic_writer_assemble_docx_json academic_writer_diagnose_outline academic_writer_resolve_mcp_tool
-metadata: {author: "Yotam Fromm", version: "0.2.19"}
+metadata: {author: "Yotam Fromm", version: "0.2.20"}
 ---
 
 # Academic Writer — Write Article
@@ -59,7 +59,7 @@ Print a summary of the fingerprint to confirm it's loaded:
 >
 > Every paragraph will be checked against this fingerprint."
 
-Pass the full `styleFingerprint` object to every agent that writes or reviews text (section-writer, synthesizer). It must be available at every stage — not summarized, but the complete object.
+Pass the full `styleFingerprint` object to every agent that writes or reviews text (writer, editor). It must be available at every stage — not summarized, but the complete object.
 
 ### Tool Awareness
 
@@ -77,7 +77,7 @@ If the profile has no `tools` key (JSON profile), assume all tools are enabled f
 
 After the researcher gives the subject, call `academic_writer_article_paths` with `subject: SUBJECT` and use the returned `markdown` as `MD_PATH`.
 
-Check whether `MD_PATH` already exists. If it exists, the skill MUST stop the write pipeline and tell the user to use `/skill:academic-edit MD_PATH` (or `/skill:academic-edit` for a single section). Do NOT continue with deep-reader, architect, etc., because writing inline at that point produces ungated prose (the 2026-05-02 mikdashim post-compaction failure).
+Check whether `MD_PATH` already exists. If it exists, the skill MUST stop the write pipeline and tell the user to use `/skill:academic-edit MD_PATH` (or `/skill:academic-edit` for a single section). Do NOT continue with researcher, academic, etc., because writing inline at that point produces ungated prose (the 2026-05-02 mikdashim post-compaction failure).
 
 If the file does not exist, proceed with Phase 1 normally.
 
@@ -106,7 +106,7 @@ After confirming topic and language, ask (using a conversational ask):
 
 Record as `targetWordCount`. Use this number when:
 
-- Instructing the architect how to size sections in Step 5
+- Instructing the academic agent how to size sections in Step 5
 - Deciding whether to include section headings in DOCX output (> 1,500 words = headings shown)
 - No default — always ask explicitly.
 
@@ -121,8 +121,8 @@ If a draft is detected, ask (a conversational ask):
 - Header: "Draft detected"
 - Question: "I see you've shared a draft/outline. How would you like to proceed?"
 - Options:
-  - "Expand my draft using sources" — preserve pasted draft as research input; have the architect map its structure and evidence into draft recursive JSON, not an approved outline. Existing Markdown articles route to edit/migration.
-  - "Use my draft as context, propose a new structure" — treat their draft as research input for the architect; run the full thesis+outline flow normally
+  - "Expand my draft using sources" — preserve pasted draft as research input; have the academic agent map its structure and evidence into draft recursive JSON, not an approved outline. Existing Markdown articles route to edit/migration.
+  - "Use my draft as context, propose a new structure" — treat their draft as research input for the academic agent; run the full thesis+outline flow normally
 
 Store the draft text as userDraftText regardless of choice. If they chose expansion, set userDraftAsOutline for the draft-mapping branch; it is never an approval flag.
 
@@ -150,7 +150,7 @@ Present them clearly and ask:
 
 **Skip this entire step if `tools.notebooklm.enabled` is false.**
 
-Before spawning the deep-reader, directly query NotebookLM for the article subject using MCP tools:
+Before spawning the researcher, directly query NotebookLM for the article subject using MCP tools:
 
 1. **Choose notebook scope**: if `tools.notebooklm.notebook.id` is set, use that notebook. Otherwise list available notebooks with `notebook_list` and choose relevant notebooks.
 
@@ -160,9 +160,9 @@ Before spawning the deep-reader, directly query NotebookLM for the article subje
 3. **Show a brief summary** to the researcher:
    > "Your NotebookLM has [N] notebook(s). Key findings about your topic:
    > [bullet list of relevant results]
-   > These will be passed to the deep-reader for source verification."
+   > These will be passed to the researcher for source verification."
 
-Pass the NotebookLM summary as additional context to the deep-reader agent prompt in Step 3.
+Pass the NotebookLM summary as additional context to the researcher agent prompt in Step 3.
 
 **Important:** NotebookLM answers are AI-synthesized context. All citations must still be verified via Zotero or ingested local sources — never cite NotebookLM output directly. (Note: RAG semantic vector search is a future TODO).
 
@@ -170,13 +170,13 @@ Pass the NotebookLM summary as additional context to the deep-reader agent promp
 
 ### Step 3: Deep Read
 
-**Use your subagent-dispatch tool to spawn the `deep-reader` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the deep-reader emits its structured summary in the right language).
+**Use your subagent-dispatch tool to spawn the `researcher` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the researcher emits its structured summary in the right language).
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
-The deep-reader reads original Zotero/local sources, writes current-run .academic-writer/sources.json and .academic-writer/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
+The researcher reads original Zotero/local sources, writes current-run .academic-writer/sources.json and .academic-writer/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
 
-Wait for the deep-reader to return retrieved passages before continuing to Step 4. Confirm `.academic-writer/sources.json` exists.
+Wait for the researcher to return retrieved passages before continuing to Step 4. Confirm `.academic-writer/sources.json` exists.
 
 Update the run state for this phase.
 
@@ -184,13 +184,13 @@ Update the run state for this phase.
 
 ### Step 4: Thesis Proposal
 
-**Use your subagent-dispatch tool to spawn the `architect` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
+**Use your subagent-dispatch tool to spawn the `academic` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
 Update the run state for this phase.
 
-Present the architect's output to researcher:
+Present the academic agent's output to researcher:
 > "Based on your sources, here are possible arguments:
 >
 > 1. [thesis a] — supported by [sources]
@@ -203,12 +203,12 @@ Present the architect's output to researcher:
 
 ### Step 5: Recursive Outline, Researcher Review, and Freeze
 
-For pasted drafts to expand, pass the text and structure to the architect with the approved thesis and deep-read note IDs; it maps arguments into a draft recursive outline. Do not treat pasted prose as an approved outline. Existing on-disk article Markdown routes to edit/migration.
+For pasted drafts to expand, pass the text and structure to the academic agent with the approved thesis and deep-read note IDs; it maps arguments into a draft recursive outline. Do not treat pasted prose as an approved outline. Existing on-disk article Markdown routes to edit/migration.
 
-Otherwise spawn the architect in Mode B with approved thesis, deep read, note IDs, article slug/title from academic_writer_article_paths, targetWordCount, citationStyle and targetLanguage. It calls academic_writer_write_outline with schemaVersion 1, researchQuestion, thesis, status: "draft", ordered nested sections and direct points. Each point has a claim, reasoning and noteUses with function, handling and primary/reference coverage. Do not proceed on prose outline alone.
+Otherwise spawn the academic agent in Mode B with approved thesis, deep read, note IDs, article slug/title from academic_writer_article_paths, targetWordCount, citationStyle and targetLanguage. It calls academic_writer_write_outline with schemaVersion 1, researchQuestion, thesis, status: "draft", ordered nested sections and direct points. Each point has a claim, reasoning and noteUses with function, handling and primary/reference coverage. Do not proceed on prose outline alone.
 
 Call academic_writer_render_outline({article: MD_PATH}) to generate articles/<slug>.outline.md from canonical JSON. Present the generated Markdown with nested argument points, evidence handling and unresolved gaps. Iterate JSON through academic_writer_write_outline, rerender, and present the changed outline; never parse generated Markdown back into JSON.
-Call `academic_writer_diagnose_outline({article: MD_PATH})` after rendering each draft revision and before asking for outline approval. If the deep-reader supplied an evidence map containing `chapter_coverage`, pass its full JSON as `evidenceMapJson` too; coverage belongs to that separate map, not the canonical outline schema. Address findings with the researcher and deep-reader as appropriate. Findings are advisory: an empty list does not establish argument quality or approve the outline.
+Call `academic_writer_diagnose_outline({article: MD_PATH})` after rendering each draft revision and before asking for outline approval. If the researcher agent supplied an evidence map containing `chapter_coverage`, pass its full JSON as `evidenceMapJson` too; coverage belongs to that separate map, not the canonical outline schema. Address findings with the researcher — re-dispatching the researcher agent when a re-read is needed. Findings are advisory: an empty list does not establish argument quality or approve the outline.
 Present the canonical outline as one ordered, readable argument map, not only generated Markdown or internal fields. For each section show purpose and thesis contribution; for each point show claim, reasoning, chosen evidence, and analytical role. Call out unsupported claims and gaps. Separate source findings from provisional themes, groupings, counterpositions, missing-perspective questions, and other outline suggestions; do not infer absence from search silence. Review reasoning, evidence roles, transition-vs-factual points, repetition, uneven coverage, and possible alternative perspectives as discussion prompts, without a numerical score or auto-pass. Collect edits conversationally, persist them to the canonical outline, rerender, and show the changed map; never ask the researcher to edit JSON or generated Markdown.
 
 At approval, summarize what is ready, the specific unresolved issue(s), and the next action. Require explicit approval of the thesis and complete outline before approval state or either article-local snapshot is changed. Keep note verification separate from argument approval. If approval or snapshot creation fails, preserve prior valid snapshots and do not dispatch writers against mutable project data.
@@ -227,11 +227,11 @@ This means:
 
 - NEVER use the `Write` tool for article body text during Phase 2
 - NEVER produce paragraph content inline in your response
-- ALL article content MUST come exclusively from `section-writer` subagents
+- ALL article content MUST come exclusively from `writer` subagents
 
-The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, citation audit, etc.) only runs inside section-writer agents. Writing directly bypasses every quality gate and produces unchecked output that does not match the researcher's voice.
+The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, citation audit, etc.) only runs inside writer agents. Writing directly bypasses every quality gate and produces unchecked output that does not match the researcher's voice. Assembling, joining, and splicing already-written section files — and writing the editor's review-mode `revisedArticle` back to `MD_PATH` verbatim — is not writing article content; body text still only ever originates inside writer agents, with review-mode revisions applied unchanged.
 
-**If you are tempted to write the article yourself because the user provided a detailed draft or the sources seem clear — DO NOT. Spawn the section-writers.**
+**If you are tempted to write the article yourself because the user provided a detailed draft or the sources seem clear — DO NOT. Spawn the writers.**
 
 ---
 
@@ -239,15 +239,15 @@ The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, ci
 
 ### Step 6: Recursive Section Writing + Auditing
 
-Traverse the approved JSON outline in ordered depth-first tree order. Spawn one section-writer task for each section with direct point children; nested child sections are separate drafting units; heading-only sections produce no task. Parallelize independent units through one batched task call (OMP) or sibling subagent calls (pi). Assemble prose under headings in the original tree order.
+Traverse the approved JSON outline in ordered depth-first tree order. Spawn one writer task for each section with direct point children; nested child sections are separate drafting units; heading-only sections produce no task. Parallelize independent units through one batched task call (OMP) or sibling subagent calls (pi). Each writer persists its section with `academic_writer_write_section` to `articles/<slug>/sections/<sectionId>.md`; after all writers return, the skill assembles `MD_PATH` itself: the title line (`# <title>`), a blank line, then the section files joined in approved-outline order separated by a blank line.
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
 Pass only MD_PATH, sectionId, and contextual details: citationStyle, targetLanguage, articleStructure, enabled tools, targetWordCount and outlineOverview. The writer calls academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}) for its approved subtree and selected frozen notes; it writes direct point children only. Do not pass mutable project notes, registry, or pasted section specs as substitutes.
 
-Each section-writer runs the eight-skill paragraph pipeline and auditor hard gate. The auditor independently verifies original sources using note IDs and locators only as leads. Stop on a missing/invalid bundle; never bypass the pipeline with inline body writing.
+Each writer runs the eight-skill paragraph pipeline and the editor hard gate (audit mode). The editor independently verifies original sources using note IDs and locators only as leads. Stop on a missing/invalid bundle; never bypass the pipeline with inline body writing.
 
-Section writers never receive other sections' drafted text. Cross-section transitions and repetition are handled in Step 8 by the synthesizer after sections are assembled in outline order.
+Writers never receive other sections' drafted text. Cross-section transitions and repetition are handled in Step 8 by the editor in review mode after sections are assembled in outline order.
 
 Update the run state for this phase.
 
@@ -255,14 +255,14 @@ Update the run state for this phase.
 
 ### Step 8: Synthesis + Full-Article Repetition Check
 
-**Use your subagent-dispatch tool to spawn the `synthesizer` subagent.** Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness. Pass the following as the prompt:
+**Use your subagent-dispatch tool to spawn the `editor` subagent in review mode (`mode: "review"`).** Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness. Pass the following as the prompt:
 
-- All completed section texts
+- MD_PATH — the assembled article Markdown path
 - The thesis statement
 - The complete styleFingerprint object
 - The articleStructure conventions
 - The linkingWords reference
-- The `targetLanguage` (so the synthesizer loads the correct anti-AI patterns reference)
+- The `targetLanguage` (so the editor loads the correct anti-AI patterns reference)
 - The tools configuration
 
 **Phase A — Synthesis review** (`synthesize` node):
@@ -275,7 +275,7 @@ Update the run state for this phase.
 
 - Cross-section argument, phrase, opener, transition, and evidence repetition
 
-Makes targeted revisions only — does not rewrite from scratch. Citations are locked.
+Makes targeted revisions only — does not rewrite from scratch. Citations are locked. If the structured result carries a non-null `revisedArticle`, write it to `MD_PATH` verbatim before updating the run state — returned review revisions are applied unchanged, never re-drafted.
 
 Update the run state for this phase.
 

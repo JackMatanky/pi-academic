@@ -3,8 +3,8 @@ name: academic-voice
 description: >-
   Manage the researcher voice profile: refresh corpus-derived style patterns, conduct or resume the adversarial interview,
   calibrate, audit, and recompress. Use when adding past articles or refining the writer profile.
-allowed-tools: read write edit find grep bash subagent academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_read_resource academic_writer_write_interview_session academic_writer_write_voice_audit academic_writer_update_author_voice academic_writer_update_profile
-metadata: {author: "Yotam Fromm", version: "0.2.19"}
+allowed-tools: read write edit find grep bash academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_read_resource academic_writer_write_interview_session academic_writer_write_voice_audit academic_writer_write_voice_fingerprint academic_writer_update_author_voice academic_writer_update_profile
+metadata: {author: "Yotam Fromm", version: "0.2.20"}
 ---
 
 # Academic voice
@@ -24,14 +24,14 @@ or specified explicitly.
 
 ## Workflow
 
-Wherever a step below says to dispatch `voice-profile-builder`, read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Wherever a step below says to distill or fingerprint, execute the matching mode from `references/profile-builder.md` inline (no subagent dispatch; the skill calls the two scoped write tools itself).
 
 ### `:voice init`
 
 1. Read `.academic-writer/voice/fingerprint.md`. If missing or `> NEEDS CORPUS`, tell the user to run `/skill:academic-setup` first and stop.
 2. Confirm the user has time for at least one session (~15 questions × ~30s = ~10 min).
 3. Read `references/interview-protocol.md` and run session 1 (category `01-beliefs`) yourself, in chat. Do not delegate the interview to a subagent: subagents cannot talk to the researcher.
-4. Dispatch `voice-profile-builder` in transcript distillation mode for session 1 (`--session 1`: only that transcript is folded in; other sections preserved).
+4. Execute the transcript distillation mode from `references/profile-builder.md` inline for session 1 (`--session 1`: only that transcript is folded in; other sections preserved).
 5. Skip calibration (sessions 1, 2, 4, 5, 6 do NOT calibrate).
 6. Ask: "Continue with session 2 (Writing Practices), or stop here? `:voice continue` resumes."
 
@@ -43,7 +43,7 @@ Wherever a step below says to dispatch `voice-profile-builder`, read the `dispat
 
 ### `:voice recompress`
 
-1. Dispatch `voice-profile-builder` in transcript distillation mode over all completed sessions and the fingerprint.
+1. Execute the transcript distillation mode from `references/profile-builder.md` inline over all completed sessions and the fingerprint.
 2. Run the rule-coverage check per `references/calibration-protocol.md` (step 5) and write `.academic-writer/voice/audit.md` with `academic_writer_write_voice_audit`.
 
 ### `:voice audit`

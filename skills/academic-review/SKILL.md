@@ -1,8 +1,8 @@
 ---
 name: academic-review
 description: "Review a completed academic article, or run a mechanical proofread. Use when requesting a quality scorecard/reverse-outline review or a mechanical proofread with a change report."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_lint_prose academic_writer_reverse_outline
-metadata: {author: "Yotam Fromm", version: "0.2.23"}
+allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_fix_typography academic_writer_lint_prose academic_writer_proofread academic_writer_reverse_outline
+metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
 # Academic Writer — Article Review
@@ -104,7 +104,7 @@ Present the results as a clear scorecard:
 ## Reverse-outline diagnostics (read-only)
 
 For substantive review, call `academic_writer_reverse_outline({article})` and use its exact paragraph/line units as an index. It segments text only; infer role, evidence, explanation, and progression yourself and present those interpretations as provisional. If unavailable, inspect the article directly. Do not use this tool in mechanical proofread mode.
-For substantive review of English prose, call `academic_writer_lint_prose({text: ARTICLE_TEXT, language: targetLanguage})` and present only contextually relevant matches as tentative prompts. This review is read-only: do not edit article text, citations, notes, outline, snapshots, or run state. Do not call the style linter in mechanical proofread mode.
+For substantive review of English prose, call `academic_writer_lint_prose({text: ARTICLE_TEXT, language: targetLanguage})` and present only contextually relevant matches as tentative prompts. This review is read-only: do not edit article text, citations, notes, outline, snapshots, or run state. Do not call the style linter here for substantive review — in mechanical proofread mode it runs only as Pass B of that mode's sweep; keep the two uses distinct.
 
 After the scorecard, list specific issues found:
 

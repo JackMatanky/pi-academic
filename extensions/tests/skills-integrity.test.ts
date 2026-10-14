@@ -90,23 +90,41 @@ test("the write skill and its references keep Steps 8.5 through 9b", () => {
     );
 });
 
-test("no skill or agent mentions removed memory, logs or the voice-facilitator agent", () => {
-  const removed = [
+test("no skill or agent mentions removed memory, logs or removed agents", () => {
+  const removedSubstrings = [
     ".academic-writer/logs",
     "agent-memory",
     ".academic-writer/memory",
     "voice-" + "facilitator",
+    "deep-" + "reader",
+    "section-" + "writer",
+    "voice-profile-" + "builder",
+  ];
+  // Whole-word markers: `auditor_result` (the kept schema name) must not trip
+  // these, so match on word boundaries instead of raw substrings.
+
+  const removedWords = [
+    "audit" + "or",
+    "synth" + "esizer",
+    "proof" + "reader",
+    "archi" + "tect",
   ];
 
   for (const file of promptFiles) {
     const content = readRepo(file);
 
-    for (const marker of removed)
+    for (const marker of removedSubstrings)
       assert.ok(!content.includes(marker), `${file} mentions ${marker}`);
+
+    for (const marker of removedWords)
+      assert.ok(
+        !new RegExp(`\\b${marker}\\b`).test(content),
+        `${file} mentions ${marker}`,
+      );
   }
 });
 
-test("auditor and section-writer gate on the structured verdict, not a prose line", () => {
-  for (const file of ["agents/auditor.md", "agents/section-writer.md"])
+test("editor and writer gate on the structured verdict, not a prose line", () => {
+  for (const file of ["agents/editor.md", "agents/writer.md"])
     assert.ok(!readRepo(file).includes("VERDICT:"), `${file} keeps VERDICT:`);
 });

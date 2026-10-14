@@ -4,6 +4,8 @@
 **Decision:** Option A (markdown report) + mechanical-only, per user.
 **Modeled on:** `hebrew-book-producer`'s proof subsystem (`/proof` → `proofreader` agent → `changes-schema` → DOCX suggestions).
 
+> **Current mechanism (updated when the agent layer was consolidated).** Mechanical proofreading no longer spawns a subagent. `academic-review`'s proofread mode runs inline in `references/proofread-mode.md` with four passes: `academic_writer_fix_typography` per paragraph (Hebrew-safe), `academic_writer_lint_prose` (English), `academic_writer_proofread` (the Harper-backed English grammar/spelling tool; findings advisory), and the inline four-level הגהה sweep whose scope and Hebrew-typography rules moved into the skill's `references/proofread-mode.md` from the retired agent file. Suggestions are returned to the researcher for approval and nothing is auto-applied; the corrected copy, citation-integrity guard, and report flow are unchanged. Everything below is the historical build record.
+
 ## What this adds
 
 A `/academic-writer:proofread` command that runs a **mechanical-only** proofreading pass over a finished article: it fixes typos, punctuation, spacing, Hebrew typography, and clear grammar errors, writes the corrected text to a new file, and produces a markdown report documenting **every change and why**. It never rewrites prose for style, tone, register, or voice — that stays with `/academic-writer:edit`.

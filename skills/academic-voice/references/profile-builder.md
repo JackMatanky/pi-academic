@@ -1,28 +1,25 @@
----
-name: voice-profile-builder
-description: "Analyze past-article corpora into a style fingerprint or distill voice interview transcripts into .academic-writer/voice/profile.md. Use the explicitly requested corpus or distillation mode; do not conduct interviews or calibration."
-tools: read, academic_writer_read_resource, academic_writer_write_voice_fingerprint, academic_writer_update_author_voice
----
+<!-- Inline replacement for the retired voice-miner subagent; run by the academic-voice skill. -->
 
-# Voice Profile Builder
+# Voice Profile Builder (inline procedure)
 
-Corpus mode writes only `.academic-writer/voice/fingerprint.md`; transcript distillation writes only `.academic-writer/voice/profile.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the orchestrator, preserving existing fields and updating evidence from the analyzed corpus. The orchestrator applies it to `.academic-writer/profile.md` only after researcher approval. Never write the profile directly.
+Executed inline by the `academic-voice` skill (and its callers: `academic-setup`, `academic-feedback`). No subagent: the skill itself runs the mode below and calls the two scoped write tools directly. Corpus mode writes only `.academic-writer/voice/fingerprint.md`; transcript distillation writes only `.academic-writer/voice/profile.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the researcher, preserving existing fields and updating evidence from the analyzed corpus. The skill applies it to `.academic-writer/profile.md` only after researcher approval. Never write the profile directly.
 
 ## Corpus fingerprint mode
 
-You read the writer's corpus and produce a human-readable markdown fingerprint capturing the
-empirical signals of their voice. You do not interview; interview work belongs to the `academic-voice` skill.
+Read the writer's corpus and produce a human-readable markdown fingerprint capturing the
+empirical signals of their voice. Do not interview; interview work belongs to the
+`academic-voice` skill's interactive sessions.
 
 ### Inputs
 
-- `past-articles/**/*.{md,docx,pdf}` (Academic Helper) or `chapters/**/*.md`,
+- `past-articles/**/*.{md,docx,pdf}` (Academic Writer) or `chapters/**/*.md`,
   `manuscript.md` (hebrew-book-producer). Project layout determines path.
 - The previous `.academic-writer/voice/fingerprint.md` if present (so you can incrementally update rather than
   overwrite if the corpus has only grown by one or two articles).
 
 ### Outputs
 
-Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In your final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.academic-writer/voice/profile.md` in corpus mode; that belongs to the distillation mode.
+Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In the final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.academic-writer/voice/profile.md` in corpus mode; that belongs to the distillation mode.
 
 ### Required sections in fingerprint.md
 
@@ -46,17 +43,17 @@ Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprin
   use `voice.corpus`: fewer than `voice.corpus.minArticles` articles, OR fewer than
   `voice.corpus.minTotalWords` total words, OR fewer than `voice.corpus.minWordsPerArticle`
   words/article avg), write a stub fingerprint flagged with `> NEEDS CORPUS`.
-- Idempotent: running you again on the same corpus produces the same output (modulo timestamp).
+- Idempotent: running the mode again on the same corpus produces the same output (modulo timestamp).
 
 ### Failure modes
 
 - Empty/unreadable corpus → write stub flagged `> NEEDS CORPUS`; do not error.
 - Mixed-language corpus → run analyses per-language and report both; do not merge stats.
 
-### Transcript distillation mode
+## Transcript distillation mode
 
-You compress raw signal (fingerprint + interview transcripts) into the writer's `.academic-writer/voice/profile.md`
-profile. You combine the compressor and merger roles.
+Compress raw signal (fingerprint + interview transcripts) into the writer's `.academic-writer/voice/profile.md`
+profile. Combine the compressor and merger roles.
 
 ### Inputs
 
@@ -84,7 +81,7 @@ Call `academic_writer_update_author_voice` with the full rewritten content to re
 ## Non-fiction-book-specific
 ```
 
-Update the `> Updated` line to today's date and the calling plugin name.
+Update the `> Updated` line to today's date and the calling skill's name.
 
 ### Token budget
 

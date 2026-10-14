@@ -22,6 +22,7 @@
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
     "fflate": "^0.8.3",
+    "harper.js": "^2.10.0",
     "typebox": "^1.3.8",
     "unpdf": "^1.8.1"
   },
@@ -58,11 +59,11 @@
     "skills": [
       "./skills"
     ],
-    "image": "./assets/pi-academic-writer.png"
-  },
-  "pi-subagents": {
-    "agents": [
-      "./agents"
-    ]
+    "image": "./assets/pi-academic-writer.png",
+    "subagents": {
+      "agents": [
+        "./agents"
+      ]
+    }
   }
 }

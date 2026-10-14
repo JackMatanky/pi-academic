@@ -1,8 +1,8 @@
 ---
 name: academic-feedback
 description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and voice-overlay preferences. Use after the researcher reviews an article produced by /skill:academic-write or /skill:academic-edit."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_update_author_voice
-metadata: {author: "Yotam Fromm", version: "0.2.23"}
+allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_update_author_voice academic_writer_write_voice_fingerprint
+metadata: {author: "Yotam Fromm", version: "0.2.24"}
 ---
 
 # Academic Writer — Feedback
@@ -138,11 +138,11 @@ Use `Edit` on `.academic-writer/profile.md`. Common fields:
 - `abstractLanguages` — which languages to emit abstracts in
 - `outputFormatPreferences.font` / `.bodySize` / etc.
 
-If the change touches the style fingerprint broadly, consider spawning the `voice-profile-builder` subagent instead of editing by hand:
+If the change touches the style fingerprint broadly, execute the corpus fingerprint mode from the `academic-voice` skill's `references/profile-builder.md` inline instead of editing by hand:
 
-> The voice-profile-builder can re-scan `past-articles/` and recompute the fingerprint. Use it when the feedback is "the voice was generically off" rather than a specific dimension.
+> That mode re-scans `past-articles/` and recomputes the fingerprint. Use it when the feedback is "the voice was generically off" rather than a specific dimension.
 
-Spawn via your subagent-dispatch tool with `agent: \"voice-profile-builder\"` if applicable.
+Run the mode inline per that reference (it writes the fingerprint itself with `academic_writer_write_voice_fingerprint`) if applicable.
 
 ### C. Pattern reference update
 
@@ -194,10 +194,10 @@ Feedback log path:
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
-For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `.academic-writer/voice/profile.md` — the file `section-writer` already loads at the start of every run. Never put preferences in `.academic-writer/profile.md`.
+For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `.academic-writer/voice/profile.md` — the file the `writer` already loads at the start of every run. Never put preferences in `.academic-writer/profile.md`.
 
 1. Read `.academic-writer/voice/profile.md`. If it is missing or empty, skip this step and tell the researcher: "No voice overlay yet — run `/skill:academic-voice` to create one; this preference is saved in the feedback log."
-2. If the file is already larger than about 20,000 characters (≈5,000 tokens, the budget in `voice-profile-builder`), do not add; tell the researcher to run `:voice recompress` first.
+2. If the file is already larger than about 20,000 characters (≈5,000 tokens, the budget in the distillation mode of the `academic-voice` skill's `references/profile-builder.md`), do not add; tell the researcher to run `:voice recompress` first.
 3. Choose the existing section by the builder's assignment rules: applies regardless of project → `## Core voice (cross-project)`; term, transliteration or citation-format choice → `## Terminology`; citation density, hedging, abstract conventions, anti-AI thresholds → `## Academic-specific`. Never create a new section.
 4. Append one bullet of at most 120 characters, as an operational rule ("Never use em-dashes"), keeping Hebrew text Hebrew. If an existing bullet is contradicted, replace it and keep a one-line `> Was: <old>` note.
 5. Write the whole file back with `academic_writer_update_author_voice` and update the `> Updated` line to today's date.
@@ -248,7 +248,7 @@ When the researcher provides a reviewer report (peer review comments, editor dec
        | Reviewer & Point # | Original Comment | Author Response / Action Taken | Mapped Article Edits (Section / Paragraph) |
 3. **Apply Mapped Edits**:
    - Execute corresponding edits directly on the manuscript (`articles/<slug>.md`).
-   - Pass updated paragraphs through `section-writer`/`auditor` pipeline to preserve voice fingerprint and citation integrity.
+   - Pass updated paragraphs through the `writer`/`editor` (audit mode) pipeline to preserve voice fingerprint and citation integrity.
 4. **Summary Output**: Present the generated response matrix location and list of revised manuscript sections.
 
 ## Rules

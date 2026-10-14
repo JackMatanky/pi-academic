@@ -2,7 +2,7 @@
 name: academic-edit
 description: "Edit a drafted article, from one narrowly scoped section to multiple sections or structural revisions. Use when revising, correcting, or restructuring existing article text."
 allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_assemble_docx_json academic_writer_diagnose_outline academic_writer_lint_prose
-metadata: {author: "Yotam Fromm", version: "0.2.19"}
+metadata: {author: "Yotam Fromm", version: "0.2.20"}
 ---
 
 # Academic Writer — Edit Article
@@ -63,9 +63,9 @@ For migration, show the draft mapping and unmapped paragraphs. Migration does no
 Resolve the article Markdown path. If `articles/<slug>.outline.json` exists, read its canonical recursive structure. Otherwise, for an existing Markdown article call `academic_writer_migrate_article_outline({article: MD_PATH, title, targetLanguage, citationStyle})`; it preserves Markdown and creates draft-only unmapped points containing exact existing paragraphs. For non-Markdown input first preserve a Markdown copy for migration; do not pretend conversion is a reviewed outline. A migration conflict means inspect the existing outline rather than overwrite it.
 
 For structural or argument/evidence changes, edit the canonical outline JSON first using academic_writer_write_outline (draft status), mapping affected points to reviewed note IDs and direct claims/reasoning. Call academic_writer_render_outline({article: MD_PATH}), present generated Markdown and the exact selected note texts, original sources and locators. Require explicit researcher confirmation of selected source-backed notes before academic_writer_review_research_notes({noteIds, state: "verified"}). Obtain explicit approval of the thesis/outline before setting both statuses approved and rerendering. Then snapshot citations and selected notes via academic_writer_snapshot_citations and academic_writer_snapshot_notes; if either fails, do not dispatch. No new current-run source may enter the article context after this freeze.
-After rendering the revised outline and before researcher approval, call `academic_writer_diagnose_outline({article: MD_PATH})` and address its findings. If the current deep-reader evidence map includes `chapter_coverage`, pass that map as `evidenceMapJson`; coverage is not part of the canonical outline schema. The result is advisory only: it does not judge argument quality or approve the outline.
+After rendering the revised outline and before researcher approval, call `academic_writer_diagnose_outline({article: MD_PATH})` and address its findings. If the current researcher evidence map includes `chapter_coverage`, pass that map as `evidenceMapJson`; coverage is not part of the canonical outline schema. The result is advisory only: it does not judge argument quality or approve the outline.
 
-Dispatch only affected section IDs with direct point children (nested sections are independent tasks) via section_bundle. Provide each section-writer MD_PATH, sectionId, edit instructions, current target prose and contextual article details only; it reads frozen notes and source metadata itself. The existing article Markdown remains the preserved text source until the selected units actually pass the full paragraph/auditor pipeline. Replace only those units; leave unaffected paragraphs, citations, and headings unchanged. Mechanical citation/tone-only edits that do not change the argument still use the auditor gate for altered cited sentences and do not rewrite other paragraphs.
+Dispatch only affected section IDs with direct point children (nested sections are independent tasks) via section_bundle. Provide each writer MD_PATH, sectionId, edit instructions, current target prose and contextual article details only; it reads frozen notes and source metadata itself. The existing article Markdown remains the preserved text source until the selected units actually pass the full paragraph/editor pipeline. Replace only those units; leave unaffected paragraphs, citations, and headings unchanged. Mechanical citation/tone-only edits that do not change the argument still use the editor gate for altered cited sentences and do not rewrite other paragraphs.
 
 ---
 
@@ -77,7 +77,7 @@ Before choosing an edit mode, ask the researcher:
 1. **If Whole Article**: Proceed to "Understand the Edit Request" across all sections.
 2. **If One Specific Section**:
    - Ask: "Which section? (Provide section title, number, or paste the text)."
-   - Scope all subsequent edits, section-writer spawns, and auditing strictly to that target section (plus adjacent section context for transition/repetition checks).
+   - Scope all subsequent edits, writer spawns, and auditing strictly to that target section (plus adjacent section context for transition/repetition checks).
 
 ---
 
@@ -96,8 +96,8 @@ cat articles/<slug>.sources.json 2>/dev/null || cat .academic-writer/sources.jso
 ```
 
 - **If no snapshot is found**, tell the researcher:
-  > "I don't have a current source registry for this article, so citation verification (Check D) will be limited — I can verify against Zotero/local source reads, but not against confirmed bibliographic metadata. Want me to re-run the deep-reader on this article's sources first?"
-- If the researcher agrees, spawn deep-reader on cited sources for current-run cache/unchecked candidates. Do not treat a newly populated cache as the article snapshot; after explicit outline/note approval the orchestrator freezes citations and notes together.
+  > "I don't have a current source registry for this article, so citation verification (Check D) will be limited — I can verify against Zotero/local source reads, but not against confirmed bibliographic metadata. Want me to re-run the researcher on this article's sources first?"
+- If the researcher agrees, spawn the researcher on cited sources for current-run cache/unchecked candidates. Do not treat a newly populated cache as the article snapshot; after explicit outline/note approval the orchestrator freezes citations and notes together.
 - If the researcher declines, proceed but warn that Check D will be skipped for unindexed sources.
 
 ---
@@ -122,8 +122,8 @@ Ask:
 When auditing or revising an existing draft:
 
 1. **Preserve Paragraphs by Default**: Treat original paragraphs as valid prose unless an edit or audit failure requires changes.
-2. **Spawn Auditor per Paragraph**: Run an `auditor` subagent on each paragraph to verify citations and anti-AI/quality guidelines.
-3. **Selective Rewriting**: Keep original paragraph text intact if the auditor returns `verdict: PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
+2. **Spawn Editor per Paragraph**: Run an `editor` subagent in audit mode (`mode: "audit"`) on each paragraph to verify citations and anti-AI/quality guidelines.
+3. **Selective Rewriting**: Keep original paragraph text intact if the editor returns `verdict: PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
 For an English prose-style cleanup request, call `academic_writer_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
 
 ---
@@ -132,23 +132,23 @@ For an English prose-style cleanup request, call `academic_writer_lint_prose({te
 
 ### Mode A: Section-Level Edit
 
-**Use your subagent-dispatch tool to spawn a `section-writer` subagent** for each section being revised. The section-writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit).
+**Use your subagent-dispatch tool to spawn a `writer` subagent** for each section being revised. The writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit) and overwrites `articles/<slug>/sections/<sectionId>.md` via `academic_writer_write_section`.
 
-Pass MD_PATH, sectionId, requested edit instructions, current target text, citationStyle, targetLanguage, tools, and the current text of unchanged adjacent sections (sections revised in the same wave may change; do not rely on their wording). The writer fetches its authoritative point/evidence bundle via academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}). Do not pass a flat section spec or mutable project note library.
+Pass MD_PATH, sectionId, requested edit instructions, current target text, citationStyle, targetLanguage, tools, and the current text of unchanged adjacent sections (sections revised in the same wave may change; do not rely on their wording). The writer fetches its authoritative point/evidence bundle via academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}). Do not pass a flat section spec or mutable project note library. After each writer returns, splice the written section file's content into `MD_PATH` in place of the existing section body — from the section heading to the next same-or-higher heading.
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
-For multiple sections being edited, **spawn one `section-writer` per section in parallel**: under OMP, one `task` call with a `tasks` entry per section; under pi, sibling `subagent` calls in one response.
+For multiple sections being edited, **spawn one `writer` per section in parallel**: under OMP, one `task` call with a `tasks` entry per section; under pi, sibling `subagent` calls in one response.
 
 ### Mode B: Citation Fix
 
-**Use your subagent-dispatch tool to spawn `auditor` subagents in parallel** — one per section that needs citation work. Under OMP, batch them in one `task` call; under pi, issue sibling `subagent` calls.
+**Use your subagent-dispatch tool to spawn `editor` subagents in audit mode (`mode: "audit"`)** — one per section that needs citation work. Under OMP, batch them in one `task` call; under pi, issue sibling `subagent` calls.
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
 Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
 
-The auditor verifies every footnote and returns specific fix instructions. Apply fixes, then re-audit. Pass the `auditor_result` schema as `outputSchema`.
+The editor verifies every footnote and returns specific fix instructions. Apply fixes, then re-audit. Pass the `auditor_result` schema as `outputSchema`.
 
 ### Mode C: Tone / Style Adjustment
 
@@ -160,13 +160,13 @@ Re-read the `styleFingerprint`. For each paragraph being adjusted:
 4. Run the Hebrew grammar check when Hebrew text changed.
 Before dispatching, read the `dispatch_contract` resource (`academic_writer_read_resource`) and pass its `auditor_result` schema as `outputSchema` (on omp use `schemaMode: "strict"`).
 
-5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `auditor` subagent** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the auditor's structured result — exactly as Modes A/B/E do. If the auditor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
+5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `editor` subagent in audit mode (`mode: "audit"`)** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the editor's structured result — exactly as Modes A/B/E do. If the editor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
 
 If the researcher wants tone that differs from their fingerprint (e.g., "make this more polemical even though my usual style is measured"), note the deviation and apply it as a conscious choice.
 
 ### Mode D: Restructure
 
-Show the current recursive outline and selected original paragraphs. Reorder, split, merge, add or remove nodes in the canonical JSON as a draft, preserving existing Markdown. Render and present the revised outline for explicit approval; verify selected notes and freeze article citation/note assets as in Structured Edit Gate. Dispatch only new or substantively changed sections with direct points. Do not rewrite headings-only sections or untouched paragraphs. Reassemble in outline order and ask synthesizer to review transitions, keeping unaffected prose and citations intact.
+Show the current recursive outline and selected original paragraphs. Reorder, split, merge, add or remove nodes in the canonical JSON as a draft, preserving existing Markdown. Render and present the revised outline for explicit approval; verify selected notes and freeze article citation/note assets as in Structured Edit Gate. Dispatch only new or substantively changed sections with direct points. Do not rewrite headings-only sections or untouched paragraphs. Reassemble in outline order and ask the editor (review mode) to review transitions, keeping unaffected prose and citations intact.
 
 ### Mode E: Strengthen Argument
 
@@ -177,19 +177,19 @@ Show the current recursive outline and selected original paragraphs. Reorder, sp
    - Logical gaps between sections
 
 2. **Spawn research subagents in parallel** to find additional evidence (one batched `task` call under OMP; sibling `subagent` calls under pi; call shape in the `dispatch_contract` resource):
-   - If `tools.zotero.enabled`: one `agent: "deep-reader"` dispatch for Zotero document reads, passing `tools.zotero.collection` when configured so searches stay in the project collection
+   - If `tools.zotero.enabled`: one `agent: "researcher"` dispatch for Zotero document reads, passing `tools.zotero.collection` when configured so searches stay in the project collection
 
 3. Draft new evidence integration and re-run citation audit
 
 ### Mode F: Cut / Expand
 
-**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run synthesizer for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, read the `dispatch_contract` resource and spawn an `auditor` with the `auditor_result` schema as `outputSchema` (on omp also `schemaMode: "strict"`), pass revised paragraph text, sectionIndex, paragraphIndex, and tools, then gate on `verdict: PASS`. If rejected, restore/fix the citation and re-audit before finalizing.
+**Cut:** Identify redundancies and weak passages. Remove while preserving argument flow. Re-run the editor (review mode) for transitions. **Citation hard gate (mandatory):** cutting can splice or reword surviving cited sentences (e.g., when two sentences merge or a citation's anchoring clause is trimmed). For every paragraph whose cited sentence(s) were altered by the cut, read the `dispatch_contract` resource and spawn an `editor` in audit mode (`mode: "audit"`) with the `auditor_result` schema as `outputSchema` (on omp also `schemaMode: "strict"`), pass revised paragraph text, sectionIndex, paragraphIndex, and tools, then gate on `verdict: PASS`. If rejected, restore/fix the citation and re-audit before finalizing.
 
-**Expand:** Spawn research subagents to find additional material, then spawn section-writer for the expanded passages. The section-writer already runs the auditor hard gate on every paragraph it produces (including any cited sentences it rewrites), so the expand path is covered by the section-writer pipeline.
+**Expand:** Spawn research subagents to find additional material, then spawn the writer for the expanded passages. The writer already runs the editor hard gate (audit mode) on every paragraph it produces (including any cited sentences it rewrites), so the expand path is covered by the writer pipeline.
 
 ### Mode G: Full Review
 
-**Use your subagent-dispatch tool to spawn the `synthesizer` subagent** on the complete article. Pass as prompt: allSections, thesis, styleFingerprint, tools.
+**Use your subagent-dispatch tool to spawn the `editor` subagent in review mode (`mode: "review"`)** on the complete article. Pass as prompt: MD_PATH (the assembled article), thesis, the complete styleFingerprint, articleStructure conventions, the linkingWords reference, targetLanguage, tools.
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
@@ -201,7 +201,7 @@ This runs:
 4. Cross-section repetition check
 5. Transition quality
 
-Present revision notes to the researcher for approval before applying.
+Present revision notes to the researcher for approval before applying. On approval, write the editor's `revisedArticle` (from the `editor_review_result` schema) to `MD_PATH` verbatim — review revisions are applied unchanged, never re-drafted.
 
 ---
 

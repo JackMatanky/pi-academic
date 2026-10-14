@@ -215,23 +215,23 @@ This matters because peer reviewers, editors, and colleagues will recognize your
 
 Behind the scenes, Academic Writer operates through six specialized AI agents. Each has a specific role and specific expertise.
 
-**1. Deep Reader**
-When you select sources for an article, the Deep Reader reads all of them simultaneously — a task that would take a human researcher days. It maps key arguments, counterarguments, tensions between scholars, and gaps in the literature. Its report becomes the foundation for the thesis proposal.
+**1. Researcher**
+When you select sources for an article, the Researcher reads all of them simultaneously — a task that would take a human researcher days. It maps key arguments, counterarguments, tensions between scholars, and gaps in the literature. Its report becomes the foundation for the thesis proposal.
 
-**2. Architect**
-Based on the Deep Reader's findings, the Architect proposes 2–3 thesis options. Each option includes a rationale, a list of the key sources that support it, and an honest risk assessment (e.g., "this thesis is bold but requires stronger evidence for X"). The Architect also drafts the section-by-section outline once you choose a thesis.
+**2. Academic**
+Based on the Researcher's findings, the Academic proposes 2–3 thesis options. Each option includes a rationale, a list of the key sources that support it, and an honest risk assessment (e.g., "this thesis is bold but requires stronger evidence for X"). The Academic also drafts the section-by-section outline once you choose a thesis.
 
-**3. Section Writer**
-The engine of Phase 2. The Section Writer takes one outline section at a time and runs it through the complete 8-check pipeline. It never writes more than it can verify. It never proceeds without searching the library first.
+**3. Writer**
+The engine of Phase 2. The Writer takes one outline section at a time and runs it through the complete 8-check pipeline. It never writes more than it can verify. It never proceeds without searching the library first.
 
-**4. Auditor**
-An independent verification agent whose only job is to check citations. After the Section Writer produces a paragraph, the Auditor independently searches the library to confirm that every cited source says what the paragraph claims it says, on the page it claims. It has no tolerance for approximation.
+**4. Editor — citation gate (audit mode)**
+An independent verification agent whose only job is to check citations. After the Writer produces a paragraph, the Editor independently searches the library to confirm that every cited source says what the paragraph claims it says, on the page it claims. It has no tolerance for approximation.
 
-**5. Synthesizer**
-After all sections are written, the Synthesizer reads the complete article and performs a final coherence pass: Are the arguments consistent? Does the conclusion follow from the evidence? Are there contradictions between sections? Is the tone uniform? It makes targeted surgical revisions.
+**5. Editor — whole-article review (review mode)**
+After all sections are written, the Editor in review mode reads the complete article and performs a final coherence pass: Are the arguments consistent? Does the conclusion follow from the evidence? Are there contradictions between sections? Is the tone uniform? It makes targeted surgical revisions.
 
 **6. Style Miner**
-A background agent that runs when you use the `/learn` command. It reads your new past articles, extracts style patterns, and updates your fingerprint — so your AI collaborator improves as your own writing evolves.
+A background pass that runs when you use the `/learn` command. It reads your new past articles, extracts style patterns, and updates your fingerprint — so your AI collaborator improves as your own writing evolves.
 
 ---
 
@@ -327,7 +327,7 @@ The scholar makes every intellectual decision: the research question, the source
 
 **Concern 2: "Will the AI hallucinate citations?"**
 
-The Auditor agent exists precisely to prevent this. No citation reaches the final document without independent verification against the actual source text. If a citation cannot be confirmed, it is removed. The system is architecturally designed to prevent hallucination.
+The editor's audit mode exists precisely to prevent this. No citation reaches the final document without independent verification against the actual source text. If a citation cannot be confirmed, it is removed. The system is architecturally designed to prevent hallucination.
 
 **Concern 3: "Will all articles start to sound the same?"**
 
@@ -405,22 +405,22 @@ Let us trace the full workflow of a real article using Academic Writer.
 
 **9:02 AM — After stating the topic**, the AI searches the library and identifies the 23 relevant sources, noting which are primary and which are secondary. Scholar selects 18 as relevant to this article.
 
-**9:15 AM — Deep Reader finishes** its parallel reading of all 18 sources. It maps three central tensions in the literature: Almosnino's neoplatonic influences versus his traditional rabbinic framework; the tension between his public correspondence and his private theological position; and the gap in scholarship between his political and his theological writings.
+**9:15 AM — The Researcher finishes** its parallel reading of all 18 sources. It maps three central tensions in the literature: Almosnino's neoplatonic influences versus his traditional rabbinic framework; the tension between his public correspondence and his private theological position; and the gap in scholarship between his political and his theological writings.
 
-**9:20 AM — Architect proposes three thesis options:**
+**9:20 AM — The Academic proposes three thesis options:**
 1. A thesis about Almosnino's synthesis — how he reconciled the tension
 2. A thesis about the gap — what the correspondence reveals that his published works conceal
 3. A thesis about influence — how his position shaped later Sephardic thought in the Ottoman context
 
 **Scholar chooses Thesis 2** and modifies the wording slightly to reflect her own perspective.
 
-**9:35 AM — Architect proposes a 7-section outline.** Scholar rearranges sections 4 and 5, removes one section, adds a brief historiographical review at the beginning.
+**9:35 AM — The Academic proposes a 7-section outline.** Scholar rearranges sections 4 and 5, removes one section, adds a brief historiographical review at the beginning.
 
 **9:45 AM — Scholar approves the outline. Phase 2 begins.**
 
-**11:30 AM — Section Writer completes all sections.** Each paragraph has been searched, verified, style-checked, grammar-checked, register-checked, purity-checked, anti-AI-checked, repetition-checked, and citation-audited.
+**11:30 AM — The Writer completes all sections.** Each paragraph has been searched, verified, style-checked, grammar-checked, register-checked, purity-checked, anti-AI-checked, repetition-checked, and citation-audited.
 
-**11:35 AM — Synthesizer reviews** the complete article for coherence. Makes targeted revisions to the transition between sections 3 and 4 where the argument had a minor logical gap.
+**11:35 AM — The Editor (review mode) reviews** the complete article for coherence. Makes targeted revisions to the transition between sections 3 and 4 where the argument had a minor logical gap.
 
 **11:40 AM — Self-review scores the article: 51/60.** The score triggers a note: "Section 6 makes a strong claim about Almosnino's influence on Yosef Karo that is supported by only one source. Consider adding a second source or moderating the claim."
 

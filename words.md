@@ -1,6 +1,6 @@
 # אמצעי קישור — Hebrew Linking Words Reference
 
-> Used by the Section Writer (Skill 4: Academic Language & Linking Words).
+> Used by the writer (Skill 4: Academic Language & Linking Words).
 > Every paragraph of 3+ sentences must contain at least 2 linking words, varied and contextually correct.
 
 ---
@@ -351,7 +351,7 @@
 
 ---
 
-## Usage Guidelines for Section Writers
+## Usage Guidelines for Writers
 
 1. **Minimum density:** Every paragraph of 3+ sentences must contain **at least 2** linking words.
 2. **Variety:** Do not repeat the same linking word within a paragraph. Vary across the category.

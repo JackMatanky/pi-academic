@@ -314,7 +314,7 @@ test("[test_package_tools_run_against_project_state] package tools run against p
   assert.equal(at(data.status, "sourceDocuments", "count"), 1);
   assert.equal(at(data.status, "articles", "count"), 1);
   assert.equal(at(data.status, "runs", "active", 0, "runId"), "r1");
-  assert.ok(strings(at(data.status, "agents")).includes("auditor.md"));
+  assert.ok(strings(at(data.status, "agents")).includes("editor.md"));
   assert.equal(
     at(data.status, "tools", "zotero", "collection", "key"),
     "COLL1234",
@@ -459,4 +459,93 @@ test("[test_migrates_json_profile] migrates a JSON profile", async (t) => {
   assert.equal(data.migration.details.migrated, true);
   assert.equal(at(data.profile, "profile", "fieldOfStudy"), "Literature");
   assert.equal(at(data.profile, "profile", "citationStyle"), "apa");
+});
+
+test("[test_write_section_persists_section_file] write_section creates the section file with exact content", async (t) => {
+  const root = scratch(t);
+
+  const written = await callTool(root, "academic_writer_write_section", {
+    article: "articles/demo.md",
+    sectionId: "s1",
+    markdown: "## S1\n\nText.",
+  });
+
+  assert.equal(at(written, "path"), "articles/demo/sections/s1.md");
+  assert.equal(
+    readFileSync(join(root, "articles", "demo", "sections", "s1.md"), "utf8"),
+    "## S1\n\nText.",
+  );
+
+  const redraft = await callTool(root, "academic_writer_write_section", {
+    article: "articles/demo.md",
+    sectionId: "s1",
+    markdown: "## S1\n\nRewritten.",
+  });
+
+  assert.equal(at(redraft, "ok"), true);
+  assert.equal(
+    readFileSync(join(root, "articles", "demo", "sections", "s1.md"), "utf8"),
+    "## S1\n\nRewritten.",
+  );
+});
+
+test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes without writing", async (t) => {
+  const root = scratch(t);
+
+  const evilSection = await callTool(root, "academic_writer_write_section", {
+    article: "articles/demo.md",
+    sectionId: "../evil",
+    markdown: "## Evil",
+  });
+
+  assert.equal(evilSection.isError, true);
+  assert.ok(
+    text(evilSection).includes("Invalid sectionId"),
+    `unexpected message: ${text(evilSection)}`,
+  );
+
+  const outsideArticle = await callTool(root, "academic_writer_write_section", {
+    article: "outside/x.md",
+    sectionId: "s1",
+    markdown: "## X",
+  });
+
+  assert.equal(outsideArticle.isError, true);
+  assert.ok(
+    text(outsideArticle).includes('must start with "articles/"'),
+    `unexpected message: ${text(outsideArticle)}`,
+  );
+
+  const slugless = await callTool(root, "academic_writer_write_section", {
+    article: "articles/.md",
+    sectionId: "s1",
+    markdown: "## S1",
+  });
+
+  assert.equal(slugless.isError, true);
+  assert.ok(
+    text(slugless).includes("must name a markdown file"),
+    `unexpected message: ${text(slugless)}`,
+  );
+
+  const blank = await callTool(root, "academic_writer_write_section", {
+    article: "articles/demo.md",
+    sectionId: "s1",
+    markdown: "   ",
+  });
+
+  assert.equal(blank.isError, true);
+  assert.ok(
+    text(blank).includes("must not be empty"),
+    `unexpected message: ${text(blank)}`,
+  );
+
+  assert.ok(
+    !existsSync(join(root, "articles")),
+    "no articles directory should have been created",
+  );
+  assert.ok(
+    !existsSync(join(root, "outside")),
+    "no outside directory should have been created",
+  );
 });

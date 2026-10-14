@@ -85,7 +85,7 @@ updatedAt: ISO_TIMESTAMP
 
 ## 25-Dimension Style Analysis Rubric
 
-Run via voice-profile-builder agent. Dimensions span 8 categories (A–I):
+Run via the corpus fingerprint mode in `references/profile-builder.md` (academic-voice skill), executed inline. Dimensions span 8 categories (A–I):
 
 ### A. Sentence-Level
 1. Average sentence length (mean + range in words)
@@ -138,5 +138,5 @@ Run via voice-profile-builder agent. Dimensions span 8 categories (A–I):
 ## Voice Source Hierarchy
 
 1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` JSON object). Extracted by `/skill:academic-setup` or `/skill:academic-voice` and stored in the profile.
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as human prose instructions for `section-writer`.
+2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as human prose instructions for the `writer`.
 3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is a temporary mining output and is **NOT** a runtime source of truth.

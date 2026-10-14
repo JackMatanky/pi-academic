@@ -13,7 +13,7 @@ Literal-mode DOCX JSON schema:
 
 ```json
 {
-  "title": "ARTICLE_TITLE from synthesizer",
+  "title": "ARTICLE_TITLE from the editor (review mode)",
   "thesis": "ARTICLE_THESIS or null",
   "abstract": {
     "primary": "Abstract text in targetLanguage",
@@ -49,7 +49,7 @@ Rules: write this JSON with the Write tool, not a Python heredoc; move literal c
 
 ## Citeproc mode
 
-Every other `citationStyle` value is citeproc mode. Body citations must be Pandoc markers written by `section-writer`: `[@citeKey, p. N]` or co-located markers such as `[@key1; @key2, p. N]`. `citeKey` must come from the approved article-local `articles/<slug>.sources.json` snapshot; never invent it.
+Every other `citationStyle` value is citeproc mode. Body citations must be Pandoc markers written by the writer: `[@citeKey, p. N]` or co-located markers such as `[@key1; @key2, p. N]`. `citeKey` must come from the approved article-local `articles/<slug>.sources.json` snapshot; never invent it.
 
 Resolve the active CSL reference with `academic_writer_resolve_csl` using the profile's custom value when present (`outputFormatPreferences.csl`, `outputFormatPreferences.cslPath`, or `citation.csl`), otherwise `citationStyle`. Use `download: true`.
 
