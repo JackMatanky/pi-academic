@@ -3,18 +3,15 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
-  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 
 import { errorMessage } from "../lib/fs-safe.js";
-import { JsonObjectSchema, parseJsonText, parseWith } from "../lib/schema.js";
 import { defaultReference } from "./pandoc.js";
 import {
   loadStylePackage,
-  STARTER_DIR,
   STYLE_FORMATS,
   type NativeAssets,
   type PdfEngine,
@@ -24,6 +21,7 @@ import {
 import { buildDocxReference } from "./style-docx.js";
 import { buildLatexPreamble } from "./style-latex.js";
 import { buildOdtReference } from "./style-odt.js";
+import { starterByName } from "./style-starters.js";
 
 export interface RenderedStyle {
   package: string;
@@ -212,10 +210,10 @@ export interface InstalledStarter {
 }
 
 /**
- * Copy the starter into `.academic-writer/styles/<name>/`: its design.json plus
- * editable native starting points under `native/`. The native files are not
- * referenced from design.json; the researcher opts in by adding `formats`
- * entries.
+ * Generate the starter into `.academic-writer/styles/<name>/`: its design.json
+ * (serialized from the typed definition in `style-starters.ts`) plus editable
+ * native starting points under `native/`. The native files are not referenced
+ * from design.json; the researcher opts in by adding `formats` entries.
  */
 export async function installStarterPackage(
   projectRoot: string,
@@ -235,23 +233,7 @@ export async function installStarterPackage(
     );
   }
 
-  const templateDir = join(STARTER_DIR, "..", name);
-
-  const starter = parseWith(
-    JsonObjectSchema,
-    parseJsonText(
-      readFileSync(
-        join(
-          existsSync(join(templateDir, "design.json"))
-            ? templateDir
-            : STARTER_DIR,
-          "design.json",
-        ),
-        "utf8",
-      ),
-    ),
-    "starter design",
-  );
+  const starter = starterByName(name);
 
   const nativeDir = join(directory, "native");
   mkdirSync(nativeDir, { recursive: true });

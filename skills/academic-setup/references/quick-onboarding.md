@@ -12,7 +12,15 @@ Run silently before anything else:
 
 ```bash
 mkdir -p past-articles .academic-writer .academic-writer/voice
-# If .academic-writer/thresholds.json is missing, call academic_writer_read_resource with name: thresholds, then write that content to .academic-writer/thresholds.json.
+# If .academic-writer/thresholds.json is missing: call academic_writer_read_resource
+# with name: thresholds, present the default quality gates to the researcher
+# (anti-AI ≥ 35/50, self-review ≥ 40/60, ≤ 3 rewrite cycles per paragraph,
+# 220-word paragraph ceiling +30 for intro/conclusion, style compliance ≥ 7/10,
+# sources ≥ 3 distinct notes per outline, article length 2,000–12,000 words
+# or ±15% of targetWordCount, voice corpus ≥ 3 articles / ≥ 1500 total words /
+# ≥ 800 words per article), and ask whether to keep the defaults or adjust
+# specific values. Write the final JSON — defaults or the researcher's adjusted
+# values — to .academic-writer/thresholds.json.
 # If .academic-writer/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .academic-writer/voice/profile.md.
 ```
 

@@ -16,6 +16,7 @@ import {
 } from "../project-files.js";
 import { resolveResourcePath } from "../resources.js";
 import { buildStatus } from "../status.js";
+import { thresholdsDefaultJson } from "../thresholds-default.js";
 import { fail, registerTool } from "../tool-kit.js";
 
 /**
@@ -28,7 +29,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     core: true,
     label: "Academic Writer Resource",
     description:
-      "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-writer/thresholds.json first (the project override created by init/setup) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
+      "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-writer/thresholds.json first (the project override that init/setup writes after asking the researcher) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
     parameters: Type.Object({
       name: Type.String({
         description:
@@ -48,6 +49,33 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
       ),
     }),
     run: ({ name, language, includePath }, { cwd }) => {
+      if (name === "thresholds") {
+        const override = join(cwd, ".academic-writer", "thresholds.json");
+
+        if (existsSync(override)) {
+          const content = readFileSync(override, "utf-8");
+
+          return {
+            text: includePath
+              ? `RESOURCE_PATH: ${override}\n---\n${content}`
+              : content,
+            details: { ok: true, name, path: override, source: "project" },
+          };
+        }
+
+        const path =
+          "extensions/pi-academic-writer/thresholds-default.ts (package default)";
+
+        const content = thresholdsDefaultJson();
+
+        return {
+          text: includePath
+            ? `RESOURCE_PATH: ${path}\n---\n${content}`
+            : content,
+          details: { ok: true, name, path, source: "package" },
+        };
+      }
+
       const path = resolveResourcePath(name, cwd, language);
 
       if (!existsSync(path)) {
@@ -60,14 +88,9 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
 
       const content = readFileSync(path, "utf-8");
 
-      const source =
-        name === "thresholds" && path !== join(PACKAGE_ROOT, "thresholds.json")
-          ? "project"
-          : "package";
-
       return {
         text: includePath ? `RESOURCE_PATH: ${path}\n---\n${content}` : content,
-        details: { ok: true, name, path, source },
+        details: { ok: true, name, path, source: "package" },
       };
     },
   });

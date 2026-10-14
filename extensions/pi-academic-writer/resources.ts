@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { PACKAGE_ROOT } from "../lib/paths.js";
@@ -18,32 +17,20 @@ function normalizeLanguage(language: string | undefined): "english" | "hebrew" {
 }
 
 /**
- * Resolves a stable Academic Writer resource name to its package/project file
- * path.
+ * Resolves a stable Academic Writer resource name to its package file path.
+ * Thresholds are not resolved here — the read tool serves the project override
+ * or the typed default directly.
  *
  * @param name - Stable packaged resource name.
- * @param projectRoot - Absolute project root used to resolve project-relative
- *   files.
+ * @param _projectRoot - Unused; kept for call-shape stability.
  * @param language - Optional language selector for language-specific resources.
  */
 export function resolveResourcePath(
   name: string,
-  projectRoot: string,
+  _projectRoot: string,
   language?: string,
 ): string {
   switch (name) {
-    case "thresholds": {
-      const projectOverride = join(
-        projectRoot,
-        ".academic-writer",
-        "thresholds.json",
-      );
-
-      return existsSync(projectOverride)
-        ? projectOverride
-        : join(PACKAGE_ROOT, "thresholds.json");
-    }
-
     case "words":
       return join(PACKAGE_ROOT, "words.md");
     case "scorecard":

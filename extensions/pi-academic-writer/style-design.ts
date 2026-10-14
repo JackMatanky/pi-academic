@@ -8,7 +8,6 @@ import { isAbsolute, join, resolve } from "node:path";
 import { Type } from "typebox";
 
 import { errorMessage, isInside } from "../lib/fs-safe.js";
-import { PACKAGE_ROOT } from "../lib/paths.js";
 import {
   assertValid,
   firstViolation,
@@ -16,6 +15,7 @@ import {
   JsonObjectSchema,
   parseJsonText,
 } from "../lib/schema.js";
+import { starterByName } from "./style-starters.js";
 
 export type StyleFormat = "docx" | "odt" | "latex" | "pdf";
 
@@ -75,7 +75,10 @@ const ComponentStyleSchema = Type.Object(
  */
 export type ComponentStyle = Static<typeof ComponentStyleSchema>;
 
-const ComponentsSchema = Type.Object(
+/**
+ * Per-component style schema; also validates shipped starter definitions.
+ */
+export const ComponentsSchema = Type.Object(
   {
     title: Type.Optional(ComponentStyleSchema),
     subtitle: Type.Optional(ComponentStyleSchema),
@@ -170,7 +173,10 @@ const PROP_KINDS = new Map<string, string>([
   ["borderColor", "color"],
 ]);
 
-const PageSchema = Type.Object(
+/**
+ * Page-setup schema; also validates shipped starter definitions.
+ */
+export const PageSchema = Type.Object(
   {
     size: Type.Optional(
       Type.Union([
@@ -200,6 +206,8 @@ const PageSchema = Type.Object(
 );
 
 type PageInput = Static<typeof PageSchema>;
+
+export type { PageInput };
 
 export interface PageStyle {
   size: "A4" | "Letter" | "Legal";
@@ -271,10 +279,26 @@ export interface LoadedStyle {
   explicit: ExplicitProps;
 }
 
-export const STARTER_DIR = join(PACKAGE_ROOT, "templates", "academic-default");
-
 function fail(name: string, field: string, correction: string): never {
   throw new Error(`Style package '${name}', ${field}: ${correction}`);
+}
+
+/**
+ * Load the shipped starter design, which supplies defaults for every package.
+ */
+export function loadStarterDesign(): StyleDesign {
+  const starter = starterByName("academic-default");
+
+  return {
+    schemaVersion: 1,
+    name: "academic-default",
+    page: mergePage(starter.page, {
+      size: "A4",
+      orientation: "portrait",
+      marginsMm: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
+    }),
+    components: starter.components,
+  };
 }
 
 /**
@@ -559,28 +583,6 @@ function mergePage(page: PageInput, base: PageStyle): PageStyle {
   if (footer !== undefined) merged.footerDistanceMm = footer;
 
   return merged;
-}
-
-/**
- * Load the shipped starter design, which supplies defaults for every package.
- */
-export function loadStarterDesign(): StyleDesign {
-  const raw = readDesignJson(
-    join(STARTER_DIR, "design.json"),
-    "academic-default",
-    "starter design.json",
-  );
-
-  return {
-    schemaVersion: 1,
-    name: "academic-default",
-    page: mergePage(validatePage("academic-default", raw.page), {
-      size: "A4",
-      orientation: "portrait",
-      marginsMm: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
-    }),
-    components: validateComponents("academic-default", raw.components),
-  };
 }
 
 /**
