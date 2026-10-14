@@ -124,12 +124,38 @@ function unanalyzedPastArticleCount(
 const WIDE_CHAR =
   /[\u1100-\u115F\u2E80-\u303E\u3041-\u33FF\u3400-\u4DBF\u4E00-\u9FFF\uA000-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE10-\uFE19\uFE30-\uFE6F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1F64F}\u{1F900}-\u{1F9FF}\u{20000}-\u{3FFFD}]/u;
 
-const COMBINING_CHAR = /\p{M}/u;
+/**
+ * Marks and format characters (combining marks, variation selectors, ZWJ): zero
+ * terminal cells.
+ */
+const ZERO_WIDTH_CHAR = /[\p{M}\p{Cf}]/u;
+
+const graphemeSegmenter = new Intl.Segmenter(undefined, {
+  granularity: "grapheme",
+});
 
 /**
- * Truncates `text` to at most `width` terminal cells at code-point boundaries
- * (never mid-grapheme, never mid-surrogate) and pads with spaces to exactly
- * `width` cells, so box borders stay aligned for any script.
+ * Estimated terminal cell width of one grapheme cluster: zero-width characters
+ * count 0, wide characters 2, everything else 1.
+ *
+ * @param cluster - A single grapheme cluster from the segmenter.
+ */
+function clusterWidth(cluster: string): number {
+  let width = 0;
+
+  for (const char of cluster) {
+    if (ZERO_WIDTH_CHAR.test(char)) continue;
+    width += WIDE_CHAR.test(char) ? 2 : 1;
+  }
+
+  return width;
+}
+
+/**
+ * Truncates `text` to at most `width` terminal cells at grapheme-cluster
+ * boundaries (never inside an emoji ZWJ sequence, surrogate pair, or accent
+ * stack) and pads with spaces to exactly `width` cells, so box borders stay
+ * aligned for any script.
  *
  * @param text - Row content between the borders.
  * @param width - Terminal cells available.
@@ -138,17 +164,13 @@ function fitCell(text: string, width: number): string {
   let out = "";
   let used = 0;
 
-  for (const char of text) {
-    const charWidth = COMBINING_CHAR.test(char)
-      ? 0
-      : WIDE_CHAR.test(char)
-        ? 2
-        : 1;
+  for (const { segment } of graphemeSegmenter.segment(text)) {
+    const cluster = clusterWidth(segment);
 
-    if (used + charWidth > width) break;
+    if (used + cluster > width) break;
 
-    out += char;
-    used += charWidth;
+    out += segment;
+    used += cluster;
   }
 
   return out + " ".repeat(width - used);

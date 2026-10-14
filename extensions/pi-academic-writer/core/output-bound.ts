@@ -24,25 +24,47 @@ interface Head {
 }
 
 /**
- * The first `MAX_OUTPUT_LINES` lines of `lines` that fit in `MAX_OUTPUT_BYTES`
- * (each line counted with its newline). A first line over the byte cap is cut
- * at a character boundary.
+ * Counts lines the way `split("\n").length` would, without allocating an array.
  */
-function headOf(lines: string[]): Head {
+function countLines(text: string): number {
+  let count = 1;
+
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) === 10) count++;
+  }
+
+  return count;
+}
+
+/**
+ * The first `MAX_OUTPUT_LINES` lines of `text` that fit in `MAX_OUTPUT_BYTES`
+ * (each line counted with its newline), walking the string without allocating
+ * an array of all lines. A first line over the byte cap is cut at a character
+ * boundary.
+ */
+function headOf(text: string): Head {
   const kept: string[] = [];
   let bytes = 0;
+  let shown = 0;
+  let start = 0;
 
-  for (const line of lines.slice(0, MAX_OUTPUT_LINES)) {
+  while (shown < MAX_OUTPUT_LINES && start <= text.length) {
+    let end = text.indexOf("\n", start);
+
+    if (end === -1) end = text.length;
+
+    const line = text.slice(start, end);
     const size = Buffer.byteLength(line, "utf8") + 1;
 
     if (bytes + size > MAX_OUTPUT_BYTES) {
-      if (kept.length === 0) {
-        const cut = Buffer.from(line, "utf8")
-          .subarray(0, MAX_OUTPUT_BYTES)
-          .toString("utf8")
-          .replace(/\uFFFD$/u, "");
-
-        kept.push(cut);
+      if (shown === 0) {
+        kept.push(
+          Buffer.from(line, "utf8")
+            .subarray(0, MAX_OUTPUT_BYTES)
+            .toString("utf8")
+            .replace(/\uFFFD$/u, ""),
+        );
+        shown = 1;
       }
 
       break;
@@ -50,9 +72,14 @@ function headOf(lines: string[]): Head {
 
     kept.push(line);
     bytes += size;
+    shown += 1;
+
+    if (end === text.length) break;
+
+    start = end + 1;
   }
 
-  return { head: kept.join("\n"), shown: kept.length };
+  return { head: kept.join("\n"), shown };
 }
 
 /**
@@ -112,23 +139,14 @@ export function boundOutput(
   now: number = Date.now(),
 ): string {
   const totalBytes = Buffer.byteLength(text, "utf8");
+  const totalLines = countLines(text);
 
-  // Count lines without splitting: a fitting payload must not pay for a full
+  // Line counting walks the string: a fitting payload must not pay for a full
   // line array (a 1 MB single-line string would otherwise double in memory).
-  if (totalBytes <= MAX_OUTPUT_BYTES) {
-    let lineCount = 1;
+  if (totalBytes <= MAX_OUTPUT_BYTES && totalLines <= MAX_OUTPUT_LINES)
+    return text;
 
-    for (let i = 0; i < text.length; i++) {
-      if (text.charCodeAt(i) === 10) lineCount++;
-
-      if (lineCount > MAX_OUTPUT_LINES) break;
-    }
-
-    if (lineCount <= MAX_OUTPUT_LINES) return text;
-  }
-
-  const lines = text.split("\n");
-  const { head, shown } = headOf(lines);
+  const { head, shown } = headOf(text);
   const shownBytes = Buffer.byteLength(head, "utf8");
   const saved = spill(projectRoot, toolName, text, now);
 
@@ -136,5 +154,5 @@ export function boundOutput(
     ? `Full output: ${saved}. Read it in line ranges.`
     : "The full output was not saved; request a narrower input.";
 
-  return `${head}\n\n[output truncated: showing ${shown} of ${lines.length} lines, ${shownBytes} of ${totalBytes} bytes. ${where}]`;
+  return `${head}\n\n[output truncated: showing ${shown} of ${totalLines} lines, ${shownBytes} of ${totalBytes} bytes. ${where}]`;
 }

@@ -18,6 +18,7 @@ import {
   updateProfile,
   type Profile,
 } from "../lib/profile.js";
+import { createToolHarness } from "./helpers.js";
 
 function project(t: TestContext): string {
   const dir = mkdtempSync(join(tmpdir(), "profile-merge-"));
@@ -75,6 +76,65 @@ test("updateProfile merges the tools section instead of replacing it", async (t)
     readFileSync(join(dir, ".academic-writer", "profile.md"), "utf8"),
     /sefaria/,
   );
+});
+
+test("updateProfile merges nested objects and nested null deletes", async (t) => {
+  const dir = project(t);
+
+  seedProfile(dir, {
+    zotero: {
+      enabled: true,
+      collection: { id: "LIB", key: "old-key", name: "Old" },
+    },
+    sefaria: { enabled: true },
+  });
+
+  const updated = await updateProfile(dir, {
+    tools: {
+      zotero: {
+        enabled: false,
+        collection: { name: "Ancient", key: null },
+      },
+    },
+  });
+
+  const zotero = updated?.tools?.zotero;
+
+  assert.equal(zotero?.enabled, false);
+  assert.equal(zotero?.collection?.id, "LIB", "sibling nested keys survive");
+  assert.equal(zotero?.collection?.name, "Ancient");
+  assert.equal(
+    zotero?.collection?.key,
+    undefined,
+    "a nested null deletes the key",
+  );
+  assert.equal(updated?.tools?.sefaria?.enabled, true);
+});
+
+test("academic_writer_update_profile deep-merges through the tool surface", async (t) => {
+  const dir = project(t);
+
+  seedProfile(dir, {
+    zotero: { enabled: true, collection: { id: "LIB" } },
+    sefaria: { enabled: true },
+  });
+
+  const { callTool } = createToolHarness();
+
+  const result = await callTool(dir, "academic_writer_update_profile", {
+    fieldsJson: {
+      tools: { zotero: { enabled: false, collection: { name: "Ancient" } } },
+    },
+  });
+
+  assert.equal(result.isError, false, result.content[0]?.text ?? "");
+
+  const profile = loadProfile(dir);
+
+  assert.equal(profile?.tools?.zotero?.enabled, false);
+  assert.equal(profile?.tools?.zotero?.collection?.id, "LIB");
+  assert.equal(profile?.tools?.zotero?.collection?.name, "Ancient");
+  assert.equal(profile?.tools?.sefaria?.enabled, true);
 });
 
 test("updateProfile still removes fields set to null", async (t) => {

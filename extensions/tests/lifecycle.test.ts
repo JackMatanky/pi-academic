@@ -1,12 +1,19 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { test, type TestContext } from "vitest";
 
+import { parseProfileMd, serializeProfileMd } from "../lib/profile.js";
 import lifecycle from "../lifecycle/index.js";
 import { repoRoot } from "./helpers.js";
 
@@ -145,4 +152,62 @@ test("on pi missing companions are named in a warning; present companions and om
 
   await omp.fire({ type: "session_start" }, root);
   assert.equal(omp.notices.length, 1);
+});
+
+// Independent, minimal terminal-cell estimator for the alignment contract.
+const WIDE =
+  /[\u1100-\u115F\u2E80-\u303E\u3041-\u33FF\u3400-\u4DBF\u4E00-\u9FFF\uA000-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE10-\uFE19\uFE30-\uFE6F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1F64F}\u{1F900}-\u{1F9FF}\u{20000}-\u{3FFFD}]/u;
+
+const ZERO_WIDTH = /[\p{M}\p{Cf}]/u;
+
+function cells(line: string): number {
+  let width = 0;
+
+  for (const char of line) {
+    if (ZERO_WIDTH.test(char)) continue;
+    width += WIDE.test(char) ? 2 : 1;
+  }
+
+  return width;
+}
+
+test("dashboard rows keep the border aligned for Hebrew, CJK, and emoji content", async (t) => {
+  const root = project(t);
+
+  const profile = parseProfileMd(
+    readFileSync(join(root, ".academic-writer", "profile.md"), "utf8"),
+  );
+
+  profile.fieldOfStudy = "הַמַּדָּע הַקָּרְנִי שֶׁל תוֹרָה שֶׁבְּעַל־פֶה וְהַמַּחְשָׁבָה 📚👨‍👩‍👧 学問";
+  writeFileSync(
+    join(root, ".academic-writer", "profile.md"),
+    serializeProfileMd(profile),
+  );
+
+  const session = setup({ tools: ["subagent", "web_search"] });
+
+  await session.fire({ type: "session_start" }, root);
+  assert.equal(session.notices.length, 1);
+
+  const text = session.notices[0]?.text ?? "";
+
+  const rows = text
+    .split("\n")
+    .filter((line) => /^[║╔╠╚]/.test(line) && /[║╗╣╝]$/.test(line));
+
+  assert.ok(rows.length > 5, "the dashboard box is present");
+  assert.deepEqual(
+    [...new Set(rows.map(cells))],
+    [50],
+    `every box row must be exactly the border width: ${rows.map((row) => `${cells(row)}:${row}`).join("\n")}`,
+  );
+
+  // Truncation must drop whole grapheme clusters: no lone ZWJ or split family
+  // emoji may survive.
+  const withoutFamily = text.replaceAll("👨‍👩‍👧", "");
+
+  assert.ok(
+    !/[\u200d\u{1F469}]/u.test(withoutFamily),
+    "no cluster was split at the truncation boundary",
+  );
 });

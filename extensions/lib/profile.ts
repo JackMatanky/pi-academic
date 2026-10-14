@@ -401,9 +401,39 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
 }
 
 /**
+ * Recursively merges a JSON patch section into `current`: plain objects merge
+ * key-by-key at every level, a `null` patch value deletes the key, and
+ * everything else (scalars, arrays) replaces. Inputs are not mutated.
+ *
+ * @param current - Existing section value from the stored profile.
+ * @param patch - Patched section value.
+ */
+function mergeSection(current: JsonValue, patch: JsonObject): JsonObject {
+  const base = isValid(JsonObjectSchema, current) ? current : {};
+  const merged: JsonObject = { ...base };
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null) {
+      delete merged[key];
+      continue;
+    }
+
+    const existing = merged[key];
+
+    merged[key] =
+      isValid(JsonObjectSchema, value) && isValid(JsonObjectSchema, existing)
+        ? mergeSection(existing, value)
+        : value;
+  }
+
+  return merged;
+}
+
+/**
  * Updates only recognized profile fields, preserving everything else. A `null`
  * value removes a field; the `tools` and `outputFormatPreferences` dictionary
- * sections merge per key instead of being replaced wholesale.
+ * sections merge recursively (nested `null` deletes), so a patch that toggles
+ * one integration never drops the rest.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  * @param patch - Profile fields to replace.
@@ -440,11 +470,7 @@ export async function updateProfile(
         (key === "tools" || key === "outputFormatPreferences") &&
         isValid(JsonObjectSchema, value)
       ) {
-        const current = parts.known[key];
-
-        parts.known[key] = isValid(JsonObjectSchema, current)
-          ? { ...current, ...value }
-          : value;
+        parts.known[key] = mergeSection(parts.known[key] ?? {}, value);
 
         continue;
       }

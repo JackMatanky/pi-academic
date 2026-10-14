@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -114,3 +116,52 @@ test("withFileLock rejects before starting when the signal is already aborted", 
     /stop/,
   );
 });
+
+// Proving the heartbeat requires real elapsed clock time, which fake timers
+// cannot express through withFileLock's internal awaits.
+test(
+  "the lock heartbeat refreshes the lock mtime while held",
+  { timeout: 20_000 },
+  async (t) => {
+    const root = scratch(t);
+    const target = join(root, "state.json");
+    const lock = `${target}.lock`;
+
+    const release = Promise.withResolvers<void>();
+
+    const holding = withFileLock(target, () => release.promise, {
+      timeoutMs: 60_000,
+    });
+
+    const until = async (predicate: () => boolean, timeoutMs: number) => {
+      const deadline = Date.now() + timeoutMs;
+
+      for (;;) {
+        if (predicate()) return true;
+
+        if (Date.now() > deadline) return false;
+
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    };
+
+    try {
+      assert.ok(
+        await until(() => existsSync(join(lock, "owner")), 2_000),
+        "lock was acquired",
+      );
+
+      const atAcquire = statSync(lock).mtimeMs;
+
+      assert.ok(
+        await until(() => statSync(lock).mtimeMs > atAcquire + 3_000, 8_000),
+        "the heartbeat must refresh the lock mtime about every 5s while held",
+      );
+    } finally {
+      release.resolve();
+      await holding;
+    }
+
+    assert.ok(!existsSync(lock), "the lock is removed after release");
+  },
+);
