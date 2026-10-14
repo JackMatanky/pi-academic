@@ -2,7 +2,7 @@
 name: academic-write
 description: "Write a new academic article or frame an initial research question. Use when starting a new article, or when framing a research question before deciding whether to write."
 allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_migrate_article_outline academic_writer_assemble_docx_json academic_writer_diagnose_outline academic_writer_resolve_mcp_tool
-metadata: {author: "Yotam Fromm", version: "0.2.21"}
+metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
 # Academic Writer — Write Article
@@ -48,6 +48,7 @@ Call `academic_writer_read_resource` with `name: run_state_contract`, then creat
 **The `styleFingerprint` is the most critical part of the profile.** Read it carefully and keep it in context throughout the entire pipeline. Every paragraph and every review step checks against it.
 
 Print a summary of the fingerprint to confirm it's loaded:
+
 > "Loaded your style fingerprint:
 >
 > - Tone: [toneAndVoice.descriptors]
@@ -69,7 +70,7 @@ Read the `tools` object from the profile. Throughout this workflow, **only use t
 - **Local Folder Sources** — Check `.academic-writer/sources/` for local PDFs, DOCX, TXT, or MD source files. Call `academic_writer_ingest_sources` to index local files into the source workflow.
 - **Profile / Manual Sources** — If Zotero is disabled and no local files exist, use the profile `sources` array or manual researcher description.
 - **NotebookLM** (`tools.notebooklm.enabled`) — Supplementary context only; not a primary citation source.
-If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
+  If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
 
 ---
 
@@ -90,11 +91,13 @@ Record the run ID — use it for ALL logging from this point forward.
 ### Step 1: Subject & Language
 
 Ask:
+
 > "What should this article be about? Describe your topic, any specific angle you want to take, and any ideas you already have."
 
 Let them speak freely. Ask follow-up questions until you deeply understand the intent.
 
 Then ask:
+
 > "What language will this article be written in? (Hebrew, English, other?)"
 
 Store as `targetLanguage`. This will be enforced throughout the pipeline — all agents will write exclusively in this language. Pass it to every agent from this point forward.
@@ -102,6 +105,7 @@ Store as `targetLanguage`. This will be enforced throughout the pipeline — all
 ### Article Length
 
 After confirming topic and language, ask (using a conversational ask):
+
 > "How long should this article be? (e.g., 1 page / ~400 words, 2 pages / ~800 words, 1,500 words, etc.)"
 
 Record as `targetWordCount`. Use this number when:
@@ -142,6 +146,7 @@ Store the draft text as userDraftText regardless of choice. If they chose expans
 3. **Fallback**: Use profile's `sources` array or manual user input if no Zotero/local sources exist.
 
 Present them clearly and ask:
+
 > "Which of these sources should I focus on? You can name them by number, by title, or say 'all'."
 
 ---
@@ -191,6 +196,7 @@ Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the 
 Update the run state for this phase.
 
 Present the academic agent's output to researcher:
+
 > "Based on your sources, here are possible arguments:
 >
 > 1. [thesis a] — supported by [sources]

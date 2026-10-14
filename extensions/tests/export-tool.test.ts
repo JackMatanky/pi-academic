@@ -21,7 +21,7 @@ import { Type } from "typebox";
 import { test, type TestContext } from "vitest";
 
 import { parseWith, type JsonObject } from "../lib/schema.js";
-import { ToolFailure } from "../pi-academic-writer/tool-kit.js";
+import { ToolFailure } from "../pi-academic-writer/core/tool-kit.js";
 import { createToolHarness, get } from "./helpers.js";
 
 type Params = JsonObject;

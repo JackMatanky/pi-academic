@@ -402,7 +402,8 @@ export function migrateJsonProfile(projectDir: string): ProfileMigrationResult {
 
 /**
  * Updates only recognized profile fields, preserving everything else. A `null`
- * value removes a field.
+ * value removes a field; the `tools` and `outputFormatPreferences` dictionary
+ * sections merge per key instead of being replaced wholesale.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  * @param patch - Profile fields to replace.
@@ -428,8 +429,27 @@ export async function updateProfile(
 
       if (value === undefined) continue;
 
-      if (value === null) delete parts.known[key];
-      else parts.known[key] = value;
+      if (value === null) {
+        delete parts.known[key];
+        continue;
+      }
+
+      // Dictionary sections merge key-by-key, so a patch that toggles one
+      // integration does not silently drop the others.
+      if (
+        (key === "tools" || key === "outputFormatPreferences") &&
+        isValid(JsonObjectSchema, value)
+      ) {
+        const current = parts.known[key];
+
+        parts.known[key] = isValid(JsonObjectSchema, current)
+          ? { ...current, ...value }
+          : value;
+
+        continue;
+      }
+
+      parts.known[key] = value;
     }
 
     if (patch.updatedAt === undefined)

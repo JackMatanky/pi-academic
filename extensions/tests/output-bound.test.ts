@@ -19,7 +19,7 @@ import {
   boundOutput,
   MAX_OUTPUT_BYTES,
   MAX_OUTPUT_LINES,
-} from "../pi-academic-writer/output-bound.js";
+} from "../pi-academic-writer/core/output-bound.js";
 
 function project(t: TestContext, withState: boolean): string {
   const root = mkdtempSync(join(tmpdir(), "aw-bound-"));
@@ -118,4 +118,28 @@ test("output spills stay inside the project when the spill directory is a symlin
 
   assert.match(out, /The full output was not saved/);
   assert.deepEqual(readdirSync(outside), []);
+});
+
+test("a 1 MB payload with no newlines is truncated with metadata, not exploded", (t) => {
+  const root = project(t, true);
+  const text = "x".repeat(1_000_000);
+  const out = boundOutput(root, "tool", text, 2_000);
+
+  assert.match(
+    out,
+    /\[output truncated: showing 1 of 1 lines, \d{1,6} of 1000000 bytes\. Full output: \.academic-writer\/runs\/tool-output\/tool-2000\.txt\./,
+  );
+  const head = out.split("\n\n[output truncated")[0] ?? "";
+
+  assert.ok(Buffer.byteLength(head) <= MAX_OUTPUT_BYTES);
+  assert.equal(
+    readFileSync(join(spillDir(root), "tool-2000.txt"), "utf8"),
+    text,
+  );
+});
+
+test("a fitting payload with no newlines is returned verbatim", (t) => {
+  const text = "x".repeat(MAX_OUTPUT_BYTES - 1);
+
+  assert.equal(boundOutput(project(t, false), "tool", text), text);
 });

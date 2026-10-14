@@ -2,7 +2,7 @@
 name: academic-feedback
 description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and voice-overlay preferences. Use after the researcher reviews an article produced by /skill:academic-write or /skill:academic-edit."
 allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_update_author_voice academic_writer_write_voice_fingerprint
-metadata: {author: "Yotam Fromm", version: "0.2.24"}
+metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
 # Academic Writer — Feedback
@@ -21,13 +21,13 @@ Never summarize feedback without acting on it.
 
 ## Action Categories
 
-| Category | What it touches | Example |
-|----------|-----------------|---------|
-| **A. Article edit** | The finished article file in `articles/` | "Section III repeats Text 360 — consolidate" |
-| **B. Profile update** | `.academic-writer/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences | "Use Chicago author-date for this project" |
-| **C. Pattern reference update** | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps | "An opening phrase appeared too often — lower its cap to 2" |
-| **D. Source registry fix** | `.academic-writer/sources.json` — correct a bibliographic metadata field | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
-| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `.academic-writer/voice/profile.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing" |
+| Category                             | What it touches                                                                                                                                                                                                | Example                                                                          |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **A. Article edit**                  | The finished article file in `articles/`                                                                                                                                                                       | "Section III repeats Text 360 — consolidate"                                     |
+| **B. Profile update**                | `.academic-writer/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences                                                                       | "Use Chicago author-date for this project"                                       |
+| **C. Pattern reference update**      | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps                                                                            | "An opening phrase appeared too often — lower its cap to 2"                      |
+| **D. Source registry fix**           | `.academic-writer/sources.json` — correct a bibliographic metadata field                                                                                                                                       | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
+| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `.academic-writer/voice/profile.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing"                                              |
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
@@ -48,6 +48,7 @@ Capture `targetLanguage` — you'll need it when editing the pattern reference.
 ## Phase 1 — Identify the Article
 
 Ask:
+
 > "Which article would you like to give feedback on?"
 
 Present options from `academic_writer_list_project_files` with `kind: "articles"` (numbered list, most recent first).
@@ -107,12 +108,12 @@ Free text. Classify each mentioned item.
 
 For every feedback item gathered, draft a table showing:
 
-| # | Feedback item | Category | Proposed change |
-|---|---------------|----------|-----------------|
-| 1 | "'I suggest that' appears 12 times" | C — Pattern cap | Lower cap in anti-ai-patterns-english.md from 3 to 2 |
-| 2 | "Cohen 2019 should be 2018" | D — Source registry | Update sources.json entry for Cohen to year=2018, confidence=high |
-| 3 | "Paragraph 4 of Section II is way too long" | A — Article edit | Split the paragraph at the second sentence break |
-| 4 | "I never want em-dashes" | E — Preference / known issue | Add to the .academic-writer/voice/profile.md overlay + feedback log |
+| #   | Feedback item                               | Category                     | Proposed change                                                     |
+| --- | ------------------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| 1   | "'I suggest that' appears 12 times"         | C — Pattern cap              | Lower cap in anti-ai-patterns-english.md from 3 to 2                |
+| 2   | "Cohen 2019 should be 2018"                 | D — Source registry          | Update sources.json entry for Cohen to year=2018, confidence=high   |
+| 3   | "Paragraph 4 of Section II is way too long" | A — Article edit             | Split the paragraph at the second sentence break                    |
+| 4   | "I never want em-dashes"                    | E — Preference / known issue | Add to the .academic-writer/voice/profile.md overlay + feedback log |
 
 Show this table to the researcher and ask, allowing multiple selections:
 

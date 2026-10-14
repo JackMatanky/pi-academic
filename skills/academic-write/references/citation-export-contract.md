@@ -26,7 +26,10 @@ Literal-mode DOCX JSON schema:
         {
           "text": "Paragraph body with no inline parenthetical citation text.",
           "footnotes": [
-            { "after": "unique substring in text", "text": "Author, Title (Pub, 2024), p. 42." }
+            {
+              "after": "unique substring in text",
+              "text": "Author, Title (Pub, 2024), p. 42."
+            }
           ]
         }
       ]

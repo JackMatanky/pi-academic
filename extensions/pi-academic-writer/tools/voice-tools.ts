@@ -2,8 +2,8 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { Type } from "typebox";
 
-import { writeProjectTextFile } from "../project-files.js";
-import { fail, registerTool } from "../tool-kit.js";
+import { writeProjectTextFile } from "../core/project-files.js";
+import { registerTool } from "../core/tool-kit.js";
 
 /**
  * Registers scoped voice writer tools (audit, author voice, interview, and
@@ -66,6 +66,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
     parameters: Type.Object({
       sessionId: Type.String({
         minLength: 1,
+        pattern: "^[a-zA-Z0-9_-]+$",
         description: "Session identifier, e.g. session-3.",
       }),
       content: Type.String({
@@ -73,13 +74,6 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
       }),
     }),
     run: ({ sessionId, content }, { cwd }) => {
-      if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
-        return fail(
-          "Interview session write failed: sessionId must match ^[a-zA-Z0-9_-]+$",
-          { ok: false },
-        );
-      }
-
       const result = writeProjectTextFile(
         cwd,
         `.academic-writer/voice/interview/${sessionId}.md`,

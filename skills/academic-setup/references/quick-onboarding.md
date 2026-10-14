@@ -2,7 +2,7 @@
 
 # Academic Writer Setup
 
-> **Do NOT use this skill** for source indexing or full style fingerprinting — use `/skill:academic-setup` instead. This is the *quick* setup; init is the deep setup.
+> **Do NOT use this skill** for source indexing or full style fingerprinting — use `/skill:academic-setup` instead. This is the _quick_ setup; init is the deep setup.
 
 Quick onboarding wizard. Creates the researcher profile, detects integrations, and optionally fingerprints writing style. For deeper initialization (full 25-dimension style analysis, source indexing), run `/skill:academic-setup`.
 
@@ -29,6 +29,7 @@ Call `academic_writer_migrate_profile`, then check for existing profile by calli
 If it returns `ok: true`, load and show current settings, then:
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "A profile already exists. What would you like to do?"
 >
 > 1. **Update existing profile** — Keep existing data, modify only selected fields.
@@ -48,7 +49,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ⚠ Current profile will be replaced
 >    → Walk through all steps again
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 ---
@@ -72,13 +73,15 @@ MongoDB Agent Skills is auto-configured silently — do not show it to the user.
 ### Field of Study
 
 Ask the researcher, as a free-text prompt (no fixed options — record whatever they say):
+
 > "What is your field of study and area of specialization?"
 
-> "The more specific, the better. Examples: *Early Modern Jewish Philosophy*, *Talmudic Literature*, *Biblical Studies — Pentateuch*"
+> "The more specific, the better. Examples: _Early Modern Jewish Philosophy_, _Talmudic Literature_, _Biblical Studies — Pentateuch_"
 
 ### Article Language
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "What language will you write your articles in?"
 >
 > 1. **Hebrew** — RTL, David font, inline-parenthetical citations.
@@ -109,12 +112,13 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    → Type the language name
 >    → RTL/LTR auto-detected
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 ### Citation Style
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Which citation style do you use?"
 >
 > 1. **Inline Parenthetical (Recommended for Hebrew)** — (Author, Title, Page) in running text.
@@ -163,6 +167,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 ### Tool Selection
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option; multiple selections allowed):
+
 > "Which integrations would you like to enable?"
 >
 > 1. **Zotero** — ✓ Detected / ✗ Not found
@@ -201,7 +206,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Config: standard MCP config, no secrets in profile
 >    Needs: settings.toolPrefix="none" + directTools=["get_text", "search"]
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
 
 Pre-check tools that were detected. MongoDB Agent Skills is silently included always.
@@ -221,7 +226,19 @@ If Zotero is selected but not detected:
         "command": "zotero-mcp",
         "args": ["serve"],
         "env": { "ZOTERO_LOCAL": "true" },
-        "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
+        "directTools": [
+          "zotero_get_recent",
+          "zotero_get_collections",
+          "zotero_get_collection_items",
+          "zotero_get_item_fulltext",
+          "zotero_get_item_metadata",
+          "zotero_get_pdf_outline",
+          "zotero_read_pdf_pages",
+          "zotero_search_items",
+          "zotero_semantic_search",
+          "zotero_get_search_database_status",
+          "zotero_update_search_database"
+        ]
       }
     }
   }
@@ -243,7 +260,14 @@ If NotebookLM is selected but `notebook_list()` is unavailable:
     "mcpServers": {
       "notebooklm-mcp": {
         "command": "notebooklm-mcp",
-        "directTools": ["notebook_list", "notebook_query", "notebook_create", "source_add", "studio_create", "studio_status"]
+        "directTools": [
+          "notebook_list",
+          "notebook_query",
+          "notebook_create",
+          "source_add",
+          "studio_create",
+          "studio_status"
+        ]
       }
     }
   }
@@ -274,6 +298,7 @@ Check for past articles:
 Call `academic_writer_list_project_files` with `kind: "past_articles"` and count the returned `files`.
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Found N papers in past-articles/. Analyze them for style fingerprinting?"
 >
 > 1. **Yes, analyze my writing style (Recommended)** — Extracts your voice across 25 dimensions so articles sound like you.
@@ -299,7 +324,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    → Add papers to past-articles/ anytime
 >    → Re-run: /skill:academic-setup
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If no files found, show only the "Skip" option with instructions to add papers.
@@ -310,23 +335,26 @@ If "Yes": analyze across all 25 dimensions (sentence level, vocabulary, paragrap
 
 Use the Write tool to create `.academic-writer/profile.md`:
 
-```markdown
+`````markdown
 # Academic Writer Profile
 
 ---
+
 fieldOfStudy: FIELD
 citationStyle: SELECTED_CITATION_STYLE
 targetLanguage: Hebrew
 abstractLanguages:
-  - Hebrew
-analyzedArticles: []
-createdAt: ISO_TIMESTAMP
-updatedAt: ISO_TIMESTAMP
+
+- Hebrew
+  analyzedArticles: []
+  createdAt: ISO_TIMESTAMP
+  updatedAt: ISO_TIMESTAMP
+
 ---
 
 ## Tools
 
-```json
+````json
 {
   "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "optional Zotero collection key", "name": "optional display name" } },
   "notebooklm": { "enabled": false, "mode": "mcp-config", "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" } }
@@ -350,7 +378,8 @@ null
 ```json
 []
 ` ` `
-```
+````
+`````
 
 (Replace ` ` ` with actual backtick triplets when writing the file.)
 
@@ -359,6 +388,7 @@ null
 ## Completion
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Setup complete. What would you like to do next?"
 >
 > 1. **Write my first article** — /skill:academic-write. Start the writing pipeline now.
@@ -389,15 +419,15 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      /skill:academic-health  ← check
 >      /skill:academic-setup   ← change integrations
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Show summary table:
 
-> | Setting | Value |
-> |---------|-------|
-> | Field | [field] |
-> | Language | [language] |
-> | Citation style | [style] |
-> | Tools enabled | [list] |
+> | Setting           | Value                  |
+> | ----------------- | ---------------------- |
+> | Field             | [field]                |
+> | Language          | [language]             |
+> | Citation style    | [style]                |
+> | Tools enabled     | [list]                 |
 > | Style fingerprint | ✓ Analyzed / — Skipped |

@@ -12,9 +12,19 @@ import {
 } from "../../lib/fs-safe.js";
 import { loadProfile } from "../../lib/profile.js";
 import { stringEnum } from "../../lib/schema.js";
-import { ArticleFormatSchema } from "../article.js";
-import { auditCitations } from "../citation-audit.js";
-import { selectPdfEngine } from "../commands.js";
+import { ArticleFormatSchema } from "../article/article.js";
+import { assembleDocxJson } from "../article/docx-assembly.js";
+import { generateDocx } from "../article/docx-generator.js";
+import { auditCitations } from "../citations/citation-audit.js";
+import { selectPdfEngine } from "../core/commands.js";
+import { runPandoc } from "../core/pandoc.js";
+import { citationAssetPaths } from "../core/project-files.js";
+import {
+  fail,
+  registerTool,
+  type ToolContext,
+  type ToolOutput,
+} from "../core/tool-kit.js";
 import {
   checkStylePackage,
   installStarterPackage,
@@ -22,18 +32,8 @@ import {
   renderDocumentStyle,
   withScratchDir,
   type RenderedStyle,
-} from "../document-style.js";
-import { assembleDocxJson } from "../docx-assembly.js";
-import { cleanRtlText, generateDocx } from "../docx-generator.js";
-import { runPandoc } from "../pandoc.js";
-import { citationAssetPaths } from "../project-files.js";
-import { STYLE_FORMATS, type StyleFormat } from "../style-design.js";
-import {
-  fail,
-  registerTool,
-  type ToolContext,
-  type ToolOutput,
-} from "../tool-kit.js";
+} from "../styling/document-style.js";
+import { STYLE_FORMATS, type StyleFormat } from "../styling/style-design.js";
 
 /**
  * Per-format style details returned by `academic_writer_export_article`.
@@ -342,7 +342,7 @@ async function runExport(
 }
 
 /**
- * Registers export, DOCX generation, style package, and typography tools.
+ * Registers export, DOCX generation, and style package tools.
  *
  * @param pi - Pi extension API used to register tools.
  */
@@ -517,22 +517,6 @@ export function registerExportTools(pi: ExtensionAPI): void {
       ].join("\n");
 
       return check.ok ? { text, details: check } : fail(text, check);
-    },
-  });
-
-  registerTool(pi, {
-    name: "academic_writer_fix_typography",
-    effect: "read",
-    label: "Academic Writer Fix Typography",
-    description:
-      "Apply deterministic typography cleanup to a paragraph: em dashes become spaced hyphens, straight quotes around Hebrew text become gereshayim (English quotes are left alone), and stray directional marks and orphan leading punctuation are removed.",
-    parameters: Type.Object({
-      text: Type.String({ description: "Paragraph text to clean." }),
-    }),
-    run: ({ text }) => {
-      const fixed = cleanRtlText(text);
-
-      return { text: fixed, details: { ok: true, changed: fixed !== text } };
     },
   });
 }

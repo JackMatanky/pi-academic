@@ -2,7 +2,7 @@
 name: academic-review
 description: "Review a completed academic article, or run a mechanical proofread. Use when requesting a quality scorecard/reverse-outline review or a mechanical proofread with a change report."
 allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_fix_typography academic_writer_lint_prose academic_writer_proofread academic_writer_reverse_outline
-metadata: {author: "Yotam Fromm", version: "0.2.24"}
+metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
 # Academic Writer — Article Review
@@ -29,6 +29,7 @@ Call `academic_writer_read_resource` with `name: run_state_contract`, then creat
 ## Input
 
 When run standalone, ask:
+
 > "Which article would you like to review? Provide the path to a markdown (.md) file in `articles/`."
 
 List available articles by calling `academic_writer_list_project_files` with `kind: "articles"`.
@@ -123,11 +124,12 @@ After the scorecard, list specific issues found:
 If the score is below 40, warn the researcher:
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "The article scored NN/60 on self-review. Some issues were found. How would you like to proceed?"
 >
 > 1. **Continue to DOCX output** — Generate the document as-is. You can edit later.
 > 2. **Show me the issues** — Review the detailed findings before proceeding.
 > 3. **Run edits first** — Address the issues before generating the final document.
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+>    Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If score is 40+, show the scorecard and continue to DOCX output automatically.

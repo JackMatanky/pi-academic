@@ -66,7 +66,19 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
       "command": "zotero-mcp",
       "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
-      "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
+      "directTools": [
+        "zotero_get_recent",
+        "zotero_get_collections",
+        "zotero_get_collection_items",
+        "zotero_get_item_fulltext",
+        "zotero_get_item_metadata",
+        "zotero_get_pdf_outline",
+        "zotero_read_pdf_pages",
+        "zotero_search_items",
+        "zotero_semantic_search",
+        "zotero_get_search_database_status",
+        "zotero_update_search_database"
+      ]
     }
   }
 }

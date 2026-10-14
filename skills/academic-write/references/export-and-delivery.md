@@ -66,6 +66,7 @@ Call `academic_writer_export_article` with `article: MD_PATH`, the active `citat
 Warn Hebrew users that this path does not set right-to-left document direction unless their CSL/template handles it.
 
 Report to researcher:
+
 > "Done! Your article has been saved to:
 >
 > - `articles/FILEBASE.docx` (formatted document)

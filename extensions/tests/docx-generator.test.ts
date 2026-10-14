@@ -17,15 +17,15 @@ import { test, type TestContext } from "vitest";
 import {
   parseArticle,
   type ArticleData,
-} from "../pi-academic-writer/article.js";
-import { assembleDocxJson } from "../pi-academic-writer/docx-assembly.js";
+} from "../pi-academic-writer/article/article.js";
+import { assembleDocxJson } from "../pi-academic-writer/article/docx-assembly.js";
 import {
   articleMarkdown,
-  cleanRtlText,
   escapeMarkdown,
   generateDocx,
   formatDesign,
-} from "../pi-academic-writer/docx-generator.js";
+} from "../pi-academic-writer/article/docx-generator.js";
+import { cleanRtlText } from "../pi-academic-writer/prose/typography.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 
@@ -137,17 +137,17 @@ test("Hebrew typography cleanup applies to RTL text only and keeps hyphens", () 
 
 test("malformed article payloads are rejected with the offending path", () => {
   assert.throws(() => parseArticle({}), /sections/);
-  assert.throws(() => parseArticle({ sections: [{}] }), /sections\[0\]/);
+  assert.throws(() => parseArticle({ sections: [{}] }), /sections\/0/);
   assert.throws(
     () => parseArticle({ sections: [{ paragraphs: [3] }] }),
-    /sections\[0\]\.paragraphs\[0\]/,
+    /sections\/0\/paragraphs\/0/,
   );
   assert.throws(
     () =>
       parseArticle({
         sections: [{ paragraphs: [{ text: "t", footnotes: [{ after: 1 }] }] }],
       }),
-    /paragraphs\[0\]/,
+    /paragraphs\/0/,
   );
 });
 
@@ -309,7 +309,7 @@ test(
     const root = project(t);
 
     const { installStarterPackage } =
-      await import("../pi-academic-writer/document-style.js");
+      await import("../pi-academic-writer/styling/document-style.js");
 
     const installed = await installStarterPackage(root);
     writeFileSync(

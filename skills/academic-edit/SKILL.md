@@ -2,7 +2,7 @@
 name: academic-edit
 description: "Edit a drafted article, from one narrowly scoped section to multiple sections or structural revisions. Use when revising, correcting, or restructuring existing article text."
 allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_assemble_docx_json academic_writer_diagnose_outline academic_writer_lint_prose
-metadata: {author: "Yotam Fromm", version: "0.2.21"}
+metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
 # Academic Writer — Edit Article
@@ -42,6 +42,7 @@ Print fingerprint summary to confirm it's loaded.
 ## Load the Article
 
 Ask the researcher:
+
 > "Which article do you want to edit? You can:
 >
 > - Point me to a file (e.g., `~/Desktop/article.docx` or a markdown file)
@@ -72,6 +73,7 @@ Dispatch only affected section IDs with direct point children (nested sections a
 ## Mandatory Edit Router (Step 0)
 
 Before choosing an edit mode, ask the researcher:
+
 > "Are you editing the **whole article** or **one specific section**?"
 
 1. **If Whole Article**: Proceed to "Understand the Edit Request" across all sections.
@@ -105,6 +107,7 @@ cat articles/<slug>.sources.json 2>/dev/null || cat .academic-writer/sources.jso
 ## Understand the Edit Request
 
 Ask:
+
 > "What would you like to change? You can ask me to:
 >
 > - **Revise a section** — rewrite or restructure a specific section
@@ -124,7 +127,7 @@ When auditing or revising an existing draft:
 1. **Preserve Paragraphs by Default**: Treat original paragraphs as valid prose unless an edit or audit failure requires changes.
 2. **Spawn Editor per Paragraph**: Run an `editor` subagent in audit mode (`mode: "audit"`) on each paragraph to verify citations and anti-AI/quality guidelines.
 3. **Selective Rewriting**: Keep original paragraph text intact if the editor returns `verdict: PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
-For an English prose-style cleanup request, call `academic_writer_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
+   For an English prose-style cleanup request, call `academic_writer_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
 
 ---
 
@@ -158,7 +161,7 @@ Re-read the `styleFingerprint`. For each paragraph being adjusted:
 2. Apply the requested tone change while keeping fingerprint compliance
 3. Use `representativeExcerpts` as style targets
 4. Run the Hebrew grammar check when Hebrew text changed.
-Before dispatching, read the `dispatch_contract` resource (`academic_writer_read_resource`) and pass its `auditor_result` schema as `outputSchema` (on omp use `schemaMode: "strict"`).
+   Before dispatching, read the `dispatch_contract` resource (`academic_writer_read_resource`) and pass its `auditor_result` schema as `outputSchema` (on omp use `schemaMode: "strict"`).
 
 5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `editor` subagent in audit mode (`mode: "audit"`)** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the editor's structured result — exactly as Modes A/B/E do. If the editor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
 
@@ -210,13 +213,17 @@ Present revision notes to the researcher for approval before applying. On approv
 After edits are applied:
 
 1. Show a diff summary:
+
    > **Changes made:**
+   >
    > - Section 2, paragraph 3: [what changed and why]
    > - Section 4: [restructured / rewritten / expanded]
    > - Citations: [N] verified, [N] corrected, [N] added
 
 2. Ask:
+
    > "Would you like me to:
+   >
    > - Export the revised article as .docx?
    > - Make additional changes?
    > - Run a full review on the revised version?"

@@ -118,32 +118,78 @@ function unanalyzedPastArticleCount(
 }
 
 /**
+ * East Asian wide, fullwidth, and emoji-presentation characters, which occupy
+ * two terminal cells.
+ */
+const WIDE_CHAR =
+  /[\u1100-\u115F\u2E80-\u303E\u3041-\u33FF\u3400-\u4DBF\u4E00-\u9FFF\uA000-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE10-\uFE19\uFE30-\uFE6F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1F64F}\u{1F900}-\u{1F9FF}\u{20000}-\u{3FFFD}]/u;
+
+const COMBINING_CHAR = /\p{M}/u;
+
+/**
+ * Truncates `text` to at most `width` terminal cells at code-point boundaries
+ * (never mid-grapheme, never mid-surrogate) and pads with spaces to exactly
+ * `width` cells, so box borders stay aligned for any script.
+ *
+ * @param text - Row content between the borders.
+ * @param width - Terminal cells available.
+ */
+function fitCell(text: string, width: number): string {
+  let out = "";
+  let used = 0;
+
+  for (const char of text) {
+    const charWidth = COMBINING_CHAR.test(char)
+      ? 0
+      : WIDE_CHAR.test(char)
+        ? 2
+        : 1;
+
+    if (used + charWidth > width) break;
+
+    out += char;
+    used += charWidth;
+  }
+
+  return out + " ".repeat(width - used);
+}
+
+/**
+ * Interior width, in terminal cells, between the dashboard's `║` borders.
+ */
+const DASHBOARD_INNER = 48;
+
+/**
  * Builds the fixed-width session-start dashboard shown to researchers.
  *
  * @param projectDir - Absolute project directory used for project-local state.
- * @param profile - Parsed profile data used by the caller.
+ * @param profile - Parsed profile data used for the caller.
  */
 function buildDashboardLines(
   projectDir: string,
   profile: ProfileData,
 ): string[] {
+  const border = (left: string, right: string): string =>
+    `${left}${"═".repeat(DASHBOARD_INNER)}${right}`;
+
+  const row = (text: string): string => `║${fitCell(text, DASHBOARD_INNER)}║`;
+
   const lines: string[] = [
     "",
-    "╔══════════════════════════════════════════════════╗",
-    "║         ACADEMIC WRITER — SESSION START          ║",
-    "╠══════════════════════════════════════════════════╣",
-    `║  Field: ${(profile.fieldOfStudy ?? "Not set").padEnd(38)}║`,
-    `║  Language: ${(profile.targetLanguage ?? "Not set").padEnd(36)}║`,
-    `║  Citation: ${(profile.citationStyle ?? "Not set").padEnd(36)}║`,
-    `║  Fingerprint: ${(profile.styleFingerprint ? "Loaded" : "Missing").padEnd(33)}║`,
-    `║  Articles: ${String(countFiles(projectDir, "articles", isDocx)).padEnd(36)}║`,
-    `║  Sources indexed: ${String(profile.sources?.length ?? 0).padEnd(29)}║`,
+    border("╔", "╗"),
+    row("         ACADEMIC WRITER — SESSION START"),
+    border("╠", "╣"),
+    row(`  Field: ${profile.fieldOfStudy ?? "Not set"}`),
+    row(`  Language: ${profile.targetLanguage ?? "Not set"}`),
+    row(`  Citation: ${profile.citationStyle ?? "Not set"}`),
+    row(`  Fingerprint: ${profile.styleFingerprint ? "Loaded" : "Missing"}`),
+    row(`  Articles: ${String(countFiles(projectDir, "articles", isDocx))}`),
+    row(`  Sources indexed: ${String(profile.sources?.length ?? 0)}`),
   ];
 
   const tools = enabledToolNames(profile);
-  lines.push(
-    `║  Tools: ${(tools.length > 0 ? tools.join(", ") : "None").substring(0, 38).padEnd(38)}║`,
-  );
+
+  lines.push(row(`  Tools: ${tools.length > 0 ? tools.join(", ") : "None"}`));
 
   if (profile.tools?.zotero?.enabled && profile.tools.zotero.collection) {
     const scope =
@@ -151,7 +197,7 @@ function buildDashboardLines(
       profile.tools.zotero.collection.key ??
       "configured";
 
-    lines.push(`║  Zotero collection: ${scope.substring(0, 29).padEnd(29)}║`);
+    lines.push(row(`  Zotero collection: ${scope}`));
   }
 
   if (profile.tools?.notebooklm?.enabled && profile.tools.notebooklm.notebook) {
@@ -160,18 +206,17 @@ function buildDashboardLines(
       profile.tools.notebooklm.notebook.id ??
       "configured";
 
-    lines.push(`║  NotebookLM: ${scope.substring(0, 36).padEnd(36)}║`);
+    lines.push(row(`  NotebookLM: ${scope}`));
   }
 
   const runs = runSummary(projectDir);
-  lines.push(`║  Active runs: ${String(runs.active).padEnd(32)}║`);
 
-  if (runs.last)
-    lines.push(`║  Last run: ${runs.last.substring(0, 36).padEnd(36)}║`);
+  lines.push(row(`  Active runs: ${String(runs.active)}`));
 
-  if (existsSync(join(projectDir, ".academic-writer", "research-brief.md"))) {
-    lines.push("║  Research brief: Available                       ║");
-  }
+  if (runs.last) lines.push(row(`  Last run: ${runs.last}`));
+
+  if (existsSync(join(projectDir, ".academic-writer", "research-brief.md")))
+    lines.push(row("  Research brief: Available"));
 
   const unanalyzed = unanalyzedPastArticleCount(
     projectDir,
@@ -179,16 +224,16 @@ function buildDashboardLines(
   );
 
   if (unanalyzed > 0) {
-    lines.push(`║  New past articles: ${String(unanalyzed).padEnd(27)}║`);
-    lines.push("║  → Run /skill:academic-voice to update style    ║");
+    lines.push(row(`  New past articles: ${String(unanalyzed)}`));
+    lines.push(row("  → Run /skill:academic-voice to update style"));
   }
 
-  lines.push("╠══════════════════════════════════════════════════╣");
-  lines.push("║  /skill:academic-write          — Write / frame  ║");
-  lines.push("║  /skill:academic-edit           — Edit articles  ║");
-  lines.push("║  /skill:academic-research       — Research topic ║");
-  lines.push("║  /skill:academic-health         — Check project  ║");
-  lines.push("╚══════════════════════════════════════════════════╝");
+  lines.push(border("╠", "╣"));
+  lines.push(row("  /skill:academic-write          — Write / frame"));
+  lines.push(row("  /skill:academic-edit           — Edit articles"));
+  lines.push(row("  /skill:academic-research       — Research topic"));
+  lines.push(row("  /skill:academic-health         — Check project"));
+  lines.push(border("╚", "╝"));
 
   return lines;
 }

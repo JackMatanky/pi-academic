@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
-import { diagnoseChapterCoverage } from "../pi-academic-writer/coverage.js";
+import { diagnoseChapterCoverage } from "../pi-academic-writer/research/coverage.js";
 
 const covered = (chapter: number, ids: string[]) => ({
   chapter,

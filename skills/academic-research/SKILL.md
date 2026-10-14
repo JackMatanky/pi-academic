@@ -2,7 +2,7 @@
 name: academic-research
 description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Use when investigating a topic or fact-checking before writing."
 allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool academic_writer_read_resource zotero_search_items zotero_semantic_search notebook_list notebook_query
-metadata: {author: "Yotam Fromm", version: "0.2.24"}
+metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
 # Academic Writer — Research
@@ -28,15 +28,16 @@ Use the profile `targetLanguage` as the dispatch value.
 ## Understand the Question
 
 If the researcher hasn't stated their question yet, ask:
+
 > "What would you like to research? You can ask a direct question, explore a topic, compare authors, search for quotes, or browse your sources."
 
 Accept any of these forms:
 
-- A direct question: *"What does Foucault say about power in Discipline and Punish?"*
-- A topic exploration: *"Show me everything I have on settler colonialism"*
-- A comparison: *"Compare how Author A and Author B treat the concept of sovereignty"*
-- A source lookup: *"What sources do I have about Ottoman Palestine?"*
-- A quote search: *"Find the exact quote where Ben-Gurion talks about..."*
+- A direct question: _"What does Foucault say about power in Discipline and Punish?"_
+- A topic exploration: _"Show me everything I have on settler colonialism"_
+- A comparison: _"Compare how Author A and Author B treat the concept of sovereignty"_
+- A source lookup: _"What sources do I have about Ottoman Palestine?"_
+- A quote search: _"Find the exact quote where Ben-Gurion talks about..."_
 
 ---
 
@@ -79,8 +80,8 @@ Once independent tool calls and dispatched agents return, **merge results** by d
 >
 > **Sources:**
 >
-> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via Zotero or local source)*
-> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via local source; page may need manual verification)*
+> - [Author], _[Work]_, p. [page] — "[relevant quote]" _(via Zotero or local source)_
+> - [Author], _[Work]_, p. [page] — "[relevant quote]" _(via local source; page may need manual verification)_
 >
 > **Context:** [Brief explanation of how these sources relate]
 
@@ -104,16 +105,17 @@ Once independent tool calls and dispatched agents return, **merge results** by d
 
 > **[Author A] vs. [Author B] on [concept]:**
 >
-> | Aspect | Author A | Author B |
-> |--------|----------|----------|
-> | ... | ... (with citations) | ... (with citations) |
+> | Aspect | Author A             | Author B             |
+> | ------ | -------------------- | -------------------- |
+> | ...    | ... (with citations) | ... (with citations) |
 >
 > **Key differences:** ...
 > **Points of agreement:** ...
 
 ### For quote searches
 
-> **Found in [Author], *[Work]*, p. [page]:**
+> **Found in [Author], _[Work]_, p. [page]:**
+>
 > > "[exact quote]"
 >
 > **Context:** [surrounding text / chapter / argument]
@@ -133,6 +135,7 @@ Display source-backed findings as compact **evidence cards** before asking wheth
 ## Follow-up
 
 After presenting findings, ask:
+
 > "Would you like me to:
 >
 > - Dig deeper into any of these sources?

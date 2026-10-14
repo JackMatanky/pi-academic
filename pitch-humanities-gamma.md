@@ -51,14 +51,14 @@ If regular AI chatbots (like ChatGPT or Google Gemini) are the equivalent of ask
 
 **What makes Claude Code different from a web chatbot:**
 
-| Web Chatbot | Claude Code |
-|-------------|-------------|
-| No access to your files | Reads your research library directly |
+| Web Chatbot                                | Claude Code                               |
+| ------------------------------------------ | ----------------------------------------- |
+| No access to your files                    | Reads your research library directly      |
 | Forgets everything after each conversation | Maintains a persistent researcher profile |
-| Generic text with no citations | Writes only from verified sources |
-| No document output | Produces formatted .docx files |
-| Can't learn your style | Learns from your published articles |
-| One question, one answer | Runs multi-step workflows autonomously |
+| Generic text with no citations             | Writes only from verified sources         |
+| No document output                         | Produces formatted .docx files            |
+| Can't learn your style                     | Learns from your published articles       |
+| One question, one answer                   | Runs multi-step workflows autonomously    |
 
 The critical point: Claude Code can execute **workflows** — sequences of tasks that would take a researcher hours — in a structured, verifiable, and auditable way.
 
@@ -73,6 +73,7 @@ A plugin is like a professional extension. In the same way that a word processor
 **The Academic Writer plugin** was built specifically for humanities researchers. It does not add vague "AI writing help." It adds a complete, structured pipeline for producing peer-review-quality academic articles from your existing research library.
 
 The plugin understands:
+
 - The difference between a claim and a verified citation
 - What academic register sounds like in Hebrew and English
 - How to structure a humanities argument (introduction → claim → evidence → counter-argument → synthesis → conclusion)
@@ -137,27 +138,35 @@ This is what separates Academic Writer from any generic AI writing tool.
 Every single paragraph written by the AI passes through **eight sequential quality checks** before it reaches you:
 
 ### 1. Source Search (Mandatory)
+
 Before writing a single sentence, the AI must first query your research library and find relevant passages. **No paragraph may be written without a search.** This prevents the AI from inventing content.
 
 ### 2. Style Fingerprint Compliance
+
 The AI checks the paragraph against your personal writing style — learned from your past published articles. Sentence length, argumentative rhythm, vocabulary level, use of qualifiers — all matched to your voice.
 
 ### 3. Grammar and Language Check
+
 In Hebrew mode: spelling, vowelization conventions, punctuation according to the Academy of the Hebrew Language standards. In English: standard academic grammar.
 
 ### 4. Academic Register and Linking Words
+
 Vocabulary is upgraded to appropriate academic register. Transitions are drawn from a curated list of Hebrew academic linking words to ensure the prose sounds like scholarship, not conversation.
 
 ### 5. Language Purity
+
 Foreign terms are identified and either transliterated or moved to footnotes. No language mixing in the body text — the article reads as pure Hebrew (or English) scholarship.
 
 ### 6. Anti-AI Detection
+
 The AI checks its own output against a list of patterns that make academic writing sound "generated" — formulaic openers, inflated language, hollow transitions, predictable sentence structures. If detected, the paragraph is rewritten.
 
 ### 7. Repetition Check
+
 The entire article-in-progress is scanned for repeated arguments, repeated phrases, and redundant sentences. Each paragraph must add new content.
 
 ### 8. Citation Audit (Hard Gate)
+
 Every citation in the paragraph is verified against the actual sources. If a quote cannot be found in the library with a confirmed page number, it is **removed** — not modified, not generalized. Removed. The article never reaches you with an unverified citation.
 
 ---
@@ -180,6 +189,7 @@ You upload your sources once. After that:
 In sciences, most sources are structured data. In humanities, sources are texts — dense, nuanced, full of meaning in specific word choices. Candlekeep preserves the full text of your sources, which means the AI can find not just the topic of a passage but its precise formulation, its author's rhetoric, and its page number.
 
 A typical humanities researcher's library in Candlekeep might include:
+
 - Scanned pages from medieval manuscripts
 - Hebrew-language monographs
 - Archival documents and primary sources
@@ -188,7 +198,7 @@ A typical humanities researcher's library in Candlekeep might include:
 
 ---
 
-## Style Learning: The AI Learns *Your* Voice
+## Style Learning: The AI Learns _Your_ Voice
 
 One of the most important capabilities of Academic Writer is its ability to learn and replicate your personal academic voice.
 
@@ -239,20 +249,21 @@ A background pass that runs when you use the `/learn` command. It reads your new
 
 Academic Writer is not just an article-writing tool. It is a complete research support environment. Here is the full set of commands available:
 
-| Command | What it does |
-|---------|-------------|
-| `/academic-writer:write` | Write a full article from thesis to .docx |
-| `/academic-writer:research` | Ask questions, find passages, compare authors across your library |
-| `/academic-writer:ideate` | Brainstorm research questions with 5W1H analysis and gap detection |
-| `/academic-writer:edit` | Revise a completed article — restructure arguments, fix citations, adjust tone |
-| `/academic-writer:edit-section` | Quick surgical edit of a single section |
-| `/academic-writer:learn` | Scan new past articles and update your style fingerprint |
-| `/academic-writer:review` | Score a draft article on 6 academic quality dimensions |
-| `/academic-writer:present` | Generate conference outlines, journal submission abstracts, book chapter proposals |
-| `/academic-writer:health` | Check that all integrations are working correctly |
-| `/academic-writer:init` | First-time setup — profile, style analysis, source indexing |
+| Command                         | What it does                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| `/academic-writer:write`        | Write a full article from thesis to .docx                                          |
+| `/academic-writer:research`     | Ask questions, find passages, compare authors across your library                  |
+| `/academic-writer:ideate`       | Brainstorm research questions with 5W1H analysis and gap detection                 |
+| `/academic-writer:edit`         | Revise a completed article — restructure arguments, fix citations, adjust tone     |
+| `/academic-writer:edit-section` | Quick surgical edit of a single section                                            |
+| `/academic-writer:learn`        | Scan new past articles and update your style fingerprint                           |
+| `/academic-writer:review`       | Score a draft article on 6 academic quality dimensions                             |
+| `/academic-writer:present`      | Generate conference outlines, journal submission abstracts, book chapter proposals |
+| `/academic-writer:health`       | Check that all integrations are working correctly                                  |
+| `/academic-writer:init`         | First-time setup — profile, style analysis, source indexing                        |
 
 A scholar might use these tools at every stage of the research cycle:
+
 - **Ideation** → `/ideate`
 - **Source exploration** → `/research`
 - **Writing** → `/write`
@@ -270,6 +281,7 @@ Let us be specific about what this means for a working humanities scholar at a u
 A typical research article in the humanities takes **6–18 months** from outline to submission. The writing phase alone — not counting research — often takes 2–4 months of intensive work. During that time, the scholar is largely isolated in the writing process, with no feedback mechanism until a colleague or advisor reads a draft.
 
 The bottleneck is not intelligence or ideas. It is the **labor of execution**:
+
 - Finding the exact quote and page number in 400-page books
 - Checking that every citation actually says what you claim
 - Maintaining stylistic consistency across 20 pages of dense prose
@@ -300,6 +312,7 @@ Humanities scholarship has unique characteristics that make AI assistance both h
 In STEM fields, verification is often computational — a formula is right or wrong, an experiment replicates or it does not. In humanities, verification is textual: a claim must be traced to a precise formulation in a specific source. This makes citation accuracy far more labor-intensive in humanities than in sciences.
 
 Furthermore, humanities scholars typically work in languages with complex conventions. Hebrew scholarship in particular demands:
+
 - Right-to-left text management
 - Specific citation formats for rabbinic and medieval sources
 - Academic register distinct from modern journalistic Hebrew
@@ -308,6 +321,7 @@ Furthermore, humanities scholars typically work in languages with complex conven
 **The opportunity:**
 
 These are exactly the tasks that AI, when properly designed, can handle far better than any previous tool. A properly built AI can:
+
 - Search across hundreds of pages of Hebrew text simultaneously
 - Apply citation conventions consistently
 - Maintain academic register throughout a 20-page article
@@ -379,6 +393,7 @@ Upload your research PDFs to Candlekeep. This is a one-time process — sources 
 Run `/academic-writer:write`. The conversational Phase 1 begins. Within a single working session, you move from topic to approved outline. Phase 2 runs autonomously.
 
 **What the university needs to support:**
+
 - A Claude API subscription (institutional pricing available)
 - A Candlekeep account (available per researcher or shared departmentally)
 - A brief orientation session for participating faculty (2–3 hours)
@@ -408,6 +423,7 @@ Let us trace the full workflow of a real article using Academic Writer.
 **9:15 AM — The Researcher finishes** its parallel reading of all 18 sources. It maps three central tensions in the literature: Almosnino's neoplatonic influences versus his traditional rabbinic framework; the tension between his public correspondence and his private theological position; and the gap in scholarship between his political and his theological writings.
 
 **9:20 AM — The Academic proposes three thesis options:**
+
 1. A thesis about Almosnino's synthesis — how he reconciled the tension
 2. A thesis about the gap — what the correspondence reveals that his published works conceal
 3. A thesis about influence — how his position shaped later Sephardic thought in the Ottoman context
@@ -462,4 +478,4 @@ We are available for a live demonstration at your convenience. The demonstration
 
 ---
 
-*Academic Writer is an open-source plugin developed for the Claude Code platform. The source code is available for review. The plugin can be inspected, audited, and modified by university IT staff. No research data is stored externally — your library, your profile, and your articles remain on your own computer and cloud storage.*
+_Academic Writer is an open-source plugin developed for the Claude Code platform. The source code is available for review. The plugin can be inspected, audited, and modified by university IT staff. No research data is stored externally — your library, your profile, and your articles remain on your own computer and cloud storage._

@@ -2,7 +2,7 @@
 name: academic-help
 description: "Learn what the Academic Writer plugin does and how to use it. Use when you don't know which command to run."
 allowed-tools: read
-metadata: {author: "Yotam Fromm", version: "0.2.24"}
+metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
 # Academic Writer — Help
@@ -42,30 +42,30 @@ This walks you through:
 - Analyzing your **writing style** from past articles (place 5–10 PDFs or DOCX files in `past-articles/`)
 - Connecting your **data tools** (all optional):
 
-| Tool | What it does |
-|------|-------------|
-| **Zotero** | Reference manager — preferred source for PDFs and research materials; can be scoped to one collection |
+| Tool              | What it does                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Zotero**        | Reference manager — preferred source for PDFs and research materials; can be scoped to one collection                   |
 | **Local Sources** | `.academic-writer/sources/` folder for local PDFs, DOCX, TXT, or MD files ingested via `academic_writer_ingest_sources` |
-| **NotebookLM** | AI source Q&A / audio / study guides; can be scoped to one notebook |
-| **Sefaria** | Primary Judaic text reference and chapter/verse context expansion (`get_text`, `search`) |
+| **NotebookLM**    | AI source Q&A / audio / study guides; can be scoped to one notebook                                                     |
+| **Sefaria**       | Primary Judaic text reference and chapter/verse context expansion (`get_text`, `search`)                                |
 
 ---
 
 ## Slash Commands
 
-| Command | Purpose |
-|---|---|
-| `/skill:academic-write` | Frame a research question or write a new article |
-| `/skill:academic-research` | Research or fact-check without starting an article |
-| `/skill:academic-edit` | Edit an article; supports narrow section and structural modes |
-| `/skill:academic-review` | Review quality or use the mechanical proofread mode |
-| `/skill:academic-setup` | Quick/full onboarding, field updates, and integrations |
-| `/skill:academic-voice` | Refresh style from new corpus, interview, calibrate, or audit |
-| `/skill:academic-feedback` | Turn researcher feedback into article/profile improvements |
-| `/skill:academic-health` | Diagnose project and integration readiness |
-| `/skill:academic-export` | Convert a finished article to another format |
-| `/skill:academic-present` | Create presentation or submission deliverables |
-| `/skill:academic-help` | Show this help and routing guidance |
+| Command                    | Purpose                                                       |
+| -------------------------- | ------------------------------------------------------------- |
+| `/skill:academic-write`    | Frame a research question or write a new article              |
+| `/skill:academic-research` | Research or fact-check without starting an article            |
+| `/skill:academic-edit`     | Edit an article; supports narrow section and structural modes |
+| `/skill:academic-review`   | Review quality or use the mechanical proofread mode           |
+| `/skill:academic-setup`    | Quick/full onboarding, field updates, and integrations        |
+| `/skill:academic-voice`    | Refresh style from new corpus, interview, calibrate, or audit |
+| `/skill:academic-feedback` | Turn researcher feedback into article/profile improvements    |
+| `/skill:academic-health`   | Diagnose project and integration readiness                    |
+| `/skill:academic-export`   | Convert a finished article to another format                  |
+| `/skill:academic-present`  | Create presentation or submission deliverables                |
+| `/skill:academic-help`     | Show this help and routing guidance                           |
 
 Modes inside a skill are not separate skill commands: `academic-write` includes standalone ideation; `academic-edit` includes single-section editing; `academic-review` includes mechanical proofreading; `academic-setup` includes quick/full setup and profile/integration maintenance; `academic-voice` includes corpus refresh and the interview lifecycle.
 
@@ -135,16 +135,16 @@ The voice system follows a clear 3-tier hierarchy:
 2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as high-level human guidelines.
 3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is an intermediate output from mining tools and is **NOT** a runtime source of truth.
 
-| Category | What it tracks |
-|----------|---------------|
-| **Sentence-level** | Length, structure variety, openers, passive voice |
-| **Vocabulary** | Complexity, register, field jargon, Hebrew conventions |
-| **Paragraph structure** | Pattern, length, argument progression, evidence handling |
-| **Tone & voice** | Descriptors, authorial stance, hedging/asserting, engagement |
-| **Transitions** | Preferred phrases by function, section bridging |
-| **Citations** | Density, integration style, quote length |
-| **Rhetorical patterns** | Common moves, opening/closing strategies |
-| **Representative excerpts** | 5 real passages as style targets |
+| Category                    | What it tracks                                               |
+| --------------------------- | ------------------------------------------------------------ |
+| **Sentence-level**          | Length, structure variety, openers, passive voice            |
+| **Vocabulary**              | Complexity, register, field jargon, Hebrew conventions       |
+| **Paragraph structure**     | Pattern, length, argument progression, evidence handling     |
+| **Tone & voice**            | Descriptors, authorial stance, hedging/asserting, engagement |
+| **Transitions**             | Preferred phrases by function, section bridging              |
+| **Citations**               | Density, integration style, quote length                     |
+| **Rhetorical patterns**     | Common moves, opening/closing strategies                     |
+| **Representative excerpts** | 5 real passages as style targets                             |
 
 Every paragraph is scored against this fingerprint. The editor (review mode) also runs a full-article compliance check at the end.
 
@@ -152,26 +152,26 @@ Every paragraph is scored against this fingerprint. The editor (review mode) als
 
 The plugin is designed for speed. Wherever possible, work is parallelized:
 
-| Operation | What happens |
-|-----------|-------------|
-| **Deep read** | Source documents queried in parallel across Zotero and local sources |
-| **Section writing** | One subagent per section, all writing at the same time |
-| **Research** | Zotero + local ingested sources queried by separate subagents in parallel |
-| **Editing multiple sections** | One writer subagent per section, all in parallel |
-| **Citation audit (edit)** | One editor (audit mode) per section, all in parallel |
+| Operation                     | What happens                                                              |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| **Deep read**                 | Source documents queried in parallel across Zotero and local sources      |
+| **Section writing**           | One subagent per section, all writing at the same time                    |
+| **Research**                  | Zotero + local ingested sources queried by separate subagents in parallel |
+| **Editing multiple sections** | One writer subagent per section, all in parallel                          |
+| **Citation audit (edit)**     | One editor (audit mode) per section, all in parallel                      |
 
 ## Files & Folders
 
-| Path | Purpose |
-|------|---------|
-| `.academic-writer/profile.md` | Your researcher profile (field, style, tools, optional Zotero collection / NotebookLM notebook, sources) |
-| `.academic-writer/sources/` | Local folder for PDFs, DOCX, TXT, MD source documents |
-| `.academic-writer/bibliography.bib` | BibTeX export of your sources for citeproc articles |
-| `articles/<slug>.sources.json` | Article-local citation registry snapshot |
-| `articles/<slug>.bibliography.bib` | Article-local BibTeX bibliography snapshot |
-| `past-articles/` | Your published papers for style analysis (never uploaded) |
-| `agents/` | AI agent prompts (academic, researcher, writer, editor) |
-| `references/` | API documentation for integrations |
+| Path                                | Purpose                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `.academic-writer/profile.md`       | Your researcher profile (field, style, tools, optional Zotero collection / NotebookLM notebook, sources) |
+| `.academic-writer/sources/`         | Local folder for PDFs, DOCX, TXT, MD source documents                                                    |
+| `.academic-writer/bibliography.bib` | BibTeX export of your sources for citeproc articles                                                      |
+| `articles/<slug>.sources.json`      | Article-local citation registry snapshot                                                                 |
+| `articles/<slug>.bibliography.bib`  | Article-local BibTeX bibliography snapshot                                                               |
+| `past-articles/`                    | Your published papers for style analysis (never uploaded)                                                |
+| `agents/`                           | AI agent prompts (academic, researcher, writer, editor)                                                  |
+| `references/`                       | API documentation for integrations                                                                       |
 
 ---
 

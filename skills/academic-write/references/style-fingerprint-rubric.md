@@ -5,6 +5,7 @@
 ## Layers
 
 The fingerprint contains two layers:
+
 1. **Computational metrics** (`computationalMetrics`) — hard numbers from the extraction script
 2. **Qualitative analysis** (`qualitativeAnalysis`) — LLM-interpreted patterns and templates
 
@@ -39,16 +40,19 @@ For the drafted paragraph, **count** the following and compare against the finge
 ## Scoring
 
 **Numerical dimensions (1-6):** Each scores PASS (within tolerance) or FAIL (outside). Compute:
+
 ```
 numerical_compliance = (# PASS dimensions) / 6
 ```
 
 **Qualitative dimensions (7-10):** Rate each 1-5. Compute:
+
 ```
 qualitative_score = sum(dimensions) / 20
 ```
 
 **Overall compliance:**
+
 ```
 compliance = (numerical_compliance * 0.5) + (qualitative_score * 0.5)
 ```

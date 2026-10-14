@@ -25,13 +25,13 @@ The RAG subagent should:
 
 1. **Classify the question type** and select RAG modes:
 
-| Question type | Queries to run |
-|--------------|----------------|
-| Direct question | `mix` (broad) + `local` (key entities) |
+| Question type     | Queries to run                                            |
+| ----------------- | --------------------------------------------------------- |
+| Direct question   | `mix` (broad) + `local` (key entities)                    |
 | Topic exploration | `global` (themes) + `mix` (detail) + `local` (per entity) |
-| Comparison | `local` (Author A) + `local` (Author B) + `mix` (topic) |
-| Quote search | `bypass` (exact) + `mix` (context) |
-| Source lookup | `mix` (topic) |
+| Comparison        | `local` (Author A) + `local` (Author B) + `mix` (topic)   |
+| Quote search      | `bypass` (exact) + `mix` (context)                        |
+| Source lookup     | `mix` (topic)                                             |
 
 2. **Run all queries** with `include_context: true`, `top_k: 30`, `rerank_top_k: 10`, `enable_rerank: true`
 3. **Return organized passages** with source attribution from the `context` field
@@ -53,9 +53,9 @@ Original removed behavior:
 Original removed examples:
 
 ```markdown
-> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via Zotero/RAG)*
-> - [Author], *[Work]*, p. [page] — "[relevant quote]" *(via RAG)*
-> **Verified:** ✓ Zotero page confirmed / ⚠ RAG only (page may need verification)
+> - [Author], _[Work]_, p. [page] — "[relevant quote]" _(via Zotero/RAG)_
+> - [Author], _[Work]_, p. [page] — "[relevant quote]" _(via RAG)_
+>   **Verified:** ✓ Zotero page confirmed / ⚠ RAG only (page may need verification)
 ```
 
 ## Removed edit/write/audit references

@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { test, type TestContext } from "vitest";
 
-import { fail, ToolFailure } from "../pi-academic-writer/tool-kit.js";
+import { fail, ToolFailure } from "../pi-academic-writer/core/tool-kit.js";
 import { createToolHarness } from "./helpers.js";
 
 const CORE_TOOLS = [

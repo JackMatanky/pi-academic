@@ -4,7 +4,7 @@ description: >-
   Set up or maintain the Academic Writer profile and integrations. Use when doing first-time onboarding,
   quick or full setup, source indexing, changing the research field, or adding/removing integrations.
 allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_resolve_csl academic_writer_migrate_profile academic_writer_get_profile academic_writer_update_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_ingest_sources academic_writer_resolve_mcp_tool academic_writer_write_voice_fingerprint academic_writer_update_author_voice
-metadata: {author: "Yotam Fromm", version: "0.3.1"}
+metadata: { author: "Yotam Fromm", version: "0.3.1" }
 ---
 
 # Academic Writer setup and profile maintenance

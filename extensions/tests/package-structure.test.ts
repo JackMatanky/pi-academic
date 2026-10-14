@@ -15,7 +15,7 @@ import { Type } from "typebox";
 import { test } from "vitest";
 
 import { isValid, parseJsonText } from "../lib/schema.js";
-import { resolveResourcePath } from "../pi-academic-writer/resources.js";
+import { resolveResourcePath } from "../pi-academic-writer/core/resources.js";
 import {
   createToolHarness,
   get,

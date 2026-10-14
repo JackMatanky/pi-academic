@@ -6,11 +6,11 @@ import { join } from "node:path";
 import { test, type TestContext } from "vitest";
 
 import { parseJsonText } from "../lib/schema.js";
-import { loadResource } from "../pi-academic-writer/resources.js";
+import { loadResource } from "../pi-academic-writer/core/resources.js";
 import {
   THRESHOLDS_DEFAULT,
   thresholdsDefaultJson,
-} from "../pi-academic-writer/thresholds-default.js";
+} from "../pi-academic-writer/core/thresholds-default.js";
 import { createToolHarness } from "./helpers.js";
 
 const { callTool } = createToolHarness();

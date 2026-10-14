@@ -121,13 +121,13 @@ For cross-book assignments, `academic_writer_diagnose_outline` accepts the resea
 
 ### Check ownership and authority
 
-| Check or decision | Status | Authoritative input and caller | Coverage | Consequence |
-|---|---|---|---|---|
-| Research-note eligibility and outline structure/link freshness | Decisive | Research-note library, source identities, canonical article outline; write/review/snapshot tools | Research-note/outline runtime tests | Invalid, unchecked, stale, or unresolved evidence cannot enter an approved snapshot. |
-| Frozen section evidence and citation-key/mode audit | Decisive for recorded structure and citation integrity | Article-local note snapshot, article text, source registry, bibliography; writer and export | Research-note bundle and citation-audit tests | Export is blocked for failed citation audit; audit does not prove the cited source supports the prose. |
-| Export completion | Decisive per requested format | Pandoc result plus existence of the requested output artifact; export tool | `test_export_passes_citeproc_options_to_pandoc` | A zero-exit process without an output file is reported as failure for that format. |
-| Outline diagnostics, reverse outline, and prose lint | Advisory | Current outline/article text; orchestrator and substantive reviewers | Diagnostic, reverse-outline, and prose-lint tests | Findings guide review; they do not approve or reject the argument or prose. |
-| Claim support, scholarly validity, argument quality, author voice, and researcher approval | Not automated | Original sources, researcher judgment, and contextual agent review | Not established by mechanical tests | Require human/agent evaluation; tool output is not evidence of correctness. |
+| Check or decision                                                                          | Status                                                 | Authoritative input and caller                                                                   | Coverage                                          | Consequence                                                                                            |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Research-note eligibility and outline structure/link freshness                             | Decisive                                               | Research-note library, source identities, canonical article outline; write/review/snapshot tools | Research-note/outline runtime tests               | Invalid, unchecked, stale, or unresolved evidence cannot enter an approved snapshot.                   |
+| Frozen section evidence and citation-key/mode audit                                        | Decisive for recorded structure and citation integrity | Article-local note snapshot, article text, source registry, bibliography; writer and export      | Research-note bundle and citation-audit tests     | Export is blocked for failed citation audit; audit does not prove the cited source supports the prose. |
+| Export completion                                                                          | Decisive per requested format                          | Pandoc result plus existence of the requested output artifact; export tool                       | `test_export_passes_citeproc_options_to_pandoc`   | A zero-exit process without an output file is reported as failure for that format.                     |
+| Outline diagnostics, reverse outline, and prose lint                                       | Advisory                                               | Current outline/article text; orchestrator and substantive reviewers                             | Diagnostic, reverse-outline, and prose-lint tests | Findings guide review; they do not approve or reject the argument or prose.                            |
+| Claim support, scholarly validity, argument quality, author voice, and researcher approval | Not automated                                          | Original sources, researcher judgment, and contextual agent review                               | Not established by mechanical tests               | Require human/agent evaluation; tool output is not evidence of correctness.                            |
 
 ---
 
@@ -149,30 +149,30 @@ The writing workflow uses source-linked research notes and an article-specific a
 
 Skills are directly invocable; use natural-language requests or these commands:
 
-| Command | Purpose |
-|---|---|
-| `/skill:academic-write` | Frame a research question or write a new article |
-| `/skill:academic-research` | Investigate a topic or fact-check sources without starting an article |
-| `/skill:academic-edit` | Edit an article, including one-section and structural-edit modes |
-| `/skill:academic-review` | Substantive review or mechanical proofread mode |
-| `/skill:academic-setup` | Quick/full onboarding, profile-field updates, or integration maintenance |
-| `/skill:academic-voice` | Refresh corpus-derived style or interview, calibrate, audit, and recompress voice profile |
-| `/skill:academic-feedback` | Apply researcher feedback to article and profile patterns |
-| `/skill:academic-health` | Diagnose profile, integrations, source index, and export readiness |
-| `/skill:academic-export` | Export a finished article to additional formats |
-| `/skill:academic-present` | Create presentation and submission deliverables |
-| `/skill:academic-help` | Explore commands and package workflows |
+| Command                    | Purpose                                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `/skill:academic-write`    | Frame a research question or write a new article                                          |
+| `/skill:academic-research` | Investigate a topic or fact-check sources without starting an article                     |
+| `/skill:academic-edit`     | Edit an article, including one-section and structural-edit modes                          |
+| `/skill:academic-review`   | Substantive review or mechanical proofread mode                                           |
+| `/skill:academic-setup`    | Quick/full onboarding, profile-field updates, or integration maintenance                  |
+| `/skill:academic-voice`    | Refresh corpus-derived style or interview, calibrate, audit, and recompress voice profile |
+| `/skill:academic-feedback` | Apply researcher feedback to article and profile patterns                                 |
+| `/skill:academic-health`   | Diagnose profile, integrations, source index, and export readiness                        |
+| `/skill:academic-export`   | Export a finished article to additional formats                                           |
+| `/skill:academic-present`  | Create presentation and submission deliverables                                           |
+| `/skill:academic-help`     | Explore commands and package workflows                                                    |
 
 ## Integrations
 
 All integrations are optional. Choose which to enable during `/skill:academic-setup`.
 
-| Tool              | What it does                                                                                             | Setup                                                                                                                                                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero                                               | Put files in `.academic-writer/sources/`; Academic Writer ingests them with `academic_writer_ingest_sources` and generates citekeys/BibTeX.                                                                                          |
-| **Zotero**        | Preferred reference manager for source PDFs (local library or web API)                                   | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`)                          |
-| **NotebookLM**    | AI-powered source Q&A, audio overviews, study guides                                                     | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config                      |
-| **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                                          | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools` listing `get_text` and `search`); no credentials go in `.academic-writer/profile.md`.                                                                               |
+| Tool              | What it does                                                                         | Setup                                                                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero                           | Put files in `.academic-writer/sources/`; Academic Writer ingests them with `academic_writer_ingest_sources` and generates citekeys/BibTeX.                                                                                          |
+| **Zotero**        | Preferred reference manager for source PDFs (local library or web API)               | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`)                          |
+| **NotebookLM**    | AI-powered source Q&A, audio overviews, study guides                                 | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config                      |
+| **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                      | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools` listing `get_text` and `search`); no credentials go in `.academic-writer/profile.md`.                                                     |
 | **Pandoc**        | DOCX/ODT/LaTeX/PDF export and citeproc rendering for downloaded or custom CSL styles | [pandoc.org/installing.html](https://pandoc.org/installing.html) — PDF needs a Unicode-capable TeX engine too: Tectonic (`brew install tectonic`) or XeLaTeX (`brew install --cask basictex && sudo tlmgr install collection-xetex`) |
 
 This package doesn't hardcode a specific model provider for prose drafting — pi already gives you that choice. To run the `writer` (or any other agent) on a specific model, pin `subagents.agentOverrides.<agent-name>.model` in your pi settings. Under omp use `task.agentModelOverrides.<agent-name>` or a `@role` alias; the editor's audit mode benefits most from a strong model.
@@ -191,11 +191,30 @@ This package doesn't hardcode a specific model provider for prose drafting — p
       "command": "zotero-mcp",
       "args": ["serve"],
       "env": { "ZOTERO_LOCAL": "true" },
-      "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
+      "directTools": [
+        "zotero_get_recent",
+        "zotero_get_collections",
+        "zotero_get_collection_items",
+        "zotero_get_item_fulltext",
+        "zotero_get_item_metadata",
+        "zotero_get_pdf_outline",
+        "zotero_read_pdf_pages",
+        "zotero_search_items",
+        "zotero_semantic_search",
+        "zotero_get_search_database_status",
+        "zotero_update_search_database"
+      ]
     },
     "notebooklm-mcp": {
       "command": "notebooklm-mcp",
-      "directTools": ["notebook_list", "notebook_query", "notebook_create", "source_add", "studio_create", "studio_status"]
+      "directTools": [
+        "notebook_list",
+        "notebook_query",
+        "notebook_create",
+        "source_add",
+        "studio_create",
+        "studio_status"
+      ]
     },
     "sefaria": {
       "command": "sefaria-mcp",

@@ -164,13 +164,36 @@ Schema:
   "chapter_counts": { "Ezra": 10, "Nehemiah": 13 },
   "chapter_coverage": {
     "Ezra": [
-      { "chapter": 1,  "status": "covered",            "evidence_ids": ["ev_ezra1_cyrus_decree"] },
-      { "chapter": 2,  "status": "skipped-irrelevant", "reason": "list of returnees only — no temple/personnel/cult content" },
-      { "chapter": 3,  "status": "covered",            "evidence_ids": ["ev_ezra3_altar", "ev_ezra3_foundation"] }
+      {
+        "chapter": 1,
+        "status": "covered",
+        "evidence_ids": ["ev_ezra1_cyrus_decree"]
+      },
+      {
+        "chapter": 2,
+        "status": "skipped-irrelevant",
+        "reason": "list of returnees only — no temple/personnel/cult content"
+      },
+      {
+        "chapter": 3,
+        "status": "covered",
+        "evidence_ids": ["ev_ezra3_altar", "ev_ezra3_foundation"]
+      }
     ],
     "Nehemiah": [
-      { "chapter": 10, "status": "covered",            "evidence_ids": ["ev_neh10_covenant", "ev_neh10_wood_offering"] },
-      { "chapter": 12, "status": "covered",            "evidence_ids": ["ev_neh12_high_priest_succession", "ev_neh12_wall_dedication"] }
+      {
+        "chapter": 10,
+        "status": "covered",
+        "evidence_ids": ["ev_neh10_covenant", "ev_neh10_wood_offering"]
+      },
+      {
+        "chapter": 12,
+        "status": "covered",
+        "evidence_ids": [
+          "ev_neh12_high_priest_succession",
+          "ev_neh12_wall_dedication"
+        ]
+      }
     ]
   }
 }

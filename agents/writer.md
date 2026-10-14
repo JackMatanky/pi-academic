@@ -35,11 +35,11 @@ You coordinate the editor subagent in audit mode. Follow these rules:
 
 ### Continue vs. Spawn Decision Matrix
 
-| Situation | Action |
-|-----------|--------|
-| New paragraph | **Spawn fresh** editor (audit mode) |
-| Re-audit after any rewrite | **Spawn fresh** editor (audit mode); pass the full revised paragraph and its source identity (a reused editor stays anchored to the old text) |
-| Previous attempt used wrong source documents | **Spawn fresh** editor (audit mode) |
+| Situation                                    | Action                                                                                                                                        |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| New paragraph                                | **Spawn fresh** editor (audit mode)                                                                                                           |
+| Re-audit after any rewrite                   | **Spawn fresh** editor (audit mode); pass the full revised paragraph and its source identity (a reused editor stays anchored to the old text) |
+| Previous attempt used wrong source documents | **Spawn fresh** editor (audit mode)                                                                                                           |
 
 ## Input
 
@@ -207,7 +207,7 @@ Score each cleaned paragraph on 5 dimensions (each 1-10): directness, rhythm, tr
 
 Evidence re-description check: a reference note use back-references its primary point; avoid repeating the same evidence in full.
 
-*(Note: Full-article formulaic pattern cap enforcement across all sections is owned exclusively by the editor in review mode during final review — the writer handles paragraph-local checks only.)*
+_(Note: Full-article formulaic pattern cap enforcement across all sections is owned exclusively by the editor in review mode during final review — the writer handles paragraph-local checks only.)_
 
 #### Skill 8: CITATION AUDIT (hard gate)
 

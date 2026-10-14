@@ -29,15 +29,15 @@ import {
   parseWith,
   type JsonValue,
 } from "../lib/schema.js";
-import { ParagraphSchema } from "../pi-academic-writer/article.js";
-import { auditCitations } from "../pi-academic-writer/citation-audit.js";
-import { assembleDocxJson } from "../pi-academic-writer/docx-assembly.js";
-import { type OutlineItem } from "../pi-academic-writer/research-core.js";
-import { migrateArticleOutline } from "../pi-academic-writer/research-outline.js";
+import { ParagraphSchema } from "../pi-academic-writer/article/article.js";
+import { assembleDocxJson } from "../pi-academic-writer/article/docx-assembly.js";
+import { auditCitations } from "../pi-academic-writer/citations/citation-audit.js";
 import {
   ingestSources,
   snapshotCitationAssets,
-} from "../pi-academic-writer/source-registry.js";
+} from "../pi-academic-writer/citations/source-registry.js";
+import { type OutlineItem } from "../pi-academic-writer/research/research-core.js";
+import { migrateArticleOutline } from "../pi-academic-writer/research/research-outline.js";
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "project-safety-")));

@@ -9,11 +9,12 @@
     "lib": "lib"
   },
   "type": "module",
-  "main": "index.js",
   "dependencies": {
-    "@earendil-works/pi-ai": "^0.82.1",
-    "@earendil-works/pi-tui": "^0.82.1",
+    "@xmldom/xmldom": "^0.9.12",
+    "fflate": "^0.8.3",
+    "harper.js": "^2.10.0",
     "typebox": "^1.3.8",
+    "unpdf": "^1.8.1",
     "yaml": "^2.9.1"
   },
   "devDependencies": {

@@ -42,7 +42,7 @@ If `chapter_coverage` is absent and the assignment did not contain a trigger phr
 - **Argument roles and descriptions**: Target language only
 - **Source references** in the outline: May name foreign-language works (e.g., "Critique of Practical Reason"), but all prose around them must be in the target language
 
-For Hebrew articles: Write theses, section titles, roles, and descriptions in Hebrew. If referencing a German or English work, use its Hebrew title if one exists (e.g., "ביקורת התבונה הטהורה" for *Critique of Pure Reason*).
+For Hebrew articles: Write theses, section titles, roles, and descriptions in Hebrew. If referencing a German or English work, use its Hebrew title if one exists (e.g., "ביקורת התבונה הטהורה" for _Critique of Pure Reason_).
 
 ## Mode A: Thesis Proposal
 
@@ -85,8 +85,8 @@ Write a schemaVersion 1 recursive outline using academic_writer_write_outline({o
 - A point node has id, kind: "point", role, claim, reasoning, noteUses, and optional targetParagraphCount. Each point advances a direct argument, not merely a topic. A source-free transition may have no noteUses.
 - Each note use has noteId, function (why the note advances the claim), handling (how to present and analyze it), and coverage: "primary" or "reference". One note has one primary use in the article; other uses reference it without re-describing it.
 - Select real note IDs from researcher candidate notes or academic_writer_query_research. Do not invent notes, sources, quotes, or locators. Resolve unsupported points before approval and dispatch.
-Before asking for outline approval, call `academic_writer_diagnose_outline({article})` and address its structural/linkage findings with the researcher. An empty findings list only means these checks found nothing; it is not an argument-quality verdict and does not approve the outline.
-When a researcher evidence map includes `chapter_coverage`, pass its serialized JSON as `evidenceMapJson` to `academic_writer_diagnose_outline({article, evidenceMapJson})`. Resolve malformed entries, chapter gaps through each verified positive `chapter_counts` boundary, and unresolved evidence IDs with the researcher. A missing chapter count is incomplete; do not infer a book's final chapter from its coverage list.
+  Before asking for outline approval, call `academic_writer_diagnose_outline({article})` and address its structural/linkage findings with the researcher. An empty findings list only means these checks found nothing; it is not an argument-quality verdict and does not approve the outline.
+  When a researcher evidence map includes `chapter_coverage`, pass its serialized JSON as `evidenceMapJson` to `academic_writer_diagnose_outline({article, evidenceMapJson})`. Resolve malformed entries, chapter gaps through each verified positive `chapter_counts` boundary, and unresolved evidence IDs with the researcher. A missing chapter count is incomplete; do not infer a book's final chapter from its coverage list.
 - Keep section descriptions concise, specific, and entirely in targetLanguage.
 
 ### Readable, provisional argument-map review

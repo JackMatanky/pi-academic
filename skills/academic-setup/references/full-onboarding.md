@@ -6,13 +6,13 @@ Personalized onboarding that creates your researcher profile, detects available 
 
 ## The Five Phases
 
-| Phase | What | Output |
-|-------|------|--------|
-| 0. Preflight | Create folders, detect existing profile | Workspace ready |
-| 1. Integrations | Auto-detect tools, let you choose | `tools` config |
-| 2. Profile | Field, language, citation style | Core profile |
-| 3. Style Analysis | Read past articles, build fingerprint | `styleFingerprint` + `articleStructure` |
-| 4. Sources | Index Zotero or local source folder | `sources` array |
+| Phase             | What                                    | Output                                  |
+| ----------------- | --------------------------------------- | --------------------------------------- |
+| 0. Preflight      | Create folders, detect existing profile | Workspace ready                         |
+| 1. Integrations   | Auto-detect tools, let you choose       | `tools` config                          |
+| 2. Profile        | Field, language, citation style         | Core profile                            |
+| 3. Style Analysis | Read past articles, build fingerprint   | `styleFingerprint` + `articleStructure` |
+| 4. Sources        | Index Zotero or local source folder     | `sources` array                         |
 
 ---
 
@@ -41,6 +41,7 @@ Profile schema and file format: see `references/profile-schema.md`.
 Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
 
 **If it returns `ok: true`**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "You already have an Academic Writer profile. What would you like to do?"
 >
 > 1. **Update my profile** — Keep existing data, modify selected fields only.
@@ -64,12 +65,13 @@ Call `academic_writer_migrate_profile`, then check for existing profile by calli
 >    ⚠ Sources will be cleared
 >    → Walk through all 4 phases again
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If **Update**, ask which phases to re-run (multiSelect: true) with options: "Integrations", "Profile (field/language/citation)", "Style Analysis", "Sources". Run only selected phases, then save.
 
 Then greet the user:
+
 > "Welcome to Academic Writer! I'll walk you through setup in a few steps.
 >
 > Your workspace folders are ready:
@@ -94,15 +96,17 @@ After running detection (parallel batch), store the tool selection as the `tools
 ### Step 1 of 4 — Field of Study
 
 Ask the researcher, as a free-text prompt (no fixed options — record whatever they say):
+
 > "What is your field of study and area of specialization?"
 
 Show examples below the question:
+
 > "The more specific, the better. Examples:
 >
-> - *Early Modern Jewish Philosophy*
-> - *Talmudic Literature and Rabbinic Thought*
-> - *Medieval Hebrew Poetry*
-> - *Biblical Studies — Pentateuch*"
+> - _Early Modern Jewish Philosophy_
+> - _Talmudic Literature and Rabbinic Thought_
+> - _Medieval Hebrew Poetry_
+> - _Biblical Studies — Pentateuch_"
 
 Record the free-text answer as `fieldOfStudy`.
 
@@ -111,6 +115,7 @@ Record the free-text answer as `fieldOfStudy`.
 ### Step 2 of 4 — Article Language
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "What language will you write your articles in?"
 >
 > 1. **Hebrew** — Right-to-left, David font, inline-parenthetical citations recommended.
@@ -143,7 +148,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    → RTL/LTR detected from language
 >    → Citation style: your choice
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Store as `targetLanguage`. If "Other", ask for the language name with a follow-up question.
@@ -153,6 +158,7 @@ Store as `targetLanguage`. If "Other", ask for the language name with a follow-u
 ### Step 3 of 4 — Citation Style
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Which citation style do you use in your academic work?"
 >
 > 1. **Inline Parenthetical (Recommended for Hebrew)** — (Author, Title, Page) in running text — no footnotes required.
@@ -217,7 +223,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >
 >    Best for: journal-specific or edited CSL files.
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Map selection:
@@ -236,6 +242,7 @@ If validation fails, show the error and ask for a different alias, style id, URL
 ### Step 3b of 4 — Abstract Languages
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Do your articles need abstracts? Some journals require dual-language abstracts."
 >
 > 1. **Primary language only** — Abstract in the article's language only.
@@ -266,7 +273,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    You can enable later with
 >    /skill:academic-setup (Update)
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Store as `abstractLanguages` array:
@@ -286,6 +293,7 @@ Follow `references/document-style.md` and store the result as `outputFormatPrefe
 ### Step 4 of 4 — Writing Style
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "To write articles that sound like you, I need to analyze your past work. Have you added papers to the past-articles/ folder?"
 >
 > 1. **Yes, my papers are ready** — Analyze them now to extract your writing fingerprint.
@@ -312,7 +320,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    → Re-run: /skill:academic-setup
 >       (choose 'Update' → 'Style Analysis')
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 **If "Yes, my papers are ready"**, run:
@@ -323,7 +331,7 @@ Call `academic_writer_list_project_files` with `kind: "past_articles"` and use t
 
 **Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
-First fetch the **shared Hebrew baseline** from Zotero (book *Hebrew Linguistic Reference*, mirrored on GitHub at [JackMatanky/hebrew-linguistics-data](https://github.com/JackMatanky/hebrew-linguistics-data); the same book is read by the `hebrew-book-producer` plugin so both share one source of truth):
+First fetch the **shared Hebrew baseline** from Zotero (book _Hebrew Linguistic Reference_, mirrored on GitHub at [JackMatanky/hebrew-linguistics-data](https://github.com/JackMatanky/hebrew-linguistics-data); the same book is read by the `hebrew-book-producer` plugin so both share one source of truth):
 
 ```bash
 mkdir -p .ctx
@@ -342,11 +350,12 @@ This gives you 30+ numerical metrics (sentence length, passive voice, transition
 Show the combined fingerprint summary (computational + qualitative) and confirm before saving:
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Here's the writing fingerprint I extracted. Is this accurate?"
 >
 > 1. **Looks good — save it** — Profile will be saved with this fingerprint.
 > 2. **I'd like to adjust some things** — Tell me what to change and I'll update before saving.
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+>    Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 ### 25-Dimension Style Analysis
 
@@ -369,6 +378,7 @@ The researcher is not required to run the Stage 2 interview. They can start writ
 **If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.academic-writer/sources/` with `academic_writer_ingest_sources`.**
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Let's index your research library. Have you added sources to Zotero yet?"
 >
 > 1. **Yes, index my sources now** — I'll enrich and index the configured Zotero collection, or the whole library if no collection was selected.
@@ -392,7 +402,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ⚠ Articles won't have source metadata yet
 >    → Add items via the Zotero desktop app, then re-run this step
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 If **"Yes"**: list and enrich the configured scope.
@@ -413,23 +423,26 @@ After enrichment, re-list and build the sources array (id + title + type only �
 
 Use the Write tool to save `.academic-writer/profile.md`:
 
-```markdown
+`````markdown
 # Academic Writer Profile
 
 ---
+
 fieldOfStudy: FIELD_HERE
 citationStyle: SELECTED_CITATION_STYLE
 targetLanguage: Hebrew
 abstractLanguages:
-  - Hebrew
-analyzedArticles: []
-createdAt: ISO_TIMESTAMP
-updatedAt: ISO_TIMESTAMP
+
+- Hebrew
+  analyzedArticles: []
+  createdAt: ISO_TIMESTAMP
+  updatedAt: ISO_TIMESTAMP
+
 ---
 
 ## Tools
 
-```json
+````json
 {
   "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "optional Zotero collection key", "name": "optional display name" } },
   "notebooklm": { "enabled": false, "mode": "mcp-config", "notebook": { "id": "optional NotebookLM notebook id", "name": "optional display name" } },
@@ -460,15 +473,17 @@ updatedAt: ISO_TIMESTAMP
 ```json
 []
 ` ` `
-```
+````
+`````
 
-(Replace ` ` ` with actual backtick triplets when writing the file. Profile schema: `references/profile-schema.md`.)
+(Replace ` ` `with actual backtick triplets when writing the file. Profile schema:`references/profile-schema.md`.)
 
 ---
 
 ## Completion
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Setup is complete. What would you like to do next?"
 >
 > 1. **Write my first article** — Launch /skill:academic-write to start writing.
@@ -494,16 +509,16 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      /skill:academic-health  ← check everything
 >      /skill:academic-setup   ← change integrations
 >    ```
->
+
 Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Show a summary table:
 
-> | Setting | Value |
-> |---------|-------|
-> | Field | [field] |
-> | Language | [language] |
-> | Citation style | [style] |
+> | Setting           | Value                  |
+> | ----------------- | ---------------------- |
+> | Field             | [field]                |
+> | Language          | [language]             |
+> | Citation style    | [style]                |
 > | Style fingerprint | ✓ Analyzed / — Skipped |
-> | Sources indexed | [N] documents |
-> | Tools enabled | [list] |
+> | Sources indexed   | [N] documents          |
+> | Tools enabled     | [list]                 |

@@ -2,7 +2,7 @@
 name: academic-present
 description: "Post-article deliverables — generate conference presentation outlines, journal submission summaries, and book chapter proposals from a completed article. Use after publishing an article when you need conference/journal/proposal deliverables."
 allowed-tools: bash read write find grep academic_writer_get_profile academic_writer_list_project_files academic_writer_resolve_mcp_tool
-metadata: {author: "Yotam Fromm", version: "0.2.23"}
+metadata: { author: "Yotam Fromm", version: "0.2.23" }
 ---
 
 # Academic Writer — Post-Article Deliverables
@@ -17,14 +17,16 @@ Call `academic_writer_list_project_files` with `kind: "articles"` and use the re
 
 If multiple articles exist:
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "Which article would you like to create deliverables for?"
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
+> Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 
 Read the selected article with the `Read` tool. Extract its thesis, section structure, and key arguments.
 
 ## Select Deliverable
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
+
 > "What would you like to generate from this article?"
 >
 > 1. **Conference Presentation Outline** — 20-30 minute talk outline with argument flow
@@ -70,7 +72,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    ```
 >
 > 6. **All of the above** — Generate all deliverables (NotebookLM items only if enabled)
-Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
+>    Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase; multiple selections allowed).
 
 ## Conference Presentation Outline
 
@@ -82,34 +84,42 @@ Generate in `targetLanguage`:
 ## Talk Structure (20-30 min)
 
 ### Opening (3 min)
+
 - Hook: [engaging opening tied to a key source or question]
 - Research question: [from article]
 - Why this matters: [significance in 2 sentences]
 
 ### Background (5 min)
+
 - [Key context the audience needs]
 - [State of the field — what's been said]
 - [The gap this research fills]
 
 ### Argument (15 min)
+
 #### Point 1: [from section X]
+
 - Key evidence: [strongest citation]
 - Speaker note: [how to present this]
 
 #### Point 2: [from section Y]
+
 - Key evidence: [strongest citation]
 - Speaker note: [how to present this]
 
 #### Point 3: [from section Z]
+
 - Key evidence: [strongest citation]
 - Speaker note: [how to present this]
 
 ### Conclusion (5 min)
+
 - Main finding: [thesis restated for oral delivery]
 - Implications: [wider significance]
 - Open question: [for Q&A]
 
 ## Anticipated Questions
+
 1. [likely question] — [suggested response]
 2. [likely question] — [suggested response]
 3. [likely question] — [suggested response]
@@ -138,18 +148,23 @@ Generate in `targetLanguage`:
 # Chapter Proposal: [Expanded Title]
 
 ## Chapter Summary
+
 [2-3 paragraphs expanding the article's argument for a book chapter]
 
 ## How This Chapter Fits
+
 [1 paragraph on how it connects to broader themes in the field]
 
 ## Expanded Scope
+
 [What would be added beyond the article — new sources, deeper analysis, additional sections]
 
 ## Proposed Length
+
 [Word count estimate, typically 8,000-12,000 words]
 
 ## Key Sources
+
 [Bibliography of primary and secondary sources]
 ```
 

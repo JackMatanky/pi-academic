@@ -27,7 +27,7 @@ Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprin
 2. **Sentence-length distribution** — mean, median, stdev, max. Note any unusual rhythm.
 3. **Paragraph-length distribution** — same stats.
 4. **Phrase frequency** — top 30 idiomatic phrases used 3+ times. Hebrew and English separately.
-5. **Banned-word candidates** — words/phrases the writer *never* uses where peers do (e.g.,
+5. **Banned-word candidates** — words/phrases the writer _never_ uses where peers do (e.g.,
    "moreover", "furthermore" in academic prose). Detect by comparing to a generic register.
 6. **Citation patterns** — typical density (cites per 1000 words), inline vs footnote, common
    framing verbs ("argues", "shows", "מבחין", "טוען").

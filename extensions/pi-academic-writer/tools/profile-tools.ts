@@ -8,7 +8,7 @@ import {
   updateProfile,
 } from "../../lib/profile.js";
 import { ProfilePatchSchema } from "../../lib/types.js";
-import { fail, registerTool } from "../tool-kit.js";
+import { fail, registerTool } from "../core/tool-kit.js";
 
 const PROFILE_PATH = ".academic-writer/profile.md";
 

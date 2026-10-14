@@ -11,14 +11,14 @@ This document describes the current Pi/oh-my-pi package, not the retired CLI/Cla
 
 ## User-facing routes
 
-| Researcher intent | Entry point | Modes retained |
-|---|---|---|
-| Start a paper or frame a question | `academic-write` | Standalone ideation; full article pipeline |
-| Investigate without drafting | `academic-research` | Source query and fact-checking |
-| Revise an existing paper | `academic-edit` | Single-section, local, citation, structural, and argument edits |
-| Assess a finished draft | `academic-review` | Substantive scorecard/reverse outline; mechanical proofread and change report |
-| Configure project/profile | `academic-setup` | Quick/full onboarding, field update, integration maintenance |
-| Refine author voice | `academic-voice` | Corpus refresh, interview, quick mode, continuation, calibration, audit, recompression |
+| Researcher intent                 | Entry point         | Modes retained                                                                         |
+| --------------------------------- | ------------------- | -------------------------------------------------------------------------------------- |
+| Start a paper or frame a question | `academic-write`    | Standalone ideation; full article pipeline                                             |
+| Investigate without drafting      | `academic-research` | Source query and fact-checking                                                         |
+| Revise an existing paper          | `academic-edit`     | Single-section, local, citation, structural, and argument edits                        |
+| Assess a finished draft           | `academic-review`   | Substantive scorecard/reverse outline; mechanical proofread and change report          |
+| Configure project/profile         | `academic-setup`    | Quick/full onboarding, field update, integration maintenance                           |
+| Refine author voice               | `academic-voice`    | Corpus refresh, interview, quick mode, continuation, calibration, audit, recompression |
 
 ## Critical workflow boundaries
 

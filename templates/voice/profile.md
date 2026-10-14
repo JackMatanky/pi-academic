@@ -5,16 +5,16 @@
 
 ## Core voice (cross-project)
 
-*Empty. Populated by Stage 1 corpus analysis and Stage 2 interview.*
+_Empty. Populated by Stage 1 corpus analysis and Stage 2 interview._
 
 ## Terminology
 
-*Empty.*
+_Empty._
 
 ## Academic-specific
 
-*Empty.*
+_Empty._
 
 ## Non-fiction-book-specific
 
-*Empty.*
+_Empty._

@@ -8,7 +8,7 @@ import { test, type TestContext } from "vitest";
 import {
   calculateArticleWordCount,
   countWords,
-} from "../pi-academic-writer/word-count.js";
+} from "../pi-academic-writer/prose/word-count.js";
 import { createToolHarness } from "./helpers.js";
 
 const { callTool } = createToolHarness();

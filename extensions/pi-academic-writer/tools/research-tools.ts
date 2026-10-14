@@ -3,22 +3,29 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static, type TSchema } from "typebox";
 
 import { stringEnum } from "../../lib/schema.js";
-import { NoteUpsertSchema, OutlineShellSchema } from "../research-core.js";
-import { reviewResearchNotes, writeResearchNotes } from "../research-notes.js";
+import { writeProjectTextFile } from "../core/project-files.js";
+import { fail, registerTool, type ToolEffect } from "../core/tool-kit.js";
+import {
+  NoteUpsertSchema,
+  OutlineShellSchema,
+} from "../research/research-core.js";
+import {
+  reviewResearchNotes,
+  writeResearchNotes,
+} from "../research/research-notes.js";
 import {
   migrateArticleOutline,
   renderOutline,
   snapshotNotes,
   writeOutline,
-} from "../research-outline.js";
+} from "../research/research-outline.js";
 import {
   decodeResearchQuery,
   diagnoseOutline,
   queryResearch,
   ResearchQuerySchema,
-} from "../research-query.js";
-import { reverseOutline } from "../reverse-outline.js";
-import { registerTool, type ToolEffect } from "../tool-kit.js";
+} from "../research/research-query.js";
+import { reverseOutline } from "../research/reverse-outline.js";
 
 /**
  * A research-library tool: runs `run` and returns its value as JSON.
@@ -156,5 +163,51 @@ export function registerResearchTools(pi: ExtensionAPI): void {
         targetLanguage,
         citationStyle,
       }),
+  });
+
+  registerTool(pi, {
+    name: "academic_writer_write_section",
+    effect: "write",
+    label: "Academic Writer Write Section",
+    description:
+      "Persist one approved article section to articles/<slug>/sections/<sectionId>.md. `article` is the article markdown path as returned by academic_writer_article_paths (must start with articles/). Overwrites are allowed — redrafts rewrite the same file. The orchestrating skill assembles these files into the article.",
+    parameters: Type.Object({
+      article: Type.String({
+        minLength: 1,
+        pattern: "^articles/",
+        description:
+          "Article markdown path, e.g. articles/<slug>.md, as returned by academic_writer_article_paths.",
+      }),
+      sectionId: Type.String({
+        minLength: 1,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+        description:
+          "Outline section id (letters, digits, underscore, hyphen; must start with a letter or digit).",
+      }),
+      markdown: Type.String({
+        minLength: 1,
+        description:
+          "The section content: the `## <section heading>` line followed by the approved paragraphs.",
+      }),
+    }),
+    run: ({ article, sectionId, markdown }, { cwd }) => {
+      const base = article.replace(/\.[^./]+$/, "");
+      const slug = base.slice("articles/".length);
+
+      if (!slug.trim())
+        return fail(
+          `Invalid article path "${article}": it must name a markdown file under articles/ (as returned by academic_writer_article_paths).`,
+        );
+
+      if (!markdown.trim()) return fail("Markdown must not be empty.");
+
+      const target = `${base}/sections/${sectionId}.md`;
+      const result = writeProjectTextFile(cwd, target, markdown);
+
+      return {
+        text: `Section written to ${result.path}`,
+        details: result,
+      };
+    },
   });
 }

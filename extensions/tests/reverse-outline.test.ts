@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { test, type TestContext } from "vitest";
 
-import { reverseOutline } from "../pi-academic-writer/reverse-outline.js";
+import { reverseOutline } from "../pi-academic-writer/research/reverse-outline.js";
 
 function fixture(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), "reverse-outline-"));
@@ -37,6 +37,28 @@ test("a valid article inside articles/ still segments", (t) => {
     ["First paragraph."],
   );
   assert.deepEqual([result.units[0]?.headingPath], [["Intro"]]);
+});
+
+test("YAML frontmatter never becomes a unit and line ranges are 1-indexed", (t) => {
+  const root = fixture(t);
+  writeFileSync(
+    join(root, "articles", "fronted.md"),
+    "---\ntitle: Foo\n---\n\n# Heading\n\nFirst paragraph.\n",
+  );
+
+  const result = reverseOutline(root, "articles/fronted.md");
+
+  assert.equal(result.status, "advisory");
+
+  if (result.status !== "advisory") return;
+  assert.equal(result.units.length, 1);
+
+  const unit = result.units[0];
+
+  assert.equal(unit?.text, "First paragraph.");
+  assert.deepEqual(unit?.headingPath, ["Heading"]);
+  assert.equal(unit?.startLine, 7);
+  assert.equal(unit?.endLine, 7);
 });
 
 test("traversal outside articles/ is refused", (t) => {

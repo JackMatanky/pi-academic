@@ -6,6 +6,7 @@ import {
   renameSync,
   rmSync,
   statSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -118,11 +119,39 @@ export function writeFileAtomic(
 }
 
 /**
+ * Returns whether a process is running, via the signal-0 liveness probe.
+ * `EPERM` means the process exists but cannot be signalled, which still counts
+ * as alive.
+ *
+ * @param pid - Operating-system process id to probe.
+ */
+function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+
+    return true;
+  } catch (error) {
+    return isErrnoException(error) && error.code === "EPERM";
+  }
+}
+
+/**
  * Atomic stale-lock takeover: rename the abandoned directory aside, record our
  * ownership in its place, then remove the rename. A competing owner re-created
- * the lock or its meta file defeats the rename and keeps the lock.
+ * the lock or its meta file defeats the rename and keeps the lock. A recorded
+ * owner whose process is still running is never stolen from, even when its
+ * mtime looks old.
  */
 function takeStaleLock(lock: string, owner: string): boolean {
+  try {
+    const recorded = readFileSync(join(lock, "owner"), "utf8");
+    const pid = Number.parseInt(recorded.split("-")[0] ?? "", 10);
+
+    if (Number.isInteger(pid) && pid > 0 && processAlive(pid)) return false;
+  } catch {
+    // No readable owner file: fall through to the mtime-based takeover.
+  }
+
   const claim = `${lock}.${process.pid}.${randomUUID().slice(0, 8)}.stale`;
 
   try {
@@ -296,9 +325,23 @@ export async function withFileLock<T>(
 
   writeFileSync(join(lock, "owner"), owner);
 
+  // Keeps the lock mtime fresh so a long fn() is never judged stale and
+  // stolen by a waiting process; unref'd so it never holds the event loop.
+  const heartbeat = setInterval(() => {
+    try {
+      utimesSync(lock, new Date(), new Date());
+    } catch {
+      // Lock vanished; ownership check in the finally block below handles it.
+    }
+  }, 5_000);
+
+  heartbeat.unref();
+
   try {
     return await fn();
   } finally {
+    clearInterval(heartbeat);
+
     try {
       if (readFileSync(join(lock, "owner"), "utf8") === owner) {
         rmSync(lock, { recursive: true, force: true });

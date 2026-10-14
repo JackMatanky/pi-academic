@@ -6,11 +6,11 @@ import { firstViolation } from "../lib/schema.js";
 import {
   ComponentsSchema,
   PageSchema,
-} from "../pi-academic-writer/style-design.js";
+} from "../pi-academic-writer/styling/style-design.js";
 import {
   STYLE_STARTERS,
   starterByName,
-} from "../pi-academic-writer/style-starters.js";
+} from "../pi-academic-writer/styling/style-starters.js";
 
 test("[test_style_starters_match_schemas] every shipped starter satisfies the design schemas", () => {
   assert.deepEqual(

@@ -4,7 +4,7 @@ description: >-
   Manage the researcher voice profile: refresh corpus-derived style patterns, conduct or resume the adversarial interview,
   calibrate, audit, and recompress. Use when adding past articles or refining the writer profile.
 allowed-tools: read write edit find grep bash academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_read_resource academic_writer_write_interview_session academic_writer_write_voice_audit academic_writer_write_voice_fingerprint academic_writer_update_author_voice academic_writer_update_profile
-metadata: {author: "Yotam Fromm", version: "0.2.20"}
+metadata: { author: "Yotam Fromm", version: "0.2.20" }
 ---
 
 # Academic voice

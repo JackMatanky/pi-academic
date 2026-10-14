@@ -21,10 +21,11 @@ Run ALL in parallel:
 Ask the researcher directly in chat (present as a numbered/lettered list):
 
 1. **Zotero** — Reference manager (local library or web API); best for storing and searching your source PDFs.
+
    > "Zotero
    > ──────────
-   > Type:    MCP server (`zotero-mcp`)
-   > What:    Reference manager (local library or web API)
+   > Type: MCP server (`zotero-mcp`)
+   > What: Reference manager (local library or web API)
    > Best for: Storing and searching your source PDFs
    > Status: ✓ Detected"
 
@@ -38,7 +39,19 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
          "command": "zotero-mcp",
          "args": ["serve"],
          "env": { "ZOTERO_LOCAL": "true" },
-         "directTools": ["zotero_get_recent", "zotero_get_collections", "zotero_get_collection_items", "zotero_get_item_fulltext", "zotero_get_item_metadata", "zotero_get_pdf_outline", "zotero_read_pdf_pages", "zotero_search_items", "zotero_semantic_search", "zotero_get_search_database_status", "zotero_update_search_database"]
+         "directTools": [
+           "zotero_get_recent",
+           "zotero_get_collections",
+           "zotero_get_collection_items",
+           "zotero_get_item_fulltext",
+           "zotero_get_item_metadata",
+           "zotero_get_pdf_outline",
+           "zotero_read_pdf_pages",
+           "zotero_search_items",
+           "zotero_semantic_search",
+           "zotero_get_search_database_status",
+           "zotero_update_search_database"
+         ]
        }
      }
    }
@@ -49,18 +62,20 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
    After config is written for the first time, call `academic_writer_status`: on `harness: pi`, restart pi (direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable for the rest of the current session); on `harness: omp`, run `/mcp reload` instead of restarting.
 
    If both the tool and binary are NOT_DETECTED: "✗ Not found — install with `pip install zotero-mcp-server`, then configure a `zotero` MCP server in `.mcp.json` or `~/.config/mcp/mcp.json` (see github.com/54yyyu/zotero-mcp)."
+
 2. **NotebookLM** — AI-powered source Q&A, audio overviews, study guides, research discovery.
+
    > "NotebookLM
    > ──────────
-   > Type:    MCP server (`notebooklm-mcp`) + `nlm` CLI
-   > What:    AI-powered source Q&A, audio overviews,
-   >          study guides, research discovery
+   > Type: MCP server (`notebooklm-mcp`) + `nlm` CLI
+   > What: AI-powered source Q&A, audio overviews,
+   > study guides, research discovery
    > Status: ✓ Detected
    >
    > Setup (if not installed):
-   >   uv tool install notebooklm-mcp-cli
-   >   nlm login
-   >   add the `notebooklm-mcp` server to `.mcp.json` or global MCP config"
+   > uv tool install notebooklm-mcp-cli
+   > nlm login
+   > add the `notebooklm-mcp` server to `.mcp.json` or global MCP config"
 
    If `nlm` is installed/authenticated but `notebook_list` is unavailable, offer to add this project `.mcp.json` block after researcher approval; if `.mcp.json` exists, merge only when it is a simple JSON object, otherwise show the block for manual merge:
 
@@ -70,17 +85,25 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
      "mcpServers": {
        "notebooklm-mcp": {
          "command": "notebooklm-mcp",
-         "directTools": ["notebook_list", "notebook_query", "notebook_create", "source_add", "studio_create", "studio_status"]
+         "directTools": [
+           "notebook_list",
+           "notebook_query",
+           "notebook_create",
+           "source_add",
+           "studio_create",
+           "studio_status"
+         ]
        }
      }
    }
    ```
 
 3. **Sefaria** — Optional Judaic primary text lookup and verse context expansion.
+
    > "Sefaria
    > ───────
-   > Type:    MCP server with bare tools (`get_text`, `search`)
-   > What:    Biblical/rabbinic text context for source exploration
+   > Type: MCP server with bare tools (`get_text`, `search`)
+   > What: Biblical/rabbinic text context for source exploration
    > Status: ✓ Detected"
 
    If selected but unavailable, show the Sefaria MCP server setup guidance for the researcher's chosen server. Require standard MCP config with `settings.toolPrefix: "none"` and `directTools: ["get_text", "search"]`; do not store Sefaria credentials in `.academic-writer/profile.md`.

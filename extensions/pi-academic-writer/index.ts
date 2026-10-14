@@ -4,6 +4,7 @@ import { detectHarness } from "../lib/harness.js";
 import { registerCoreTools } from "./tools/core-tools.js";
 import { registerExportTools } from "./tools/export-tools.js";
 import { registerProfileTools } from "./tools/profile-tools.js";
+import { registerProseTools } from "./tools/prose-tools.js";
 import { registerResearchTools } from "./tools/research-tools.js";
 import { registerSourceTools } from "./tools/source-tools.js";
 import { registerVoiceTools } from "./tools/voice-tools.js";
@@ -20,4 +21,5 @@ export default function piAcademicWriter(pi: ExtensionAPI): void {
   registerExportTools(pi);
   registerResearchTools(pi);
   registerVoiceTools(pi);
+  registerProseTools(pi);
 }

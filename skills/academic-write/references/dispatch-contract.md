@@ -68,18 +68,25 @@ Parallel: `subagent({ tasks: [{ agent, task, outputSchema }], concurrency: 4 })`
 
 ```json
 {
-  "type": "object", "additionalProperties": false,
+  "type": "object",
+  "additionalProperties": false,
   "required": ["mode", "findings", "revisionNotes"],
   "properties": {
     "mode": { "const": "review" },
-    "findings": { "type": "array", "items": { "type": "object",
-      "additionalProperties": false,
-      "required": ["severity", "quote", "location", "note"],
-      "properties": {
-        "severity": { "enum": ["fatal", "major", "minor"] },
-        "quote": { "type": "string" },
-        "location": { "type": "string" },
-        "note": { "type": "string" } } } },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "quote", "location", "note"],
+        "properties": {
+          "severity": { "enum": ["fatal", "major", "minor"] },
+          "quote": { "type": "string" },
+          "location": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    },
     "revisionNotes": { "type": "string" },
     "revisedArticle": { "type": ["string", "null"] }
   }

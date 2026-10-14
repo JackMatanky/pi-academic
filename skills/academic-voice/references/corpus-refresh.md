@@ -23,9 +23,11 @@ Use the returned `styleFingerprint` and `analyzedArticles` list (if present).
 Call `academic_writer_list_project_files` with `kind: "past_articles"` and compare the returned filenames against `profile.analyzedArticles` (array of filenames already analyzed). Identify new files not yet processed.
 
 If no new files found:
+
 > "No new articles found in `past-articles/`. Add new papers (PDF or DOCX) and run `/skill:academic-voice` again."
 
 If new files found, show them:
+
 > "Found [N] new article(s) to analyze:
 >
 > 1. [filename]
@@ -73,7 +75,6 @@ Ask the researcher whether to save, review, or discard the changes. Wait for the
 If **Save**, call `academic_writer_update_profile` with a structured `fieldsJson` object containing the complete proposed `styleFingerprint` and the merged `analyzedArticles` list. Do not serialize it or use generic file-write tools for the profile.
 
 If **Review details**, show the full before/after for each dimension, then ask again.
-
 
 ## Completion
 

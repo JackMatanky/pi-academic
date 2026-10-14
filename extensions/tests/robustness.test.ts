@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
 import { test, type TestContext } from "vitest";
 
-import { extractDocument } from "../pi-academic-writer/documents.js";
+import { extractDocument } from "../pi-academic-writer/parsers/documents.js";
 
 function scratch(t: TestContext): string {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "robustness-")));

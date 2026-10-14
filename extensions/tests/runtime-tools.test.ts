@@ -500,7 +500,7 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
 
   assert.equal(evilSection.isError, true);
   assert.ok(
-    text(evilSection).includes("Invalid sectionId"),
+    text(evilSection).includes("/sectionId"),
     `unexpected message: ${text(evilSection)}`,
   );
 
@@ -512,7 +512,7 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
 
   assert.equal(outsideArticle.isError, true);
   assert.ok(
-    text(outsideArticle).includes('must start with "articles/"'),
+    text(outsideArticle).includes("/article: must match pattern"),
     `unexpected message: ${text(outsideArticle)}`,
   );
 

@@ -9,6 +9,7 @@ Modify which integrations are enabled without re-running the full initialization
 Call `academic_writer_get_profile`.
 
 If it returns `ok: false`, tell them:
+
 > "No profile found. Run `/skill:academic-setup` first."
 
 Use the returned `tools` object. If the profile has no `tools` key (JSON profile), treat all tools as not configured.
@@ -34,12 +35,13 @@ Show a table with current status and detection:
 
 > "Here are your current tool integrations:
 >
-> | # | Tool | Currently | Detected | Scope |
-> |---|------|-----------|----------|-------|
->
+> | #   | Tool | Currently | Detected | Scope |
+> | --- | ---- | --------- | -------- | ----- |
+
 | 1 | Zotero | ✓ Enabled / ✗ Disabled | ✓ / ✗ | collection name/key, or "all library" |
 | 2 | NotebookLM | ✓ Enabled / ✗ Disabled | ✓ / ✗ | notebook name/id, or "all notebooks" |
 | 3 | Sefaria | ✓ Enabled / ✗ Disabled | ✓ / ✗ | Judaic primary text & search |
+
 > What would you like to change? You can:
 >
 > - **Enable** a tool by number or name (I'll help install if not detected)
@@ -92,8 +94,16 @@ Replace `TOOL_CONFIG` with the actual selections, e.g.:
 
 ```json
 {
-  "zotero": { "enabled": true, "mode": "mcp-config", "collection": { "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" } },
-  "notebooklm": { "enabled": true, "mode": "mcp-config", "notebook": { "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" } },
+  "zotero": {
+    "enabled": true,
+    "mode": "mcp-config",
+    "collection": { "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }
+  },
+  "notebooklm": {
+    "enabled": true,
+    "mode": "mcp-config",
+    "notebook": { "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" }
+  },
   "sefaria": { "enabled": true, "mode": "mcp-config" }
 }
 ```

@@ -17,7 +17,7 @@ import {
   resolveCitationKeys,
   type CitationAuditDetails,
   type CitationAuditResult,
-} from "../pi-academic-writer/citation-audit.js";
+} from "../pi-academic-writer/citations/citation-audit.js";
 
 function details(result: CitationAuditResult): CitationAuditDetails {
   if (result.status === "error") throw new Error(result.error);
@@ -280,4 +280,23 @@ test("analyzer masks email addresses so they are not treated as narrative citati
   assert.deepEqual(analysis.citationKeys, ["doe2021"]);
   assert.ok(!analysis.citationKeys.includes("example.com"));
   assert.ok(!analysis.citationKeys.includes("domain.org"));
+});
+
+test("analyzer ignores inline code spans that cross line breaks", () => {
+  const analysis = analyzeCitationText(
+    [
+      "Real claim [@realkey].",
+      "",
+      "Use `mymodule.config",
+      "with @fakekey and [@faketoo] inside` here.",
+      "",
+      "Trailing prose [@otherkey].",
+    ].join("\n"),
+    "chicago",
+  );
+
+  assert.deepEqual(analysis.citationKeys, ["realkey", "otherkey"]);
+  assert.ok(!analysis.citationKeys.includes("fakekey"));
+  assert.ok(!analysis.markers.some((marker) => marker.includes("faketoo")));
+  assert.equal(analysis.status, "passed");
 });

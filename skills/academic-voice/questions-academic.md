@@ -56,7 +56,7 @@ This file is consumed by the `academic-voice` skill. The interviewer adapts with
 
 ## 04 — Personality (voice-heavy)
 
-- [V] When you're being honest in writing, what does that *sound* like? Show a sentence.
+- [V] When you're being honest in writing, what does that _sound_ like? Show a sentence.
 - [V] What does AI-generated writing sound like to you? Three specific tells.
 - [T] Words that signal "me being earnest" vs "me hiding behind formality".
 - [V] Emotional baseline — wry, severe, warm, clinical, urgent? One word, then defend.

@@ -56,19 +56,19 @@ Work through `PROOF_BASE` line by line, in this order:
 
 1. **רמת האות (letter)** — typos, dropped/extra letters, accidental Latin characters inside Hebrew text, doubled letters.
 2. **רמת המילה (word)** — wrong-but-similar word (e.g., גם/גן), missing word, repeated word, obvious spelling error.
-3. **רמת המשפט (sentence)** — clearly broken syntax, missing comma that creates real ambiguity, wrong gender/number agreement. Only *unambiguous* errors — not style.
-4. **רמת הרעיון (idea)** — **flag only, never fix.** e.g., "this sentence appears to contradict the claim two paragraphs up." Hand back to the author. (The guide permits only *very limited* intervention at this level — "flag rather than rewrite", *Writer's Guide* §7.3; we tighten that to flag-only.)
+3. **רמת המשפט (sentence)** — clearly broken syntax, missing comma that creates real ambiguity, wrong gender/number agreement. Only _unambiguous_ errors — not style.
+4. **רמת הרעיון (idea)** — **flag only, never fix.** e.g., "this sentence appears to contradict the claim two paragraphs up." Hand back to the author. (The guide permits only _very limited_ intervention at this level — "flag rather than rewrite", _Writer's Guide_ §7.3; we tighten that to flag-only.)
 
 ### Mechanical scope
 
-| Suggestable (mechanical) | Not yours |
-|---|---|
-| Typos, doubled letters/words | Sentence rewrites for clarity |
-| Punctuation, spacing | Register / tone changes |
-| Hebrew typography: ״ vs `"`, ׳ vs `'`, מקף עברי vs hyphen | Word substitution for style |
-| Obvious grammar / agreement errors | Restructuring, cutting, reordering |
-| Capitalization drift (Latin-script text) | Citation reformatting |
-| | New prose, voice complaints |
+| Suggestable (mechanical)                                  | Not yours                          |
+| --------------------------------------------------------- | ---------------------------------- |
+| Typos, doubled letters/words                              | Sentence rewrites for clarity      |
+| Punctuation, spacing                                      | Register / tone changes            |
+| Hebrew typography: ״ vs `"`, ׳ vs `'`, מקף עברי vs hyphen | Word substitution for style        |
+| Obvious grammar / agreement errors                        | Restructuring, cutting, reordering |
+| Capitalization drift (Latin-script text)                  | Citation reformatting              |
+|                                                           | New prose, voice complaints        |
 
 For Hebrew text apply the typography conventions; for Latin-script text apply standard orthography. If the article mixes scripts, judge each span by its own script.
 
@@ -76,28 +76,28 @@ For Hebrew text apply the typography conventions; for Latin-script text apply st
 
 ### Hebrew typography & orthography — exact rules (avoid over-correction)
 
-These rules are confirmed against *Hebrew Linguistic Reference* (ch. 6 typography, ch. 1 spelling, ch. 5 citation). **The danger here is over-correction** — each mark is correct only in its own context. Verify the context before proposing a change.
+These rules are confirmed against _Hebrew Linguistic Reference_ (ch. 6 typography, ch. 1 spelling, ch. 5 citation). **The danger here is over-correction** — each mark is correct only in its own context. Verify the context before proposing a change.
 
 **Single-character marks (never the ASCII keyboard version):**
 
-- **Gershayim ״ (U+05F4)** — used for (a) quotation marks (same char both sides — Hebrew has no open/close), and (b) multi-letter acronyms/ראשי תיבות, before the last letter: תנ״ך, צה״ל, ד״ר, רמב״ם, שו״ת. Replace ASCII `"` (U+0022) and English curly quotes (U+201C/D) in these positions. *Quote-within-quote alternates:* double outside ״…״, single inside ׳…׳.
+- **Gershayim ״ (U+05F4)** — used for (a) quotation marks (same char both sides — Hebrew has no open/close), and (b) multi-letter acronyms/ראשי תיבות, before the last letter: תנ״ך, צה״ל, ד״ר, רמב״ם, שו״ת. Replace ASCII `"` (U+0022) and English curly quotes (U+201C/D) in these positions. _Quote-within-quote alternates:_ double outside ״…״, single inside ׳…׳.
 - **Geresh ׳ (U+05F3)** — single-letter abbreviations only (עמ׳, ר׳, גב׳), phoneme shift (ג׳, ז׳, צ׳), and transliteration initials (מ׳). Replace ASCII `'` (U+0027) and curly `'` (U+2019). **Do not** use geresh where gershayim belongs (multi-letter acronym) and vice-versa.
-- **Number markers:** when a *single* letter marks a chapter/verse number, add **no** geresh or gershayim (פרק ב — not ב׳; משנה ה — not ה׳). A mark appears only for two-or-more-letter gematria where it could be misread as a word (תשפ״ו, י״ח).
+- **Number markers:** when a _single_ letter marks a chapter/verse number, add **no** geresh or gershayim (פרק ב — not ב׳; משנה ה — not ה׳). A mark appears only for two-or-more-letter gematria where it could be misread as a word (תשפ״ו, י״ח).
 
 **The four-way hyphen distinction — DO NOT convert every `-` to a maqaf:**
 
-| Sign | Unicode | Use only for |
-|---|---|---|
-| Maqaf ־ | U+05BE | compound words / construct-state pairs: בית־ספר, ארץ־ישראל, רב־מכר |
-| Hyphen-minus - | U+002D | phone numbers, model codes (03-1234567, LX-5) — **leave as-is** |
-| En-dash – | U+2013 | numeric/date ranges, no spaces: 45–67, 1939–1945 — convert `\d-\d` ranges to en-dash, **not** maqaf |
-| Em-dash — | U+2014 | dramatic pause (rare in academic prose) |
+| Sign           | Unicode | Use only for                                                                                        |
+| -------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| Maqaf ־        | U+05BE  | compound words / construct-state pairs: בית־ספר, ארץ־ישראל, רב־מכר                                  |
+| Hyphen-minus - | U+002D  | phone numbers, model codes (03-1234567, LX-5) — **leave as-is**                                     |
+| En-dash –      | U+2013  | numeric/date ranges, no spaces: 45–67, 1939–1945 — convert `\d-\d` ranges to en-dash, **not** maqaf |
+| Em-dash —      | U+2014  | dramatic pause (rare in academic prose)                                                             |
 
 **Spacing:** insert a non-breaking space (U+00A0) between a number and its unit so it doesn't break at line-end: עמ׳ 47, 3 ק״מ, 15%, פרק ב.
 
 **Hebrew source-citation mechanics (surface-level only — not reformatting):** comma, not colon, between chapter and verse (בראשית א, א — never `א:א`); Talmud folio markers use gershayim (ע״א, ע״ב); page ranges in the bibliography use en-dash.
 
-**2017 כתיב מלא (Academy spelling reform)** — suggestable as a word-level (`word`/`typo`) correction, e.g. תכנית→תוכנית, אמתי→אמיתי, לעתים→לעיתים, בנין→בניין, and אישה (always with yod). **Guards:** proper names are exempt (never "correct" a person's name without permission → `idea-flag`); do not retro-fix a text that is deliberately pre-2017; and if the document is already internally consistent on a non-canonical choice, **enforce its consistency rather than override it** — coherence within the work outranks absolute correctness (*Hebrew Linguistic Reference*, ch. 5). Anything ambiguous → `idea-flag`, not a suggestion.
+**2017 כתיב מלא (Academy spelling reform)** — suggestable as a word-level (`word`/`typo`) correction, e.g. תכנית→תוכנית, אמתי→אמיתי, לעתים→לעיתים, בנין→בניין, and אישה (always with yod). **Guards:** proper names are exempt (never "correct" a person's name without permission → `idea-flag`); do not retro-fix a text that is deliberately pre-2017; and if the document is already internally consistent on a non-canonical choice, **enforce its consistency rather than override it** — coherence within the work outranks absolute correctness (_Hebrew Linguistic Reference_, ch. 5). Anything ambiguous → `idea-flag`, not a suggestion.
 
 **Niqqud** — do not add niqqud to running prose. It belongs only in poetry, biblical/liturgical quotation, children's text, and dictionaries; never mix niqqud systems within one work. Treat niqqud changes as out-of-scope for the default pass (flag if clearly broken).
 
@@ -105,24 +105,24 @@ These rules are confirmed against *Hebrew Linguistic Reference* (ch. 6 typograph
 
 Every suggestion from any pass is one row:
 
-| field | meaning |
-|---|---|
-| `line` | line in `PROOF_BASE` (0-based) |
-| `type` | `typo`, `punctuation`, `word`, `grammar`, `typography`, or `idea-flag` |
-| `level` | `letter`, `word`, `sentence`, or `idea` |
-| `before` | verbatim snippet from the text, unique enough to locate |
-| `after` | corrected snippet, or `null` for `idea-flag` |
-| `rationale` | one short line, in the article's language where natural |
+| field       | meaning                                                                |
+| ----------- | ---------------------------------------------------------------------- |
+| `line`      | line in `PROOF_BASE` (0-based)                                         |
+| `type`      | `typo`, `punctuation`, `word`, `grammar`, `typography`, or `idea-flag` |
+| `level`     | `letter`, `word`, `sentence`, or `idea`                                |
+| `before`    | verbatim snippet from the text, unique enough to locate                |
+| `after`     | corrected snippet, or `null` for `idea-flag`                           |
+| `rationale` | one short line, in the article's language where natural                |
 
 Resist these failure modes:
 
 - **"Helpful Rewriter"** — the pull to improve a clunky-but-correct sentence. A clunky sentence is NOT mechanical. Rephrasing, word-for-style substitution, register tuning, and restructuring are all forbidden. If something reads poorly but is grammatically and orthographically correct, leave it — at most raise an `idea-flag`.
-- **"Citation Surgeon"** — never alter the content of a citation, a quoted passage (״...״ / "..."), a page number, or a footnote reference. You may flag a *broken* quotation mark as typography, but never touch what is inside the quotes.
+- **"Citation Surgeon"** — never alter the content of a citation, a quoted passage (״...״ / "..."), a page number, or a footnote reference. You may flag a _broken_ quotation mark as typography, but never touch what is inside the quotes.
 - **"Silent Meaning Shift"** — a punctuation or word fix that changes the meaning is not mechanical. If the fix could change the claim, downgrade it to an `idea-flag` and let a human decide.
 
 ## Step 4 — Citation-integrity guard (differential, deterministic)
 
-The sweep is forbidden from editing inside a citation, quotation, page number, or footnote marker. This step **verifies that invariant was obeyed** — it does not re-audit the article's citations. The question here is *differential* ("did this mechanical fix disturb a citation token?"), not absolute ("are the article's citations sound?"). Re-auditing edited text in isolation would answer the wrong question and would silently drop valid fixes when a paragraph had a pre-existing footnote/anchor issue — so this guard is deterministic and needs no `sources.json`.
+The sweep is forbidden from editing inside a citation, quotation, page number, or footnote marker. This step **verifies that invariant was obeyed** — it does not re-audit the article's citations. The question here is _differential_ ("did this mechanical fix disturb a citation token?"), not absolute ("are the article's citations sound?"). Re-auditing edited text in isolation would answer the wrong question and would silently drop valid fixes when a paragraph had a pre-existing footnote/anchor issue — so this guard is deterministic and needs no `sources.json`.
 
 **Define citation/quotation tokens** (match against `before` and `after` of each suggestion; extend per the article's `LANGUAGE`):
 
@@ -131,12 +131,12 @@ The sweep is forbidden from editing inside a citation, quotation, page number, o
 - Quotations: `"…"`, `״…״`, `'…'`, `׳…׳`, block quotes.
 - Page numbers / locators: `p. 45`, `pp. 45–47`, `עמ׳ 45`, `ע״א`/`ע״ב`.
 
-**For each mechanical suggestion:** does its `before` snippet (with surrounding context) overlap, or would applying it alter any character *inside*, one of these tokens?
+**For each mechanical suggestion:** does its `before` snippet (with surrounding context) overlap, or would applying it alter any character _inside_, one of these tokens?
 
 - **No overlap** (the overwhelmingly common case — a typo/punctuation/spacing fix in plain prose) → **keep it as applicable.**
 - **Overlap** → **do not apply even on approval.** Downgrade the suggestion to an `idea-flag` with reason `"touches a citation/quotation token — needs human review"`, and record it in the report's Notes. A fix to a citation token is exactly the kind of change a מגיה must hand to a human.
 
-(Typography fixes that only normalize a quotation *mark itself* — straight `"` → `״` opening/closing a quotation — are the one expected overlap; treat them as applicable typography, but record them in Notes so the human can confirm the right mark was chosen. Anything that changes text *inside* the quotation is never applied.)
+(Typography fixes that only normalize a quotation _mark itself_ — straight `"` → `״` opening/closing a quotation — are the one expected overlap; treat them as applicable typography, but record them in Notes so the human can confirm the right mark was chosen. Anything that changes text _inside_ the quotation is never applied.)
 
 ## Step 5 — Present suggestions; apply approved fixes to a corrected copy
 
@@ -170,22 +170,22 @@ Write `articles/${FILEBASE}.proofread.md` documenting **every suggestion and its
 
 ## Applied changes
 
-| # | Line | Level | Type | Before → After | Why |
-|---|------|-------|------|----------------|-----|
-| 1 | 42 | letter | typo | `המחשבות` → `המחשבות` | doubled ו |
-| … | | | | | |
+| #   | Line | Level  | Type | Before → After        | Why       |
+| --- | ---- | ------ | ---- | --------------------- | --------- |
+| 1   | 42   | letter | typo | `המחשבות` → `המחשבות` | doubled ו |
+| …   |      |        |      |                       |           |
 
 ## Suggested but not applied
 
-| # | Line | Level | Type | Before → After | Why | Reason |
-|---|------|-------|------|----------------|-----|--------|
-| … | | | | | | declined by researcher / guard-downgraded / not localized |
+| #   | Line | Level | Type | Before → After | Why | Reason                                                    |
+| --- | ---- | ----- | ---- | -------------- | --- | --------------------------------------------------------- |
+| …   |      |       |      |                |     | declined by researcher / guard-downgraded / not localized |
 
 ## Idea-level flags (not changed — for your review)
 
-| # | Line | Note |
-|---|------|------|
-| 1 | 88 | This sentence appears to contradict §2's claim that … |
+| #   | Line | Note                                                  |
+| --- | ---- | ----------------------------------------------------- |
+| 1   | 88   | This sentence appears to contradict §2's claim that … |
 
 ## Notes
 
@@ -203,7 +203,7 @@ If changes were applied:
 > - **Corrected copy:** `articles/<FILEBASE>.proofed.md`
 > - **Change report:** `articles/<FILEBASE>.proofread.md`
 > - Applied **<K>** approved mechanical fixes; **<M>** idea-level issues flagged (not changed).
-> Your original is untouched. Review the report against the corrected copy and revert any change by hand if you disagree — every change is listed with its rationale."
+>   Your original is untouched. Review the report against the corrected copy and revert any change by hand if you disagree — every change is listed with its rationale."
 
 If it was a clean pass (no applicable changes):
 
