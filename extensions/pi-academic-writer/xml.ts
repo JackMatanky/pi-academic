@@ -11,6 +11,9 @@ export function ownerOf(node: Node): Document {
   return node.ownerDocument;
 }
 
+/**
+ * Returns the root element of an XML document, throwing if absent.
+ */
 export function rootOf(doc: Document): Element {
   if (!doc.documentElement) throw new Error("XML document has no root element");
 

@@ -23,6 +23,9 @@ import { buildLatexPreamble } from "./style-latex.js";
 import { buildOdtReference } from "./style-odt.js";
 import { starterByName } from "./style-starters.js";
 
+/**
+ * Format-specific rendered assets and arguments for Pandoc compilation.
+ */
 export interface RenderedStyle {
   package: string;
   format: StyleFormat;
@@ -136,6 +139,10 @@ export async function renderDocumentStyle(
   };
 }
 
+/**
+ * Validation and rendering check result for all formats supported by a style
+ * package.
+ */
 export interface PackageCheck {
   package: string;
   ok: boolean;
@@ -203,6 +210,9 @@ export function listStylePackages(projectRoot: string): string[] {
     .sort();
 }
 
+/**
+ * Record of installed starter package files and directory path.
+ */
 export interface InstalledStarter {
   package: string;
   directory: string;

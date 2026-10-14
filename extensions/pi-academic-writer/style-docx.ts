@@ -695,6 +695,10 @@ function addPart(entries: Record<string, Uint8Array>) {
   }
 }
 
+/**
+ * In-memory patched reference DOCX bytes and non-fatal style translation
+ * warnings.
+ */
 export interface BuiltReference {
   bytes: Uint8Array;
   warnings: string[];

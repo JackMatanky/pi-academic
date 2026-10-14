@@ -113,6 +113,9 @@ export function resolveResourcePath(
   }
 }
 
+/**
+ * Result of loading an Academic Writer package or project resource.
+ */
 export interface LoadedResource {
   content: string;
   path: string;

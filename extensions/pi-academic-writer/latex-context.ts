@@ -5,6 +5,9 @@ import type {
   StyleDesign,
 } from "./style-design.js";
 
+/**
+ * Component-to-LaTeX sectioning command mappings in descending order.
+ */
 export const HEADING_COMMANDS = [
   ["heading1", "section"],
   ["heading2", "subsection"],
@@ -13,12 +16,18 @@ export const HEADING_COMMANDS = [
   ["heading5", "subparagraph"],
 ] as const;
 
+/**
+ * Geometry package paper size options corresponding to PageStyle sizes.
+ */
 export const GEOMETRY_PAPER = {
   A4: "a4paper",
   Letter: "letterpaper",
   Legal: "legalpaper",
 };
 
+/**
+ * LaTeX text alignment declarations for supported alignments.
+ */
 export const ALIGN_COMMAND = {
   left: "\\raggedright",
   right: "\\raggedleft",
@@ -26,8 +35,15 @@ export const ALIGN_COMMAND = {
   justify: "",
 } as const;
 
+/**
+ * Formats a numeric dimension to 3 decimal places without trailing zeroes.
+ */
 export const num = (value: number) => `${+value.toFixed(3)}`;
 
+/**
+ * Computes standard 1.2x proportional leading line height for a font size in
+ * points.
+ */
 export const line = (size: number) => num(size * 1.2);
 
 /**
@@ -87,6 +103,10 @@ export interface LatexContext {
   colors: Map<string, string>;
 }
 
+/**
+ * Creates a fresh LaTeX generation context with tracking for custom colors and
+ * warnings.
+ */
 export function createLatexContext(
   design: StyleDesign,
   explicit: ExplicitProps,

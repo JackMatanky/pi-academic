@@ -45,6 +45,9 @@ export const EvidenceMapSchema = Type.Object({
   evidence: Type.Optional(Type.Array(Type.Object({ id: NonBlankString }))),
 });
 
+/**
+ * In-memory representation of research evidence coverage across chapters.
+ */
 export type EvidenceMap = Static<typeof EvidenceMapSchema>;
 
 /**

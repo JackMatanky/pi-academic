@@ -19,7 +19,10 @@ import { buildStatus } from "../status.js";
 import { fail, registerTool } from "../tool-kit.js";
 
 /**
- * Resource, status, health, path and MCP-name lookup tools.
+ * Registers resource, status, health, path, and MCP-name lookup tools.
+ *
+ * @param pi - Pi extension API used to register tools.
+ * @param harness - Active execution harness (pi or omp).
  */
 export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {

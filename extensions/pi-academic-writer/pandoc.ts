@@ -1,5 +1,8 @@
 import { spawn } from "node:child_process";
 
+/**
+ * Options for spawning the Pandoc executable.
+ */
 export interface PandocOptions {
   cwd?: string | undefined;
   signal?: AbortSignal | undefined;

@@ -7,6 +7,9 @@ import { applyHeadings } from "./latex-headings.js";
 import { applyNotes } from "./latex-notes.js";
 import { applyPageAndBody } from "./latex-page.js";
 
+/**
+ * Generated LaTeX preamble string and non-fatal style translation warnings.
+ */
 export interface BuiltPreamble {
   tex: string;
   warnings: string[];

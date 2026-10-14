@@ -478,4 +478,7 @@ export async function persistSourceRegistry(
   });
 }
 
+/**
+ * Backwards-compatible alias for `persistSourceRegistry`.
+ */
 export const writeSourcesCache = persistSourceRegistry;

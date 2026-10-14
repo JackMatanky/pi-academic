@@ -102,6 +102,14 @@ const DecodedResearchQuerySchema = Type.Union([
  */
 export type ResearchQuery = Static<typeof DecodedResearchQuerySchema>;
 
+/**
+ * Decodes and validates a raw research query against its operation-specific
+ * schema.
+ *
+ * @param input - Raw query with operation discriminator and payload fields.
+ *
+ * @returns Validated typed research query.
+ */
 export function decodeResearchQuery(
   input: Static<typeof ResearchQuerySchema>,
 ): ResearchQuery {

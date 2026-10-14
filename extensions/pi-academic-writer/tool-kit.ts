@@ -79,6 +79,9 @@ interface OmpToolExtras {
   loadMode?: "essential";
 }
 
+/**
+ * Specification for registering a TypeBox-typed tool across harnesses.
+ */
 export interface ToolSpec<S extends TSchema> {
   name: string;
   label: string;

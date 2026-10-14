@@ -70,6 +70,9 @@ const ProfileFields = {
   ),
 };
 
+/**
+ * Schema for core researcher profile metadata.
+ */
 export const ProfileDataSchema = Type.Object(ProfileFields);
 
 const fields = ProfileFields;

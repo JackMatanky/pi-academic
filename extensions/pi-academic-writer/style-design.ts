@@ -17,10 +17,19 @@ import {
 } from "../lib/schema.js";
 import { starterByName } from "./style-starters.js";
 
+/**
+ * Supported output style formats.
+ */
 export type StyleFormat = "docx" | "odt" | "latex" | "pdf";
 
+/**
+ * Supported LaTeX-based PDF compilation engines.
+ */
 export type PdfEngine = "xelatex" | "tectonic";
 
+/**
+ * Immutable list of supported document style output formats.
+ */
 export const STYLE_FORMATS: readonly StyleFormat[] = [
   "docx",
   "odt",
@@ -80,33 +89,117 @@ export type ComponentStyle = Static<typeof ComponentStyleSchema>;
  */
 export const ComponentsSchema = Type.Object(
   {
+    /**
+     * Document title
+     */
     title: Type.Optional(ComponentStyleSchema),
+    /**
+     * Document subtitle
+     */
     subtitle: Type.Optional(ComponentStyleSchema),
+    /**
+     * Abstract section heading
+     */
     abstractHeading: Type.Optional(ComponentStyleSchema),
+    /**
+     * Abstract body paragraph
+     */
     abstractBody: Type.Optional(ComponentStyleSchema),
+    /**
+     * Default body text paragraph
+     */
     body: Type.Optional(ComponentStyleSchema),
+    /**
+     * Level 1 section heading
+     */
     heading1: Type.Optional(ComponentStyleSchema),
+    /**
+     * Level 2 section heading
+     */
     heading2: Type.Optional(ComponentStyleSchema),
+    /**
+     * Level 3 section heading
+     */
     heading3: Type.Optional(ComponentStyleSchema),
+    /**
+     * Level 4 section heading
+     */
     heading4: Type.Optional(ComponentStyleSchema),
+    /**
+     * Level 5 section heading
+     */
     heading5: Type.Optional(ComponentStyleSchema),
+    /**
+     * Level 6 section heading
+     */
     heading6: Type.Optional(ComponentStyleSchema),
+    /**
+     * Block quotation paragraph
+     */
     blockQuote: Type.Optional(ComponentStyleSchema),
+    /**
+     * In-text footnote reference marker
+     */
     footnoteReference: Type.Optional(ComponentStyleSchema),
+    /**
+     * Footnote body text paragraph
+     */
     footnoteText: Type.Optional(ComponentStyleSchema),
+    /**
+     * In-text citation callout
+     */
     citation: Type.Optional(ComponentStyleSchema),
+    /**
+     * Bibliography entry list item
+     */
     bibliography: Type.Optional(ComponentStyleSchema),
+    /**
+     * Ordered (numbered) list item
+     */
     orderedList: Type.Optional(ComponentStyleSchema),
+    /**
+     * Unordered (bulleted) list item
+     */
     bulletList: Type.Optional(ComponentStyleSchema),
+    /**
+     * Entire table container and grid
+     */
     table: Type.Optional(ComponentStyleSchema),
+    /**
+     * Table header row cell text
+     */
     tableHeader: Type.Optional(ComponentStyleSchema),
+    /**
+     * Table body row cell text
+     */
     tableBody: Type.Optional(ComponentStyleSchema),
+    /**
+     * Table or figure caption text
+     */
     caption: Type.Optional(ComponentStyleSchema),
+    /**
+     * Figure placement container
+     */
     figure: Type.Optional(ComponentStyleSchema),
+    /**
+     * Running header
+     */
     header: Type.Optional(ComponentStyleSchema),
+    /**
+     * Running footer
+     */
     footer: Type.Optional(ComponentStyleSchema),
+    /**
+     * Page number element
+     */
     pageNumber: Type.Optional(ComponentStyleSchema),
+    /**
+     * Hyperlink text
+     */
     hyperlink: Type.Optional(ComponentStyleSchema),
+    /**
+     * Inline or block monospace code
+     */
     code: Type.Optional(ComponentStyleSchema),
   },
   { additionalProperties: false },
@@ -209,6 +302,9 @@ type PageInput = Static<typeof PageSchema>;
 
 export type { PageInput };
 
+/**
+ * Page geometry, orientation, and margin definitions.
+ */
 export interface PageStyle {
   size: "A4" | "Letter" | "Legal";
   orientation: "portrait" | "landscape";
@@ -265,6 +361,10 @@ function changedProps(
   return changed;
 }
 
+/**
+ * Fully resolved style package including design, directory, native assets, and
+ * explicit overrides.
+ */
 export interface LoadedStyle {
   design: StyleDesign;
   /**
@@ -664,6 +764,9 @@ export function loadStylePackage(
   };
 }
 
+/**
+ * Physical dimensions (width, height in mm) for standard paper sizes.
+ */
 export const PAGE_DIMENSIONS_MM: Record<PageStyle["size"], [number, number]> = {
   A4: [210, 297],
   Letter: [215.9, 279.4],

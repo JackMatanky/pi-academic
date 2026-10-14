@@ -13,6 +13,9 @@ import { withScratchDir } from "./document-style.js";
 import { defaultReference, runPandoc } from "./pandoc.js";
 import { buildDocxReference } from "./style-docx.js";
 
+/**
+ * Options passed to the DOCX generator.
+ */
 export interface GenerateDocxOptions {
   /**
    * A style package's DOCX reference; replaces the format-derived one.
@@ -21,6 +24,9 @@ export interface GenerateDocxOptions {
   signal?: AbortSignal | undefined;
 }
 
+/**
+ * Result of successfully generating a DOCX article.
+ */
 export interface GenerateDocxResult {
   ok: true;
   output: string;
@@ -209,6 +215,15 @@ export interface ArticleMarkdown {
   footnotes: number;
 }
 
+/**
+ * Renders article structured data to Pandoc markdown with footnotes and
+ * abstracts.
+ *
+ * @param data - Structured article content and sections.
+ * @param rtl - Whether the output direction is right-to-left.
+ *
+ * @returns Rendered markdown text and footnote count.
+ */
 export function articleMarkdown(
   data: ArticleData,
   rtl: boolean,

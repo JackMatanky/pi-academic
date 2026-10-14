@@ -13,7 +13,9 @@ import { fail, registerTool } from "../tool-kit.js";
 const PROFILE_PATH = ".academic-writer/profile.md";
 
 /**
- * Profile migration, read and patch tools.
+ * Registers profile migration, read, and patch tools.
+ *
+ * @param pi - Pi extension API used to register tools.
  */
 export function registerProfileTools(pi: ExtensionAPI): void {
   registerTool(pi, {

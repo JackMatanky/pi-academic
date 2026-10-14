@@ -19,8 +19,10 @@ import { fail, registerTool } from "../tool-kit.js";
 import { calculateArticleWordCount } from "../word-count.js";
 
 /**
- * Source extraction and ingestion, citation cache, CSL, citation audit and
- * prose lint tools.
+ * Registers source extraction/ingestion, citation cache, CSL, citation audit,
+ * and prose lint tools.
+ *
+ * @param pi - Pi extension API used to register tools.
  */
 export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {

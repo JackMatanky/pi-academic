@@ -6,8 +6,10 @@ import { writeProjectTextFile } from "../project-files.js";
 import { fail, registerTool } from "../tool-kit.js";
 
 /**
- * Scoped writers: each tool's destination is fixed, so agents limited to one
- * artifact never need a generic write/edit grant.
+ * Registers scoped voice writer tools (audit, author voice, interview, and
+ * fingerprint).
+ *
+ * @param pi - Pi extension API used to register tools.
  */
 export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {

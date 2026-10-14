@@ -342,7 +342,9 @@ async function runExport(
 }
 
 /**
- * Export, DOCX generation, style package and typography tools.
+ * Registers export, DOCX generation, style package, and typography tools.
+ *
+ * @param pi - Pi extension API used to register tools.
  */
 export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {

@@ -3,8 +3,15 @@ import { join } from "node:path";
 
 import { resolveInside, writeFileAtomic } from "../lib/fs-safe.js";
 
+/**
+ * Maximum byte size allowed for tool output before spilling to disk (50 KB).
+ */
 export const MAX_OUTPUT_BYTES = 50_000;
 
+/**
+ * Maximum line count allowed for tool output before spilling to disk (2,000
+ * lines).
+ */
 export const MAX_OUTPUT_LINES = 2_000;
 
 const SPILL_DIR = ".academic-writer/runs/tool-output";

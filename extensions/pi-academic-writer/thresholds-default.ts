@@ -62,6 +62,9 @@ export interface Thresholds {
   };
 }
 
+/**
+ * Shipped baseline thresholds for all evaluation dimensions and quality gates.
+ */
 export const THRESHOLDS_DEFAULT: Thresholds = {
   antiAi: { minScore: 35, maxScore: 50, passThreshold: 35 },
   selfReview: { minScore: 40, maxScore: 60, passThreshold: 40 },

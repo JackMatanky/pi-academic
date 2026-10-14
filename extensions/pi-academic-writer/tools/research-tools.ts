@@ -55,7 +55,9 @@ function registerResearchTool<S extends TSchema, Result>(
 }
 
 /**
- * Research-note library, argument-outline and reverse-outline tools.
+ * Registers research-note library, argument-outline, and reverse-outline tools.
+ *
+ * @param pi - Pi extension API used to register tools.
  */
 export function registerResearchTools(pi: ExtensionAPI): void {
   registerResearchTool(pi, {

@@ -1,5 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
+/**
+ * Execution harness: standard pi or oh-my-pi (omp).
+ */
 export type Harness = "pi" | "omp";
 
 /**
