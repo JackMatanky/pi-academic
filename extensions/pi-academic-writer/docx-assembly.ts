@@ -178,7 +178,8 @@ function withFootnotes(
   isRtl = false,
 ): Paragraph {
   if (/^ {0,3}(?:`{3,}|~{3,})/.test(text)) return text;
-  const input = isRtl ? cleanRtlText(text, false) : text;
+  const shouldClean = isRtl || /[\u0590-\u05ff]/.test(text);
+  const input = shouldClean ? cleanRtlText(text, false) : text;
   const notes: Array<{ after: string; text: string }> = [];
   let plain = "";
   let last = 0;

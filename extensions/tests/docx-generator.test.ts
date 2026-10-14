@@ -387,3 +387,37 @@ test(
     assert.equal(existsSync(join(root, "articles/nested/deep/out.docx")), true);
   },
 );
+
+test(
+  "docx: preserves Hebrew quote footnote even with English targetLanguage",
+  needsPandoc,
+  async (t) => {
+    const root = project(t);
+    writeFileSync(
+      join(root, "article.md"),
+      [
+        "# Title",
+        "",
+        'English text with "טקסט [^1] בעברית" and more prose.',
+        "",
+        "[^1]: Hebrew footnote note",
+        "",
+      ].join("\n"),
+    );
+
+    const assembled = assembleDocxJson(root, "article.md", "article.json", {
+      targetLanguage: "English",
+    });
+
+    assert.equal(assembled.ok, true, assembled.error ?? "");
+    const res = await generateDocx("article.json", "article.docx", root);
+    assert.equal(res.ok, true);
+    assert.equal(res.footnotes, 1);
+    const doc = part(join(root, "article.docx"), "word/document.xml");
+    assert.match(doc, /w:footnoteReference/);
+    assert.match(
+      part(join(root, "article.docx"), "word/footnotes.xml"),
+      /Hebrew footnote note/,
+    );
+  },
+);

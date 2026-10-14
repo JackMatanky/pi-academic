@@ -162,7 +162,7 @@ function paragraphMarkdown(
   definitions: string[],
 ): string {
   const clean = (text: string, trim = true) =>
-    rtl ? cleanRtlText(text, trim) : text;
+    rtl || /[\u0590-\u05ff]/.test(text) ? cleanRtlText(text, trim) : text;
 
   const parts = paragraphParts(paragraph);
   const text = clean(parts.text);

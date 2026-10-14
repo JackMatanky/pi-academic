@@ -635,6 +635,10 @@ test("spliceLatexColors inserts colors after xcolor when present, or appends xco
     "\\usepackage{xcolor}",
     "\\definecolor{awbody}{HTML}{112233}",
   ]);
+
+  const emptyColors = ["\\usepackage{geometry}"];
+  spliceLatexColors(emptyColors, []);
+  assert.deepEqual(emptyColors, ["\\usepackage{geometry}"]);
 });
 
 test("buildLatexPreamble carries xcolor and color definitions preceding their use", () => {

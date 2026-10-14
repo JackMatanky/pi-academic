@@ -166,3 +166,34 @@ Claim supported by [@smith2020].
   assert.equal(counts.bibliographyEntriesCount, 1);
   assert.equal(counts.bibliographyWords, 17);
 });
+
+test("[test_parse_bib_entries_unbalanced_braces_recovery] recovers when an entry has unclosed braces and preserves following entries", (t) => {
+  const root = scratch(t);
+  mkdirSync(join(root, "articles"));
+  mkdirSync(join(root, ".academic-writer"));
+
+  const md = `# Title
+
+Claim one [@broken2019] and claim two [@smith2020].
+`;
+
+  writeFileSync(join(root, "articles", "test.md"), md);
+
+  const bib = `@article{broken2019,
+  author = {Broken, Ben},
+  title = {Unclosed { brace in field,
+@article{smith2020,
+  author = {Smith, John},
+  title = {A Study},
+  year = {2020}
+}
+`;
+
+  writeFileSync(join(root, ".academic-writer", "bibliography.bib"), bib);
+
+  const counts = calculateArticleWordCount(root, "articles/test.md", "apa");
+
+  assert.equal(counts.citationCount, 2);
+  assert.equal(counts.bibliographyEntriesCount, 2);
+  assert.ok(counts.bibliographyWords > 0);
+});

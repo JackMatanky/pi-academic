@@ -139,13 +139,21 @@ function parseBibEntries(bibText: string): Map<string, string> {
       }
 
       if (depth === 0) break;
+
+      // Recover from unclosed braces when the next entry starts on a new line.
+      if (char === "\n" || char === "\r") {
+        const next = bibText.slice(
+          char === "\r" && bibText[i + 1] === "\n" ? i + 2 : i + 1,
+        );
+
+        if (/^@\w+\s*\{/.test(next)) break;
+      }
+
       i += 1;
     }
 
-    if (depth !== 0) break;
-
     const body = bibText.slice(bodyStart, i);
-    entryStartPattern.lastIndex = i + 1;
+    entryStartPattern.lastIndex = depth === 0 ? i + 1 : i;
 
     // Clean BibTeX syntax into printable word-like text:
     // field = {Value}, field = "Value" -> Value

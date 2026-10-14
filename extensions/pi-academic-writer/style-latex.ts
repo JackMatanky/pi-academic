@@ -21,17 +21,21 @@ export function spliceLatexColors(
   out: string[],
   colors: Iterable<string>,
 ): void {
+  const colorList = Array.from(colors);
+
+  if (colorList.length === 0) return;
+
   const insertAt = out.indexOf("\\usepackage{xcolor}") + 1;
 
   if (insertAt > 0) {
-    out.splice(insertAt, 0, ...colors);
+    out.splice(insertAt, 0, ...colorList);
   } else {
     const lastPkg = out.findLastIndex((line) =>
       line.startsWith("\\usepackage"),
     );
 
     const target = lastPkg >= 0 ? lastPkg + 1 : out.length;
-    out.splice(target, 0, "\\usepackage{xcolor}", ...colors);
+    out.splice(target, 0, "\\usepackage{xcolor}", ...colorList);
   }
 }
 
