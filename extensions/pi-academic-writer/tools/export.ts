@@ -12,8 +12,6 @@ import {
 } from "../../lib/fs-safe.js";
 import { loadProfile } from "../../lib/profile.js";
 import { stringEnum } from "../../lib/schema.js";
-import { ArticleFormatSchema } from "../article/article.js";
-import { assembleDocxJson } from "../article/docx-assembly.js";
 import { generateDocx } from "../article/docx-generator.js";
 import { auditCitations } from "../citations/audit.js";
 import { selectPdfEngine } from "../core/commands.js";
@@ -359,66 +357,22 @@ export function registerExportTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_assemble_docx_json",
-    effect: "write",
-    label: "Academic Writer Assemble DOCX JSON",
-    description:
-      "Deterministically assemble article JSON for academic_writer_generate_docx from an article markdown file inside the project. Headings below the title become sections, [^n] footnotes become real footnotes, and fenced code is left intact. Optional formatJson is a structured article-format object. Use before academic_writer_generate_docx instead of hand-writing large JSON payloads.",
-    parameters: Type.Object({
-      input: Type.String({
-        minLength: 1,
-        description: "Markdown article path.",
-      }),
-      output: Type.String({
-        minLength: 1,
-        description: "JSON output path for academic_writer_generate_docx.",
-      }),
-      title: Type.Optional(Type.String({ minLength: 1 })),
-      targetLanguage: Type.Optional(Type.String({ minLength: 1 })),
-      formatJson: Type.Optional(ArticleFormatSchema),
-    }),
-    run: (params, { cwd }) => {
-      const result = assembleDocxJson(cwd, params.input, params.output, {
-        title: params.title,
-        targetLanguage: params.targetLanguage,
-        format: params.formatJson,
-      });
-
-      if (!result.ok) {
-        return fail(`DOCX JSON assembly failed: ${result.error}`, result);
-      }
-
-      return {
-        text: `Assembled ${result.output}: ${result.sections} section(s), ${result.totalWords} word(s).`,
-        details: result,
-      };
-    },
-  });
-
-  registerTool(pi, {
     name: "academic_writer_generate_docx",
     effect: "exec",
     label: "Academic Writer Generate DOCX",
     description:
-      "Generate an Academic Writer .docx with real footnotes from the article JSON payload, using Pandoc and the profile's style package when one is configured.",
+      "Generate an Academic Writer .docx with real footnotes from the article markdown file, using Pandoc and the profile's style package when one is configured.",
     parameters: Type.Object({
       input: Type.String({
         minLength: 1,
         description:
-          "Path to the article JSON input file inside the project; relative paths resolve from the project root.",
+          "Path to markdown article file (e.g. articles/<slug>.md) or article JSON input.",
       }),
       output: Type.String({
         minLength: 1,
-        description:
-          "Output .docx path inside the project; relative paths resolve from the project root.",
+        description: "Output .docx path inside the project.",
       }),
-      stylePackage: Type.Optional(
-        Type.String({
-          minLength: 1,
-          description:
-            "Style package under .academic-writer/styles/; overrides the profile's stylePackage.",
-        }),
-      ),
+      stylePackage: Type.Optional(Type.String({ minLength: 1 })),
     }),
     failure: "DOCX generation failed",
     run: async (params, { cwd, signal }) => {

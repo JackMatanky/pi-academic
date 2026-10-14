@@ -150,3 +150,22 @@ test("updateProfile still removes fields set to null", async (t) => {
 
   assert.equal(reread?.tools, undefined);
 });
+
+test("loadProfile automatically migrates profile.json when profile.md is missing", (t) => {
+  const dir = project(t);
+  const jsonPath = join(dir, ".academic-writer", "profile.json");
+  writeFileSync(
+    jsonPath,
+    JSON.stringify({
+      fieldOfStudy: "Philosophy",
+      citationStyle: "chicago",
+      tools: { zotero: { enabled: true } },
+    }),
+  );
+
+  const profile = loadProfile(dir);
+  assert.ok(profile);
+  assert.equal(profile.fieldOfStudy, "Philosophy");
+  assert.equal(profile.citationStyle, "chicago");
+  assert.equal(profile.tools?.zotero?.enabled, true);
+});

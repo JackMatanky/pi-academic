@@ -24,6 +24,8 @@ function scratch(t: TestContext): string {
 test("[test_count_words] unicode word boundaries", () => {
   assert.equal(countWords("Hello world"), 2);
   assert.equal(countWords("שלום עולם ומלואו"), 3);
+  assert.equal(countWords("בית\u05BEספר"), 1);
+  assert.equal(countWords("רש\u05F3י"), 1);
   assert.equal(countWords(""), 0);
   assert.equal(countWords("   \n\t  "), 0);
   assert.equal(countWords("Word-with-hyphens"), 3);

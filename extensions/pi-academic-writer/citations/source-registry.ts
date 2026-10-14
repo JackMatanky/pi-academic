@@ -282,71 +282,80 @@ export async function ingestSources(
 
   const sourcesFile = join(projectRoot, sourcesPath);
   const bibliographyFile = join(projectRoot, bibliographyPath);
-  const existing = readSourceRegistry(sourcesFile);
-  const ingestedPaths = new Set(documents.map((document) => document.path));
 
-  // Only records this run re-reads (or whose file is gone) are replaced; Zotero
-  // records and local files outside this run stay untouched.
-  const retained = existing.filter(
-    (entry) =>
-      !isValid(StoredLocalSourceSchema, entry) ||
-      (!ingestedPaths.has(entry.path) &&
-        existsSync(resolve(projectRoot, entry.path))),
-  );
+  const { sources, merged } = await withFileLock(sourcesFile, () => {
+    const existing = readSourceRegistry(sourcesFile);
+    const ingestedPaths = new Set(documents.map((document) => document.path));
 
-  const usedKeys = new Set(
-    retained.flatMap((entry) => stringField(entry, "citeKey") ?? []),
-  );
+    // Only records this run re-reads (or whose file is gone) are replaced; Zotero
+    // records and local files outside this run stay untouched.
+    const retained = existing.filter(
+      (entry) =>
+        !isValid(StoredLocalSourceSchema, entry) ||
+        (!ingestedPaths.has(entry.path) &&
+          existsSync(resolve(projectRoot, entry.path))),
+    );
 
-  const previousKeys = new Map<string, string>();
+    const usedKeys = new Set(
+      retained.flatMap((entry) => stringField(entry, "citeKey") ?? []),
+    );
 
-  for (const entry of existing) {
-    if (!isValid(StoredLocalSourceSchema, entry)) continue;
-    previousKeys.set(entry.sourceId, entry.citeKey);
-    previousKeys.set(entry.path, entry.citeKey);
-  }
+    const previousKeys = new Map<string, string>();
 
-  const sources = documents.map((document) =>
-    sourceRecordFromDocument(projectRoot, document, usedKeys, previousKeys),
-  );
+    for (const entry of existing) {
+      if (!isValid(StoredLocalSourceSchema, entry)) continue;
+      previousKeys.set(entry.sourceId, entry.citeKey);
+      previousKeys.set(entry.path, entry.citeKey);
+    }
 
-  const merged: JsonObject[] = [...retained, ...sources];
+    const createdSources = documents.map((document) =>
+      sourceRecordFromDocument(projectRoot, document, usedKeys, previousKeys),
+    );
 
-  const localKeys = new Set([
-    ...existing.flatMap((entry) =>
-      isValid(StoredLocalSourceSchema, entry) ? [entry.citeKey] : [],
-    ),
-    ...sources.map((record) => record.citeKey),
-  ]);
+    const mergedRecords: JsonObject[] = [...retained, ...createdSources];
 
-  const foreignEntries = existsSync(bibliographyFile)
-    ? [
-        ...parseBibEntries(readFileSync(bibliographyFile, "utf-8")).values(),
-      ].flatMap((entry) =>
-        localKeys.has(entry.key) ? [] : [{ key: entry.key, text: entry.text }],
-      )
-    : [];
+    const localKeys = new Set([
+      ...existing.flatMap((entry) =>
+        isValid(StoredLocalSourceSchema, entry) ? [entry.citeKey] : [],
+      ),
+      ...createdSources.map((record) => record.citeKey),
+    ]);
 
-  const localEntries = merged.flatMap((entry) =>
-    isValid(StoredLocalSourceSchema, entry)
+    const foreignEntries = existsSync(bibliographyFile)
       ? [
-          sourceBibtex({
-            citeKey: entry.citeKey,
-            workTitle: entry.workTitle ?? "",
-            path: entry.path,
-            year: entry.year ?? null,
-          }),
-        ]
-      : [],
-  );
+          ...parseBibEntries(readFileSync(bibliographyFile, "utf-8")).values(),
+        ].flatMap((entry) =>
+          localKeys.has(entry.key)
+            ? []
+            : [{ key: entry.key, text: entry.text }],
+        )
+      : [];
 
-  writeFileAtomic(sourcesFile, `${JSON.stringify(merged, null, 2)}\n`);
-  writeFileAtomic(
-    bibliographyFile,
-    [...foreignEntries.map((entry) => `${entry.text}\n`), ...localEntries].join(
-      "\n",
-    ),
-  );
+    const localEntries = mergedRecords.flatMap((entry) =>
+      isValid(StoredLocalSourceSchema, entry)
+        ? [
+            sourceBibtex({
+              citeKey: entry.citeKey,
+              workTitle: entry.workTitle ?? "",
+              path: entry.path,
+              year: entry.year ?? null,
+            }),
+          ]
+        : [],
+    );
+
+    writeFileAtomic(sourcesFile, `${JSON.stringify(mergedRecords, null, 2)}\n`);
+    writeFileAtomic(
+      bibliographyFile,
+      [
+        ...foreignEntries.map((entry) => `${entry.text}\n`),
+        ...localEntries,
+      ].join("\n"),
+    );
+
+    return { sources: createdSources, merged: mergedRecords };
+  });
+
   await markResearchNotesStale(
     projectRoot,
     merged.flatMap((entry) => {

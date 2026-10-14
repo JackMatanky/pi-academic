@@ -29,8 +29,6 @@ import {
   parseWith,
   type JsonValue,
 } from "../lib/schema.js";
-import { ParagraphSchema } from "../pi-academic-writer/article/article.js";
-import { assembleDocxJson } from "../pi-academic-writer/article/docx-assembly.js";
 import { auditCitations } from "../pi-academic-writer/citations/audit.js";
 import {
   ingestSources,
@@ -57,17 +55,6 @@ const readJson = (root: string, path: string): JsonValue =>
 const CiteKeyRecords = Type.Array(
   Type.Object({ citeKey: Type.String(), sourceType: Type.String() }),
 );
-
-const AssembledArticle = Type.Object({
-  title: Type.String(),
-  thesis: Type.String(),
-  sections: Type.Array(
-    Type.Object({
-      title: Type.String(),
-      paragraphs: Type.Array(ParagraphSchema),
-    }),
-  ),
-});
 
 test("resolveInside accepts project paths and rejects escapes, including through symlinks", (t) => {
   const root = project(t);
@@ -361,7 +348,7 @@ test("ingest rejects paths outside the project and refuses to overwrite a corrup
   );
 });
 
-test("snapshotCitationAssets and assembleDocxJson refuse paths outside the project", (t) => {
+test("snapshotCitationAssets refuses paths outside the project", (t) => {
   const root = project(t);
   write(root, ".academic-writer/sources.json", "[]");
   write(root, ".academic-writer/bibliography.bib", "");
@@ -369,77 +356,6 @@ test("snapshotCitationAssets and assembleDocxJson refuse paths outside the proje
   assert.throws(
     () => snapshotCitationAssets(root, "../outside/x.md"),
     /inside the project/,
-  );
-  const result = assembleDocxJson(root, "articles/a.md", "../out.json", {});
-  assert.equal(result.ok, false);
-  assert.match(result.error ?? "", /inside the project/);
-  assert.equal(existsSync(join(root, "..", "out.json")), false);
-});
-
-test("assembleDocxJson keeps subheadings, turns [^n] into footnotes and leaves code alone", (t) => {
-  const root = project(t);
-  write(
-    root,
-    "articles/a.md",
-    [
-      "# Title",
-      "",
-      "*The thesis line.*",
-      "",
-      "Opening claim.[^1] More text.[^2]",
-      "",
-      "## Section",
-      "",
-      "*An italic line in a section is body text.*",
-      "",
-      "### Sub heading",
-      "",
-      "```",
-      "# not a heading",
-      "",
-      "[^1]: not a definition",
-      "```",
-      "",
-      "[^1]: First note,",
-      "    continued.",
-      "[^2]: Second note.",
-      "",
-    ].join("\n"),
-  );
-
-  const result = assembleDocxJson(root, "articles/a.md", "out.json", {
-    targetLanguage: "English",
-  });
-
-  assert.equal(result.ok, true, result.error ?? "");
-
-  const data = parseWith(
-    AssembledArticle,
-    readJson(root, "out.json"),
-    "article",
-  );
-
-  assert.equal(data.title, "Title");
-  assert.equal(data.thesis, "The thesis line.");
-  assert.deepEqual(
-    data.sections.map((section) => section.title),
-    ["Body", "Section", "Sub heading"],
-  );
-  assert.deepEqual(data.sections[0]?.paragraphs[0], {
-    text: "Opening claim. More text.",
-    footnotes: [
-      { after: "Opening claim.", text: "First note, continued." },
-      { after: " More text.", text: "Second note." },
-    ],
-  });
-  assert.equal(
-    data.sections[1]?.paragraphs[0],
-    "*An italic line in a section is body text.*",
-  );
-  assert.match(String(data.sections[2]?.paragraphs[0]), /# not a heading/);
-  assert.match(
-    String(data.sections[2]?.paragraphs[0]),
-    /\[\^1\]: not a definition/,
   );
 });
 

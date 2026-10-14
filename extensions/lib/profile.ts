@@ -499,6 +499,11 @@ export async function updateProfile(
  */
 export function loadProfile(projectDir: string): Profile | null {
   const profilePath = getProfilePath(projectDir);
+  const jsonPath = join(projectDir, JSON_PROFILE_RELATIVE_PATH);
+
+  if (!existsSync(profilePath) && existsSync(jsonPath)) {
+    migrateJsonProfile(projectDir);
+  }
 
   if (!existsSync(profilePath)) return null;
 

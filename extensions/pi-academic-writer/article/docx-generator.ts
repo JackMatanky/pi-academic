@@ -5,14 +5,32 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import { unzipSync } from "fflate";
+import { Type, type Static } from "typebox";
+import { parse as parseYaml } from "yaml";
 
 import { resolveInside } from "../../lib/fs-safe.js";
-import { parseJsonText } from "../../lib/schema.js";
+import { parseMarkdownBlocks } from "../../lib/markdown.js";
+import { loadProfile } from "../../lib/profile.js";
+import { isValid, parseJsonText } from "../../lib/schema.js";
 import { defaultReference, runPandoc } from "../core/pandoc.js";
 import { cleanRtlText } from "../prose/typography.js";
+import { countWords } from "../prose/word-count.js";
 import { withScratchDir } from "../styling/document-style.js";
 import { buildDocxReference } from "../styling/docx.js";
 import { paragraphParts, parseArticle } from "./article.js";
+
+const ArticleFrontmatterSchema = Type.Object(
+  {
+    title: Type.Optional(Type.String()),
+    subtitle: Type.Optional(Type.String()),
+    lang: Type.Optional(Type.String()),
+    dir: Type.Optional(Type.String()),
+    targetLanguage: Type.Optional(Type.String()),
+  },
+  { additionalProperties: true },
+);
+
+type ArticleFrontmatter = Static<typeof ArticleFrontmatterSchema>;
 
 /**
  * Options passed to the DOCX generator.
@@ -312,6 +330,150 @@ export async function generateDocx(
   const source = resolveInside(cwd, inputPath);
   const output = resolveInside(cwd, outputPath);
   mkdirSync(dirname(output), { recursive: true });
+
+  if (source.endsWith(".md")) {
+    const rawMarkdown = readFileSync(source, "utf8");
+    const blocks = parseMarkdownBlocks(rawMarkdown);
+    const frontmatterBlock = blocks.find((b) => b.type === "frontmatter");
+    let frontmatter: ArticleFrontmatter = {};
+
+    if (frontmatterBlock) {
+      try {
+        const yamlText = frontmatterBlock.text
+          .replace(/^---\r?\n/, "")
+          .replace(/\r?\n(?:---|\.\.\.)\s*$/, "");
+
+        const parsed: unknown = parseYaml(yamlText);
+
+        if (isValid(ArticleFrontmatterSchema, parsed)) {
+          frontmatter = parsed;
+        }
+      } catch {
+        frontmatter = {};
+      }
+    }
+
+    const lang = frontmatter.lang;
+    const dir = frontmatter.dir;
+    const targetLanguage = frontmatter.targetLanguage?.toLowerCase() ?? "";
+    const profile = loadProfile(cwd);
+    const profileLang = profile?.targetLanguage?.toLowerCase() ?? "";
+    const hasHebrewChars = /[\u0590-\u05ff]/.test(rawMarkdown);
+
+    const isHebrew =
+      Boolean(lang?.startsWith("he")) ||
+      dir === "rtl" ||
+      targetLanguage.includes("hebrew") ||
+      targetLanguage.startsWith("he") ||
+      profileLang.includes("hebrew") ||
+      profileLang.startsWith("he") ||
+      hasHebrewChars;
+
+    const rtl = dir === "rtl" || isHebrew;
+
+    let title = frontmatter.title;
+    let subtitle = frontmatter.subtitle;
+    let markdown = rawMarkdown;
+
+    const firstHeadingIndex = blocks.findIndex(
+      (b) => b.type === "heading" && b.level === 1,
+    );
+
+    const firstHeading =
+      firstHeadingIndex >= 0 ? blocks[firstHeadingIndex] : undefined;
+
+    if (!title && firstHeading?.headingText) {
+      title = firstHeading.headingText;
+      markdown = markdown.replace(firstHeading.text, "");
+
+      if (!subtitle && firstHeadingIndex + 1 < blocks.length) {
+        const nextBlock = blocks[firstHeadingIndex + 1];
+
+        if (
+          nextBlock?.type === "paragraph" &&
+          (/^\*[^*\n]+\*$/.test(nextBlock.text.trim()) ||
+            /^_[^_\n]+_$/.test(nextBlock.text.trim()))
+        ) {
+          subtitle = nextBlock.text.trim().slice(1, -1);
+          markdown = markdown.replace(nextBlock.text, "");
+        }
+      }
+    }
+
+    if (rtl) {
+      markdown = cleanRtlText(markdown, false);
+    }
+
+    const args = [
+      "-f",
+      "markdown-smart+footnotes+tex_math_dollars",
+      "-o",
+      output,
+    ];
+
+    if (!lang) {
+      args.push("-M", `lang=${isHebrew ? "he-IL" : "en-US"}`);
+    }
+
+    if (!dir) {
+      args.push("-M", `dir=${rtl ? "rtl" : "ltr"}`);
+    }
+
+    if (title && !frontmatter.title) {
+      args.push("-M", `title=${rtl ? cleanRtlText(title) : title}`);
+    }
+
+    if (subtitle && !frontmatter.subtitle) {
+      args.push("-M", `subtitle=${rtl ? cleanRtlText(subtitle) : subtitle}`);
+    }
+
+    const run = async (reference: string) => {
+      await runPandoc([...args, `--reference-doc=${reference}`], {
+        cwd,
+        signal: options.signal,
+        input: markdown,
+      });
+    };
+
+    if (options.referenceDoc) {
+      assertFootnoteCapable(options.referenceDoc);
+      await run(options.referenceDoc);
+    } else {
+      await withScratchDir(cwd, "docx", async (scratch) => {
+        const built = buildDocxReference(
+          formatDesign({ isRtl: rtl }),
+          await defaultReference("docx", { signal: options.signal }),
+          new Map(),
+        );
+
+        const reference = resolve(scratch, "reference.docx");
+        writeFileSync(reference, built.bytes);
+        await run(reference);
+      });
+    }
+
+    if (!existsSync(output))
+      throw new Error(
+        "Pandoc exited successfully but did not create the output file",
+      );
+
+    const footnoteMatches = markdown.match(/\[\^[^\]]+\]/g) ?? [];
+
+    const uniqueFootnotes = new Set(
+      footnoteMatches.map((m) => m.replace(/:\s*$/, "")),
+    );
+
+    const headingBlocks = blocks.filter((b) => b.type === "heading");
+
+    return {
+      ok: true,
+      output: outputPath,
+      sections: headingBlocks.length,
+      footnotes: uniqueFootnotes.size,
+      totalWords: countWords(markdown),
+    };
+  }
+
   const data = parseArticle(parseJsonText(readFileSync(source, "utf8")));
   const rtl = data.format?.isRtl ?? true;
   const { markdown, footnotes } = articleMarkdown(data, rtl);

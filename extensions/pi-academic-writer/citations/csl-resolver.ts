@@ -16,28 +16,6 @@ import { basename, extname, isAbsolute, join, relative, sep } from "node:path";
 
 import { isErrnoException } from "../../lib/fs-safe.js";
 
-let hardlink: (existingPath: string, newPath: string) => void = (
-  existingPath,
-  newPath,
-) => linkSync(existingPath, newPath);
-
-/**
- * Overrides the hardlink implementation for testing non-POSIX environments.
- * Returns a cleanup callback that restores the original `linkSync`.
- *
- * @param fn - Replacement hardlink implementation.
- */
-export function overrideHardlinkForTest(
-  fn: (existingPath: string, newPath: string) => void,
-): () => void {
-  const original = hardlink;
-  hardlink = fn;
-
-  return () => {
-    hardlink = original;
-  };
-}
-
 const POPULAR_STYLES = new Map(
   Object.entries({
     apa: "apa",
@@ -160,6 +138,7 @@ async function downloadUrl(
   url: string,
   target: string,
   projectRoot: string,
+  linker: (from: string, to: string) => void = linkSync,
 ): Promise<string> {
   let response: Response;
 
@@ -193,6 +172,15 @@ async function downloadUrl(
   if (!looksLikeCsl(bytes))
     throw new Error(`File does not look like a CSL style: ${target}`);
 
+  return writeCache(target, bytes, projectRoot, linker);
+}
+
+function writeCache(
+  target: string,
+  bytes: Uint8Array,
+  projectRoot: string,
+  linker: (from: string, to: string) => void = linkSync,
+): string {
   const dir = join(projectRoot, ".academic-writer", "csl");
   mkdirSync(dir, { recursive: true });
   const root = realpathSync(projectRoot);
@@ -211,7 +199,7 @@ async function downloadUrl(
     writeFileSync(temporary, bytes, { flag: "wx" });
 
     try {
-      hardlink(temporary, target);
+      linker(temporary, target);
     } catch (error) {
       // Filesystems without hardlink support (EXDEV/ENOTSUP/EPERM) fall back
       // to a plain rename; a lost race keeps the winner's file.
@@ -237,6 +225,7 @@ async function downloadStyle(
   id: string,
   cacheDir: string,
   projectRoot: string,
+  linker: (from: string, to: string) => void = linkSync,
 ): Promise<string> {
   const safeId = safeCacheName(id);
   const target = join(cacheDir, `${safeId}.csl`);
@@ -249,7 +238,7 @@ async function downloadStyle(
     `${RAW_CSL_BASE}/${safeId}.csl`,
   ]) {
     try {
-      return await downloadUrl(url, target, projectRoot);
+      return await downloadUrl(url, target, projectRoot, linker);
     } catch (error) {
       errors.push(String(error instanceof Error ? error.message : error));
     }
@@ -267,6 +256,7 @@ async function downloadStyle(
  * @param style - Alias ("apa", "chicago"), style ID, local path, or URL.
  * @param projectRoot - Root directory of the project.
  * @param download - Whether to download remote styles if not cached.
+ * @param linker - Optional link function for filesystem hardlinking.
  *
  * @returns Absolute path to the resolved local .csl file.
  * @throws When style cannot be found or downloaded.
@@ -275,6 +265,7 @@ export async function resolveCslStyle(
   style: string,
   projectRoot: string,
   download = false,
+  linker: (from: string, to: string) => void = linkSync,
 ): Promise<string> {
   const raw = style.trim();
 
@@ -286,7 +277,7 @@ export async function resolveCslStyle(
 
     return existsSync(target)
       ? validateCsl(target)
-      : downloadUrl(raw, target, projectRoot);
+      : downloadUrl(raw, target, projectRoot, linker);
   }
 
   if (raw.endsWith(".csl") || raw.includes(sep)) {
@@ -300,7 +291,7 @@ export async function resolveCslStyle(
       if (existsSync(path)) return validateCsl(path);
 
     if (raw.endsWith(".csl") && download)
-      return downloadStyle(raw.slice(0, -4), cacheDir, projectRoot);
+      return downloadStyle(raw.slice(0, -4), cacheDir, projectRoot, linker);
     throw new Error(`CSL file not found. Tried: ${candidates.join(", ")}`);
   }
 
@@ -309,7 +300,7 @@ export async function resolveCslStyle(
 
   if (existsSync(cached)) return validateCsl(cached);
 
-  if (download) return downloadStyle(id, cacheDir, projectRoot);
+  if (download) return downloadStyle(id, cacheDir, projectRoot, linker);
   throw new Error(
     `Unknown CSL style '${raw}'. Use a common alias, a Zotero/CSL style id, a .csl path/URL, or rerun with --download.`,
   );

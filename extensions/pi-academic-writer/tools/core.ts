@@ -130,8 +130,8 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     description:
       "Return deterministic local health data: profile/source/run state, packaged agents, and local command availability. Live MCP probes still belong in the health skill.",
     parameters: Type.Object({}),
-    run: (_params, { cwd }) => {
-      const health = buildHealth(cwd);
+    run: async (_params, { cwd }) => {
+      const health = await buildHealth(cwd);
 
       const text = [
         `Profile: ${health.profile.exists ? "found" : "missing"}`,

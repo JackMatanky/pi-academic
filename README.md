@@ -110,7 +110,7 @@ unmatched notes attach at the current position rather than disappearing.
 5. **Review and revise:** review citation-audit results and the `academic_writer_reverse_outline` paragraph index. Return to sources or revise the argument when needed; edits preserve unrequested text.
 
 Local files work without Zotero; Zotero is optional and preferred when enabled. Structured notes, canonical outline data, and article-local snapshots remain internal sources of truth.
-The `notesJson`, `outlineJson`, `sourcesJson`, and `fieldsJson` tool parameters accept structured arrays or objects, not serialized JSON strings. `academic_writer_assemble_docx_json` accepts an optional structured `formatJson` object; `evidenceMapJson` remains serialized text for advisory diagnosis.
+The `notesJson`, `outlineJson`, `sourcesJson`, and `fieldsJson` tool parameters accept structured arrays or objects, not serialized JSON strings. `academic_writer_generate_docx` accepts markdown or article JSON input; `evidenceMapJson` remains serialized text for advisory diagnosis.
 Substantive reviewers use those units to infer paragraph roles, evidence, and explanation, and raise repetition, support, missing analysis, or abrupt transitions as tentative questions—not automatic verdicts. The tool itself makes no semantic judgments and does not rewrite or persist results.
 
 For English prose, the `academic_writer_lint_prose` tool reports deterministic, advisory surface-pattern findings for contextual review. It does not rewrite text, judge authorship, or prove quality.

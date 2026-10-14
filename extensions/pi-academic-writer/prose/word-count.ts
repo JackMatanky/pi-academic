@@ -15,7 +15,7 @@ import { parseBibEntries } from "../parsers/bibtex.js";
  * @returns Count of matching unicode word tokens.
  */
 export function countWords(text: string): number {
-  const matches = text.trim().match(/[\p{L}\p{N}]+/gu);
+  const matches = text.trim().match(/[\p{L}\p{N}\u05BE\u05F3]+/gu);
 
   return matches?.length ?? 0;
 }

@@ -140,6 +140,41 @@ export async function renderDocumentStyle(
 
     if (assets.template) args.push(`--template=${assets.template}`);
     args.push(`--include-in-header=${assets.preamble}`);
+
+    const { design } = loaded;
+    args.push("-M", `papersize=${design.page.size.toLowerCase()}`);
+
+    const geometryOptions = [
+      `top=${design.page.marginsMm.top}mm`,
+      `bottom=${design.page.marginsMm.bottom}mm`,
+      `left=${design.page.marginsMm.left}mm`,
+      `right=${design.page.marginsMm.right}mm`,
+    ];
+
+    if (design.page.orientation === "landscape") {
+      geometryOptions.push("landscape");
+    }
+
+    if (
+      design.page.footerDistanceMm !== undefined &&
+      design.page.footerDistanceMm < design.page.marginsMm.bottom
+    ) {
+      const footskip = +(
+        design.page.marginsMm.bottom - design.page.footerDistanceMm
+      ).toFixed(3);
+
+      geometryOptions.push(`footskip=${footskip}mm`);
+    }
+
+    args.push("-M", `geometry=${geometryOptions.join(",")}`);
+
+    if (design.components.body?.lineSpacing) {
+      args.push("-M", `linestretch=${design.components.body.lineSpacing}`);
+    }
+
+    if (design.components.body?.fontSizePt) {
+      args.push("-M", `fontsize=${design.components.body.fontSizePt}pt`);
+    }
   }
 
   return {

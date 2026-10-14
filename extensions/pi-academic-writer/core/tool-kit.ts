@@ -37,8 +37,8 @@ export class ToolFailure<Details extends object = object> extends Error {
   readonly text: string;
   readonly details: Details & { ok: false };
 
-  constructor(text: string, details?: Details) {
-    super(text);
+  constructor(text: string, details?: Details, options?: ErrorOptions) {
+    super(text, options);
     this.name = "ToolFailure";
     this.text = text;
     this.details = Object.assign({}, details, { ok: false as const });
@@ -56,6 +56,7 @@ export class ToolFailure<Details extends object = object> extends Error {
 export function fail<Details extends object>(
   text: string,
   details?: Details,
+  options?: ErrorOptions,
 ): never {
   const visibleDetails = Object.fromEntries(
     Object.entries(details ?? {}).filter(([key]) => key !== "error"),
@@ -66,7 +67,7 @@ export function fail<Details extends object>(
       ? `${text}\n${JSON.stringify(visibleDetails)}`
       : text;
 
-  throw new ToolFailure(message, details);
+  throw new ToolFailure(message, details, options);
 }
 
 /**
@@ -170,13 +171,14 @@ export function registerTool<S extends TSchema>(
           throw new ToolFailure(
             boundOutput(ctx.cwd, spec.name, cause.text),
             cause.details,
+            { cause },
           );
         }
 
         const message = `${spec.failure ?? `${spec.label} failed`}: ${errorMessage(cause)}`;
         const bounded = boundOutput(ctx.cwd, spec.name, message);
 
-        throw new ToolFailure(bounded, { error: bounded });
+        throw new ToolFailure(bounded, { error: bounded }, { cause });
       }
     },
   };

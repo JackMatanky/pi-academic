@@ -558,3 +558,27 @@ test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] 
   assert.equal(get(readJson(sourceFile), 0, "sourceId"), "zotero:library:key");
   assert.equal(readFileSync(bibliographyFile, "utf8"), bibliography);
 });
+
+test("concurrent ingestSources serialization", async (t) => {
+  const root = scratch(t);
+  const sourcesDir = join(root, ".academic-writer", "sources");
+  mkdirSync(sourcesDir, { recursive: true });
+  writeFileSync(join(sourcesDir, "doc-a.md"), "# Document A\n\nContent A\n");
+  writeFileSync(join(sourcesDir, "doc-b.md"), "# Document B\n\nContent B\n");
+
+  const fileA = join(sourcesDir, "doc-a.md");
+  const fileB = join(sourcesDir, "doc-b.md");
+
+  const [resA, resB] = await Promise.all([
+    callTool(root, "academic_writer_ingest_sources", { paths: [fileA] }),
+    callTool(root, "academic_writer_ingest_sources", { paths: [fileB] }),
+  ]);
+
+  assert.equal(resA.details.ok, true);
+  assert.equal(resB.details.ok, true);
+  const sourcesFile = join(root, ".academic-writer", "sources.json");
+  assert.ok(existsSync(sourcesFile));
+  const parsed = readJson(sourcesFile);
+  assert.ok(Array.isArray(parsed));
+  assert.equal(parsed.length, 2);
+});

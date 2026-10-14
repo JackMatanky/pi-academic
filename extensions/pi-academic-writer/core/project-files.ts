@@ -11,7 +11,6 @@ export interface ArticlePaths {
   slug: string;
   markdown: string;
   docx: string;
-  json: string;
   sources: string;
   bibliography: string;
   outlineJson: string;
@@ -89,7 +88,6 @@ export function articlePaths(subject: string): ArticlePaths {
     slug,
     markdown: `articles/${slug}.md`,
     docx: `articles/${slug}.docx`,
-    json: `.academic-writer/runs/${slug}.docx.json`,
     sources: `articles/${slug}.sources.json`,
     bibliography: `articles/${slug}.bibliography.bib`,
     outlineJson: "articles/" + slug + ".outline.json",

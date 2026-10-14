@@ -12,7 +12,7 @@
 export function cleanRtlText(text: string, trimOrphan = true): string {
   let out = text
     .replace(/\s*\u2014\s*/g, " - ")
-    .replace(/"([^"]{0,200})"/g, (quoted, inner: string) =>
+    .replace(/"([^"\n]+)"/g, (quoted, inner: string) =>
       /[\u0590-\u05ff]/.test(inner) ? `\u05f4${inner}\u05f4` : quoted,
     )
     .replace(/\u200f+(?=[.,;:)\]"])/g, "")

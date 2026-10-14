@@ -164,7 +164,7 @@ export function stripCodeSpans(markdown: string): string {
 
   let fence: string | null = null;
 
-  return withoutFrontmatter
+  const withoutFences = withoutFrontmatter
     .split(/\r?\n/)
     .map((line) => {
       const inCode = fence !== null;
@@ -172,8 +172,87 @@ export function stripCodeSpans(markdown: string): string {
 
       return inCode || fence !== null ? "" : line;
     })
-    .join("\n")
-    .replace(/`+[\s\S]*?`+/g, (span) => " ".repeat(span.length));
+    .join("\n");
+
+  return blankCodeSpans(withoutFences);
+}
+
+/**
+ * Scans text and replaces balanced CommonMark inline code spans with
+ * whitespace, preserving character and line offsets. Unmatched backticks do not
+ * bleed across paragraph boundaries.
+ */
+function blankCodeSpans(text: string): string {
+  const chars = [...text];
+  let i = 0;
+  const len = chars.length;
+
+  while (i < len) {
+    if (chars[i] === "`") {
+      let openLen = 1;
+
+      while (i + openLen < len && chars[i + openLen] === "`") {
+        openLen++;
+      }
+
+      let closeStart = -1;
+      let j = i + openLen;
+
+      while (j < len) {
+        if (
+          chars[j] === "\n" &&
+          (chars[j + 1] === "\n" ||
+            (chars[j + 1] === "\r" && chars[j + 2] === "\n"))
+        ) {
+          break;
+        }
+
+        if (
+          chars[j] === "\r" &&
+          chars[j + 1] === "\n" &&
+          chars[j + 2] === "\r" &&
+          chars[j + 3] === "\n"
+        ) {
+          break;
+        }
+
+        if (chars[j] === "`") {
+          let run = 1;
+
+          while (j + run < len && chars[j + run] === "`") {
+            run++;
+          }
+
+          if (run === openLen) {
+            closeStart = j;
+            break;
+          }
+
+          j += run;
+        } else {
+          j++;
+        }
+      }
+
+      if (closeStart !== -1) {
+        const closeEnd = closeStart + openLen;
+
+        for (let k = i; k < closeEnd; k++) {
+          if (chars[k] !== "\n" && chars[k] !== "\r") {
+            chars[k] = " ";
+          }
+        }
+
+        i = closeEnd;
+      } else {
+        i += openLen;
+      }
+    } else {
+      i++;
+    }
+  }
+
+  return chars.join("");
 }
 
 /**

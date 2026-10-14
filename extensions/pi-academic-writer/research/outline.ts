@@ -420,7 +420,7 @@ export async function snapshotNotes(
 
   const path = frozenPath(projectRoot, article);
 
-  return withFileLock(outlinePath(projectRoot, outline.article.slug), () => {
+  return withFileLock(path, () => {
     saveJson(path, {
       schemaVersion: 1,
       article: outline.article,

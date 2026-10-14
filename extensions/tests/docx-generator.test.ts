@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -18,7 +19,6 @@ import {
   parseArticle,
   type ArticleData,
 } from "../pi-academic-writer/article/article.js";
-import { assembleDocxJson } from "../pi-academic-writer/article/docx-assembly.js";
 import {
   articleMarkdown,
   escapeMarkdown,
@@ -346,13 +346,7 @@ test(
         "",
       ].join("\n"),
     );
-
-    const assembled = assembleDocxJson(root, "article.md", "article.json", {
-      targetLanguage: "Hebrew",
-    });
-
-    assert.equal(assembled.ok, true, assembled.error ?? "");
-    const res = await generateDocx("article.json", "article.docx", root);
+    const res = await generateDocx("article.md", "article.docx", root);
     assert.equal(res.ok, true);
     assert.equal(res.footnotes, 1);
     const doc = part(join(root, "article.docx"), "word/document.xml");
@@ -404,13 +398,7 @@ test(
         "",
       ].join("\n"),
     );
-
-    const assembled = assembleDocxJson(root, "article.md", "article.json", {
-      targetLanguage: "English",
-    });
-
-    assert.equal(assembled.ok, true, assembled.error ?? "");
-    const res = await generateDocx("article.json", "article.docx", root);
+    const res = await generateDocx("article.md", "article.docx", root);
     assert.equal(res.ok, true);
     assert.equal(res.footnotes, 1);
     const doc = part(join(root, "article.docx"), "word/document.xml");
@@ -419,5 +407,95 @@ test(
       part(join(root, "article.docx"), "word/footnotes.xml"),
       /Hebrew footnote note/,
     );
+  },
+);
+
+test(
+  "docx: direct Markdown compilation generates DOCX with native RTL footnotes and bidi",
+  needsPandoc,
+  async (t) => {
+    const root = project(t);
+    writeFileSync(
+      join(root, "article.md"),
+      [
+        "---",
+        "title: Test",
+        "lang: he-IL",
+        "dir: rtl",
+        "---",
+        "",
+        "פסקה עם הערת שוליים[^1].",
+        "",
+        "[^1]: הערת שוליים בעברית",
+        "",
+      ].join("\n"),
+    );
+
+    const res = await generateDocx("article.md", "article.docx", root);
+    assert.equal(res.ok, true);
+    assert.equal(existsSync(join(root, "article.docx")), true);
+    assert.equal(
+      existsSync(join(root, ".academic-writer/runs/article.docx.json")),
+      false,
+    );
+
+    const footnotesXml = part(join(root, "article.docx"), "word/footnotes.xml");
+    assert.match(footnotesXml, /הערת שוליים בעברית/);
+    assert.match(footnotesXml, /w:rtl/);
+
+    const docXml = part(join(root, "article.docx"), "word/document.xml");
+    assert.match(docXml, /w:bidi/);
+  },
+);
+
+test(
+  "docx: detects Hebrew and RTL from profile targetLanguage and extracts title without duplication",
+  needsPandoc,
+  async (t) => {
+    const root = project(t);
+    mkdirSync(join(root, ".academic-writer"), { recursive: true });
+    writeFileSync(
+      join(root, ".academic-writer", "profile.md"),
+      [
+        "# Academic Writer Profile",
+        "",
+        "---",
+        "targetLanguage: Hebrew",
+        "citationStyle: inline-parenthetical",
+        "---",
+        "",
+      ].join("\n"),
+    );
+
+    writeFileSync(
+      join(root, "article.md"),
+      [
+        "# חיבור בדיקה",
+        "",
+        "*משפט התזה.*",
+        "",
+        "פסקה בעברית ללא כותרות עליונות של יאמל[^1].",
+        "",
+        "[^1]: תוכן הערה בעברית",
+        "",
+      ].join("\n"),
+    );
+
+    const res = await generateDocx("article.md", "article.docx", root);
+    assert.equal(res.ok, true);
+    assert.equal(existsSync(join(root, "article.docx")), true);
+
+    const footnotesXml = part(join(root, "article.docx"), "word/footnotes.xml");
+    assert.match(footnotesXml, /תוכן הערה בעברית/);
+    assert.match(footnotesXml, /w:rtl/);
+
+    const docXml = part(join(root, "article.docx"), "word/document.xml");
+    assert.match(docXml, /w:bidi/);
+
+    // Verify that חיבור בדיקה appears as title and is not duplicated as a heading
+    const heading1Matches =
+      docXml.match(/w:pStyle w:val="Heading1"[^>]*>[\s\S]*?חיבור בדיקה/g) ?? [];
+
+    assert.equal(heading1Matches.length, 0);
   },
 );

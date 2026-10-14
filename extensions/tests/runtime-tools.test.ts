@@ -86,8 +86,8 @@ const text = (result: ToolResult): string => result.content[0]?.text ?? "";
  * The fixed tool sequence the Python smoke ran in one node process.
  */
 async function runTools(root: string) {
-  const status = await callTool(root, "academic_writer_status", {});
   const migration = await callTool(root, "academic_writer_migrate_profile", {});
+  const status = await callTool(root, "academic_writer_status", {});
   const health = await callTool(root, "academic_writer_health", {});
   const profile = await callTool(root, "academic_writer_get_profile", {});
 
@@ -120,12 +120,6 @@ async function runTools(root: string) {
     article: "articles/ok.md",
   });
 
-  const assembled = await callTool(root, "academic_writer_assemble_docx_json", {
-    input: "articles/ok.md",
-    output: ".academic-writer/runs/ok.docx.json",
-    targetLanguage: "English",
-  });
-
   const ingested = await callTool(root, "academic_writer_ingest_sources", {
     paths: [".academic-writer/sources/local.md"],
   });
@@ -142,7 +136,6 @@ async function runTools(root: string) {
     resource,
     audit,
     snapshot,
-    assembled,
     ingested,
   };
 }
@@ -295,7 +288,6 @@ test("[test_package_tools_run_against_project_state] package tools run against p
     "academic_writer_lint_prose",
     "academic_writer_ingest_sources",
     "academic_writer_snapshot_citations",
-    "academic_writer_assemble_docx_json",
     "academic_writer_migrate_profile",
     "academic_writer_write_research_notes",
     "academic_writer_review_research_notes",
@@ -340,8 +332,6 @@ test("[test_package_tools_run_against_project_state] package tools run against p
   assert.deepEqual(data.audit.details.citationKeys, ["smith2020"]);
   assert.equal(data.snapshot.details.ok, true);
   assert.equal(data.snapshot.details.sources, "articles/ok.sources.json");
-  assert.equal(data.assembled.details.ok, true);
-  assert.equal(data.assembled.details.sections, 1);
   assert.equal(data.ingested.details.count, 1);
 });
 
@@ -548,4 +538,29 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
     !existsSync(join(root, "outside")),
     "no outside directory should have been created",
   );
+});
+
+test("academic_writer_write_voice_artifact persists artifacts and alias works", async (t) => {
+  const root = scratch(t);
+
+  const result = await callTool(root, "academic_writer_write_voice_artifact", {
+    artifact: "audit",
+    content: "# Voice Audit\nCalibrated.",
+  });
+
+  assert.equal(result.isError, false);
+  const auditPath = join(root, ".academic-writer", "voice", "audit.md");
+  assert.ok(existsSync(auditPath));
+  assert.equal(readFileSync(auditPath, "utf8"), "# Voice Audit\nCalibrated.");
+
+  const aliasResult = await callTool(
+    root,
+    "academic_writer_write_voice_audit",
+    {
+      content: "# Overwritten Audit",
+    },
+  );
+
+  assert.equal(aliasResult.isError, false);
+  assert.equal(readFileSync(auditPath, "utf8"), "# Overwritten Audit");
 });

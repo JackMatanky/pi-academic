@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { Type } from "typebox";
 
+import { stringEnum } from "../../lib/schema.js";
 import { writeProjectTextFile } from "../core/project-files.js";
 import { registerTool } from "../core/tool-kit.js";
 
@@ -12,6 +13,47 @@ import { registerTool } from "../core/tool-kit.js";
  * @param pi - Pi extension API used to register tools.
  */
 export function registerVoiceTools(pi: ExtensionAPI): void {
+  registerTool(pi, {
+    name: "academic_writer_write_voice_artifact",
+    effect: "write",
+    label: "Academic Writer Write Voice Artifact",
+    description:
+      "Persist voice calibration artifacts (audit, profile, fingerprint, interview). Destination is strictly bound to .academic-writer/voice/.",
+    parameters: Type.Object({
+      artifact: stringEnum(
+        ["audit", "profile", "fingerprint", "interview"] as const,
+        {
+          description: "Voice artifact type to persist.",
+        },
+      ),
+      sessionId: Type.Optional(
+        Type.String({
+          pattern: "^[a-zA-Z0-9_-]+$",
+          description: "Session identifier (required for interview artifact).",
+        }),
+      ),
+      content: Type.String({
+        minLength: 1,
+        description: "Markdown text content.",
+      }),
+    }),
+    run: ({ artifact, sessionId, content }, { cwd }) => {
+      const paths = {
+        audit: ".academic-writer/voice/audit.md",
+        profile: ".academic-writer/voice/profile.md",
+        fingerprint: ".academic-writer/voice/fingerprint.md",
+        interview: `.academic-writer/voice/interview/${sessionId ?? "session"}.md`,
+      };
+
+      const result = writeProjectTextFile(cwd, paths[artifact], content);
+
+      return {
+        text: `Voice artifact written: ${result.path}`,
+        details: result,
+      };
+    },
+  });
+
   registerTool(pi, {
     name: "academic_writer_write_voice_audit",
     effect: "write",

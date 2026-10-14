@@ -1,7 +1,7 @@
 ---
 name: academic-edit
 description: "Edit a drafted article, from one narrowly scoped section to multiple sections or structural revisions. Use when revising, correcting, or restructuring existing article text."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_assemble_docx_json academic_writer_diagnose_outline academic_writer_lint_prose
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_diagnose_outline academic_writer_lint_prose
 metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
@@ -234,7 +234,7 @@ After edits are applied:
 
 **Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. Continue only when `status` is `passed`; for `failed`, report the exact missing/wrong-mode citation details, and for `error`, report the operational error. In either case stop and set the run state to `failed`.
 
-**`inline-parenthetical` (unchanged):** Call `academic_writer_assemble_docx_json` to build intermediate DOCX JSON deterministically (preserving footnotes, RTL settings, and section hierarchy). Do NOT hand-craft raw model-written DOCX JSON. Then pass the assembled JSON path to `academic_writer_generate_docx`.
+**`inline-parenthetical`:** Call `academic_writer_generate_docx` directly with `articles/<slug>.md` as `input` and `$DOCX_PATH` as `output`.
 
 Same current limitation as write-article Step 9b: the citeproc export path (`academic_writer_export_article`) does not set right-to-left document direction. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 

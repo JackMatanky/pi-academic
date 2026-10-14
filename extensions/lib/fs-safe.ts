@@ -73,13 +73,14 @@ export function resolveInside(projectRoot: string, path: string): string {
     throw new Error(`Path must stay inside the project: ${path}`);
   }
 
+  const realRoot = realpathSync(root);
   let existing = target;
 
   for (;;) {
     try {
       const real = realpathSync(existing);
 
-      if (!isInside(realpathSync(root), real)) {
+      if (!isInside(realRoot, real)) {
         throw new Error(`Path must stay inside the project: ${path}`);
       }
 

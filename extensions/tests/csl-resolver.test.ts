@@ -14,10 +14,7 @@ import { dirname, join } from "node:path";
 
 import { afterEach, test } from "vitest";
 
-import {
-  overrideHardlinkForTest,
-  resolveCslStyle,
-} from "../pi-academic-writer/citations/csl-resolver.js";
+import { resolveCslStyle } from "../pi-academic-writer/citations/csl-resolver.js";
 
 const projects: string[] = [];
 
@@ -182,22 +179,18 @@ test("download falls back to rename when linkSync fails with EXDEV, ENOTSUP, or 
   globalThis.fetch = async () => new Response(xml);
 
   for (const code of ["EXDEV", "ENOTSUP", "EPERM"] as const) {
-    const restore = overrideHardlinkForTest(() => {
-      const err = Object.assign(new Error(`${code} failure`), { code });
+    const mockLinker = () => {
+      throw Object.assign(new Error(`${code} failure`), { code });
+    };
 
-      throw err;
-    });
+    const path = await resolveCslStyle(
+      `https://example.org/${code.toLowerCase()}-test.csl`,
+      root,
+      false,
+      mockLinker,
+    );
 
-    try {
-      const path = await resolveCslStyle(
-        `https://example.org/${code.toLowerCase()}-test.csl`,
-        root,
-      );
-
-      assert.equal(existsSync(path), true);
-      assert.equal(readFileSync(path, "utf8"), xml);
-    } finally {
-      restore();
-    }
+    assert.equal(existsSync(path), true);
+    assert.equal(readFileSync(path, "utf8"), xml);
   }
 });

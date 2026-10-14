@@ -1,8 +1,11 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { accessSync, constants } from "node:fs";
 import { delimiter, join } from "node:path";
+import { promisify } from "node:util";
 
 import { buildStatus, type AcademicWriterStatus } from "./status.js";
+
+const execFileAsync = promisify(execFile);
 
 /**
  * Health payload extending status data with local command availability.
@@ -96,7 +99,25 @@ export function selectPdfEngine(): "xelatex" | "tectonic" | undefined {
  *
  * @returns Comprehensive local health and command availability status.
  */
-export function buildHealth(projectRoot: string): HealthStatus {
+export async function buildHealth(projectRoot: string): Promise<HealthStatus> {
+  let pandocVersion: string | null = null;
+
+  if (commandExists("pandoc")) {
+    try {
+      const { stdout } = await execFileAsync("pandoc", ["--version"], {
+        encoding: "utf-8",
+        signal: AbortSignal.timeout(5_000),
+      });
+
+      const first = stdout.split("\n")[0] ?? "";
+      const m = first.match(/pandoc\s+([\d.]+)/);
+
+      pandocVersion = m?.[1] ?? null;
+    } catch {
+      pandocVersion = null;
+    }
+  }
+
   return {
     ...buildStatus(projectRoot),
     commands: {
@@ -109,22 +130,6 @@ export function buildHealth(projectRoot: string): HealthStatus {
       sefariaMcp: commandExists("sefaria-mcp"),
     },
     rumdl: commandExists("rumdl"),
-    pandocVersion: (() => {
-      if (!commandExists("pandoc")) return null;
-
-      try {
-        const out = execFileSync("pandoc", ["--version"], {
-          encoding: "utf-8",
-          timeout: 5_000,
-        });
-
-        const first = out.split("\n")[0] ?? "";
-        const m = first.match(/pandoc\s+([\d.]+)/);
-
-        return m?.[1] ?? null;
-      } catch {
-        return null;
-      }
-    })(),
+    pandocVersion,
   };
 }

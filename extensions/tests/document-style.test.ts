@@ -220,7 +220,7 @@ test(
     );
     assert.match(
       readFileSync(join(dir, "native", "preamble.tex"), "utf8"),
-      /\\usepackage\[a4paper/,
+      /\\usepackage\{iftex\}/,
     );
 
     await assert.rejects(installStarterPackage(root), /already exists/);
@@ -479,15 +479,10 @@ test(
     const tex = readFileSync(style.assets.preamble ?? "", "utf8");
     assert.match(
       tex,
-      /\\usepackage\[letterpaper,top=20mm,bottom=25\.4mm,left=25\.4mm,right=25\.4mm,landscape,footskip=15\.4mm\]\{geometry\}/,
-    );
-    assert.match(
-      tex,
       /\\titleformat\{\\section\}\[hang\]\{\\normalfont\\fontsize\{18pt\}\{21\.6pt\}\\selectfont\\bfseries\\color\{awheading1\}\}/,
     );
     assert.match(tex, /\\definecolor\{awheading1\}\{HTML\}\{112233\}/);
     assert.match(tex, /\\pretocmd\{\\section\}\{\\clearpage\}/);
-    assert.match(tex, /\\setstretch\{2\}/);
     assert.match(tex, /\\fancyfoot\[R\]/);
     assert.ok(
       tex.indexOf("\\definecolor{awheading1}") <
@@ -501,6 +496,14 @@ test(
     );
     assert.deepEqual(style.args, [
       `--include-in-header=${style.assets.preamble}`,
+      "-M",
+      "papersize=letter",
+      "-M",
+      "geometry=top=20mm,bottom=25.4mm,left=25.4mm,right=25.4mm,landscape,footskip=15.4mm",
+      "-M",
+      "linestretch=2",
+      "-M",
+      "fontsize=11pt",
     ]);
     writeFileSync(join(root, "c.md"), "# Head\n\nBody text.\n");
     await runPandoc(["c.md", "-s", ...style.args, "-o", join(root, "c.tex")], {
@@ -546,6 +549,14 @@ test(
     assert.deepEqual(style.args, [
       `--template=${style.assets.template}`,
       `--include-in-header=${style.assets.preamble}`,
+      "-M",
+      "papersize=a4",
+      "-M",
+      "geometry=top=25.4mm,bottom=25.4mm,left=25.4mm,right=25.4mm,footskip=12.7mm",
+      "-M",
+      "linestretch=1.5",
+      "-M",
+      "fontsize=12pt",
     ]);
   },
 );

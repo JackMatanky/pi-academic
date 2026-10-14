@@ -63,11 +63,14 @@ export function parseBibEntries(bibText: string): Map<string, BibEntry> {
 
       // Recover from unclosed braces when the next entry starts on a new line.
       if (char === "\n" || char === "\r") {
-        const next = bibText.slice(
-          char === "\r" && bibText[i + 1] === "\n" ? i + 2 : i + 1,
-        );
+        const nextIdx =
+          char === "\r" && bibText[i + 1] === "\n" ? i + 2 : i + 1;
 
-        if (/^@\w+\s*\{/.test(next)) break;
+        if (bibText.charCodeAt(nextIdx) === 64 /* @ */) {
+          const nextSlice = bibText.substring(nextIdx, nextIdx + 32);
+
+          if (/^@\w+\s*\{/.test(nextSlice)) break;
+        }
       }
 
       i += 1;

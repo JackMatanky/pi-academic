@@ -237,7 +237,10 @@ export function firstViolation(
   if (!error) return undefined;
 
   return {
-    path: error.instancePath.split("/").slice(1),
+    path: error.instancePath
+      .split("/")
+      .slice(1)
+      .map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~")),
     keyword: error.keyword,
     unexpectedKeys:
       "additionalProperties" in error.params

@@ -129,29 +129,6 @@ test("structured write tools validate nested parameters before changing files", 
       field: "fieldsJson",
       errors: ["enabled", "enabled"],
     },
-    {
-      name: "academic_writer_assemble_docx_json",
-      valid: {
-        input: "articles/essay.md",
-        output: ".academic-writer/essay.json",
-        formatJson: { bodySize: 12 },
-      },
-      path: ".academic-writer/essay.json",
-      invalid: [
-        {
-          input: "articles/essay.md",
-          output: ".academic-writer/essay.json",
-          formatJson: { bodySize: "twelve" },
-        },
-        {
-          input: "articles/essay.md",
-          output: ".academic-writer/essay.json",
-          formatJson: [],
-        },
-      ],
-      field: "formatJson",
-      errors: ["bodySize", "formatJson"],
-    },
   ];
 
   for (const entry of cases) {

@@ -26,14 +26,21 @@ function scratch(t: TestContext): string {
   return dir;
 }
 
-test("fail exposes structured diagnostics in the error message", () => {
+test("fail exposes structured diagnostics in the error message and retains cause", () => {
+  const original = new Error("root cause");
   assert.throws(
-    () => fail("request failed", { diagnostics: "missing source" }),
+    () =>
+      fail(
+        "request failed",
+        { diagnostics: "missing source" },
+        { cause: original },
+      ),
     (cause: unknown) => {
       assert.ok(cause instanceof ToolFailure);
       assert.match(cause.message, /"diagnostics":"missing source"/);
       assert.equal(cause.details.diagnostics, "missing source");
       assert.equal(cause.details.ok, false);
+      assert.equal(cause.cause, original);
 
       return true;
     },

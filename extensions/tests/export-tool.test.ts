@@ -750,10 +750,6 @@ test("every path-taking tool rejects paths outside the project", async (t) => {
 
   const attempts: Array<[string, Params]> = [
     [
-      "academic_writer_assemble_docx_json",
-      { input: "articles/essay.md", output: join(outside, "a.json") },
-    ],
-    [
       "academic_writer_generate_docx",
       { input: "articles/essay.md", output: join(outside, "a.docx") },
     ],

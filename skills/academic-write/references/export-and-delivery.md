@@ -26,7 +26,7 @@ After the Markdown, audit, review, and any requested export have completed, repo
 
 Assemble the final article and write to both Markdown and DOCX:
 
-Call `academic_writer_article_paths` with the approved article title/subject. Use its returned `markdown` as `$MD_PATH`, `docx` as `$DOCX_PATH`, and `json` as the intermediate DOCX JSON path. Create `articles/` before writing article outputs.
+Call `academic_writer_article_paths` with the approved article title/subject. Use its returned `markdown` as `$MD_PATH` and `docx` as `$DOCX_PATH`. Create `articles/` before writing article outputs.
 
 #### Step 9a: Markdown Output
 
@@ -56,8 +56,7 @@ Branch by `citationStyle` using the loaded `citation_export_contract`.
 
 ##### `inline-parenthetical`
 
-Call `academic_writer_assemble_docx_json` to build the intermediate DOCX JSON deterministically (preserving native Word footnotes via `sections[].paragraphs[].footnotes[]`, `format`, `isRtl`, and `totalWords`). Do NOT attempt to hand-craft or emit raw model-written DOCX JSON.
-Then call `academic_writer_generate_docx` with the assembled JSON path and `$DOCX_PATH`.
+Call `academic_writer_generate_docx` directly with `input: MD_PATH` (`articles/<slug>.md`) and `output: $DOCX_PATH`.
 
 ##### Citeproc mode
 

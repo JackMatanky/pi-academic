@@ -4,51 +4,12 @@ Citation mode is selected only by `citationStyle`.
 
 ## Literal mode
 
-`citationStyle: inline-parenthetical` means literal styled citation text. Keep inline citations exactly as written in markdown. Do not add YAML citeproc frontmatter. DOCX output uses `academic_writer_generate_docx` with the article JSON schema; it builds the document with Pandoc, so real Word footnotes and right-to-left text (`format.isRtl`) are handled deterministically.
+`citationStyle: inline-parenthetical` means literal styled citation text. Keep inline citations exactly as written in markdown. Do not add YAML citeproc frontmatter. DOCX output uses `academic_writer_generate_docx` directly with the markdown article; it builds the document with Pandoc, so real Word footnotes and right-to-left text are handled deterministically.
 The profile's optional `outputFormatPreferences.stylePackage` selects a project-local appearance package. It is independent of `citationStyle` and CSL, and the same package is used by the literal-mode DOCX generator. Do not change the profile setting to create a one-export override; use `academic_writer_export_article.stylePackage` only when requested.
 
 Before DOCX/export, call `academic_writer_audit_citations` with the markdown article path and `citationStyle: inline-parenthetical`. The audit must pass. A Pandoc marker such as `[@key]` in literal mode is a hard failure.
 
-Literal-mode DOCX JSON schema:
-
-```json
-{
-  "title": "ARTICLE_TITLE from the editor (review mode)",
-  "thesis": "ARTICLE_THESIS or null",
-  "abstract": {
-    "primary": "Abstract text in targetLanguage",
-    "secondary": "Optional second abstract, or null"
-  },
-  "sections": [
-    {
-      "title": "Section title",
-      "paragraphs": [
-        {
-          "text": "Paragraph body with no inline parenthetical citation text.",
-          "footnotes": [
-            {
-              "after": "unique substring in text",
-              "text": "Author, Title (Pub, 2024), p. 42."
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "format": {
-    "font": "profile.outputFormatPreferences.font or David",
-    "bodySize": 11,
-    "titleSize": 16,
-    "headingSize": 13,
-    "lineSpacing": 1.5,
-    "margins": 1.0,
-    "isRtl": true
-  },
-  "totalWords": 0
-}
-```
-
-Rules: write this JSON with the Write tool, not a Python heredoc; move literal citations from paragraph text into `footnotes[]`; set `isRtl` from `targetLanguage`; set `totalWords` to the actual word count.
+Literal-mode DOCX output: pass `input: $MD_PATH` (`articles/<slug>.md`) and `output: $DOCX_PATH` directly to `academic_writer_generate_docx`. Native Word footnotes and directionality are compiled without intermediate JSON files.
 
 ## Citeproc mode
 
