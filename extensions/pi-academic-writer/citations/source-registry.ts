@@ -389,7 +389,7 @@ export async function ingestSources(
  * to overwrite. Accepts both a bare JSON array of records and the `{ "sources":
  * [...] }` object shape.
  */
-function readSourceRegistry(path: string): JsonObject[] {
+export function readSourceRegistry(path: string): JsonObject[] {
   if (!existsSync(path)) return [];
 
   const value = parseJsonText(readFileSync(path, "utf-8"));

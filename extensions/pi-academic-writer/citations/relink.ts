@@ -1,0 +1,439 @@
+import type { JsonObject } from "../../lib/schema.js";
+
+import { stringField } from "./source-records.js";
+
+/**
+ * What matching needs from one `sources.json` record.
+ */
+export interface SourceRef {
+  citeKey: string;
+  /**
+   * Normalized surnames of every author.
+   */
+  surnames: string[];
+  /**
+   * Normalized work title.
+   */
+  title: string;
+}
+
+/**
+ * One footnote's outcome.
+ */
+export interface NoteReport {
+  label: string;
+  /**
+   * `inline`: the note held only citations and became `[@key]` at its
+   * reference. `footnote`: it stays a note, with matched citations rewritten.
+   * `unchanged`: nothing in it was matched.
+   */
+  outcome: "inline" | "footnote" | "unchanged";
+  keys: string[];
+  /**
+   * Segments left as written, with the closest records.
+   */
+  unresolved: { text: string; candidates: string[] }[];
+}
+
+/**
+ * Result of {@link relinkFootnotes}.
+ */
+export interface RelinkResult {
+  markdown: string;
+  notes: NoteReport[];
+}
+
+/**
+ * Normalizes text for matching: no diacritics, case, or punctuation.
+ */
+function norm(text: string): string {
+  return text
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Builds match data from `sources.json` entries. Records without an author
+ * (local files) cannot be matched by a note's author-and-title text and are
+ * skipped.
+ *
+ * @param entries - Registry entries.
+ */
+export function sourceRefs(entries: JsonObject[]): SourceRef[] {
+  const refs: SourceRef[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    const citeKey = stringField(entry, "citeKey");
+    const author = stringField(entry, "author");
+    const title = stringField(entry, "workTitle");
+
+    if (!citeKey || !author || !title) continue;
+
+    if (seen.has(citeKey)) continue;
+
+    seen.add(citeKey);
+
+    const surnames = author
+      .split(/;|\sand\s/)
+      .map((name) => norm(name.split(",")[0] ?? ""))
+      .filter(Boolean);
+
+    refs.push({ citeKey, surnames, title: norm(title) });
+  }
+
+  return refs;
+}
+
+const ROMAN = "(?=[ivxlc])c{0,3}(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})(?![a-z])";
+
+const NUM = `(?:\\d+|${ROMAN})(?:\\s*[–-]\\s*(?:\\d+|${ROMAN}))?`;
+
+const LOCATOR = new RegExp(
+  `(?:[,:]”?|\\bat)\\s+((?:pp?\\.\\s*)?${NUM}(?:\\s*n\\.\\s*\\d+)?(?:,\\s*${NUM})*(?:\\s+and\\s+n\\.\\s*\\d+)?)\\s*$`,
+  "i",
+);
+
+/**
+ * Words that open a note segment with something other than the citation.
+ */
+const LEAD = /^(?:see(?:\s+also)?|cf\.?|compare|esp\.)\s+/i;
+
+/**
+ * A sentence boundary that is not an abbreviation or an initial.
+ */
+const SENTENCE_BREAK =
+  /(?<![A-Z]|\b(?:ed|eds|trans|esp|cf|vol|no|pp?|n|al|Jr|St))\.\s+[A-Z“"]/;
+
+/**
+ * Splits at `;` outside parentheses, brackets, and quotation marks.
+ */
+function splitSegments(text: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+
+  for (const char of text) {
+    if (char === "(" || char === "[" || char === "“") depth += 1;
+
+    if (char === ")" || char === "]" || char === "”") {
+      depth = Math.max(0, depth - 1);
+    }
+
+    if (char === ";" && depth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  parts.push(current);
+
+  return parts.flatMap((part) => (part.trim() ? [part.trim()] : []));
+}
+
+interface LocatorSplit {
+  rest: string;
+  locator: string | null;
+}
+
+/**
+ * Splits a page locator off the end of a citation, formatting it for Pandoc.
+ */
+function splitLocator(text: string): LocatorSplit {
+  const bare = text.replace(/,?\s*https?:\/\/\S+$/, "").trim();
+  const found = LOCATOR.exec(bare);
+  const raw = found?.[1]?.replace(/^pp?\.\s*/i, "");
+
+  // A lone year is publication data, not a page.
+  if (!found || !raw || /^(?:1[4-9]|20)\d\d$/.test(raw)) {
+    return { rest: bare, locator: null };
+  }
+
+  const plural = /[–,-]/.test(raw);
+
+  return {
+    rest: bare.slice(0, found.index),
+    locator: `${plural ? "pp." : "p."} ${raw}`,
+  };
+}
+
+interface Match {
+  key: string;
+  locator: string | null;
+}
+
+interface SegmentResult {
+  lead: string;
+  match: Match | null;
+  /**
+   * Why the segment is not a plain citation, when it is not.
+   */
+  candidates: string[];
+}
+
+/**
+ * Finds the record a note segment cites: an author's surname near the start,
+ * plus a title or short title that the record's title contains.
+ */
+function matchSegment(
+  raw: string,
+  refs: SourceRef[],
+  previousKey: string | undefined,
+): SegmentResult {
+  const withoutAnd = raw.replace(/^and\s+/i, "");
+  const lead = LEAD.exec(withoutAnd)?.[0] ?? "";
+
+  const text = withoutAnd
+    .slice(lead.length)
+    .replace(/[*\\]/g, "")
+    .replace(/\.$/, "")
+    .trim();
+
+  const { rest, locator } = splitLocator(text);
+
+  if (/^ibid\b/i.test(rest) && previousKey) {
+    return { lead, match: { key: previousKey, locator }, candidates: [] };
+  }
+
+  if (SENTENCE_BREAK.test(rest)) return { lead, match: null, candidates: [] };
+
+  // Pages the locator pattern did not recognize must not be dropped silently.
+  if (!locator && /\d\s*$/.test(rest)) {
+    return { lead, match: null, candidates: [] };
+  }
+
+  const words = norm(rest);
+  const authorChunk = ` ${norm(rest.split(",")[0] ?? "")}`;
+
+  const pieces = rest
+    .split(/[,(]/)
+    .map(norm)
+    .filter((p) => p.length >= 5);
+
+  const scored: { key: string; score: number }[] = [];
+
+  for (const ref of refs) {
+    // Chicago opens with the author, ending at the first comma. An author's
+    // name appearing later (in a title) does not make the note theirs.
+    const author = ref.surnames.some((surname) =>
+      authorChunk.endsWith(` ${surname}`),
+    );
+
+    if (!author || authorChunk.trim().split(" ").length > 6) continue;
+
+    let score = words.includes(ref.title) ? ref.title.length : 0;
+
+    for (const piece of pieces) {
+      if (` ${ref.title} `.includes(` ${piece} `)) {
+        score = Math.max(score, piece.length);
+      }
+    }
+
+    if (score > 0) scored.push({ key: ref.citeKey, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+
+  const [best, second] = scored;
+
+  if (best && best.score >= 6 && best.score > (second?.score ?? 0)) {
+    return { lead, match: { key: best.key, locator }, candidates: [] };
+  }
+
+  return {
+    lead,
+    match: null,
+    candidates: scored.slice(0, 3).map((entry) => entry.key),
+  };
+}
+
+function marker(matches: Match[]): string {
+  return `[${matches
+    .map(({ key, locator }) => `@${key}${locator ? `, ${locator}` : ""}`)
+    .join("; ")}]`;
+}
+
+interface Definition {
+  label: string;
+  start: number;
+  end: number;
+  text: string;
+  /**
+   * More than one paragraph: left alone.
+   */
+  multi: boolean;
+}
+
+function findDefinitions(lines: string[]): Definition[] {
+  const defs: Definition[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const head = /^\[\^([^\]]+)\]:\s*(.*)$/.exec(lines[i] ?? "");
+
+    if (!head) continue;
+
+    let end = i;
+    let multi = false;
+    let text = head[2] ?? "";
+
+    for (let j = i + 1; j < lines.length; j++) {
+      const line = lines[j] ?? "";
+
+      if (/^(?: {4}|\t)\S/.test(line)) {
+        text += ` ${line.trim()}`;
+        multi ||= j > end + 1;
+        end = j;
+      } else if (
+        line.trim() === "" &&
+        /^(?: {4}|\t)\S/.test(lines[j + 1] ?? "")
+      ) {
+        continue;
+      } else {
+        break;
+      }
+    }
+
+    defs.push({ label: head[1] ?? "", start: i, end, text, multi });
+    i = end;
+  }
+
+  return defs;
+}
+
+const MARK = /\[((?:\\.|[^\]\\])*)\]\{\.mark\}/g;
+
+/**
+ * Where a footnote's marker goes in the body: before sentence punctuation, or
+ * after a closing quotation mark or parenthesis.
+ */
+function placeMarker(body: string, label: string, citation: string): string {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ref = new RegExp(`([.,;:!?]*)([”"’)]*)\\[\\^${escaped}\\](?!:)`, "g");
+
+  return body.replace(ref, (_all, punct: string, close: string) =>
+    close ? `${punct}${close} ${citation}` : ` ${citation}${punct}`,
+  );
+}
+
+/**
+ * Rewrites footnotes that cite sources in `sources.json` as Pandoc citations. A
+ * note made only of citations becomes `[@key, p. N]` at its reference; a note
+ * with other text stays a note, with the citations inside it rewritten.
+ * Anything that cannot be matched unambiguously is left as written and
+ * reported.
+ *
+ * @param markdown - Article markdown with `[^n]` footnotes.
+ * @param refs - Match data from {@link sourceRefs}.
+ *
+ * @returns The rewritten markdown and one report per footnote.
+ */
+export function relinkFootnotes(
+  markdown: string,
+  refs: SourceRef[],
+): RelinkResult {
+  const lines = markdown.split("\n");
+  const defs = findDefinitions(lines);
+  const notes: NoteReport[] = [];
+  const dropped = new Set<number>();
+  const inline = new Map<string, string>();
+  let previousKey: string | undefined;
+
+  for (const def of defs) {
+    const report: NoteReport = {
+      label: def.label,
+      outcome: "unchanged",
+      keys: [],
+      unresolved: [],
+    };
+
+    notes.push(report);
+
+    if (def.multi) continue;
+
+    const text = def.text.replace(MARK, "$1").trim();
+    const segments = splitSegments(text);
+    const results: SegmentResult[] = [];
+    let carry = previousKey;
+
+    for (const segment of segments) {
+      const result = matchSegment(segment, refs, carry);
+
+      results.push(result);
+
+      if (result.match) carry = result.match.key;
+    }
+
+    const matched = results.filter((result) => result.match);
+
+    if (matched.length === 0) {
+      report.unresolved = results.map((result, index) => ({
+        text: segments[index] ?? "",
+        candidates: result.candidates,
+      }));
+
+      continue;
+    }
+
+    previousKey = carry;
+    report.keys = matched.flatMap((result) =>
+      result.match ? [result.match.key] : [],
+    );
+
+    const plain = results.every((result) => result.match && !result.lead);
+
+    if (plain) {
+      report.outcome = "inline";
+
+      inline.set(
+        def.label,
+        marker(
+          results.flatMap((result) => (result.match ? [result.match] : [])),
+        ),
+      );
+
+      for (let i = def.start; i <= def.end; i++) dropped.add(i);
+
+      continue;
+    }
+
+    report.outcome = "footnote";
+
+    report.unresolved = results.flatMap((result, index) =>
+      result.match
+        ? []
+        : [{ text: segments[index] ?? "", candidates: result.candidates }],
+    );
+
+    const rewritten = results
+      .map((result, index) =>
+        result.match
+          ? `${result.lead}${marker([result.match])}`
+          : (segments[index] ?? ""),
+      )
+      .join("; ")
+      .replace(/\]; \[@/g, "; @");
+
+    lines[def.start] =
+      `[^${def.label}]: ${rewritten}${text.endsWith(".") ? "." : ""}`;
+
+    for (let i = def.start + 1; i <= def.end; i++) dropped.add(i);
+  }
+
+  const kept = lines.filter((_line, index) => !dropped.has(index));
+  let body = kept.join("\n");
+
+  for (const [label, citation] of inline) {
+    body = placeMarker(body, label, citation);
+  }
+
+  return {
+    markdown: body.replace(/\n{3,}/g, "\n\n").replace(/\n+$/, "\n"),
+    notes,
+  };
+}

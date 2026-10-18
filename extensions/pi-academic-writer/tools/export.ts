@@ -435,6 +435,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
       ),
       overwrite: Type.Optional(Type.Boolean()),
       trackChanges: Type.Optional(stringEnum(["accept", "reject", "all"])),
+      stripHighlights: Type.Optional(Type.Boolean()),
     }),
     failure: "DOCX import failed",
     run: async ({ input, ...options }, { cwd, signal }) => {

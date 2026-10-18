@@ -30,6 +30,10 @@ export interface ImportDocxOptions {
    */
   overwrite?: boolean | undefined;
   trackChanges?: TrackChanges | undefined;
+  /**
+   * Drop Word highlighting, keeping the highlighted text.
+   */
+  stripHighlights?: boolean | undefined;
   signal?: AbortSignal | undefined;
 }
 
@@ -143,6 +147,11 @@ export async function importDocx(
         `--track-changes=${options.trackChanges ?? "accept"}`,
         `--extract-media=${mediaName}`,
         `--lua-filter=${join(PACKAGE_ROOT, "templates", "pandoc", "unwrap-link-underline.lua")}`,
+        ...(options.stripHighlights
+          ? [
+              `--lua-filter=${join(PACKAGE_ROOT, "templates", "pandoc", "strip-highlight.lua")}`,
+            ]
+          : []),
         source,
       ],
       { cwd: outDir, signal: options.signal },
