@@ -67,6 +67,7 @@ test("[test_skills_frontmatter] every skill has valid frontmatter and the expect
     [...names].sort(),
     [
       "academic-write",
+      "academic-import",
       "academic-research",
       "academic-edit",
       "academic-review",

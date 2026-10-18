@@ -160,6 +160,7 @@ Skills are directly invocable; use natural-language requests or these commands:
 | `/skill:academic-feedback` | Apply researcher feedback to article and profile patterns                                 |
 | `/skill:academic-health`   | Diagnose profile, integrations, source index, and export readiness                        |
 | `/skill:academic-export`   | Export a finished article to additional formats                                           |
+| `/skill:academic-import`   | Import a Word .docx, with footnotes, into a Pandoc markdown article                       |
 | `/skill:academic-present`  | Create presentation and submission deliverables                                           |
 | `/skill:academic-help`     | Explore commands and package workflows                                                    |
 

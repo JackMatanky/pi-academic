@@ -77,6 +77,7 @@ Skills are model-invoked by default; natural-language triggering is primary. `/s
 | `/skill:academic-feedback` | Apply researcher feedback to prose and profile patterns               |
 | `/skill:academic-health`   | Check integration and project health                                  |
 | `/skill:academic-export`   | Export finished work to additional formats                            |
+| `/skill:academic-import`   | Import a Word .docx, with footnotes, into a markdown article          |
 | `/skill:academic-present`  | Generate presentation/submission deliverables                         |
 | `/skill:academic-help`     | List commands and explain workflows                                   |
 

@@ -1,7 +1,7 @@
 ---
 name: academic-edit
 description: "Edit a drafted article, from one narrowly scoped section to multiple sections or structural revisions. Use when revising, correcting, or restructuring existing article text."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_diagnose_outline academic_writer_lint_prose
+allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_import_docx academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_diagnose_outline academic_writer_lint_prose
 metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
@@ -49,7 +49,7 @@ Ask the researcher:
 > - Paste the text directly
 > - Tell me to use the most recent article from this session"
 
-For `.docx`, markdown, PDF, or text files, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction fails, stop and report the tool's error.
+For a `.docx`, call `academic_writer_import_docx` (it keeps footnotes as `[^n]` definitions and writes `articles/<slug>.md`), then work from that markdown file; if the file is outside the project, ask the researcher to copy it in first. For markdown, PDF, or text files, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction or import fails, stop and report the tool's error.
 
 Parse the article into sections and paragraphs. Identify all footnotes/citations.
 

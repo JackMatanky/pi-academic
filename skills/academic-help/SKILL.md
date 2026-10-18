@@ -64,6 +64,7 @@ This walks you through:
 | `/skill:academic-feedback` | Turn researcher feedback into article/profile improvements    |
 | `/skill:academic-health`   | Diagnose project and integration readiness                    |
 | `/skill:academic-export`   | Convert a finished article to another format                  |
+| `/skill:academic-import`   | Import a Word .docx with footnotes into a markdown article    |
 | `/skill:academic-present`  | Create presentation or submission deliverables                |
 | `/skill:academic-help`     | Show this help and routing guidance                           |
 

@@ -13,6 +13,7 @@ import {
 import { loadProfile } from "../../lib/profile.js";
 import { stringEnum } from "../../lib/schema.js";
 import { generateDocx } from "../article/docx-generator.js";
+import { importDocx } from "../article/docx-import.js";
 import { auditCitations } from "../citations/audit.js";
 import { selectPdfEngine } from "../core/commands.js";
 import { runPandoc } from "../core/pandoc.js";
@@ -411,6 +412,40 @@ export function registerExportTools(pi: ExtensionAPI): void {
           ...warnings.map((warning) => `warning: ${warning}`),
         ].join("\n"),
         details: { ...result, stylePackage: stylePackage ?? null, warnings },
+      };
+    },
+  });
+
+  registerTool(pi, {
+    name: "academic_writer_import_docx",
+    effect: "exec",
+    label: "Academic Writer Import DOCX",
+    description:
+      "Convert a Word .docx inside the project to a Pandoc markdown article with its footnotes and endnotes as [^n] definitions. Default output is articles/<slug>.md; refuses to replace an existing file unless overwrite is true. Images are extracted beside the markdown. Word citation fields come through as plain text, never [@key]. Warns when the footnote count differs from the Word file.",
+    parameters: Type.Object({
+      input: Type.String({
+        minLength: 1,
+        description: "Project-relative .docx path.",
+      }),
+      output: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description: "Project-relative .md destination.",
+        }),
+      ),
+      overwrite: Type.Optional(Type.Boolean()),
+      trackChanges: Type.Optional(stringEnum(["accept", "reject", "all"])),
+    }),
+    failure: "DOCX import failed",
+    run: async ({ input, ...options }, { cwd, signal }) => {
+      const result = await importDocx(cwd, input, { ...options, signal });
+
+      return {
+        text: [
+          `Imported ${input} to ${result.output}: ${result.footnotes} footnote(s)${result.media ? `, images in ${result.media}` : ""}.`,
+          ...result.warnings.map((warning) => `warning: ${warning}`),
+        ].join("\n"),
+        details: result,
       };
     },
   });

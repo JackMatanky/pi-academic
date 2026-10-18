@@ -50,7 +50,7 @@ test("fail exposes structured diagnostics in the error message and retains cause
 test("every tool declares an approval tier and exactly the seven core tools are essential", () => {
   const { definitions } = createToolHarness();
 
-  assert.equal(definitions.size, 38);
+  assert.equal(definitions.size, 39);
 
   for (const [name, definition] of definitions)
     assert.ok(definition.approval, `${name} has no approval`);

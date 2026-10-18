@@ -78,12 +78,12 @@ export interface ArticleWordCounts {
 /**
  * Extracts footnote definitions and body lines from markdown.
  */
-interface SeparatedFootnotes {
+export interface SeparatedFootnotes {
   bodyText: string;
   footnoteDefinitions: Map<string, string>;
 }
 
-function separateFootnotes(markdown: string): SeparatedFootnotes {
+export function separateFootnotes(markdown: string): SeparatedFootnotes {
   const lines = markdown.split(/\r?\n/);
   const bodyLines: string[] = [];
   const definitions = new Map<string, string>();
