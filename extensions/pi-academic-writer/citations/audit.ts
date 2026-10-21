@@ -78,19 +78,21 @@ function isFile(path: string): boolean {
  * Collects every non-blank `citeKey` anywhere in a source registry.
  */
 function collectCiteKeys(value: JsonValue, keys: Set<string>): void {
+  if (value === null || value === undefined) return;
+
   if (Array.isArray(value)) {
     for (const item of value) collectCiteKeys(item, keys);
 
     return;
   }
 
-  if (!isValid(JsonObjectSchema, value)) return;
-
+  if (value.constructor !== Object || !isValid(JsonObjectSchema, value)) return;
   const citeKey = value.citeKey;
 
   if (
     citeKey !== undefined &&
     citeKey !== null &&
+    citeKey.constructor === String &&
     isValid(StringSchema, citeKey)
   ) {
     const trimmed = citeKey.trim();
