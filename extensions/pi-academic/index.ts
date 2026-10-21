@@ -7,6 +7,7 @@ import { registerProfileTools } from "./tools/profile.js";
 import { registerProseTools } from "./tools/prose.js";
 import { registerResearchTools } from "./tools/research.js";
 import { registerSourceTools } from "./tools/source.js";
+import { registerStyleTools } from "./tools/style.js";
 import { registerVoiceTools } from "./tools/voice.js";
 
 /**
@@ -22,4 +23,5 @@ export default function piAcademicWriter(pi: ExtensionAPI): void {
   registerResearchTools(pi);
   registerVoiceTools(pi);
   registerProseTools(pi);
+  registerStyleTools(pi);
 }
