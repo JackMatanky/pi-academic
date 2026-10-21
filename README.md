@@ -260,6 +260,8 @@ your-research-folder/
 
 **"No profile found"** — run `/skill:academic-setup` first.
 
+**"Old .academic-writer/ data"**: the package was formerly named `academic-writer`; `.academic-writer/` directories are not read. Run `/skill:academic-setup` to create `.pi-academic/`.
+
 **"Zotero not detected"** — install the server and make sure a `zotero` MCP server is configured:
 
 ```bash
