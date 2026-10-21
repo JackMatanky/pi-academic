@@ -14,7 +14,7 @@ const isFile = (rel: string): boolean => {
 };
 
 test("[test_voice_artifacts_under_academic_writer] voice artifacts live under .academic-writer/voice/", () => {
-  const voiceTools = readRepo("extensions/pi-academic-writer/tools/voice.ts");
+  const voiceTools = readRepo("extensions/pi-academic/tools/voice.ts");
 
   assert.ok(voiceTools.includes(".academic-writer/voice/profile.md"));
   assert.ok(

@@ -5,7 +5,7 @@ import { test } from "vitest";
 import {
   candidateMcpToolNames,
   KNOWN_MCP_SERVERS,
-} from "../pi-academic-writer/core/mcp-names.js";
+} from "../pi-academic/core/mcp-names.js";
 
 test("KNOWN_MCP_SERVERS includes notebooklm alias", () => {
   assert.ok(KNOWN_MCP_SERVERS.includes("notebooklm"));

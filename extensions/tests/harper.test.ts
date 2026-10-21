@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { test } from "vitest";
 
-import { lintWithHarper } from "../pi-academic-writer/prose/harper.js";
+import { lintWithHarper } from "../pi-academic/prose/harper.js";
 import { createToolHarness } from "./helpers.js";
 
 test("[test_harper_finds_indefinite_article_error] lintWithHarper flags the indefinite-article error", async () => {

@@ -16,7 +16,7 @@ import { test } from "vitest";
 import {
   relinkFootnotes,
   sourceRefs,
-} from "../pi-academic-writer/citations/relink.js";
+} from "../pi-academic/citations/relink.js";
 import { createToolHarness } from "./helpers.js";
 
 const { callTool } = createToolHarness();

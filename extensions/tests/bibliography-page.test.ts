@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { strFromU8, unzipSync } from "fflate";
 import { test, type TestContext } from "vitest";
 
-import { bibliographyTitle } from "../pi-academic-writer/citations/csl-resolver.js";
+import { bibliographyTitle } from "../pi-academic/citations/csl-resolver.js";
 import { createToolHarness } from "./helpers.js";
 
 const hasPandoc = !!spawnSync("which", ["pandoc"], { encoding: "utf8" }).stdout;

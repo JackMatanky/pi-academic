@@ -15,7 +15,7 @@ import { Type } from "typebox";
 import { test } from "vitest";
 
 import { isValid, parseJsonText } from "../lib/schema.js";
-import { resolveResourcePath } from "../pi-academic-writer/core/resources.js";
+import { resolveResourcePath } from "../pi-academic/core/resources.js";
 import {
   createToolHarness,
   get,
@@ -233,8 +233,8 @@ test("[test_pandoc_filters_exist] every shipped Lua filter is passed to Pandoc b
   ]);
 
   const users = [
-    "extensions/pi-academic-writer/article/docx-import.ts",
-    "extensions/pi-academic-writer/core/pandoc.ts",
+    "extensions/pi-academic/article/docx-import.ts",
+    "extensions/pi-academic/core/pandoc.ts",
   ]
     .map(readRepo)
     .join("\n");

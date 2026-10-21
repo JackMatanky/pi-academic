@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
-import { parseBibEntries } from "../pi-academic-writer/parsers/bibtex.js";
+import { parseBibEntries } from "../pi-academic/parsers/bibtex.js";
 
 test("an @ inside a field value never splits an entry", () => {
   const bib = [

@@ -18,14 +18,14 @@ import { test, type TestContext } from "vitest";
 import {
   parseArticle,
   type ArticleData,
-} from "../pi-academic-writer/article/article.js";
+} from "../pi-academic/article/article.js";
 import {
   articleMarkdown,
   escapeMarkdown,
   generateDocx,
   formatDesign,
-} from "../pi-academic-writer/article/docx-generator.js";
-import { cleanRtlText } from "../pi-academic-writer/prose/typography.js";
+} from "../pi-academic/article/docx-generator.js";
+import { cleanRtlText } from "../pi-academic/prose/typography.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 
@@ -309,7 +309,7 @@ test(
     const root = project(t);
 
     const { installStarterPackage } =
-      await import("../pi-academic-writer/styling/document-style.js");
+      await import("../pi-academic/styling/document-style.js");
 
     const installed = await installStarterPackage(root);
     writeFileSync(

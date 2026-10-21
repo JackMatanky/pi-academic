@@ -185,7 +185,7 @@ export function loadResource(
 
     return {
       content: thresholdsDefaultJson(),
-      path: "extensions/pi-academic-writer/core/thresholds-default.ts (package default)",
+      path: "extensions/pi-academic/core/thresholds-default.ts (package default)",
       source: "package",
     };
   }

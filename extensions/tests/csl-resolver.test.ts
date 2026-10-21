@@ -14,7 +14,7 @@ import { dirname, join } from "node:path";
 
 import { afterEach, test } from "vitest";
 
-import { resolveCslStyle } from "../pi-academic-writer/citations/csl-resolver.js";
+import { resolveCslStyle } from "../pi-academic/citations/csl-resolver.js";
 
 const projects: string[] = [];
 

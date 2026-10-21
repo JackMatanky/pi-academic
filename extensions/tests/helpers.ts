@@ -19,8 +19,8 @@ import {
   type JsonObject,
   type JsonValue,
 } from "../lib/schema.js";
-import { ToolFailure } from "../pi-academic-writer/core/tool-kit.js";
-import piAcademicWriter from "../pi-academic-writer/index.js";
+import { ToolFailure } from "../pi-academic/core/tool-kit.js";
+import piAcademicWriter from "../pi-academic/index.js";
 
 /**
  * The repository root. Vitest runs these tests in place from

@@ -12,19 +12,16 @@ import { join } from "node:path";
 
 import { test, type TestContext } from "vitest";
 
-import { importDocx } from "../pi-academic-writer/article/docx-import.js";
+import { importDocx } from "../pi-academic/article/docx-import.js";
 import {
   analyzeNoteRefs,
   linkNoteRefs,
-} from "../pi-academic-writer/citations/note-refs.js";
+} from "../pi-academic/citations/note-refs.js";
 import {
   relinkFootnotes,
   sourceRefs,
-} from "../pi-academic-writer/citations/relink.js";
-import {
-  NOTE_REFS_FILTER,
-  runPandoc,
-} from "../pi-academic-writer/core/pandoc.js";
+} from "../pi-academic/citations/relink.js";
+import { NOTE_REFS_FILTER, runPandoc } from "../pi-academic/core/pandoc.js";
 import { wordDocx } from "./word-docx.js";
 
 const hasPandoc = !!spawnSync("which", ["pandoc"], { encoding: "utf8" }).stdout;

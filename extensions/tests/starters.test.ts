@@ -3,14 +3,11 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { firstViolation } from "../lib/schema.js";
-import {
-  ComponentsSchema,
-  PageSchema,
-} from "../pi-academic-writer/styling/design.js";
+import { ComponentsSchema, PageSchema } from "../pi-academic/styling/design.js";
 import {
   STYLE_STARTERS,
   starterByName,
-} from "../pi-academic-writer/styling/starters.js";
+} from "../pi-academic/styling/starters.js";
 
 test("[test_style_starters_match_schemas] every shipped starter satisfies the design schemas", () => {
   assert.deepEqual(

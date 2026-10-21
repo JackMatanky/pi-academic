@@ -43,23 +43,23 @@
   },
   "omp": {
     "extensions": [
-      "./extensions/pi-academic-writer/index.ts",
+      "./extensions/pi-academic/index.ts",
       "./extensions/lifecycle/index.ts"
     ],
     "skills": [
       "./skills"
     ],
-    "image": "./assets/pi-academic-writer.png"
+    "image": "./assets/pi-academic.png"
   },
   "pi": {
     "extensions": [
-      "./extensions/pi-academic-writer/index.ts",
+      "./extensions/pi-academic/index.ts",
       "./extensions/lifecycle/index.ts"
     ],
     "skills": [
       "./skills"
     ],
-    "image": "./assets/pi-academic-writer.png",
+    "image": "./assets/pi-academic.png",
     "subagents": {
       "agents": [
         "./agents"

@@ -4,7 +4,7 @@
 
 **Goal:** Rename the package from `academic-writer` to `pi-academic` end to end (npm name, repo URLs, data dir, tool prefix, display name), fresh start with no migration shims.
 
-**Architecture:** One ordered codemod per task so no pattern consumes another (`pi-academic-writer` first, then bare identity refs, then data dir, then tool prefix, then env literal, then display name). The existing Vitest suite (docs-contracts, package-structure, repo-hygiene, lifecycle) is the safety net; `mise run ci` must pass before every commit.
+**Architecture:** One ordered codemod per task so no pattern consumes another (`pi-academic` first, then bare identity refs, then data dir, then tool prefix, then env literal, then display name). The existing Vitest suite (docs-contracts, package-structure, repo-hygiene, lifecycle) is the safety net; `mise run ci` must pass before every commit.
 
 **Tech Stack:** ripgrep + perl in-place passes on macOS, mise task runner, Vitest.
 
@@ -23,29 +23,29 @@ Pitch files (`pitch-*.md`) describe the original upstream Claude Code plugin and
 ### Task 1: Rename extension directory and assets
 
 **Files:**
-- Move: `extensions/pi-academic-writer/` → `extensions/pi-academic/`
-- Move: `assets/pi-academic-writer.png` → `assets/pi-academic.png`
-- Move: `assets/pi-academic-writer.svg` → `assets/pi-academic.svg`
-- Modify: all 29 files referencing `pi-academic-writer` (package.json manifest paths, tests, AGENTS.md)
+- Move: `extensions/pi-academic/` → `extensions/pi-academic/`
+- Move: `assets/pi-academic.png` → `assets/pi-academic.png`
+- Move: `assets/pi-academic.svg` → `assets/pi-academic.svg`
+- Modify: all 29 files referencing `pi-academic` (package.json manifest paths, tests, AGENTS.md)
 
 - [ ] **Step 1: git mv the three paths**
 
 ```bash
-git mv extensions/pi-academic-writer extensions/pi-academic
-git mv assets/pi-academic-writer.png assets/pi-academic.png
-git mv assets/pi-academic-writer.svg assets/pi-academic.svg
+git mv extensions/pi-academic extensions/pi-academic
+git mv assets/pi-academic.png assets/pi-academic.png
+git mv assets/pi-academic.svg assets/pi-academic.svg
 ```
 
 - [ ] **Step 2: rewrite references**
 
 ```bash
-rg -l 'pi-academic-writer' -g '!node_modules' -g '!docs/superpowers/specs/**' -g '!pitch-*.md' | xargs perl -pi -e 's/pi-academic-writer/pi-academic/g'
+rg -l 'pi-academic' -g '!node_modules' -g '!docs/superpowers/specs/**' -g '!pitch-*.md' | xargs perl -pi -e 's/pi-academic/pi-academic/g'
 ```
 
 - [ ] **Step 3: verify no leftovers**
 
 ```bash
-rg -l 'pi-academic-writer' -g '!node_modules' -g '!docs/superpowers/specs/**' -g '!pitch-*.md'; echo "exit=$?"
+rg -l 'pi-academic' -g '!node_modules' -g '!docs/superpowers/specs/**' -g '!pitch-*.md'; echo "exit=$?"
 ```
 
 Expected: no output, `exit=1` (no matches).
@@ -277,7 +277,7 @@ git commit -m "refactor: rename display name to Pi Academic"
 **Files:**
 - Modify: `README.md` Troubleshooting (insert after the "No profile found" bullet)
 
-- [ ] **Step 1: add the fresh-start note** (avoid the word "legacy"; repo-hygiene forbids it)
+- [ ] **Step 1: add the fresh-start note** (avoid the forbidden word; see STALE in extensions/tests/repo-hygiene.test.ts)
 
 Insert exactly this line after the `**"No profile found"**` line:
 

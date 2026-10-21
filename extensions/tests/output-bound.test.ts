@@ -19,7 +19,7 @@ import {
   boundOutput,
   MAX_OUTPUT_BYTES,
   MAX_OUTPUT_LINES,
-} from "../pi-academic-writer/core/output-bound.js";
+} from "../pi-academic/core/output-bound.js";
 
 function project(t: TestContext, withState: boolean): string {
   const root = mkdtempSync(join(tmpdir(), "aw-bound-"));

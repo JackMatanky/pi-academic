@@ -17,26 +17,23 @@ import { join } from "node:path";
 import { strFromU8, unzipSync } from "fflate";
 import { test, type TestContext } from "vitest";
 
-import { formatDesign } from "../pi-academic-writer/article/docx-generator.js";
-import {
-  defaultReference,
-  runPandoc,
-} from "../pi-academic-writer/core/pandoc.js";
+import { formatDesign } from "../pi-academic/article/docx-generator.js";
+import { defaultReference, runPandoc } from "../pi-academic/core/pandoc.js";
 import {
   loadStarterDesign,
   loadStylePackage,
-} from "../pi-academic-writer/styling/design.js";
+} from "../pi-academic/styling/design.js";
 import {
   checkStylePackage,
   installStarterPackage,
   listStylePackages,
   renderDocumentStyle,
-} from "../pi-academic-writer/styling/document-style.js";
-import { buildDocxReference } from "../pi-academic-writer/styling/docx.js";
+} from "../pi-academic/styling/document-style.js";
+import { buildDocxReference } from "../pi-academic/styling/docx.js";
 import {
   buildLatexPreamble,
   spliceLatexColors,
-} from "../pi-academic-writer/styling/latex-preamble.js";
+} from "../pi-academic/styling/latex-preamble.js";
 
 const hasPandoc = spawnSync("pandoc", ["--version"]).status === 0;
 

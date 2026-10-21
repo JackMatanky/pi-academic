@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
-import { lintProse } from "../pi-academic-writer/prose/lint.js";
+import { lintProse } from "../pi-academic/prose/lint.js";
 
 test("lintProse flags conversational residue and inflated significance in prose", () => {
   const text =

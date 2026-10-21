@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { test, type TestContext } from "vitest";
 
-import { reverseOutline } from "../pi-academic-writer/research/reverse-outline.js";
+import { reverseOutline } from "../pi-academic/research/reverse-outline.js";
 
 function fixture(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), "reverse-outline-"));

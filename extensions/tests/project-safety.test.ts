@@ -29,13 +29,13 @@ import {
   parseWith,
   type JsonValue,
 } from "../lib/schema.js";
-import { auditCitations } from "../pi-academic-writer/citations/audit.js";
+import { auditCitations } from "../pi-academic/citations/audit.js";
 import {
   ingestSources,
   snapshotCitationAssets,
-} from "../pi-academic-writer/citations/source-registry.js";
-import { type OutlineItem } from "../pi-academic-writer/research/core.js";
-import { migrateArticleOutline } from "../pi-academic-writer/research/outline.js";
+} from "../pi-academic/citations/source-registry.js";
+import { type OutlineItem } from "../pi-academic/research/core.js";
+import { migrateArticleOutline } from "../pi-academic/research/outline.js";
 
 function project(t: TestContext): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "project-safety-")));

@@ -30,7 +30,7 @@ Rename the package identity from `academic-writer` to `pi-academic`, fully and w
 
 ## Fresh start (no shims)
 
-- No code reads a legacy `.academic-writer/` directory.
+- No code reads a former `.academic-writer/` directory.
 - README Troubleshooting gains one line: the package was formerly named `academic-writer`; old `.academic-writer/` data directories are not read.
 - README/AGENTS install and issue-tracker URLs use `JackMatanky/pi-academic`. Renaming the GitHub repository makes old clone URLs redirect; no compatibility copy of the repo is kept.
 

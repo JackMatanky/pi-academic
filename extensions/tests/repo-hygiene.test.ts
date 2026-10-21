@@ -31,8 +31,8 @@ test("[test_no_academic_writer_root_env_contract] package assets are exposed thr
     `${ENV_INJECT} must not reintroduce global ${ROOT_ENV} mutation`,
   );
   assert.ok(
-    existsSync(join(repoRoot, "extensions/pi-academic-writer/index.ts")),
-    "pi-academic-writer extension missing",
+    existsSync(join(repoRoot, "extensions/pi-academic/index.ts")),
+    "pi-academic extension missing",
   );
 
   const { definitions } = createToolHarness();
