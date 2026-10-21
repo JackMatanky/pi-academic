@@ -57,6 +57,10 @@ export interface ImportDocxResult {
    * Real footnotes and endnotes in the Word file.
    */
   sourceNotes: number;
+  /**
+   * Metadata fields written to the YAML block at the top of the markdown.
+   */
+  metadata: string[];
   warnings: string[];
 }
 
@@ -87,6 +91,82 @@ function countSourceNotes(docxPath: string): number {
   }
 
   return count;
+}
+
+interface LanguageFields {
+  lang?: string;
+  dir?: string;
+}
+
+interface MetadataBlock {
+  text: string;
+  keys: string[];
+}
+
+/**
+ * Scripts whose languages run right to left.
+ */
+const RTL_LANGUAGES = new Set(["he", "ar", "fa", "ur", "yi", "ps", "sd", "ug"]);
+
+/**
+ * The language and direction to record for the article. Word's default proofing
+ * language is often English even for a Hebrew manuscript, so the script of the
+ * text decides when they disagree.
+ */
+function documentLanguage(docxPath: string, body: string): LanguageFields {
+  const hebrew = (body.match(/[\u0590-\u05ff]/g) ?? []).length;
+  const latin = (body.match(/[A-Za-z]/g) ?? []).length;
+
+  const styles = unzipSync(readFileSync(docxPath), {
+    filter: (file) => file.name === "word/styles.xml",
+  })["word/styles.xml"];
+
+  const declared = styles
+    ? /<w:docDefaults>[\s\S]*?<w:lang\s[^>]*?w:val="([^"]+)"/.exec(
+        Buffer.from(styles).toString("utf8"),
+      )?.[1]
+    : undefined;
+
+  const declaredRtl = RTL_LANGUAGES.has(
+    declared?.split("-")[0]?.toLowerCase() ?? "",
+  );
+
+  if (hebrew > latin)
+    return { lang: declared && declaredRtl ? declared : "he-IL", dir: "rtl" };
+
+  return declared && !declaredRtl ? { lang: declared } : {};
+}
+
+/**
+ * The YAML metadata block at the top of the markdown, if any, and its keys.
+ */
+function metadataBlock(markdown: string): MetadataBlock {
+  const text = /^---\n[\s\S]*?\n(?:---|\.\.\.)\n/.exec(markdown)?.[0] ?? "";
+
+  return { text, keys: text.match(/^[A-Za-z][\w-]*(?=:)/gm) ?? [] };
+}
+
+/**
+ * Adds the detected language and direction to the metadata block, creating it
+ * when Pandoc wrote none. A field the block already has is not overridden.
+ */
+function withMetadata(
+  markdown: string,
+  fields: { lang?: string; dir?: string },
+): string {
+  const { text, keys } = metadataBlock(markdown);
+
+  const lines = Object.entries(fields)
+    .filter(([key]) => !keys.includes(key))
+    .map(([key, value]) => `${key}: ${value}`);
+
+  if (lines.length === 0) return markdown;
+
+  if (!text) return `---\n${lines.join("\n")}\n---\n\n${markdown}`;
+
+  const closing = text.lastIndexOf("\n", text.length - 2) + 1;
+
+  return `${text.slice(0, closing)}${lines.join("\n")}\n${text.slice(closing)}${markdown.slice(text.length)}`;
 }
 
 /**
@@ -135,13 +215,16 @@ export async function importDocx(
   // markdown to keep them valid wherever the article lives.
   const mediaName = `${basename(output, ".md")}.media`;
 
-  const markdown = (
+  const imported = (
     await runPandoc(
       [
         "-f",
         "docx",
         "-t",
         "markdown-smart",
+        // Standalone, so the Word title, author and date become a YAML block
+        // instead of being dropped.
+        "-s",
         "--wrap=none",
         "--markdown-headings=atx",
         `--track-changes=${options.trackChanges ?? "accept"}`,
@@ -157,6 +240,8 @@ export async function importDocx(
       { cwd: outDir, signal: options.signal },
     )
   ).toString("utf8");
+
+  const markdown = withMetadata(imported, documentLanguage(source, imported));
 
   writeFileAtomic(output, markdown.endsWith("\n") ? markdown : `${markdown}\n`);
 
@@ -175,6 +260,7 @@ export async function importDocx(
   return {
     output: toRelative(cwd, output),
     media: existsSync(mediaDir) ? relative(cwd, mediaDir) : null,
+    metadata: metadataBlock(markdown).keys,
     footnotes,
     sourceNotes,
     warnings,

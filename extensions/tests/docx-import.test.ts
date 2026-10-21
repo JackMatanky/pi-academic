@@ -160,3 +160,64 @@ test.skipIf(!hasPandoc)(
     assert.match(markdown, /\[marked\]\{\.underline\}/);
   },
 );
+
+test.skipIf(!hasPandoc)(
+  "keeps the Word title and records the language as a YAML metadata block",
+  async (t) => {
+    const root = project(
+      t,
+      '---\ntitle: "A Title: With a Colon"\n---\n\n# Intro\n\nBody text.[^1]\n\n[^1]: A note.\n',
+    );
+
+    const result = await callTool(root, "academic_writer_import_docx", {
+      input: "drafts/my essay.docx",
+    });
+
+    const markdown = readFileSync(join(root, "articles/my-essay.md"), "utf8");
+    const block = /^---\n([\s\S]*?)\n---\n/.exec(markdown)?.[1] ?? "";
+
+    assert.match(block, /^title: "A Title: With a Colon"$/m);
+    assert.match(block, /^lang: en-US$/m);
+    assert.ok(!/^dir:/m.test(block));
+    assert.deepEqual(result.details.metadata, ["title", "lang"]);
+
+    // The title lives only in the metadata, not again as a body paragraph.
+    assert.ok(!markdown.slice(block.length + 8).includes("A Title"));
+    assert.equal(result.details.footnotes, 1);
+  },
+);
+
+test.skipIf(!hasPandoc)(
+  "creates the metadata block when Word supplies no title, and lets Hebrew text decide the direction",
+  async (t) => {
+    const english = project(t, "# Intro\n\nPlain English text.\n");
+
+    await callTool(english, "academic_writer_import_docx", {
+      input: "drafts/my essay.docx",
+    });
+
+    assert.match(
+      readFileSync(join(english, "articles/my-essay.md"), "utf8"),
+      /^---\nlang: en-US\n---\n\n# Intro/,
+    );
+
+    // Word's default proofing language is English even here.
+    const hebrew = project(
+      t,
+      "# מבוא\n\nזהו טקסט בעברית עם הערה.[^1]\n\n[^1]: הערה.\n",
+    );
+
+    const result = await callTool(hebrew, "academic_writer_import_docx", {
+      input: "drafts/my essay.docx",
+    });
+
+    const block =
+      /^---\n([\s\S]*?)\n---\n/.exec(
+        readFileSync(join(hebrew, "articles/my-essay.md"), "utf8"),
+      )?.[1] ?? "";
+
+    assert.match(block, /^lang: he-IL$/m);
+    assert.match(block, /^dir: rtl$/m);
+    assert.deepEqual(result.details.metadata, ["lang", "dir"]);
+  },
+);

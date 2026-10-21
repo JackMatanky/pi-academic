@@ -1,7 +1,7 @@
 ---
 name: academic-import
 description: "Import a Word .docx, with its footnotes, into a Pandoc markdown article. Use when the researcher has an existing manuscript in Word and wants to edit, review, or re-export it."
-allowed-tools: read find academic_writer_get_profile academic_writer_health academic_writer_import_docx academic_writer_relink_citations academic_writer_audit_citations academic_writer_ingest_sources academic_writer_count_words
+allowed-tools: read find academic_writer_read_resource academic_writer_get_profile academic_writer_health academic_writer_import_docx academic_writer_relink_citations academic_writer_audit_citations academic_writer_ingest_sources academic_writer_count_words
 metadata: { author: "Yotam Fromm", version: "0.1.0" }
 ---
 
@@ -31,6 +31,8 @@ If the tool fails, report its error verbatim and stop.
 
 Report the output path, the footnote count, and any media directory. Relay each warning verbatim; a footnote-count mismatch means the researcher should check those notes in the markdown against the Word file.
 
+The markdown starts with a YAML metadata block (Pandoc's `yaml_metadata_block`; field meanings and the one-place title rule are in `academic_writer_read_resource` with `name: article_metadata`): `title`, `author` and `date` when the Word file has them, plus `lang` and, for right-to-left text, `dir`. Name the fields written (`metadata` in the result). Export reads them, so the title is not guessed from a heading and Hebrew detection is not needed. When the Word title was a plain paragraph, not a Title-styled one, there is no `title` field: ask the researcher for it and add it. The block holds descriptive metadata only; never add `bibliography` or `csl` (export passes those directly).
+
 State what the import does not do:
 
 - Word citation fields (Zotero, Mendeley, Word's own) arrive as their rendered text, not `[@key]` markers. Step 4 converts footnoted citations back to `[@key]` markers where the work is in `sources.json`.
@@ -48,7 +50,7 @@ Applies when the profile's `citationStyle` is not `inline-parenthetical`. For `i
 
 What the tool does, following Pandoc's citation syntax: a note made only of cited works, optionally led by "See", "See also" or "cf.", becomes an inline `[@key, p. N]` (the lead-in becomes the citation prefix: `[see @a, p. 5; cf. @b, p. 6]`) at its reference. In a note style such as Chicago notes, Pandoc turns that marker back into a footnote itself, with the full reference on first citation and short forms after; in an author-date style it becomes an in-text citation, so say so before applying. A note with commentary or any other text stays a note, with its matched citations rewritten as author-in-text `@key [p. N]` for a note style (a bracketed citation inside a note renders wrapped in parentheses) or `[@key, p. N]` otherwise. Anything matched ambiguously, missing from `sources.json`, or followed by text the tool cannot account for (for example a second citation or a clause of prose) is left exactly as written and reported, never partly converted. Matching uses the author's surname at the start of the note and the title from `sources.json`, so it never guesses between two records. Whether the style is a note style is read from the profile's `citationStyle`; pass `noteStyle` if it cannot be read. It does not check that a quoted page number is right, and it cannot tell that an author is already named in the sentence (Pandoc's `-@key` form drops the author).
 
-Locators and suffixes: every Pandoc en-US locator term is recognised, abbreviated or in full, singular or plural (book, chapter, column, figure, folio, number, line, note, opus, page, paragraph, part, section, `s.v.`/`sub verbo`, verse, volume, `¶`, `§`), as are lists (`5, 7 and 9`, `vol. 2, p. 5`, `232 n. 36`). `ch.` and `chs.` are not Pandoc terms, so the tool writes `chap.` and `chaps.`. A bare number becomes `p.`/`pp.`. Short suffixes stay with the locator word for word: `esp. 7`, `passim`, `ff.`, `et seq.`. Lead-ins that become the prefix: see, see also, see generally, see further, see esp., see, e.g., but see, cf., compare, contrast, contra, accord, e.g., for example, inter alia. Anything longer, or any prose after the citation, leaves the note as written.
+Marker syntax, every locator term and the note-style rules are in `academic_writer_read_resource` with `name: pandoc_citation_syntax`; read it before explaining a result to the researcher. The tool recognises all of those locator terms (writing `chap.`/`chaps.` for `ch.`/`chs.`), short suffixes (`esp. 7`, `passim`, `ff.`, `et seq.`) and lead-ins (see, see also, see generally, cf., compare, contra, e.g., and similar). Anything longer, or any prose after the citation, leaves the note as written.
 
 Check the "Check these" lines in the report before applying. Relinking replaces the note's text with what `sources.json` and `bibliography.bib` say, so a mismatch between them and the manuscript is now visible: the tool flags a year in the note that the matched record does not have, but it cannot see other differences, such as a wrong author, editor or container. After applying, spot-check a few rendered notes against the manuscript and fix the bibliography record, not the note.
 

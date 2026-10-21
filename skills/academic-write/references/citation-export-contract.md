@@ -19,5 +19,6 @@ Resolve the active CSL reference with `academic_writer_resolve_csl` using the pr
 
 Rules:
 
-- Keep the markdown body clean; do not add citeproc YAML frontmatter just for export.
+- Keep the markdown body clean; do not add citeproc YAML frontmatter just for export. Descriptive metadata (`title`, `author`, `date`, `lang`, `dir`) is allowed and is what `academic_writer_import_docx` writes; `bibliography` and `csl` are not.
 - Omit the `bibliography` override when a frozen article-local snapshot exists; it always takes precedence. Use an explicit override only for a pre-snapshot article.
+- Marker syntax (prefixes, locator terms, author-in-text, note-style behaviour): `academic_writer_read_resource` with `name: pandoc_citation_syntax`.

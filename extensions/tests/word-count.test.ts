@@ -63,6 +63,27 @@ Second paragraph with a footnote[^1].
   );
 });
 
+test("a YAML metadata block is left out of the body words but not the file's raw words", (t) => {
+  const root = scratch(t);
+  mkdirSync(join(root, "articles"));
+
+  const body = "# Title\n\nThree plain words.\n";
+
+  writeFileSync(join(root, "articles", "plain.md"), body);
+
+  writeFileSync(
+    join(root, "articles", "meta.md"),
+    `---\ntitle: "A long title with many metadata words"\nlang: en-US\n---\n\n${body}`,
+  );
+
+  const plain = calculateArticleWordCount(root, "articles/plain.md", "apa");
+  const meta = calculateArticleWordCount(root, "articles/meta.md", "apa");
+
+  assert.equal(meta.bodyWords, plain.bodyWords);
+  assert.equal(meta.expectedDocumentWords, plain.expectedDocumentWords);
+  assert.ok(meta.markdownWords > plain.markdownWords);
+});
+
 test("[test_calculate_article_word_count_citeproc] estimates citation words and parses cited bibliography entries", (t) => {
   const root = scratch(t);
   mkdirSync(join(root, "articles"));

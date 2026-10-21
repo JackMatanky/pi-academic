@@ -160,7 +160,7 @@ Source text retrieved via `zotero_read_pdf_pages` (and any source passage passed
    - One source: `[@citeKey, p. N]` — e.g., `[@smith2020, p. 42]`.
    - Multiple co-located sources for the same claim: `[@key1; @key2, p. N]` — e.g., `[@smith2020; @cohen2019, p. 4]`.
    - citeKey MUST come from the frozen article-local sourcesRegistry and resolve in its bibliography — never invent it. An absent key cannot be cited in citeproc mode.
-   - All citeproc styles share this one marker syntax — whether it renders as a footnote, author-date parenthetical, numeric bracket, journal-specific format, or bibliography layout is decided later by the CSL file at pandoc-render time, not by you.
+   - All citeproc styles share this one marker syntax — whether it renders as a footnote, author-date parenthetical, numeric bracket, journal-specific format, or bibliography layout is decided later by the CSL file at pandoc-render time, not by you. For locator terms (`chap.`, `§`, `vol.`), prefixes and the other marker forms, call `academic_writer_read_resource` with `name: pandoc_citation_syntax`.
    - **No `[?]` marker here** — citeproc syntax can't embed one without corrupting the `[@key]` parse. When a field the claim relies on has `extractionConfidence: "low"` or is `null` in `sources.json`, leave the marker as plain `[@citeKey, p. N]` and instead flag the paragraph for the audit report as `[NEEDS REVIEW: <citeKey> — <field> unverified]` — Skill 8's editor (audit mode) detects this from `sources.json` and adds the report line; you do not (and cannot) embed it in the marker.
 
    Only cite sources found in search results — never make up citations. This rule holds in both modes.

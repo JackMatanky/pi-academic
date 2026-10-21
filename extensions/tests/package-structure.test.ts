@@ -199,6 +199,9 @@ const PACKAGED_RESOURCES = {
   run_state_contract: "skills/academic-write/references/run-state-contract.md",
   citation_export_contract:
     "skills/academic-write/references/citation-export-contract.md",
+  pandoc_citation_syntax:
+    "skills/academic-write/references/pandoc-citation-syntax.md",
+  article_metadata: "skills/academic-write/references/article-metadata.md",
   citation_review_gate:
     "skills/academic-review/references/citation-review-gate.md",
   dispatch_contract: "skills/academic-write/references/dispatch-contract.md",

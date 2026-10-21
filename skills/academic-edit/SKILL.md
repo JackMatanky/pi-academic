@@ -51,6 +51,8 @@ Ask the researcher:
 
 For a `.docx`, call `academic_writer_import_docx` (it keeps footnotes as `[^n]` definitions and writes `articles/<slug>.md`), then work from that markdown file; if the file is outside the project, ask the researcher to copy it in first. For markdown, PDF, or text files, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction or import fails, stop and report the tool's error.
 
+An article may begin with a YAML metadata block (`academic_writer_read_resource`, `name: article_metadata`). Keep it as it is unless the researcher asks to change a field, and do not add the title again as a heading when the block already has `title:`.
+
 Parse the article into sections and paragraphs. Identify all footnotes/citations.
 
 ## Make scope visible before editing

@@ -34,6 +34,7 @@ Call `academic_writer_read_resource` with `name: citation_export_contract`, then
 
 Write `$MD_PATH` first. The markdown must preserve the final synthesized article:
 
+- a YAML metadata block, per the `article_metadata` resource (`academic_writer_read_resource`): `lang` (`he-IL` for Hebrew, `en-US` for English) and, for Hebrew only, `dir: rtl`. No `title:` here, because the `# H1` below is the title
 - title as `# H1`
 - thesis as the italic line below it
 - abstract text from Step 8.5

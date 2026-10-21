@@ -293,6 +293,8 @@ You will receive:
 - `targetLanguage`: The article's writing language — determines which anti-AI patterns reference to load (`anti-ai-patterns-${language_lower}.md`)
 - `tools`: Enabled tools from the profile
 
+A leading YAML metadata block (`article_metadata` resource) is document metadata, not prose: do not review, rewrite or count it, and never ask for it to be removed.
+
 ### Review Criteria
 
 Evaluate the full draft against these criteria:

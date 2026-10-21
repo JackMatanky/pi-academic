@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { resolveInside } from "../../lib/fs-safe.js";
+import { parseMarkdownBlocks } from "../../lib/markdown.js";
 import { analyzeCitationText } from "../citations/audit.js";
 import { citationAssetPaths } from "../core/project-files.js";
 import { parseBibEntries } from "../parsers/bibtex.js";
@@ -158,7 +159,15 @@ export function calculateArticleWordCount(
 
   const markdownWords = countWords(markdown);
 
-  const { bodyText, footnoteDefinitions } = separateFootnotes(markdown);
+  // The metadata block is not prose: keep it out of the body count.
+  const metadata =
+    parseMarkdownBlocks(markdown).find((block) => block.type === "frontmatter")
+      ?.text ?? "";
+
+  const { bodyText, footnoteDefinitions } = separateFootnotes(
+    markdown.replace(metadata, ""),
+  );
+
   const bodyWords = countWords(bodyText);
 
   let footnoteWords = 0;

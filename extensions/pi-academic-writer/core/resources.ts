@@ -33,6 +33,8 @@ export const RESOURCE_NAMES = [
   "voice_profile_template",
   "run_state_contract",
   "citation_export_contract",
+  "pandoc_citation_syntax",
+  "article_metadata",
   "citation_review_gate",
   "dispatch_contract",
 ] as const;
@@ -107,6 +109,22 @@ export function resolveResourcePath(
         "academic-write",
         "references",
         "citation-export-contract.md",
+      );
+    case "pandoc_citation_syntax":
+      return join(
+        PACKAGE_ROOT,
+        "skills",
+        "academic-write",
+        "references",
+        "pandoc-citation-syntax.md",
+      );
+    case "article_metadata":
+      return join(
+        PACKAGE_ROOT,
+        "skills",
+        "academic-write",
+        "references",
+        "article-metadata.md",
       );
     case "citation_review_gate":
       return join(
