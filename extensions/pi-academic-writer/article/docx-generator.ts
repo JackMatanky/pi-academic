@@ -12,7 +12,11 @@ import { resolveInside } from "../../lib/fs-safe.js";
 import { parseMarkdownBlocks } from "../../lib/markdown.js";
 import { loadProfile } from "../../lib/profile.js";
 import { isValid, parseJsonText } from "../../lib/schema.js";
-import { defaultReference, runPandoc } from "../core/pandoc.js";
+import {
+  defaultReference,
+  NOTE_REFS_FILTER,
+  runPandoc,
+} from "../core/pandoc.js";
 import { cleanRtlText } from "../prose/typography.js";
 import { countWords } from "../prose/word-count.js";
 import { withScratchDir } from "../styling/document-style.js";
@@ -407,6 +411,7 @@ export async function generateDocx(
     const args = [
       "-f",
       "markdown-smart+footnotes+tex_math_dollars",
+      NOTE_REFS_FILTER,
       "-o",
       output,
     ];

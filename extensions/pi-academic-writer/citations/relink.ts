@@ -1,5 +1,6 @@
 import type { JsonObject } from "../../lib/schema.js";
 
+import { NOTE_ANCHOR } from "./note-refs.js";
 import { stringField } from "./source-records.js";
 
 /**
@@ -524,16 +525,27 @@ function findDefinitions(lines: string[]): Definition[] {
 
 const MARK = /\[((?:\\.|[^\]\\])*)\]\{\.mark\}/g;
 
+const LEADING_ANCHORS = new RegExp(`^(?:${NOTE_ANCHOR.source}\\s*)+`, "u");
+
 /**
  * Where a footnote's marker goes in the body: before sentence punctuation, or
  * after a closing quotation mark or parenthesis.
  */
-function placeMarker(body: string, label: string, citation: string): string {
+function placeMarker(
+  body: string,
+  label: string,
+  citation: string,
+  anchors: string,
+): string {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const ref = new RegExp(`([.,;:!?]*)([”"’)]*)\\[\\^${escaped}\\](?!:)`, "g");
 
+  // An anchor is glued to the word before it: a space in front of it would
+  // survive citeproc and leave a gap before the note.
+  const placed = anchors ? `${anchors} ${citation}` : ` ${citation}`;
+
   return body.replace(ref, (_all, punct: string, close: string) =>
-    close ? `${punct}${close} ${citation}` : ` ${citation}${punct}`,
+    close ? `${punct}${close}${placed}` : `${placed}${punct}`,
   );
 }
 
@@ -558,7 +570,7 @@ export function relinkFootnotes(
   const defs = findDefinitions(lines);
   const notes: NoteReport[] = [];
   const dropped = new Set<number>();
-  const inline = new Map<string, string>();
+  const inline = new Map<string, { anchors: string; citation: string }>();
   let previousKey: string | undefined;
 
   for (const def of defs) {
@@ -574,7 +586,10 @@ export function relinkFootnotes(
 
     if (def.multi) continue;
 
-    const text = def.text.replace(MARK, "$1").trim();
+    // Note anchors are not citation text; they travel with the note.
+    const anchors = def.text.match(LEADING_ANCHORS)?.[0] ?? "";
+    const text = def.text.slice(anchors.length).replace(MARK, "$1").trim();
+    const glued = anchors.replace(/\s+/g, "");
     const segments = splitSegments(text).flatMap(expandMarkers);
     const results: SegmentResult[] = [];
     let carry = previousKey;
@@ -614,12 +629,12 @@ export function relinkFootnotes(
     if (plain) {
       report.outcome = "inline";
 
-      inline.set(
-        def.label,
-        marker(
+      inline.set(def.label, {
+        anchors: glued,
+        citation: marker(
           results.flatMap((result) => (result.match ? [result.match] : [])),
         ),
-      );
+      });
 
       for (let i = def.start; i <= def.end; i++) dropped.add(i);
 
@@ -656,7 +671,8 @@ export function relinkFootnotes(
 
     const closing = text.endsWith(".") && !rewritten.endsWith(".") ? "." : "";
 
-    lines[def.start] = `[^${def.label}]: ${rewritten}${closing}`;
+    lines[def.start] =
+      `[^${def.label}]: ${glued ? `${glued} ` : ""}${rewritten}${closing}`;
 
     for (let i = def.start + 1; i <= def.end; i++) dropped.add(i);
   }
@@ -664,8 +680,8 @@ export function relinkFootnotes(
   const kept = lines.filter((_line, index) => !dropped.has(index));
   let body = kept.join("\n");
 
-  for (const [label, citation] of inline) {
-    body = placeMarker(body, label, citation);
+  for (const [label, { anchors, citation }] of inline) {
+    body = placeMarker(body, label, citation, anchors);
   }
 
   return {

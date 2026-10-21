@@ -221,20 +221,24 @@ test("[test_packaged_prompt_resources_exist] packaged prompt resources resolve t
   }
 });
 
-test("[test_pandoc_filters_exist] the shipped Lua filters are exactly the ones the import passes to Pandoc", () => {
+test("[test_pandoc_filters_exist] every shipped Lua filter is passed to Pandoc by the extension", () => {
   const shipped = readdirSync(join(repoRoot, "extensions", "pandoc")).sort();
 
   assert.deepEqual(shipped, [
+    "note-refs.lua",
     "strip-highlight.lua",
     "unwrap-link-underline.lua",
   ]);
 
-  const importer = readRepo(
+  const users = [
     "extensions/pi-academic-writer/article/docx-import.ts",
-  );
+    "extensions/pi-academic-writer/core/pandoc.ts",
+  ]
+    .map(readRepo)
+    .join("\n");
 
   for (const name of shipped) {
-    assert.ok(importer.includes(`"${name}"`), `${name} is not used`);
+    assert.ok(users.includes(`"${name}"`), `${name} is not used`);
   }
 });
 

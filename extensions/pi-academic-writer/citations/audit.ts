@@ -12,6 +12,7 @@ import {
   type JsonValue,
 } from "../../lib/schema.js";
 import { parseBibEntries } from "../parsers/bibtex.js";
+import { analyzeNoteRefs } from "./note-refs.js";
 
 /**
  * An audit completed with or without user-correctable citation defects.
@@ -226,10 +227,9 @@ export function auditCitations(
     if (!isFile(articlePath))
       return { status: "error", error: `Article not found: ${articlePath}` };
 
-    const analysis = analyzeCitationText(
-      readFileSync(articlePath, "utf8"),
-      citationStyle,
-    );
+    const markdown = readFileSync(articlePath, "utf8");
+    const analysis = analyzeCitationText(markdown, citationStyle);
+    const noteRefs = analyzeNoteRefs(markdown);
 
     const result: CitationAuditDetails = {
       status: analysis.status,
@@ -247,10 +247,32 @@ export function auditCitations(
       missingFromSources: [],
       missingFromBibliography: [],
       malformedMarkers: analysis.malformedMarkers,
-      warnings: analysis.warnings,
+      warnings: [
+        ...analysis.warnings,
+        ...noteRefs.hardCoded.map(
+          (phrase) =>
+            `"${phrase}" is a literal note number and goes stale when notes move; link it to a note anchor (pandoc_citation_syntax resource, "Note cross-references")`,
+        ),
+      ],
     };
 
-    if (analysis.reason !== undefined) result.reason = analysis.reason;
+    const noteDefects = [
+      ...noteRefs.duplicateAnchors.map(
+        (id) => `note anchor #${id} is defined more than once`,
+      ),
+      ...noteRefs.danglingLinks.map(
+        (id) => `link to #${id} has no matching note anchor`,
+      ),
+    ];
+
+    if (noteDefects.length) {
+      result.status = "failed";
+      result.reason = [analysis.reason, ...noteDefects]
+        .filter((part) => part !== undefined)
+        .join("; ");
+    } else if (analysis.reason !== undefined) {
+      result.reason = analysis.reason;
+    }
 
     if (citationStyle === "inline-parenthetical") return result;
 

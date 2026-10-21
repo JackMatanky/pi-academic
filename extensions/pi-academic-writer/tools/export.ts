@@ -16,7 +16,7 @@ import { generateDocx } from "../article/docx-generator.js";
 import { importDocx } from "../article/docx-import.js";
 import { auditCitations } from "../citations/audit.js";
 import { selectPdfEngine } from "../core/commands.js";
-import { runPandoc } from "../core/pandoc.js";
+import { NOTE_REFS_FILTER, runPandoc } from "../core/pandoc.js";
 import { citationAssetPaths } from "../core/project-files.js";
 import {
   fail,
@@ -245,6 +245,7 @@ async function runExport(
       if (params.csl) args.push(`--csl=${params.csl}`);
     }
 
+    args.push(NOTE_REFS_FILTER);
     results.push(
       await withScratchDir(cwd, "style-export", async (dir) => {
         let style: RenderedStyle | undefined;
@@ -421,7 +422,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
     effect: "exec",
     label: "Academic Writer Import DOCX",
     description:
-      "Convert a Word .docx inside the project to a Pandoc markdown article with its footnotes and endnotes as [^n] definitions. Default output is articles/<slug>.md; refuses to replace an existing file unless overwrite is true. Images are extracted beside the markdown. Word citation fields come through as plain text, never [@key]. Warns when the footnote count differs from the Word file.",
+      'Convert a Word .docx inside the project to a Pandoc markdown article with its footnotes and endnotes as [^n] definitions. Default output is articles/<slug>.md; refuses to replace an existing file unless overwrite is true. Images are extracted beside the markdown. Word citation fields come through as plain text, never [@key]. Literal cross-references such as "note 19 above" become links to note anchors, so they stay right when notes move. Warns when the footnote count differs from the Word file.',
     parameters: Type.Object({
       input: Type.String({
         minLength: 1,
@@ -443,7 +444,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
 
       return {
         text: [
-          `Imported ${input} to ${result.output}: ${result.footnotes} footnote(s)${result.media ? `, images in ${result.media}` : ""}.`,
+          `Imported ${input} to ${result.output}: ${result.footnotes} footnote(s)${result.noteRefs ? `, ${result.noteRefs} note cross-reference(s) linked` : ""}${result.media ? `, images in ${result.media}` : ""}.`,
           ...result.warnings.map((warning) => `warning: ${warning}`),
         ].join("\n"),
         details: result,

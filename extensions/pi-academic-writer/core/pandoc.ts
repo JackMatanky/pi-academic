@@ -1,4 +1,14 @@
 import { spawn } from "node:child_process";
+import { join } from "node:path";
+
+import { PACKAGE_ROOT } from "../../lib/paths.js";
+
+/**
+ * Pandoc argument that resolves note cross-references (`note [](#fn-id)`). Pass
+ * it after `--citeproc`: filters and citeproc run in command-line order, and
+ * the numbers are final only once citeproc has added its notes.
+ */
+export const NOTE_REFS_FILTER = `--lua-filter=${join(PACKAGE_ROOT, "extensions", "pandoc", "note-refs.lua")}`;
 
 /**
  * Options for spawning the Pandoc executable.

@@ -38,7 +38,7 @@ State what the import does not do:
 - Word citation fields (Zotero, Mendeley, Word's own) arrive as their rendered text, not `[@key]` markers. Step 4 converts footnoted citations back to `[@key]` markers where the work is in `sources.json`.
 - Comments are not imported.
 - Layout and styling from the Word file are not carried over; export applies the profile's style package.
-- Cross-references such as "See note 19 above" are plain text and go stale if notes are renumbered.
+- Only cross-references written as "note N above/below", "nn. N and M below" or "supra note N" are converted. They become links to note anchors (`note [](#fn-19) above`), resolved to the note's real number at export, so they stay right when notes move or relink changes how they are built. This runs only when the markdown's footnote count equals the Word file's; otherwise they stay as plain text, with a warning. A bare "note 19" is left alone, since it may mean a note in the cited work. The syntax is in the `pandoc_citation_syntax` resource ("Note cross-references"); `academic_writer_audit_citations` warns about any literal reference still in the article.
 
 ## 4. Relink footnote citations to sources.json (citeproc styles only)
 

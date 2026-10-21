@@ -116,6 +116,9 @@ Substantive reviewers use those units to infer paragraph roles, evidence, and ex
 For English prose, the `academic_writer_lint_prose` tool reports deterministic, advisory surface-pattern findings for contextual review. It does not rewrite text, judge authorship, or prove quality.
 
 `/skill:academic-import` converts a Word `.docx` into a Pandoc markdown article with its footnotes (`academic_writer_import_docx`; Word highlights can be kept or stripped). In a citeproc style, `academic_writer_relink_citations` then matches footnoted citations to `.academic-writer/sources.json` by author surname and title, turning notes that contain only citations into inline `[@key, p. N]` markers and rewriting citations inside longer notes. It never guesses between two records, never drops a page locator, and reports every citation it could not match; run without `apply` first for a report.
+
+Cross-references between notes ("See note 19 above") use a Pandoc-syntax anchor and link (`[]{#fn-name}` and `[](#fn-name)`) that export resolves to the note's final number, counting notes citeproc builds. The Word import converts the literal form, relink carries anchors through, and the citation audit fails on a link without an anchor or a duplicate anchor and warns about literal note numbers left in the text.
+
 `academic_writer_diagnose_outline` adds read-only advisory checks for required argument fields and note-link resolution/freshness at outline review; it never approves an outline or judges argument quality.
 
 `academic_writer_reverse_outline({article})` returns exact heading/paragraph units with source line ranges and mechanically detected Pandoc citation markers. Use it as an index for substantive review, not as an automated assessment; the reviewer supplies all role, support, and progression judgments. It ignores fenced code and does not modify the article.

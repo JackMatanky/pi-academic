@@ -6,6 +6,7 @@ import { unzipSync } from "fflate";
 
 import { resolveInside, writeFileAtomic } from "../../lib/fs-safe.js";
 import { PACKAGE_ROOT } from "../../lib/paths.js";
+import { linkNoteRefs } from "../citations/note-refs.js";
 import { runPandoc } from "../core/pandoc.js";
 import { articlePaths, toRelative } from "../core/project-files.js";
 import { separateFootnotes } from "../prose/word-count.js";
@@ -61,6 +62,10 @@ export interface ImportDocxResult {
    * Metadata fields written to the YAML block at the top of the markdown.
    */
   metadata: string[];
+  /**
+   * Literal note cross-references ("note 19 above") converted to links.
+   */
+  noteRefs: number;
   warnings: string[];
 }
 
@@ -241,11 +246,8 @@ export async function importDocx(
     )
   ).toString("utf8");
 
-  const markdown = withMetadata(imported, documentLanguage(source, imported));
-
-  writeFileAtomic(output, markdown.endsWith("\n") ? markdown : `${markdown}\n`);
-
-  const footnotes = separateFootnotes(markdown).footnoteDefinitions.size;
+  const withMeta = withMetadata(imported, documentLanguage(source, imported));
+  const footnotes = separateFootnotes(withMeta).footnoteDefinitions.size;
   const sourceNotes = countSourceNotes(source);
   const warnings: string[] = [];
 
@@ -255,6 +257,20 @@ export async function importDocx(
     );
   }
 
+  // A literal "note 19" is only known to name note 19 when the markdown labels
+  // match Word's numbering, so a count mismatch leaves them as written.
+  const linked = footnotes === sourceNotes ? linkNoteRefs(withMeta) : undefined;
+
+  const markdown = linked?.markdown ?? withMeta;
+
+  if (linked?.unresolved.length) {
+    warnings.push(
+      `Cross-references to a note that does not exist were left as written: ${linked.unresolved.join("; ")}.`,
+    );
+  }
+
+  writeFileAtomic(output, markdown.endsWith("\n") ? markdown : `${markdown}\n`);
+
   const mediaDir = join(outDir, mediaName);
 
   return {
@@ -263,6 +279,7 @@ export async function importDocx(
     metadata: metadataBlock(markdown).keys,
     footnotes,
     sourceNotes,
+    noteRefs: linked?.linked ?? 0,
     warnings,
   };
 }
