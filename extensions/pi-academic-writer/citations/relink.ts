@@ -15,6 +15,7 @@ export interface SourceRef {
    * Normalized work title.
    */
   title: string;
+  year: string | null;
 }
 
 /**
@@ -33,6 +34,11 @@ export interface NoteReport {
    * Segments left as written, with the closest records.
    */
   unresolved: { text: string; candidates: string[] }[];
+  /**
+   * Disagreements between the note and the matched records; the rewritten
+   * citation takes the record's data.
+   */
+  warnings: string[];
 }
 
 /**
@@ -83,7 +89,12 @@ export function sourceRefs(entries: JsonObject[]): SourceRef[] {
       .map((name) => norm(name.split(",")[0] ?? ""))
       .filter(Boolean);
 
-    refs.push({ citeKey, surnames, title: norm(title) });
+    refs.push({
+      citeKey,
+      surnames,
+      title: norm(title),
+      year: stringField(entry, "year") ?? null,
+    });
   }
 
   return refs;
@@ -93,15 +104,45 @@ const ROMAN = "(?=[ivxlc])c{0,3}(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})(?![a-z])";
 
 const NUM = `(?:\\d+|${ROMAN})(?:\\s*[–-]\\s*(?:\\d+|${ROMAN}))?`;
 
-const LOCATOR = new RegExp(
-  `(?:[,:]”?|\\bat)\\s+((?:pp?\\.\\s*)?${NUM}(?:\\s*n\\.\\s*\\d+)?(?:,\\s*${NUM})*(?:\\s+and\\s+n\\.\\s*\\d+)?)\\s*$`,
-  "i",
-);
+/**
+ * Locator terms of Pandoc's en-US locale, abbreviated or not, singular or
+ * plural, plus "ch."/"chs.", which Pandoc does not know and `splitLocator`
+ * rewrites. `s.v.` takes a word, not a number, and has its own pattern.
+ */
+const TERM =
+  "(?:(?:bks?|chaps?|chs?|cols?|figs?|fols?|nos?|ll?|nn?|opp?|pp?|paras?|pts?|secs?|vv?|vols?)\\.|(?:books?|chapters?|columns?|figures?|folios?|numbers?|lines?|notes?|opus|opera|pages?|paragraphs?|parts?|sections?|verses?|volumes?)\\b|[¶§]{1,2})";
+
+const ITEM = `(?:${TERM}\\s*)?${NUM}`;
 
 /**
- * Words that open a note segment with something other than the citation.
+ * More locators after the first: "5, 7", "5 and 7", "vol. 2, p. 5", "232 n.
+ * 36".
  */
-const LEAD = /^(?:see(?:\s+also)?|cf\.?|compare|esp\.)\s+/i;
+const MORE = `(?:(?:,\\s*|\\s+and\\s+|\\s*&\\s*)${ITEM}|\\s+nn?\\.\\s*${NUM})`;
+
+const SUFFIX_WORDS = "(?:(?:and|et)\\s+)?(?:passim|ff?\\.?|seq\\.?|following)";
+
+const SUFFIX_START = `esp\\.|especially|${SUFFIX_WORDS}`;
+
+/**
+ * Short suffixes common in citations: "esp. 7", "passim", "ff.", "et seq.".
+ */
+const SUFFIX = `(?:,?\\s*(?:esp\\.|especially)\\s*${NUM}(?:${MORE})*|,?\\s*${SUFFIX_WORDS})`;
+
+const TAIL = `(?:${ITEM}(?:${MORE})*(?:${SUFFIX})*|(?:${SUFFIX})+)`;
+
+const LOCATOR = new RegExp(`(?:[,:]”?|\\bat)\\s+(${TAIL})\\s*$`, "i");
+
+const SUB_VERBO = /[,:]”?\s+((?:s\.vv?\.|sub verbo)\s+\S.*)$/i;
+
+/**
+ * Lead-ins that open a note segment with something other than the citation;
+ * Pandoc treats them as the citation's prefix.
+ */
+const LEAD_SRC =
+  "(?:but\\s+)?(?:see(?:\\s+(?:also|generally|further|esp\\.|especially))?(?:,\\s*e\\.g\\.,)?|cf\\.|compare|contrast|contra|accord|e\\.g\\.,?|for\\s+(?:example|instance),?|inter\\s+alia,?)";
+
+const LEAD = new RegExp(`^${LEAD_SRC}\\s+`, "i");
 
 /**
  * A sentence boundary that is not an abbreviation or an initial.
@@ -143,29 +184,129 @@ interface LocatorSplit {
 }
 
 /**
- * Splits a page locator off the end of a citation, formatting it for Pandoc.
+ * Splits a locator, with any short suffix, off the end of a citation and
+ * formats it for Pandoc: a bare number gets "p."/"pp.", a term Pandoc does not
+ * know ("ch.", "chs.") becomes the one it does, and the rest is kept word for
+ * word.
  */
 function splitLocator(text: string): LocatorSplit {
   const bare = text.replace(/,?\s*https?:\/\/\S+$/, "").trim();
-  const found = LOCATOR.exec(bare);
-  const raw = found?.[1]?.replace(/^pp?\.\s*/i, "");
+  const found = SUB_VERBO.exec(bare) ?? LOCATOR.exec(bare);
+  const raw = found?.[1]?.replace(/\u00a0/g, " ").trim();
 
   // A lone year is publication data, not a page.
   if (!found || !raw || /^(?:1[4-9]|20)\d\d$/.test(raw)) {
     return { rest: bare, locator: null };
   }
 
-  const plural = /[–,-]/.test(raw);
+  // The caller strips a final period, which "ff." and "seq." need back.
+  const canonical = raw
+    .replace(/\bchs\./gi, "chaps.")
+    .replace(/\bch\./gi, "chap.")
+    .replace(/\b(ff?|seq)$/i, "$1.");
+
+  // A leading term wins over a Roman numeral: "l." and "v." are line and verse.
+  const needsTerm =
+    !new RegExp(`^${TERM}`, "i").test(canonical) &&
+    new RegExp(`^${NUM}`, "i").test(canonical);
+
+  // Plural only when the locator itself lists or ranges, not a trailing
+  // suffix such as "esp. 7".
+  const head = canonical.split(new RegExp(`,?\\s*(?:${SUFFIX_START})`, "i"))[0];
+  const plural = /[–,&-]|\sand\s/.test(head ?? canonical);
 
   return {
     rest: bare.slice(0, found.index),
-    locator: `${plural ? "pp." : "p."} ${raw}`,
+    locator: needsTerm ? `${plural ? "pp." : "p."} ${canonical}` : canonical,
   };
+}
+
+/**
+ * Clauses a full or short citation may contain besides its author: the title
+ * (or a piece of it), publication data with digits or parentheses, and editor,
+ * translator, or container-title clauses.
+ */
+const CITATION_CLAUSE = /^(?:ed\.|eds\.|trans\.|translated|edited|rev\.)/i;
+
+/**
+ * Words that start a clause of prose or another citation, never part of a
+ * container's own author, title, or editor.
+ */
+const PROSE_START =
+  /^(?:and|but|or|see|cf|compare|contra|e\.g|which|who|whom|whose|where|whereas|while|that|because|since|although|however|thus)\b/i;
+
+/**
+ * Whether every comma-separated part after the author is accounted for. A
+ * second citation or a clause of prose after the title is not, and converting
+ * the segment would silently drop it.
+ */
+function explained(rest: string, title: string): boolean {
+  let inContainer = false;
+
+  return rest
+    .split(",")
+    .slice(1)
+    .map((chunk) => chunk.trim().replace(/^[”"’)\s]+/, ""))
+    .every((chunk) => {
+      if (chunk === "" || /[\d()]/.test(chunk)) return true;
+
+      if (/^in\s/i.test(chunk)) {
+        inContainer = true;
+
+        return true;
+      }
+
+      if (CITATION_CLAUSE.test(chunk)) return true;
+
+      // After "in …" come the container's author, title, and editors.
+      if (inContainer) return !PROSE_START.test(chunk);
+
+      const piece = norm(chunk);
+
+      return piece !== "" && ` ${title} `.includes(` ${piece} `);
+    });
+}
+
+/**
+ * One already-written Pandoc citation: `[@key, p. 5]`, optionally with a prefix
+ * such as `[see @key, p. 5]`.
+ */
+const EXISTING_MARKER = new RegExp(
+  `^\\[(?:(${LEAD_SRC})\\s+)?@([^\\s,\\];]+)(?:,\\s*([^\\]]+))?\\]$`,
+  "i",
+);
+
+/**
+ * Splits `[@a, p. 1; @b, p. 2]` into one bracket per item, so each is matched
+ * alone; the lead-in stays with the first.
+ */
+function expandMarkers(segment: string): string[] {
+  // Word imports escape the brackets (`\[@a; @b\]`); keep whichever form the
+  // note used, so an item left unmatched is written back unchanged.
+  const found = new RegExp(
+    `^(${LEAD_SRC}\\s+)?(\\\\?)\\[(@[^\\]]*;[^\\]]*?)\\\\?\\]\\.?$`,
+    "i",
+  ).exec(segment.trim());
+
+  if (!found) return [segment];
+
+  const escape = found[2] ?? "";
+
+  return (found[3] ?? "")
+    .split(";")
+    .map(
+      (item, index) =>
+        `${index === 0 ? (found[1] ?? "") : ""}${escape}[${item.trim()}${escape}]`,
+    );
 }
 
 interface Match {
   key: string;
   locator: string | null;
+  /**
+   * Lead-in such as "see" or "cf.", which Pandoc treats as the citation prefix.
+   */
+  prefix: string;
 }
 
 interface SegmentResult {
@@ -175,6 +316,35 @@ interface SegmentResult {
    * Why the segment is not a plain citation, when it is not.
    */
   candidates: string[];
+  /**
+   * The note's year disagrees with the matched record's.
+   */
+  warning?: string | undefined;
+}
+
+/**
+ * A year in the note's publication parentheses that the matched record does not
+ * have. Relinking replaces the note's text with the bibliography's data, so a
+ * disagreement means one of the two is wrong.
+ */
+function yearWarning(
+  rest: string,
+  ref: SourceRef | undefined,
+): string | undefined {
+  const found =
+    /\((?:[^()]*?,\s*)?((?:1[4-9]|20)\d\d)(?:[–-]((?:1[4-9]|20)\d\d))?[a-z]?\)/.exec(
+      rest,
+    );
+
+  const year = /\d{4}/.exec(ref?.year ?? "")?.[0];
+
+  if (!found || !ref || !year) return undefined;
+
+  const years = found.slice(1).flatMap((value) => (value ? [value] : []));
+
+  return years.includes(year)
+    ? undefined
+    : `${ref.citeKey}: the note says ${years.join("–")}, sources.json says ${year}`;
 }
 
 /**
@@ -192,13 +362,41 @@ function matchSegment(
   const text = withoutAnd
     .slice(lead.length)
     .replace(/[*\\]/g, "")
-    .replace(/\.$/, "")
+    .replace(/[.\s]+$/, "")
     .trim();
+
+  const existing = EXISTING_MARKER.exec(text);
+
+  // A citation an earlier pass (or the author) already wrote as Pandoc syntax.
+  if (existing) {
+    const key = existing[2] ?? "";
+
+    // A locator holding another `@key` is an unsplit multi-item bracket.
+    const known =
+      refs.some((ref) => ref.citeKey === key) && !existing[3]?.includes("@");
+
+    return {
+      lead,
+      match: known
+        ? {
+            key,
+            // Pandoc's DOCX writer puts a no-break space after "pp.".
+            locator: existing[3]?.replace(/\u00a0/g, " ").trim() || null,
+            prefix: (existing[1] ?? lead).trim().toLowerCase(),
+          }
+        : null,
+      candidates: [],
+    };
+  }
 
   const { rest, locator } = splitLocator(text);
 
   if (/^ibid\b/i.test(rest) && previousKey) {
-    return { lead, match: { key: previousKey, locator }, candidates: [] };
+    return {
+      lead,
+      match: { key: previousKey, locator, prefix: lead.trim().toLowerCase() },
+      candidates: [],
+    };
   }
 
   if (SENTENCE_BREAK.test(rest)) return { lead, match: null, candidates: [] };
@@ -242,8 +440,23 @@ function matchSegment(
 
   const [best, second] = scored;
 
-  if (best && best.score >= 6 && best.score > (second?.score ?? 0)) {
-    return { lead, match: { key: best.key, locator }, candidates: [] };
+  const bestTitle = refs.find((ref) => ref.citeKey === best?.key)?.title ?? "";
+
+  if (
+    best &&
+    best.score >= 6 &&
+    best.score > (second?.score ?? 0) &&
+    explained(rest, bestTitle)
+  ) {
+    return {
+      lead,
+      match: { key: best.key, locator, prefix: lead.trim().toLowerCase() },
+      candidates: [],
+      warning: yearWarning(
+        rest,
+        refs.find((ref) => ref.citeKey === best.key),
+      ),
+    };
   }
 
   return {
@@ -255,7 +468,10 @@ function matchSegment(
 
 function marker(matches: Match[]): string {
   return `[${matches
-    .map(({ key, locator }) => `@${key}${locator ? `, ${locator}` : ""}`)
+    .map(
+      ({ key, locator, prefix }) =>
+        `${prefix ? `${prefix} ` : ""}@${key}${locator ? `, ${locator}` : ""}`,
+    )
     .join("; ")}]`;
 }
 
@@ -336,6 +552,7 @@ function placeMarker(body: string, label: string, citation: string): string {
 export function relinkFootnotes(
   markdown: string,
   refs: SourceRef[],
+  options: { noteStyle: boolean },
 ): RelinkResult {
   const lines = markdown.split("\n");
   const defs = findDefinitions(lines);
@@ -350,6 +567,7 @@ export function relinkFootnotes(
       outcome: "unchanged",
       keys: [],
       unresolved: [],
+      warnings: [],
     };
 
     notes.push(report);
@@ -357,7 +575,7 @@ export function relinkFootnotes(
     if (def.multi) continue;
 
     const text = def.text.replace(MARK, "$1").trim();
-    const segments = splitSegments(text);
+    const segments = splitSegments(text).flatMap(expandMarkers);
     const results: SegmentResult[] = [];
     let carry = previousKey;
 
@@ -385,7 +603,13 @@ export function relinkFootnotes(
       result.match ? [result.match.key] : [],
     );
 
-    const plain = results.every((result) => result.match && !result.lead);
+    report.warnings = results.flatMap((result) =>
+      result.warning ? [result.warning] : [],
+    );
+
+    // "See" and "cf." become the citation's prefix, so a note of only cited
+    // works can still be inline.
+    const plain = results.every((result) => result.match);
 
     if (plain) {
       report.outcome = "inline";
@@ -411,16 +635,28 @@ export function relinkFootnotes(
     );
 
     const rewritten = results
-      .map((result, index) =>
-        result.match
-          ? `${result.lead}${marker([result.match])}`
-          : (segments[index] ?? ""),
-      )
+      .map((result, index) => {
+        if (!result.match) return segments[index] ?? "";
+
+        const { key, locator, prefix } = result.match;
+
+        // A leading "and" joined this item to the one before it; a kept note
+        // is prose, so it stays.
+        const conj = /^and\s+/i.exec(segments[index] ?? "")?.[0] ?? "";
+        const lead = conj + (result.lead || (prefix ? `${prefix} ` : ""));
+
+        // In a note style, a bracketed citation inside an explicit note is
+        // wrapped in parentheses; the author-in-text form is not.
+        return options.noteStyle
+          ? `${lead}@${key}${locator ? ` [${locator}]` : ""}`
+          : `${lead}${marker([{ key, locator, prefix: "" }])}`;
+      })
       .join("; ")
       .replace(/\]; \[@/g, "; @");
 
-    lines[def.start] =
-      `[^${def.label}]: ${rewritten}${text.endsWith(".") ? "." : ""}`;
+    const closing = text.endsWith(".") && !rewritten.endsWith(".") ? "." : "";
+
+    lines[def.start] = `[^${def.label}]: ${rewritten}${closing}`;
 
     for (let i = def.start + 1; i <= def.end; i++) dropped.add(i);
   }

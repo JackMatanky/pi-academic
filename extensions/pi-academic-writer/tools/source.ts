@@ -22,6 +22,24 @@ import { fail, registerTool } from "../core/tool-kit.js";
 import { extractDocument } from "../parsers/documents.js";
 
 /**
+ * Whether the profile's CSL style is a note style, read from the style's
+ * `class` attribute.
+ */
+async function isNoteStyle(cwd: string, style: string): Promise<boolean> {
+  try {
+    const path = await resolveCslStyle(style, cwd);
+
+    return /<style\b[^>]*\bclass="note"/.test(
+      readFileSync(path, "utf8").slice(0, 4096),
+    );
+  } catch {
+    return fail(
+      `Could not read the CSL style "${style}" to tell whether it is a note style; pass noteStyle: true or false.`,
+    );
+  }
+}
+
+/**
  * Registers source extraction/ingestion, citation cache, CSL, and citation
  * audit tools.
  *
@@ -98,7 +116,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Relink Citations",
     description:
-      "Rewrite an article's footnotes that cite sources in .academic-writer/sources.json as Pandoc citations (citeproc mode only). A note made only of citations becomes an inline [@citeKey, p. N] at its reference; a note with other text stays a note with its citations rewritten; anything not matched unambiguously is left as written and reported. Matches by author surname plus title from sources.json; works on imported .docx articles. Without apply it only reports what would change.",
+      "Rewrite an article's footnotes that cite sources in .academic-writer/sources.json as Pandoc citations (citeproc mode only). A note made only of citations, with at most a 'see'/'cf.' lead-in, becomes an inline [@citeKey, p. N] at its reference (a note style turns it back into a footnote itself); a note with other text stays a note with its citations rewritten (author-in-text form in a note style, so they are not parenthesised); anything not matched unambiguously is left as written and reported. Matches by author surname plus title from sources.json; works on imported .docx articles. Without apply it only reports what would change.",
     parameters: Type.Object({
       article: Type.String({
         minLength: 1,
@@ -116,9 +134,15 @@ export function registerSourceTools(pi: ExtensionAPI): void {
             "Project-relative destination when applying; defaults to rewriting the article in place.",
         }),
       ),
+      noteStyle: Type.Optional(
+        Type.Boolean({
+          description:
+            "Whether the CSL style is a note style (Chicago notes). Detected from the profile's citationStyle when omitted.",
+        }),
+      ),
     }),
     failure: "Citation relink failed",
-    run: ({ article, apply, output }, { cwd }) => {
+    run: async ({ article, apply, output, noteStyle }, { cwd }) => {
       const style = loadProfile(cwd)?.citationStyle;
 
       if (!style || style === "inline-parenthetical") {
@@ -138,6 +162,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
       const result = relinkFootnotes(
         readFileSync(resolveInside(cwd, article), "utf8"),
         refs,
+        { noteStyle: noteStyle ?? (await isNoteStyle(cwd, style)) },
       );
 
       const counts = { inline: 0, footnote: 0, unchanged: 0 };
@@ -158,6 +183,10 @@ export function registerSourceTools(pi: ExtensionAPI): void {
         }),
       );
 
+      const warnings = result.notes.flatMap((note) =>
+        note.warnings.map((warning) => `[^${note.label}] ${warning}`),
+      );
+
       return {
         text: [
           `${target ? `Rewrote ${toRelative(cwd, target)}` : "Dry run"}: ${counts.inline} note(s) became inline citations, ${counts.footnote} stay notes with citations rewritten, ${counts.unchanged} unchanged.`,
@@ -167,6 +196,12 @@ export function registerSourceTools(pi: ExtensionAPI): void {
           ...unresolved.slice(0, 40),
           ...(unresolved.length > 40
             ? [`… and ${unresolved.length - 40} more (see details).`]
+            : []),
+          ...(warnings.length
+            ? [
+                `Check these: the rewritten citation takes sources.json's data, not the note's (${warnings.length}):`,
+                ...warnings.slice(0, 40),
+              ]
             : []),
         ].join("\n"),
         details: { applied: target !== null, counts, notes: result.notes },
