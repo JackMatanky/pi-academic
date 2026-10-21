@@ -54,9 +54,6 @@ export interface CitationTextAnalysis {
   warnings: string[];
 }
 
-// Pandoc keys start with a letter, digit or underscore, may contain internal
-// punctuation only when an alphanumeric follows, and `@` must not follow a word
-// character (so e-mail addresses are not citations).
 const StringSchema = Type.String();
 
 const bracketPattern = /\[((?:[^[\]]|\\.)*)\]/gu;
@@ -91,8 +88,15 @@ function collectCiteKeys(value: JsonValue, keys: Set<string>): void {
 
   const citeKey = value.citeKey;
 
-  if (isValid(StringSchema, citeKey) && citeKey.trim())
-    keys.add(citeKey.trim());
+  if (
+    citeKey !== undefined &&
+    citeKey !== null &&
+    isValid(StringSchema, citeKey)
+  ) {
+    const trimmed = citeKey.trim();
+
+    if (trimmed.length > 0) keys.add(trimmed);
+  }
 
   for (const item of Object.values(value)) collectCiteKeys(item, keys);
 }

@@ -261,6 +261,49 @@ test("key resolution compares decoded records without the filesystem", () => {
   );
 });
 
+test("key resolution handles nested metadata objects without citeKey without throwing", () => {
+  assert.deepEqual(
+    resolveCitationKeys(
+      ["a"],
+      {
+        sources: [
+          {
+            citeKey: "a",
+            extractionConfidence: { author: "high" },
+            scores: [1, 2, 3],
+            nullField: null,
+          },
+        ],
+      },
+      "@book{a, title={A}}\n",
+    ),
+    { missingFromSources: [], missingFromBibliography: [] },
+  );
+});
+
+test("auditCitations processes source registries containing nested metadata objects without citeKey fields", (t) => {
+  const root = fixture(t);
+  writeFileSync(
+    join(root, ".academic-writer", "sources.json"),
+    JSON.stringify([
+      {
+        citeKey: "smith2020",
+        metadata: {
+          extractionConfidence: { author: "high" },
+          tags: ["test"],
+        },
+      },
+    ]),
+  );
+  const res = auditCitations("articles/essay.md", "chicago", root);
+  assert.equal(res.status, "passed");
+
+  if (res.status === "passed") {
+    assert.deepEqual(res.missingFromSources, []);
+    assert.deepEqual(res.missingFromBibliography, []);
+  }
+});
+
 test("analyzer ignores BOM and frontmatter closed with ... delimiter", () => {
   const analysis = analyzeCitationText(
     "\uFEFF---\ntitle: Document [@frontmatter]\n...\nText [@smith2020].",
