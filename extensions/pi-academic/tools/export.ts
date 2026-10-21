@@ -42,7 +42,7 @@ import {
 import { addBibliographyPageStyles } from "../styling/odt.js";
 
 /**
- * Per-format style details returned by `academic_writer_export_article`.
+ * Per-format style details returned by `pi_academic_export_article`.
  */
 interface StyleSummary {
   package: string;
@@ -150,8 +150,8 @@ const ExportArticleSchema = Type.Object({
 type ExportArticleParams = Static<typeof ExportArticleSchema>;
 
 /**
- * The whole `academic_writer_export_article` operation: validate references,
- * gate on the citation audit, then export each requested format, capturing
+ * The whole `pi_academic_export_article` operation: validate references, gate
+ * on the citation audit, then export each requested format, capturing
  * per-format outcomes and promoting Pandoc's scratch output only on success.
  * Returns the tool output, or throws ToolFailure when the export is refused or
  * any format fails.
@@ -367,7 +367,7 @@ async function runExport(
  */
 export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {
-    name: "academic_writer_export_article",
+    name: "pi_academic_export_article",
     effect: "exec",
     label: "Academic Writer Export Article",
     description:
@@ -378,7 +378,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_generate_docx",
+    name: "pi_academic_generate_docx",
     effect: "exec",
     label: "Academic Writer Generate DOCX",
     description:
@@ -437,7 +437,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_import_docx",
+    name: "pi_academic_import_docx",
     effect: "exec",
     label: "Academic Writer Import DOCX",
     description:
@@ -472,7 +472,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_style_package",
+    name: "pi_academic_style_package",
     effect: "write",
     effectFor: ({ action }) => (action === "list" ? "read" : "write"),
     label: "Academic Writer Style Package",

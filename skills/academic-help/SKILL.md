@@ -45,7 +45,7 @@ This walks you through:
 | Tool              | What it does                                                                                                            |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **Zotero**        | Reference manager — preferred source for PDFs and research materials; can be scoped to one collection                   |
-| **Local Sources** | `.pi-academic/sources/` folder for local PDFs, DOCX, TXT, or MD files ingested via `academic_writer_ingest_sources` |
+| **Local Sources** | `.pi-academic/sources/` folder for local PDFs, DOCX, TXT, or MD files ingested via `pi_academic_ingest_sources` |
 | **NotebookLM**    | AI source Q&A / audio / study guides; can be scoped to one notebook                                                     |
 | **Sefaria**       | Primary Judaic text reference and chapter/verse context expansion (`get_text`, `search`)                                |
 

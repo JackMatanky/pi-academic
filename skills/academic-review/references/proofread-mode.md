@@ -14,7 +14,7 @@ The mechanical sweep has four passes. The first three are tools; the fourth is t
 
 ## Step 1 — Load profile (optional)
 
-Call `academic_writer_get_profile`. If it returns `ok: false`, continue without blocking and note in the report that no profile was loaded.
+Call `pi_academic_get_profile`. If it returns `ok: false`, continue without blocking and note in the report that no profile was loaded.
 
 The profile gives the researcher's primary `targetLanguage` (drives typography rules). If missing, don't block — default language detection to the article's script (Hebrew → RTL/Hebrew typography; Latin → standard orthography) and note in the report that no profile was loaded.
 
@@ -24,12 +24,12 @@ If the user passed a path as an argument, use it. Otherwise ask:
 
 > "Which article should I proofread? Give me a path to a `.md` or `.docx` file, or I can use the most recent article in `articles/`."
 
-List candidates by calling `academic_writer_list_project_files` with `kind: "articles"`.
+List candidates by calling `pi_academic_list_project_files` with `kind: "articles"`.
 
 Establish a single **`PROOF_BASE`** — a plain-text/markdown file that is both what the sweep reads and what the corrected copy is built from. This is the key safety step: the corrected copy is **never** a copy of a binary source.
 
-- **Markdown / text source** → `PROOF_BASE` is the source itself. Read it with the `Read` tool or `academic_writer_extract_document`.
-- **.docx / PDF source** → call `academic_writer_extract_document` with `path: SOURCE_PATH`, then use the Write tool to save the returned text to `articles/FILEBASE.extracted.md`.
+- **Markdown / text source** → `PROOF_BASE` is the source itself. Read it with the `Read` tool or `pi_academic_extract_document`.
+- **.docx / PDF source** → call `pi_academic_extract_document` with `path: SOURCE_PATH`, then use the Write tool to save the returned text to `articles/FILEBASE.extracted.md`.
   `PROOF_BASE` is `articles/FILEBASE.extracted.md`. A binary source produces a markdown report and a corrected `.md`; it does not round-trip back into Word (that's the future full-port / `/apply` path). The original source is never touched.
 
 Record `SOURCE_PATH`, `FILEBASE` (the source filename without extension), and `PROOF_BASE`. Determine `LANGUAGE` from the profile's `targetLanguage` if present, else from the article's dominant script.
@@ -40,15 +40,15 @@ Run all four passes over `PROOF_BASE`; merge their outputs into one suggestion l
 
 ### Pass A — Typography (Hebrew-safe, per paragraph)
 
-For each paragraph, call `academic_writer_fix_typography` with `text: <paragraph>`. Diff the returned text against the input: each differing span becomes one `typography` suggestion (`before` → `after`), with the paragraph line as its locator. The tool is deterministic and Hebrew-aware; never hand-adjust its replacements — take them as-is or drop them.
+For each paragraph, call `pi_academic_fix_typography` with `text: <paragraph>`. Diff the returned text against the input: each differing span becomes one `typography` suggestion (`before` → `after`), with the paragraph line as its locator. The tool is deterministic and Hebrew-aware; never hand-adjust its replacements — take them as-is or drop them.
 
 ### Pass B — Prose patterns (English only)
 
-For English articles, call `academic_writer_lint_prose` with `text: PROOF_BASE_TEXT` and `language: <LANGUAGE>`. Findings are advisory prompts for contextual review: convert into suggestions only what is mechanical under the scope table below; anything stylistic is out of scope for this mode. Skip entirely for non-English articles.
+For English articles, call `pi_academic_lint_prose` with `text: PROOF_BASE_TEXT` and `language: <LANGUAGE>`. Findings are advisory prompts for contextual review: convert into suggestions only what is mechanical under the scope table below; anything stylistic is out of scope for this mode. Skip entirely for non-English articles.
 
 ### Pass C — Harper grammar/spelling (English only)
 
-For English articles, call `academic_writer_proofread` once with `text: PROOF_BASE_TEXT` (optionally `dialect` from the profile's variety if one is configured; default American). The tool returns an advisory findings list (message, span, suggestions). Convert a finding into a suggestion only when its replacement is unambiguous under the scope table below; ambiguous matches are reported as idea-level flags. The tool is English-only — Hebrew sections skip this pass. A finding alone is never an error.
+For English articles, call `pi_academic_proofread` once with `text: PROOF_BASE_TEXT` (optionally `dialect` from the profile's variety if one is configured; default American). The tool returns an advisory findings list (message, span, suggestions). Convert a finding into a suggestion only when its replacement is unambiguous under the scope table below; ambiguous matches are reported as idea-level flags. The tool is English-only — Hebrew sections skip this pass. A finding alone is never an error.
 
 ### Pass D — Inline four-level הגהה sweep
 

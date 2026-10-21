@@ -44,7 +44,7 @@ test("[test_harper_tool_rejects_blank_text] the proofread tool rejects blank inp
 
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
-  const result = await callTool(root, "academic_writer_proofread", {
+  const result = await callTool(root, "pi_academic_proofread", {
     text: "   ",
   });
 

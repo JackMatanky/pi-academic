@@ -86,41 +86,41 @@ const text = (result: ToolResult): string => result.content[0]?.text ?? "";
  * The fixed tool sequence the Python smoke ran in one node process.
  */
 async function runTools(root: string) {
-  const migration = await callTool(root, "academic_writer_migrate_profile", {});
-  const status = await callTool(root, "academic_writer_status", {});
-  const health = await callTool(root, "academic_writer_health", {});
-  const profile = await callTool(root, "academic_writer_get_profile", {});
+  const migration = await callTool(root, "pi_academic_migrate_profile", {});
+  const status = await callTool(root, "pi_academic_status", {});
+  const health = await callTool(root, "pi_academic_health", {});
+  const profile = await callTool(root, "pi_academic_get_profile", {});
 
-  const updated = await callTool(root, "academic_writer_update_profile", {
+  const updated = await callTool(root, "pi_academic_update_profile", {
     fieldsJson: { citationStyle: "mla" },
   });
 
-  const paths = await callTool(root, "academic_writer_article_paths", {
+  const paths = await callTool(root, "pi_academic_article_paths", {
     subject: "Smoke Test: חיבור",
   });
 
-  const files = await callTool(root, "academic_writer_list_project_files", {
+  const files = await callTool(root, "pi_academic_list_project_files", {
     kind: "articles",
   });
 
-  const extracted = await callTool(root, "academic_writer_extract_document", {
+  const extracted = await callTool(root, "pi_academic_extract_document", {
     path: "articles/ok.md",
   });
 
-  const resource = await callTool(root, "academic_writer_read_resource", {
+  const resource = await callTool(root, "pi_academic_read_resource", {
     name: "thresholds",
   });
 
-  const audit = await callTool(root, "academic_writer_audit_citations", {
+  const audit = await callTool(root, "pi_academic_audit_citations", {
     article: "articles/ok.md",
     citationStyle: "chicago",
   });
 
-  const snapshot = await callTool(root, "academic_writer_snapshot_citations", {
+  const snapshot = await callTool(root, "pi_academic_snapshot_citations", {
     article: "articles/ok.md",
   });
 
-  const ingested = await callTool(root, "academic_writer_ingest_sources", {
+  const ingested = await callTool(root, "pi_academic_ingest_sources", {
     paths: [".pi-academic/sources/local.md"],
   });
 
@@ -157,12 +157,12 @@ test("[test_prose_lint_tool_returns_advisory_findings_and_skips_hebrew] lint too
 
   const root = scratch(t);
 
-  const english = await callTool(root, "academic_writer_lint_prose", {
+  const english = await callTool(root, "pi_academic_lint_prose", {
     text: article,
     language: "English",
   });
 
-  const hebrew = await callTool(root, "academic_writer_lint_prose", {
+  const hebrew = await callTool(root, "pi_academic_lint_prose", {
     text: "טקסט בעברית.",
     language: "Hebrew",
   });
@@ -253,7 +253,7 @@ test("citation audit tool distinguishes passed, failed and operational error", a
   seedProject(root);
 
   const run = (article: string) =>
-    callTool(root, "academic_writer_audit_citations", {
+    callTool(root, "pi_academic_audit_citations", {
       article,
       citationStyle: "chicago",
     });
@@ -283,24 +283,24 @@ test("[test_package_tools_run_against_project_state] package tools run against p
   const names = [...definitions.keys()];
 
   for (const name of [
-    "academic_writer_status",
-    "academic_writer_read_resource",
-    "academic_writer_lint_prose",
-    "academic_writer_ingest_sources",
-    "academic_writer_snapshot_citations",
-    "academic_writer_migrate_profile",
-    "academic_writer_write_research_notes",
-    "academic_writer_review_research_notes",
-    "academic_writer_write_outline",
-    "academic_writer_render_outline",
-    "academic_writer_snapshot_notes",
-    "academic_writer_query_research",
-    "academic_writer_migrate_article_outline",
+    "pi_academic_status",
+    "pi_academic_read_resource",
+    "pi_academic_lint_prose",
+    "pi_academic_ingest_sources",
+    "pi_academic_snapshot_citations",
+    "pi_academic_migrate_profile",
+    "pi_academic_write_research_notes",
+    "pi_academic_review_research_notes",
+    "pi_academic_write_outline",
+    "pi_academic_render_outline",
+    "pi_academic_snapshot_notes",
+    "pi_academic_query_research",
+    "pi_academic_migrate_article_outline",
   ]) {
     assert.ok(names.includes(name), `${name} is not registered`);
   }
 
-  assert.ok(!names.includes("academic_writer_write_evidence_ownership"));
+  assert.ok(!names.includes("pi_academic_write_evidence_ownership"));
   assert.equal(data.status.details.ok, true);
   assert.equal(at(data.status, "sources", "count"), 1);
   assert.equal(at(data.status, "sourceDocuments", "count"), 1);
@@ -372,7 +372,7 @@ test("[test_export_passes_citeproc_options_to_pandoc] export passes citeproc opt
     bibliography: ".pi-academic/bibliography.bib",
   };
 
-  const data = await callTool(root, "academic_writer_export_article", params);
+  const data = await callTool(root, "pi_academic_export_article", params);
   const args = readFileSync(log, "utf8").split("\n").slice(0, -1);
   const output = str(at(data, "results", 0, "output"));
 
@@ -388,11 +388,7 @@ test("[test_export_passes_citeproc_options_to_pandoc] export passes citeproc opt
   unlinkSync(join(root, output));
   process.env.PANDOC_NO_OUTPUT = "1";
 
-  const missing = await callTool(
-    root,
-    "academic_writer_export_article",
-    params,
-  );
+  const missing = await callTool(root, "pi_academic_export_article", params);
 
   assert.equal(missing.details.ok, false);
   assert.equal(at(missing, "results", 0, "ok"), false);
@@ -411,7 +407,7 @@ test("[test_docx_extraction_prefers_pandoc_citations] docx extraction prefers pa
     "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$PANDOC_LOG\"\necho 'Text [@smith2020].'\n",
   );
 
-  const data = await callTool(root, "academic_writer_extract_document", {
+  const data = await callTool(root, "pi_academic_extract_document", {
     path: "doc.docx",
   });
 
@@ -454,7 +450,7 @@ test("[test_migrates_json_profile] migrates a JSON profile", async (t) => {
 test("[test_write_section_persists_section_file] write_section creates the section file with exact content", async (t) => {
   const root = scratch(t);
 
-  const written = await callTool(root, "academic_writer_write_section", {
+  const written = await callTool(root, "pi_academic_write_section", {
     article: "articles/demo.md",
     sectionId: "s1",
     markdown: "## S1\n\nText.",
@@ -466,7 +462,7 @@ test("[test_write_section_persists_section_file] write_section creates the secti
     "## S1\n\nText.",
   );
 
-  const redraft = await callTool(root, "academic_writer_write_section", {
+  const redraft = await callTool(root, "pi_academic_write_section", {
     article: "articles/demo.md",
     sectionId: "s1",
     markdown: "## S1\n\nRewritten.",
@@ -482,7 +478,7 @@ test("[test_write_section_persists_section_file] write_section creates the secti
 test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes without writing", async (t) => {
   const root = scratch(t);
 
-  const evilSection = await callTool(root, "academic_writer_write_section", {
+  const evilSection = await callTool(root, "pi_academic_write_section", {
     article: "articles/demo.md",
     sectionId: "../evil",
     markdown: "## Evil",
@@ -494,7 +490,7 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
     `unexpected message: ${text(evilSection)}`,
   );
 
-  const outsideArticle = await callTool(root, "academic_writer_write_section", {
+  const outsideArticle = await callTool(root, "pi_academic_write_section", {
     article: "outside/x.md",
     sectionId: "s1",
     markdown: "## X",
@@ -506,7 +502,7 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
     `unexpected message: ${text(outsideArticle)}`,
   );
 
-  const slugless = await callTool(root, "academic_writer_write_section", {
+  const slugless = await callTool(root, "pi_academic_write_section", {
     article: "articles/.md",
     sectionId: "s1",
     markdown: "## S1",
@@ -518,7 +514,7 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
     `unexpected message: ${text(slugless)}`,
   );
 
-  const blank = await callTool(root, "academic_writer_write_section", {
+  const blank = await callTool(root, "pi_academic_write_section", {
     article: "articles/demo.md",
     sectionId: "s1",
     markdown: "   ",
@@ -540,10 +536,10 @@ test("[test_write_section_rejects_bad_inputs] write_section rejects path escapes
   );
 });
 
-test("academic_writer_write_voice_artifact persists artifacts and alias works", async (t) => {
+test("pi_academic_write_voice_artifact persists artifacts and alias works", async (t) => {
   const root = scratch(t);
 
-  const result = await callTool(root, "academic_writer_write_voice_artifact", {
+  const result = await callTool(root, "pi_academic_write_voice_artifact", {
     artifact: "audit",
     content: "# Voice Audit\nCalibrated.",
   });
@@ -553,13 +549,9 @@ test("academic_writer_write_voice_artifact persists artifacts and alias works", 
   assert.ok(existsSync(auditPath));
   assert.equal(readFileSync(auditPath, "utf8"), "# Voice Audit\nCalibrated.");
 
-  const aliasResult = await callTool(
-    root,
-    "academic_writer_write_voice_audit",
-    {
-      content: "# Overwritten Audit",
-    },
-  );
+  const aliasResult = await callTool(root, "pi_academic_write_voice_audit", {
+    content: "# Overwritten Audit",
+  });
 
   assert.equal(aliasResult.isError, false);
   assert.equal(readFileSync(auditPath, "utf8"), "# Overwritten Audit");

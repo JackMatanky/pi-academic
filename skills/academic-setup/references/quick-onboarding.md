@@ -12,7 +12,7 @@ Run silently before anything else:
 
 ```bash
 mkdir -p past-articles .pi-academic .pi-academic/voice
-# If .pi-academic/thresholds.json is missing: call academic_writer_read_resource
+# If .pi-academic/thresholds.json is missing: call pi_academic_read_resource
 # with name: thresholds, present the default quality gates to the researcher
 # (anti-AI ≥ 35/50, self-review ≥ 40/60, ≤ 3 rewrite cycles per paragraph,
 # 220-word paragraph ceiling +30 for intro/conclusion, style compliance ≥ 7/10,
@@ -21,10 +21,10 @@ mkdir -p past-articles .pi-academic .pi-academic/voice
 # ≥ 800 words per article), and ask whether to keep the defaults or adjust
 # specific values. Write the final JSON — defaults or the researcher's adjusted
 # values — to .pi-academic/thresholds.json.
-# If .pi-academic/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .pi-academic/voice/profile.md.
+# If .pi-academic/voice/profile.md is missing, call pi_academic_read_resource with name: voice_profile_template, then write that content to .pi-academic/voice/profile.md.
 ```
 
-Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
+Call `pi_academic_migrate_profile`, then check for existing profile by calling `pi_academic_get_profile`.
 
 If it returns `ok: true`, load and show current settings, then:
 
@@ -54,7 +54,7 @@ Wait for their reply and match it against the options (accept the option number,
 
 ---
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `pi_academic_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `pi_academic_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 ## Phase 1: Detect Integrations
 
@@ -162,7 +162,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >
 > Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
 >
-> Map selection the same way as `/skill:academic-setup`: `inline-parenthetical` stays literal mode; popular aliases, Zotero/CSL repository ids, `.csl` URLs, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
+> Map selection the same way as `/skill:academic-setup`: `inline-parenthetical` stays literal mode; popular aliases, Zotero/CSL repository ids, `.csl` URLs, and custom `.csl` paths are citeproc mode. Validate every citeproc style before saving by calling `pi_academic_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 ### Tool Selection
 
@@ -244,10 +244,10 @@ If Zotero is selected but not detected:
   }
   ```
 
-Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
+Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `pi_academic_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
 
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `zotero` block unless the JSON is simple enough to update safely. Do not write API keys into a project file; Zotero web/API credentials belong in user-global MCP config or command interpolation.
-- After any MCP server block is added for the first time (yours or the researcher's), call `academic_writer_status` before re-probing: on `harness: pi`, tell the researcher to restart pi (direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable until the new session starts); on `harness: omp`, run `/mcp reload` instead of restarting.
+- After any MCP server block is added for the first time (yours or the researcher's), call `pi_academic_status` before re-probing: on `harness: pi`, tell the researcher to restart pi (direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable until the new session starts); on `harness: omp`, run `/mcp reload` instead of restarting.
 
 If NotebookLM is selected but `notebook_list()` is unavailable:
 
@@ -273,7 +273,7 @@ If NotebookLM is selected but `notebook_list()` is unavailable:
   }
   ```
 
-Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
+Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `pi_academic_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
 
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `notebooklm-mcp` block unless the JSON is simple enough to update safely.
 
@@ -295,7 +295,7 @@ Follow `references/document-style.md` and store the result as `outputFormatPrefe
 
 Check for past articles:
 
-Call `academic_writer_list_project_files` with `kind: "past_articles"` and count the returned `files`.
+Call `pi_academic_list_project_files` with `kind: "past_articles"` and count the returned `files`.
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 

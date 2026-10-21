@@ -249,7 +249,7 @@ test("the relink tool rewrites an imported DOCX so citeproc resolves every key",
 
   assert.equal(built.status, 0);
 
-  const imported = await callTool(root, "academic_writer_import_docx", {
+  const imported = await callTool(root, "pi_academic_import_docx", {
     input: "drafts/a.docx",
     stripHighlights: true,
   });
@@ -258,23 +258,21 @@ test("the relink tool rewrites an imported DOCX so citeproc resolves every key",
 
   writeProject("inline-parenthetical");
 
-  const refused = await callTool(root, "academic_writer_relink_citations", {
+  const refused = await callTool(root, "pi_academic_relink_citations", {
     article: "articles/a.md",
   });
 
   assert.equal(refused.details.ok, false);
   writeProject("chicago");
 
-  const undetectable = await callTool(
-    root,
-    "academic_writer_relink_citations",
-    { article: "articles/a.md" },
-  );
+  const undetectable = await callTool(root, "pi_academic_relink_citations", {
+    article: "articles/a.md",
+  });
 
   assert.equal(undetectable.details.ok, false);
   assert.match(undetectable.content[0]?.text ?? "", /pass noteStyle/);
 
-  const dry = await callTool(root, "academic_writer_relink_citations", {
+  const dry = await callTool(root, "pi_academic_relink_citations", {
     article: "articles/a.md",
     noteStyle: true,
   });
@@ -289,7 +287,7 @@ test("the relink tool rewrites an imported DOCX so citeproc resolves every key",
     /\[\^1\]: Josef Stern/,
   );
 
-  await callTool(root, "academic_writer_relink_citations", {
+  await callTool(root, "pi_academic_relink_citations", {
     article: "articles/a.md",
     apply: true,
     noteStyle: true,
@@ -579,7 +577,7 @@ test("literal [@key] text from a Word file arrives escaped and still converts, o
 
   assert.equal(built.status, 0);
 
-  const imported = await callTool(root, "academic_writer_import_docx", {
+  const imported = await callTool(root, "pi_academic_import_docx", {
     input: "d/a.docx",
   });
 

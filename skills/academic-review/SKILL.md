@@ -1,7 +1,7 @@
 ---
 name: academic-review
 description: "Review a completed academic article, or run a mechanical proofread. Use when requesting a quality scorecard/reverse-outline review or a mechanical proofread with a change report."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_fix_typography academic_writer_lint_prose academic_writer_proofread academic_writer_reverse_outline
+allowed-tools: bash read write edit find grep subagent pi_academic_read_resource pi_academic_get_profile pi_academic_list_project_files pi_academic_extract_document pi_academic_audit_citations pi_academic_fix_typography pi_academic_lint_prose pi_academic_proofread pi_academic_reverse_outline
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
@@ -20,11 +20,11 @@ A structured quality gate that scores a completed article on 6 dimensions and pr
 
 ## Load Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell the researcher to run `/skill:academic-setup` first.
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.pi-academic/runs/<run-id>.json` for this review when run standalone. Use `phase: review`; update status before stopping. When invoked inside write/edit, update the current run file instead of creating a second one.
+Call `pi_academic_read_resource` with `name: run_state_contract`, then create or update `.pi-academic/runs/<run-id>.json` for this review when run standalone. Use `phase: review`; update status before stopping. When invoked inside write/edit, update the current run file instead of creating a second one.
 
 ## Input
 
@@ -32,7 +32,7 @@ When run standalone, ask:
 
 > "Which article would you like to review? Provide the path to a markdown (.md) file in `articles/`."
 
-List available articles by calling `academic_writer_list_project_files` with `kind: "articles"`.
+List available articles by calling `pi_academic_list_project_files` with `kind: "articles"`.
 
 Read the selected article with the `Read` tool.
 
@@ -40,13 +40,13 @@ When invoked as a pipeline step, the article text is passed directly.
 
 ## Deterministic Citation Gate
 
-Call `academic_writer_read_resource` with `name: citation_review_gate`, then call `academic_writer_audit_citations` with the article markdown path and the profile's `citationStyle`.
+Call `pi_academic_read_resource` with `name: citation_review_gate`, then call `pi_academic_audit_citations` with the article markdown path and the profile's `citationStyle`.
 
 If the audit returns `status: failed` or `status: error`, score Citation Completeness as failing, report the citation defects or operational error respectively, set run state to `failed`, and do not continue to DOCX/export. This gate is mechanical only; still perform semantic source/claim review when `status: passed`.
 
 ## Scorecard rubric
 
-The 6-dimension scorecard is defined in `references/scorecard.json` (machine-readable, versioned). At the start of every review, call `academic_writer_read_resource` with `name: scorecard`.
+The 6-dimension scorecard is defined in `references/scorecard.json` (machine-readable, versioned). At the start of every review, call `pi_academic_read_resource` with `name: scorecard`.
 
 For each dimension:
 
@@ -56,9 +56,9 @@ For each dimension:
 
 The scorecard is the single source of truth — do not score on dimensions not listed there, and do not change weights inline. To adjust scoring, edit `references/scorecard.json` and bump its `version` field.
 
-Also check the `styleFingerprint` returned by `academic_writer_get_profile` for Writing Quality (dimension 5).
+Also check the `styleFingerprint` returned by `pi_academic_get_profile` for Writing Quality (dimension 5).
 
-Load linking words for Academic Conventions (dimension 6) by calling `academic_writer_read_resource` with `name: words`.
+Load linking words for Academic Conventions (dimension 6) by calling `pi_academic_read_resource` with `name: words`.
 
 ## Scorecard Output
 
@@ -104,8 +104,8 @@ Present the results as a clear scorecard:
 
 ## Reverse-outline diagnostics (read-only)
 
-For substantive review, call `academic_writer_reverse_outline({article})` and use its exact paragraph/line units as an index. It segments text only; infer role, evidence, explanation, and progression yourself and present those interpretations as provisional. If unavailable, inspect the article directly. Do not use this tool in mechanical proofread mode.
-For substantive review of English prose, call `academic_writer_lint_prose({text: ARTICLE_TEXT, language: targetLanguage})` and present only contextually relevant matches as tentative prompts. This review is read-only: do not edit article text, citations, notes, outline, snapshots, or run state. Do not call the style linter here for substantive review — in mechanical proofread mode it runs only as Pass B of that mode's sweep; keep the two uses distinct.
+For substantive review, call `pi_academic_reverse_outline({article})` and use its exact paragraph/line units as an index. It segments text only; infer role, evidence, explanation, and progression yourself and present those interpretations as provisional. If unavailable, inspect the article directly. Do not use this tool in mechanical proofread mode.
+For substantive review of English prose, call `pi_academic_lint_prose({text: ARTICLE_TEXT, language: targetLanguage})` and present only contextually relevant matches as tentative prompts. This review is read-only: do not edit article text, citations, notes, outline, snapshots, or run state. Do not call the style linter here for substantive review — in mechanical proofread mode it runs only as Pass B of that mode's sweep; keep the two uses distinct.
 
 After the scorecard, list specific issues found:
 

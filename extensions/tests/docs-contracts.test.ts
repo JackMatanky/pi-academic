@@ -31,7 +31,7 @@ test("[test_citation_audit_is_wired_into_output_paths] citation audit ships in T
   ]) {
     const content = readRepo(skill);
 
-    assert.ok(content.includes("academic_writer_audit_citations"), skill);
+    assert.ok(content.includes("pi_academic_audit_citations"), skill);
     assert.ok(content.includes("run_state_contract"), skill);
   }
 });
@@ -44,8 +44,8 @@ test("[test_profile_migration_is_tool_backed] profile migration is a registered 
   const setup = readRepo("skills/academic-setup/SKILL.md");
   const heredoc = "python3 << 'PYTHON'";
 
-  assert.ok(definitions.has("academic_writer_migrate_profile"));
-  assert.ok(setup.includes("academic_writer_migrate_profile"));
+  assert.ok(definitions.has("pi_academic_migrate_profile"));
+  assert.ok(setup.includes("pi_academic_migrate_profile"));
   assert.ok(!schema.includes(heredoc));
   assert.ok(!setup.includes(heredoc));
 });
@@ -92,9 +92,9 @@ test("[test_pdf_export_uses_health_and_wrapper_tools] PDF export goes through he
   const healthSkill = readRepo("skills/academic-health/SKILL.md");
   const readme = readRepo("README.md");
 
-  assert.ok(exportSkill.includes("academic_writer_health"));
-  assert.ok(exportSkill.includes("academic_writer_export_article"));
-  assert.ok(healthSkill.includes("academic_writer_health"));
+  assert.ok(exportSkill.includes("pi_academic_health"));
+  assert.ok(exportSkill.includes("pi_academic_export_article"));
+  assert.ok(healthSkill.includes("pi_academic_health"));
   assert.ok(readme.includes("brew install tectonic"));
 });
 
@@ -114,7 +114,7 @@ test("[test_research_skill_dispatch_contract] research uses scoped searches and 
   const content = readRepo("skills/academic-research/SKILL.md");
 
   for (const needle of [
-    "academic_writer_resolve_mcp_tool",
+    "pi_academic_resolve_mcp_tool",
     "tools.zotero.collection.key",
     "selectedSourceIds",
     "targetLanguage",

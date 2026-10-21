@@ -6,7 +6,7 @@ Guided ideation flow that helps researchers formulate strong research questions 
 
 ## Load Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell the researcher to run `/skill:academic-setup` first.
 
@@ -59,7 +59,7 @@ Present the brainstorm:
 
 ## Step 3: Gap Analysis
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `pi_academic_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `pi_academic_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 If Zotero is enabled, scan `tools.zotero.collection` when configured; otherwise scan the researcher's library by calling `zotero_get_recent(limit=100)` or listing collection items.
 

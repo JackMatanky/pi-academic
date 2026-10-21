@@ -55,7 +55,7 @@ test("structured write tools validate nested parameters before changing files", 
     errors: string[];
   }> = [
     {
-      name: "academic_writer_write_research_notes",
+      name: "pi_academic_write_research_notes",
       valid: {
         notesJson: [{ id: "idea", kind: "idea", coreStatement: "An idea" }],
       },
@@ -76,7 +76,7 @@ test("structured write tools validate nested parameters before changing files", 
       errors: ["coreStatement", "display"],
     },
     {
-      name: "academic_writer_write_outline",
+      name: "pi_academic_write_outline",
       valid: { outlineJson: outline },
       path: "articles/essay.outline.json",
       invalid: [
@@ -98,7 +98,7 @@ test("structured write tools validate nested parameters before changing files", 
       errors: ["slug", "text"],
     },
     {
-      name: "academic_writer_write_sources_cache",
+      name: "pi_academic_write_sources_cache",
       valid: {
         sourcesJson: [
           { sourceType: "zotero", libraryId: "lib", itemKey: "item" },
@@ -119,7 +119,7 @@ test("structured write tools validate nested parameters before changing files", 
       errors: ["sourceType", "author"],
     },
     {
-      name: "academic_writer_update_profile",
+      name: "pi_academic_update_profile",
       valid: { fieldsJson: { tools: { zotero: { enabled: true } } } },
       path: ".pi-academic/profile.md",
       invalid: [

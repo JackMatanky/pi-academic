@@ -1,7 +1,7 @@
 ---
 name: academic-edit
 description: "Edit a drafted article, from one narrowly scoped section to multiple sections or structural revisions. Use when revising, correcting, or restructuring existing article text."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_import_docx academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_migrate_article_outline academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_diagnose_outline academic_writer_lint_prose
+allowed-tools: bash read write find grep subagent pi_academic_read_resource pi_academic_status pi_academic_health pi_academic_get_profile pi_academic_article_paths pi_academic_list_project_files pi_academic_extract_document pi_academic_import_docx pi_academic_audit_citations pi_academic_count_words pi_academic_resolve_csl pi_academic_export_article pi_academic_generate_docx pi_academic_ingest_sources pi_academic_migrate_article_outline pi_academic_write_outline pi_academic_render_outline pi_academic_review_research_notes pi_academic_snapshot_notes pi_academic_query_research pi_academic_snapshot_citations pi_academic_diagnose_outline pi_academic_lint_prose
 metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
@@ -15,19 +15,19 @@ You are an editing assistant. The researcher has a previously written article (f
 
 ## Voice profile load (first step of every run)
 
-Call `academic_writer_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
+Call `pi_academic_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
 
 ---
 
 ## Load Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`: "Run `/skill:academic-setup` first."
 
 **Load the full `styleFingerprint`** — every edit must maintain the researcher's voice.
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.pi-academic/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.pi-academic/` here if the profile was missing — `init`/`setup` own first creation.
+Call `pi_academic_read_resource` with `name: run_state_contract`, then create or update `.pi-academic/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.pi-academic/` here if the profile was missing — `init`/`setup` own first creation.
 
 Print fingerprint summary to confirm it's loaded.
 
@@ -49,9 +49,9 @@ Ask the researcher:
 > - Paste the text directly
 > - Tell me to use the most recent article from this session"
 
-For a `.docx`, call `academic_writer_import_docx` (it keeps footnotes as `[^n]` definitions and writes `articles/<slug>.md`), then work from that markdown file; if the file is outside the project, ask the researcher to copy it in first. For markdown, PDF, or text files, call `academic_writer_extract_document` with `path: FILE_PATH` and use the returned text. If extraction or import fails, stop and report the tool's error.
+For a `.docx`, call `pi_academic_import_docx` (it keeps footnotes as `[^n]` definitions and writes `articles/<slug>.md`), then work from that markdown file; if the file is outside the project, ask the researcher to copy it in first. For markdown, PDF, or text files, call `pi_academic_extract_document` with `path: FILE_PATH` and use the returned text. If extraction or import fails, stop and report the tool's error.
 
-An article may begin with a YAML metadata block (`academic_writer_read_resource`, `name: article_metadata`). Keep it as it is unless the researcher asks to change a field, and do not add the title again as a heading when the block already has `title:`.
+An article may begin with a YAML metadata block (`pi_academic_read_resource`, `name: article_metadata`). Keep it as it is unless the researcher asks to change a field, and do not add the title again as a heading when the block already has `title:`.
 
 Parse the article into sections and paragraphs. Identify all footnotes/citations.
 
@@ -63,10 +63,10 @@ For migration, show the draft mapping and unmapped paragraphs. Migration does no
 
 ## Structured Edit Gate
 
-Resolve the article Markdown path. If `articles/<slug>.outline.json` exists, read its canonical recursive structure. Otherwise, for an existing Markdown article call `academic_writer_migrate_article_outline({article: MD_PATH, title, targetLanguage, citationStyle})`; it preserves Markdown and creates draft-only unmapped points containing exact existing paragraphs. For non-Markdown input first preserve a Markdown copy for migration; do not pretend conversion is a reviewed outline. A migration conflict means inspect the existing outline rather than overwrite it.
+Resolve the article Markdown path. If `articles/<slug>.outline.json` exists, read its canonical recursive structure. Otherwise, for an existing Markdown article call `pi_academic_migrate_article_outline({article: MD_PATH, title, targetLanguage, citationStyle})`; it preserves Markdown and creates draft-only unmapped points containing exact existing paragraphs. For non-Markdown input first preserve a Markdown copy for migration; do not pretend conversion is a reviewed outline. A migration conflict means inspect the existing outline rather than overwrite it.
 
-For structural or argument/evidence changes, edit the canonical outline JSON first using academic_writer_write_outline (draft status), mapping affected points to reviewed note IDs and direct claims/reasoning. Call academic_writer_render_outline({article: MD_PATH}), present generated Markdown and the exact selected note texts, original sources and locators. Require explicit researcher confirmation of selected source-backed notes before academic_writer_review_research_notes({noteIds, state: "verified"}). Count distinct mapped source-backed note IDs; below `thresholds.json:sources.minPerArticle` (default 3), resolve with the researcher before approval. Obtain explicit approval of the thesis/outline before setting both statuses approved and rerendering. Then snapshot citations and selected notes via academic_writer_snapshot_citations and academic_writer_snapshot_notes; if either fails, do not dispatch. No new current-run source may enter the article context after this freeze.
-After rendering the revised outline and before researcher approval, call `academic_writer_diagnose_outline({article: MD_PATH})` and address its findings. If the current researcher evidence map includes `chapter_coverage`, pass that map as `evidenceMapJson`; coverage is not part of the canonical outline schema. The result is advisory only: it does not judge argument quality or approve the outline.
+For structural or argument/evidence changes, edit the canonical outline JSON first using pi_academic_write_outline (draft status), mapping affected points to reviewed note IDs and direct claims/reasoning. Call pi_academic_render_outline({article: MD_PATH}), present generated Markdown and the exact selected note texts, original sources and locators. Require explicit researcher confirmation of selected source-backed notes before pi_academic_review_research_notes({noteIds, state: "verified"}). Count distinct mapped source-backed note IDs; below `thresholds.json:sources.minPerArticle` (default 3), resolve with the researcher before approval. Obtain explicit approval of the thesis/outline before setting both statuses approved and rerendering. Then snapshot citations and selected notes via pi_academic_snapshot_citations and pi_academic_snapshot_notes; if either fails, do not dispatch. No new current-run source may enter the article context after this freeze.
+After rendering the revised outline and before researcher approval, call `pi_academic_diagnose_outline({article: MD_PATH})` and address its findings. If the current researcher evidence map includes `chapter_coverage`, pass that map as `evidenceMapJson`; coverage is not part of the canonical outline schema. The result is advisory only: it does not judge argument quality or approve the outline.
 
 Dispatch only affected section IDs with direct point children (nested sections are independent tasks) via section_bundle. Provide each writer MD_PATH, sectionId, edit instructions, current target prose and contextual article details only; it reads frozen notes and source metadata itself. The existing article Markdown remains the preserved text source until the selected units actually pass the full paragraph/editor pipeline. Replace only those units; leave unaffected paragraphs, citations, and headings unchanged. Mechanical citation/tone-only edits that do not change the argument still use the editor gate for altered cited sentences and do not rewrite other paragraphs.
 
@@ -91,9 +91,9 @@ Citation verification checks bibliographic metadata against the article's source
 
 **Search Order for Source Snapshots:**
 
-1. **Article-local snapshot (Primary)**: `articles/<slug>.sources.json` and `articles/<slug>.bibliography.bib` (via `academic_writer_snapshot_citations`).
+1. **Article-local snapshot (Primary)**: `articles/<slug>.sources.json` and `articles/<slug>.bibliography.bib` (via `pi_academic_snapshot_citations`).
 2. **Current-run cache (Fallback)**: `.pi-academic/sources.json` and `.pi-academic/bibliography.bib`.
-3. **Local Sources Ingest**: For unindexed local files, call `academic_writer_ingest_sources` to index `.pi-academic/sources/`.
+3. **Local Sources Ingest**: For unindexed local files, call `pi_academic_ingest_sources` to index `.pi-academic/sources/`.
 
 ```bash
 cat articles/<slug>.sources.json 2>/dev/null || cat .pi-academic/sources.json 2>/dev/null || echo "MISSING"
@@ -129,7 +129,7 @@ When auditing or revising an existing draft:
 1. **Preserve Paragraphs by Default**: Treat original paragraphs as valid prose unless an edit or audit failure requires changes.
 2. **Spawn Editor per Paragraph**: Run an `editor` subagent in audit mode (`mode: "audit"`) on each paragraph to verify citations and anti-AI/quality guidelines.
 3. **Selective Rewriting**: Keep original paragraph text intact if the editor returns `verdict: PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
-   For an English prose-style cleanup request, call `academic_writer_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
+   For an English prose-style cleanup request, call `pi_academic_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
 
 ---
 
@@ -137,11 +137,11 @@ When auditing or revising an existing draft:
 
 ### Mode A: Section-Level Edit
 
-**Use your subagent-dispatch tool to spawn a `writer` subagent** for each section being revised. The writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit) and overwrites `articles/<slug>/sections/<sectionId>.md` via `academic_writer_write_section`.
+**Use your subagent-dispatch tool to spawn a `writer` subagent** for each section being revised. The writer runs the full skill pipeline (draft revision → style compliance → Hebrew grammar → repetition check → citation audit) and overwrites `articles/<slug>/sections/<sectionId>.md` via `pi_academic_write_section`.
 
-Pass MD_PATH, sectionId, requested edit instructions, current target text, citationStyle, targetLanguage, tools, and the current text of unchanged adjacent sections (sections revised in the same wave may change; do not rely on their wording). The writer fetches its authoritative point/evidence bundle via academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}). Do not pass a flat section spec or mutable project note library. After each writer returns, splice the written section file's content into `MD_PATH` in place of the existing section body — from the section heading to the next same-or-higher heading.
+Pass MD_PATH, sectionId, requested edit instructions, current target text, citationStyle, targetLanguage, tools, and the current text of unchanged adjacent sections (sections revised in the same wave may change; do not rely on their wording). The writer fetches its authoritative point/evidence bundle via pi_academic_query_research({operation: "section_bundle", article: MD_PATH, sectionId}). Do not pass a flat section spec or mutable project note library. After each writer returns, splice the written section file's content into `MD_PATH` in place of the existing section body — from the section heading to the next same-or-higher heading.
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness.
 
 For multiple sections being edited, **spawn one `writer` per section in parallel**: under OMP, one `task` call with a `tasks` entry per section; under pi, sibling `subagent` calls in one response.
 
@@ -149,7 +149,7 @@ For multiple sections being edited, **spawn one `writer` per section in parallel
 
 **Use your subagent-dispatch tool to spawn `editor` subagents in audit mode (`mode: "audit"`)** — one per section that needs citation work. Under OMP, batch them in one `task` call; under pi, issue sibling `subagent` calls.
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness.
 
 Pass as prompt: the paragraph text, sectionIndex, paragraphIndex, tools.
 
@@ -163,7 +163,7 @@ Re-read the `styleFingerprint`. For each paragraph being adjusted:
 2. Apply the requested tone change while keeping fingerprint compliance
 3. Use `representativeExcerpts` as style targets
 4. Run the Hebrew grammar check when Hebrew text changed.
-   Before dispatching, read the `dispatch_contract` resource (`academic_writer_read_resource`) and pass its `auditor_result` schema as `outputSchema` (on omp use `schemaMode: "strict"`).
+   Before dispatching, read the `dispatch_contract` resource (`pi_academic_read_resource`) and pass its `auditor_result` schema as `outputSchema` (on omp use `schemaMode: "strict"`).
 
 5. **Citation hard gate (mandatory):** a tone rewrite mutates the wording of already-cited sentences. For every paragraph whose cited sentence(s) were altered, **use your subagent-dispatch tool to spawn an `editor` subagent in audit mode (`mode: "audit"`)** (pass the revised paragraph text, sectionIndex, paragraphIndex, tools) and gate on `verdict: PASS` in the editor's structured result — exactly as Modes A/B/E do. If the editor rejects, fix the citation and re-audit before finalizing. Do NOT ship a tone-adjusted paragraph whose citations have not re-passed the audit.
 
@@ -196,7 +196,7 @@ Show the current recursive outline and selected original paragraphs. Reorder, sp
 
 **Use your subagent-dispatch tool to spawn the `editor` subagent in review mode (`mode: "review"`)** on the complete article. Pass as prompt: MD_PATH (the assembled article), thesis, the complete styleFingerprint, articleStructure conventions, the linkingWords reference, targetLanguage, tools.
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness.
 
 This runs:
 
@@ -230,15 +230,15 @@ After edits are applied:
    > - Make additional changes?
    > - Run a full review on the revised version?"
 
-3. If exporting to .docx, call `academic_writer_read_resource` with `name: citation_export_contract`, then branch by `citationStyle` first:
+3. If exporting to .docx, call `pi_academic_read_resource` with `name: citation_export_contract`, then branch by `citationStyle` first:
 
-**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode. If the profile is unavailable/stale, call `academic_writer_extract_document` on the markdown and treat any `[@citeKey]` Pandoc marker as citeproc mode.
+**Detect citeproc mode:** literal mode is only `citationStyle: inline-parenthetical`. Any other `citationStyle` is citeproc mode. If the profile is unavailable/stale, call `pi_academic_extract_document` on the markdown and treat any `[@citeKey]` Pandoc marker as citeproc mode.
 
-**Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `academic_writer_audit_citations` with `article: MD_PATH` and the active `citationStyle`. Continue only when `status` is `passed`; for `failed`, report the exact missing/wrong-mode citation details, and for `error`, report the operational error. In either case stop and set the run state to `failed`.
+**Before DOCX generation:** write the revised markdown to `$MD_PATH`, then call `pi_academic_audit_citations` with `article: MD_PATH` and the active `citationStyle`. Continue only when `status` is `passed`; for `failed`, report the exact missing/wrong-mode citation details, and for `error`, report the operational error. In either case stop and set the run state to `failed`.
 
-**`inline-parenthetical`:** Call `academic_writer_generate_docx` directly with `articles/<slug>.md` as `input` and `$DOCX_PATH` as `output`.
+**`inline-parenthetical`:** Call `pi_academic_generate_docx` directly with `articles/<slug>.md` as `input` and `$DOCX_PATH` as `output`.
 
-Same current limitation as write-article Step 9b: the citeproc export path (`academic_writer_export_article`) does not set right-to-left document direction. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
+Same current limitation as write-article Step 9b: the citeproc export path (`pi_academic_export_article`) does not set right-to-left document direction. If a researcher pairs `targetLanguage: Hebrew` with a citeproc CSL style, the exported `.docx` may need manual RTL adjustment unless their CSL/pandoc template handles it.
 
 ---
 

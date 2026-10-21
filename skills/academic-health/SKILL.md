@@ -1,7 +1,7 @@
 ---
 name: academic-health
 description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
-allowed-tools: bash read academic_writer_read_resource academic_writer_resolve_csl academic_writer_list_agents academic_writer_status academic_writer_health academic_writer_ingest_sources academic_writer_snapshot_citations academic_writer_resolve_mcp_tool
+allowed-tools: bash read pi_academic_read_resource pi_academic_resolve_csl pi_academic_list_agents pi_academic_status pi_academic_health pi_academic_ingest_sources pi_academic_snapshot_citations pi_academic_resolve_mcp_tool
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
@@ -11,7 +11,7 @@ Run a comprehensive health check on every component of the Academic Writer syste
 
 ## 1. Local package status
 
-Call `academic_writer_status` and `academic_writer_health`. Use their structured details for:
+Call `pi_academic_status` and `pi_academic_health`. Use their structured details for:
 
 - profile existence and parsed fields
 - source and bibliography availability
@@ -26,7 +26,7 @@ If the profile is missing: report `FAIL` and suggest `/skill:academic-setup`.
 
 ## 2. Past Articles
 
-Use `academic_writer_status`/`academic_writer_health` details. If empty: "Add 5–10 published articles for style analysis, then re-run `/skill:academic-setup`."
+Use `pi_academic_status`/`pi_academic_health` details. If empty: "Add 5–10 published articles for style analysis, then re-run `/skill:academic-setup`."
 
 ---
 
@@ -34,12 +34,12 @@ Use `academic_writer_status`/`academic_writer_health` details. If empty: "Add 5�
 
 **Skip if `tools.zotero.enabled` is false.** Report as "Disabled (enable with `/skill:academic-setup`)".
 
-Use `academic_writer_health` for the `zotero-mcp` binary check. If a project `.mcp.json` exists and needs debugging, read it with the Read tool; do not parse credentials or copy secrets into the report.
+Use `pi_academic_health` for the `zotero-mcp` binary check. If a project `.mcp.json` exists and needs debugging, read it with the Read tool; do not parse credentials or copy secrets into the report.
 
 **Harness-neutral MCP dispatch:** resolve each distinct bare-named tool before
-calling it. Bare names are tools without the `academic_writer_` prefix (e.g.
+calling it. Bare names are tools without the `pi_academic_` prefix (e.g.
 `zotero_get_item_fulltext`, `notebook_list`, `get_text`). Call
-`academic_writer_resolve_mcp_tool` with the bare name, then use its returned
+`pi_academic_resolve_mcp_tool` with the bare name, then use its returned
 `live_name` for subsequent calls. If `live_name` is `null`, treat that tool as
 unavailable for this run.
 
@@ -84,17 +84,17 @@ If `zotero_get_recent` is unavailable but `zotero-mcp` is installed, recommend c
 }
 ```
 
-Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `academic_writer_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
+Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as `mcp__<server>_<tool>`, which `pi_academic_resolve_mcp_tool` finds; a root `.mcp.json` is a supported portable fallback (omp's primary files are `.omp/mcp.json` and `~/.omp/agent/mcp.json`).
 
 Warn: never put API keys in a git-tracked project `.mcp.json`; use user-global MCP config or command interpolation for Zotero web/API credentials.
 
-Direct MCP tools are cached at startup: after `.mcp.json` or global MCP config is created or changed for the first time, call `academic_writer_status`: on `harness: pi`, ask the researcher to restart pi; on `harness: omp`, run `/mcp reload` instead of restarting. Then re-run the probe — `zotero_get_recent` stays unavailable otherwise.
+Direct MCP tools are cached at startup: after `.mcp.json` or global MCP config is created or changed for the first time, call `pi_academic_status`: on `harness: pi`, ask the researcher to restart pi; on `harness: omp`, run `/mcp reload` instead of restarting. Then re-run the probe — `zotero_get_recent` stays unavailable otherwise.
 
 ---
 
 ## 4. Local Sources Folder & Citation Snapshots
 
-Use `academic_writer_status` / `academic_writer_health`; do not call `academic_writer_ingest_sources` during health checks because it writes cache files.
+Use `pi_academic_status` / `pi_academic_health`; do not call `pi_academic_ingest_sources` during health checks because it writes cache files.
 Report:
 
 - Local source folder present? ✓/✗
@@ -108,7 +108,7 @@ Report:
 **Skip if `tools.sefaria.enabled` is false.** Report as "Disabled (enable with `/skill:academic-setup`)".
 
 If `tools.sefaria.enabled` is true, resolve `get_text` and `search` with
-`academic_writer_resolve_mcp_tool`; call only returned `live_name` values. If both
+`pi_academic_resolve_mcp_tool`; call only returned `live_name` values. If both
 return `null`, report that biblical context expansion is unavailable.
 
 Report:
@@ -121,9 +121,9 @@ Report:
 
 **Skip if `tools.notebooklm.enabled` is false.** Report as "Disabled (enable with `/skill:academic-setup`)".
 
-Use `academic_writer_health` for the `nlm` and `notebooklm-mcp` binary checks.
+Use `pi_academic_health` for the `nlm` and `notebooklm-mcp` binary checks.
 If installed, run `nlm login --check`; resolve `notebook_list` with
-`academic_writer_resolve_mcp_tool` and call its returned `live_name` as the live
+`pi_academic_resolve_mcp_tool` and call its returned `live_name` as the live
 MCP probe.
 
 Report:
@@ -163,11 +163,11 @@ Report:
 
 **Skip this check's PDF sub-line reporting only if pandoc itself is missing — still report pandoc's own status either way.**
 
-Use `academic_writer_health` command flags for Pandoc, XeLaTeX, and Tectonic availability. The CSL resolver is provided by `academic_writer_resolve_csl`.
+Use `pi_academic_health` command flags for Pandoc, XeLaTeX, and Tectonic availability. The CSL resolver is provided by `pi_academic_resolve_csl`.
 
 If the profile uses citeproc mode (`citationStyle` is anything except `inline-parenthetical`), resolve the configured CSL reference. Prefer `outputFormatPreferences.cslPath`, then `outputFormatPreferences.csl`, then `citationStyle`.
 
-Call `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
+Call `pi_academic_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 Report:
 
@@ -196,7 +196,7 @@ Report:
 
 ## 7b. Markdown Lint (rumdl) — optional
 
-Use `academic_writer_health` command flags for rumdl availability. This check is informational — rumdl is optional and never blocks export or writing.
+Use `pi_academic_health` command flags for rumdl availability. This check is informational — rumdl is optional and never blocks export or writing.
 
 Report:
 
@@ -214,7 +214,7 @@ Report:
 
 ## 8. Agent Files
 
-Use `academic_writer_status` details for packaged agent filenames. Call `academic_writer_list_agents` only if you need the plain-text list.
+Use `pi_academic_status` details for packaged agent filenames. Call `pi_academic_list_agents` only if you need the plain-text list.
 
 ---
 

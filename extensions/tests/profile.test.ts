@@ -111,7 +111,7 @@ test("updateProfile merges nested objects and nested null deletes", async (t) =>
   assert.equal(updated?.tools?.sefaria?.enabled, true);
 });
 
-test("academic_writer_update_profile deep-merges through the tool surface", async (t) => {
+test("pi_academic_update_profile deep-merges through the tool surface", async (t) => {
   const dir = project(t);
 
   seedProfile(dir, {
@@ -121,7 +121,7 @@ test("academic_writer_update_profile deep-merges through the tool surface", asyn
 
   const { callTool } = createToolHarness();
 
-  const result = await callTool(dir, "academic_writer_update_profile", {
+  const result = await callTool(dir, "pi_academic_update_profile", {
     fieldsJson: {
       tools: { zotero: { enabled: false, collection: { name: "Ancient" } } },
     },

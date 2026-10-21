@@ -3,7 +3,7 @@ name: academic-voice
 description: >-
   Manage the researcher voice profile: refresh corpus-derived style patterns, conduct or resume the adversarial interview,
   calibrate, audit, and recompress. Use when adding past articles or refining the writer profile.
-allowed-tools: read write edit find grep bash academic_writer_get_profile academic_writer_list_project_files academic_writer_extract_document academic_writer_read_resource academic_writer_write_interview_session academic_writer_write_voice_audit academic_writer_write_voice_fingerprint academic_writer_update_author_voice academic_writer_update_profile
+allowed-tools: read write edit find grep bash pi_academic_get_profile pi_academic_list_project_files pi_academic_extract_document pi_academic_read_resource pi_academic_write_interview_session pi_academic_write_voice_audit pi_academic_write_voice_fingerprint pi_academic_update_author_voice pi_academic_update_profile
 metadata: { author: "Yotam Fromm", version: "0.2.20" }
 ---
 
@@ -44,12 +44,12 @@ Wherever a step below says to distill or fingerprint, execute the matching mode 
 ### `:voice recompress`
 
 1. Execute the transcript distillation mode from `references/profile-builder.md` inline over all completed sessions and the fingerprint.
-2. Run the rule-coverage check per `references/calibration-protocol.md` (step 5) and write `.pi-academic/voice/audit.md` with `academic_writer_write_voice_audit`.
+2. Run the rule-coverage check per `references/calibration-protocol.md` (step 5) and write `.pi-academic/voice/audit.md` with `pi_academic_write_voice_audit`.
 
 ### `:voice audit`
 
 1. Read `.pi-academic/voice/profile.md` and corpus.
-2. For each rule, search corpus for evidence. Write `.pi-academic/voice/audit.md` with `academic_writer_write_voice_audit`: score and flagged rules.
+2. For each rule, search corpus for evidence. Write `.pi-academic/voice/audit.md` with `pi_academic_write_voice_audit`: score and flagged rules.
 3. If score < `thresholds.json: voice.ruleCoverage.block`, refuse to recompress until the user removes or evidences flagged rules.
 
 ### `:voice quick`

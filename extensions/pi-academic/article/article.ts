@@ -48,7 +48,7 @@ export const ArticleFormatSchema = Type.Object({
 export type ArticleFormat = Static<typeof ArticleFormatSchema>;
 
 /**
- * The article payload `academic_writer_generate_docx` turns into a DOCX.
+ * The article payload `pi_academic_generate_docx` turns into a DOCX.
  */
 export const ArticleDataSchema = Type.Object({
   title: Type.Optional(Type.String()),
@@ -70,7 +70,7 @@ export const ArticleDataSchema = Type.Object({
 });
 
 /**
- * The article payload `academic_writer_generate_docx` turns into a DOCX.
+ * The article payload `pi_academic_generate_docx` turns into a DOCX.
  */
 export type ArticleData = Static<typeof ArticleDataSchema>;
 

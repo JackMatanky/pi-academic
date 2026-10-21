@@ -27,7 +27,7 @@ import { fresh, library, parseNote } from "./notes.js";
 import { frozenPath, getOutline, outlinePath } from "./outline.js";
 
 /**
- * Parameters of `academic_writer_query_research`.
+ * Parameters of `pi_academic_query_research`.
  */
 export const ResearchQuerySchema = Type.Object({
   operation: stringEnum([

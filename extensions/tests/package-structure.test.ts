@@ -174,7 +174,7 @@ test("[test_thresholds_resource_honors_project_override] read_resource prefers t
 
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
-  const packaged = await callTool(root, "academic_writer_read_resource", {
+  const packaged = await callTool(root, "pi_academic_read_resource", {
     name: "thresholds",
   });
 
@@ -186,7 +186,7 @@ test("[test_thresholds_resource_honors_project_override] read_resource prefers t
     '{"marker": true}\n',
   );
 
-  const overridden = await callTool(root, "academic_writer_read_resource", {
+  const overridden = await callTool(root, "pi_academic_read_resource", {
     name: "thresholds",
   });
 

@@ -20,8 +20,7 @@ function normalizeLanguage(language: string | undefined): "english" | "hebrew" {
 }
 
 /**
- * Stable names of the packaged resources `academic_writer_read_resource`
- * serves.
+ * Stable names of the packaged resources `pi_academic_read_resource` serves.
  */
 export const RESOURCE_NAMES = [
   "thresholds",

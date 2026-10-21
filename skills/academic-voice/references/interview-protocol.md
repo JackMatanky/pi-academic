@@ -11,9 +11,9 @@ You (the `academic-voice` skill) run one Stage 2 interview session in chat with 
 
 ## Outputs
 
-- After each question/answer pair, read the current `.pi-academic/voice/interview/0N-<category>.md` (if it exists), append the new entry, and call `academic_writer_write_interview_session` with `sessionId: "0N-<category>"` and `content` set to the full updated transcript.
+- After each question/answer pair, read the current `.pi-academic/voice/interview/0N-<category>.md` (if it exists), append the new entry, and call `pi_academic_write_interview_session` with `sessionId: "0N-<category>"` and `content` set to the full updated transcript.
   - Format: `## Q<n> — [layer] question text\n\n> answer text\n\n` repeated.
-- When the session ends (cap reached or you decide a productive thread is exhausted), append the completion marker (below) in the same final `academic_writer_write_interview_session` call and continue with the workflow in `SKILL.md`.
+- When the session ends (cap reached or you decide a productive thread is exhausted), append the completion marker (below) in the same final `pi_academic_write_interview_session` call and continue with the workflow in `SKILL.md`.
 
 ## Adaptive size
 
@@ -37,7 +37,7 @@ Before asking question N, read `.pi-academic/voice/interview/0N-<category>.md`. 
 ## Hard rules
 
 - One question per turn. Never batch.
-- Call `academic_writer_write_interview_session` after every question/answer pair with the full updated transcript content — never skip a question's write.
+- Call `pi_academic_write_interview_session` after every question/answer pair with the full updated transcript content — never skip a question's write.
 - Refer to fingerprint findings explicitly: "Your last 3 papers used 'מבחינה זו' 14 times — keep, kill, or contextualize?" This is what makes you better than a cold interview.
 - Stop at the hard cap even mid-thread. Better to leave a thread for `:voice continue` than overrun.
 
@@ -57,4 +57,4 @@ For quick mode, also append this marker in the same final write:
 
 Then continue with the workflow in `SKILL.md`.
 
-in the final `academic_writer_write_interview_session` call, then continue with the workflow in `SKILL.md`.
+in the final `pi_academic_write_interview_session` call, then continue with the workflow in `SKILL.md`.

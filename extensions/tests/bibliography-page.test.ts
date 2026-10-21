@@ -56,7 +56,7 @@ async function exportEssay(
   );
   writeFileSync(join(root, "articles", "essay.md"), markdown);
 
-  const result = await callTool(root, "academic_writer_export_article", {
+  const result = await callTool(root, "pi_academic_export_article", {
     article: "articles/essay.md",
     citationStyle: style,
     formats,

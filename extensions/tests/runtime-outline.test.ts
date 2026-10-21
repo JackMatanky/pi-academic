@@ -165,7 +165,7 @@ for (const [style, citation] of [
 
     writeFileSync(articlePath, articleText);
 
-    const note = await callTool(root, "academic_writer_write_research_notes", {
+    const note = await callTool(root, "pi_academic_write_research_notes", {
       notesJson: [
         {
           id: "evidence",
@@ -182,7 +182,7 @@ for (const [style, citation] of [
 
     assert.equal(ok(note), true);
 
-    await callTool(root, "academic_writer_review_research_notes", {
+    await callTool(root, "pi_academic_review_research_notes", {
       noteIds: ["evidence"],
       state: "verified",
     });
@@ -226,42 +226,34 @@ for (const [style, citation] of [
       ],
     };
 
-    const saved = await callTool(root, "academic_writer_write_outline", {
+    const saved = await callTool(root, "pi_academic_write_outline", {
       outlineJson: outline,
     });
 
     assert.equal(ok(saved), true);
     assert.equal(
-      ok(
-        await callTool(root, "academic_writer_render_outline", OUTLINE_ARTICLE),
-      ),
+      ok(await callTool(root, "pi_academic_render_outline", OUTLINE_ARTICLE)),
       true,
     );
     assert.equal(
       ok(
-        await callTool(
-          root,
-          "academic_writer_snapshot_citations",
-          OUTLINE_ARTICLE,
-        ),
+        await callTool(root, "pi_academic_snapshot_citations", OUTLINE_ARTICLE),
       ),
       true,
     );
     assert.equal(
-      ok(
-        await callTool(root, "academic_writer_snapshot_notes", OUTLINE_ARTICLE),
-      ),
+      ok(await callTool(root, "pi_academic_snapshot_notes", OUTLINE_ARTICLE)),
       true,
     );
 
-    const audit = await callTool(root, "academic_writer_audit_citations", {
+    const audit = await callTool(root, "pi_academic_audit_citations", {
       ...OUTLINE_ARTICLE,
       citationStyle: style,
     });
 
     assert.equal(audit.details.status, "passed");
 
-    const bundle = await callTool(root, "academic_writer_query_research", {
+    const bundle = await callTool(root, "pi_academic_query_research", {
       operation: "section_bundle",
       ...OUTLINE_ARTICLE,
       sectionId: "section",
@@ -317,30 +309,26 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
     })),
   ];
 
-  const saved = await callTool(root, "academic_writer_write_research_notes", {
+  const saved = await callTool(root, "pi_academic_write_research_notes", {
     notesJson: notes,
   });
 
   assert.equal(ok(saved), true);
 
-  const invalidDate = await callTool(
-    root,
-    "academic_writer_write_research_notes",
-    {
-      notesJson: [
-        {
-          id: "invalid-date",
-          kind: "idea",
-          coreStatement: "Invalid timestamp",
-          createdAt: "March 4, 2024",
-        },
-      ],
-    },
-  );
+  const invalidDate = await callTool(root, "pi_academic_write_research_notes", {
+    notesJson: [
+      {
+        id: "invalid-date",
+        kind: "idea",
+        coreStatement: "Invalid timestamp",
+        createdAt: "March 4, 2024",
+      },
+    ],
+  });
 
   assert.equal(ok(invalidDate), false);
 
-  const byId = await callTool(root, "academic_writer_query_research", {
+  const byId = await callTool(root, "pi_academic_query_research", {
     operation: "note_by_id",
     noteId: "source-note",
   });
@@ -348,7 +336,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
   assert.equal(ok(byId), true);
   assert.equal(at(byId, "value", "id"), "source-note");
 
-  const bySource = await callTool(root, "academic_writer_query_research", {
+  const bySource = await callTool(root, "pi_academic_query_research", {
     operation: "notes_by_source",
     sourceId: "zotero:library:item",
   });
@@ -363,11 +351,11 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
 
   const defaultList = await callTool(
     root,
-    "academic_writer_query_research",
+    "pi_academic_query_research",
     tagQuery,
   );
 
-  const capped = await callTool(root, "academic_writer_query_research", {
+  const capped = await callTool(root, "pi_academic_query_research", {
     ...tagQuery,
     limit: 100,
   });
@@ -375,14 +363,14 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
   assert.equal(arr(at(defaultList, "value")).length, 20);
   assert.equal(arr(at(capped, "value")).length, 100);
 
-  const overLimit = await callTool(root, "academic_writer_query_research", {
+  const overLimit = await callTool(root, "pi_academic_query_research", {
     ...tagQuery,
     limit: 101,
   });
 
   assert.equal(overLimit.isError, true);
 
-  const mixed = await callTool(root, "academic_writer_query_research", {
+  const mixed = await callTool(root, "pi_academic_query_research", {
     operation: "note_by_id",
     noteId: "source-note",
     tag: "common",
@@ -390,19 +378,19 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
 
   assert.equal(ok(mixed), false);
 
-  const noSource = await callTool(root, "academic_writer_query_research", {
+  const noSource = await callTool(root, "pi_academic_query_research", {
     operation: "notes_by_source",
   });
 
   assert.equal(ok(noSource), false);
 
-  const written = await callTool(root, "academic_writer_write_outline", {
+  const written = await callTool(root, "pi_academic_write_outline", {
     outlineJson: treeOutline(),
   });
 
   assert.equal(ok(written), true);
 
-  const rendered = await callTool(root, "academic_writer_render_outline", {
+  const rendered = await callTool(root, "pi_academic_render_outline", {
     article: "articles/tree.md",
   });
 
@@ -424,7 +412,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
     "## 2. Outer Two",
   ]);
 
-  const summary = await callTool(root, "academic_writer_query_research", {
+  const summary = await callTool(root, "pi_academic_query_research", {
     operation: "outline_summary",
     article: "articles/tree.md",
   });
@@ -460,7 +448,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
   ] as const) {
     const validRoot = valid.operation === "section_bundle" ? FIXTURE : root;
     assert.equal(
-      ok(await callTool(validRoot, "academic_writer_query_research", valid)),
+      ok(await callTool(validRoot, "pi_academic_query_research", valid)),
       true,
     );
 
@@ -469,7 +457,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
 
     const missingResult = await callTool(
       root,
-      "academic_writer_query_research",
+      "pi_academic_query_research",
       without,
     );
 
@@ -482,7 +470,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
 
     const irrelevantResult = await callTool(
       root,
-      "academic_writer_query_research",
+      "pi_academic_query_research",
       {
         ...valid,
         [irrelevant]: irrelevant === "limit" ? 1 : "unexpected",
@@ -499,7 +487,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
       new RegExp(irrelevant),
     );
 
-    const unknown = await callTool(root, "academic_writer_query_research", {
+    const unknown = await callTool(root, "pi_academic_query_research", {
       ...valid,
       extra: "unexpected",
     });
@@ -508,7 +496,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
     assert.match(unknown.content[0]?.text ?? "", /extra/);
   }
 
-  const empty = await callTool(root, "academic_writer_query_research", {
+  const empty = await callTool(root, "pi_academic_query_research", {
     operation: "notes_by_tag",
     tag: "absent",
   });
@@ -519,7 +507,7 @@ test("[test_query_operations_caps_and_recursive_render_order] query operations, 
 const FIXTURE = join(repoRoot, "tests", "e2e", "fixture-project");
 
 test("[test_e2e_fixture_outline_uses_frozen_notes] fixture outline uses frozen notes", async () => {
-  const summary = await callTool(FIXTURE, "academic_writer_query_research", {
+  const summary = await callTool(FIXTURE, "pi_academic_query_research", {
     operation: "outline_summary",
     article: "articles/augustine-time.md",
   });
@@ -527,7 +515,7 @@ test("[test_e2e_fixture_outline_uses_frozen_notes] fixture outline uses frozen n
   assert.equal(ok(summary), true);
   assert.equal(at(summary, "value", "status"), "approved");
 
-  const bundle = await callTool(FIXTURE, "academic_writer_query_research", {
+  const bundle = await callTool(FIXTURE, "pi_academic_query_research", {
     operation: "section_bundle",
     article: "articles/augustine-time.md",
     sectionId: "augustine",
@@ -554,11 +542,11 @@ test("[test_e2e_fixture_diagnostic_tools_are_read_only] fixture diagnostics are 
 
   const before = snapshotFiles(root);
 
-  const diagnosed = await callTool(root, "academic_writer_diagnose_outline", {
+  const diagnosed = await callTool(root, "pi_academic_diagnose_outline", {
     article: "articles/augustine-time.md",
   });
 
-  const segmented = await callTool(root, "academic_writer_reverse_outline", {
+  const segmented = await callTool(root, "pi_academic_reverse_outline", {
     article: "articles/augustine-time.md",
   });
 
@@ -584,11 +572,9 @@ test("[test_outline_migration_preserves_markdown_and_conflicts] outline migratio
 
   writeFileSync(articlePath, markdown);
 
-  const migrated = await callTool(
-    root,
-    "academic_writer_migrate_article_outline",
-    { article: "articles/old-article.md" },
-  );
+  const migrated = await callTool(root, "pi_academic_migrate_article_outline", {
+    article: "articles/old-article.md",
+  });
 
   assert.equal(ok(migrated), true);
 
@@ -612,31 +598,29 @@ test("[test_outline_migration_preserves_markdown_and_conflicts] outline migratio
   assert.ok(isValid(JsonObjectSchema, forged.article));
   forged.article.slug = "forged";
 
-  const forgedResult = await callTool(root, "academic_writer_write_outline", {
+  const forgedResult = await callTool(root, "pi_academic_write_outline", {
     outlineJson: forged,
   });
 
   assert.equal(ok(forgedResult), false);
 
-  const accepted = await callTool(root, "academic_writer_write_outline", {
+  const accepted = await callTool(root, "pi_academic_write_outline", {
     outlineJson: outline,
   });
 
   assert.equal(ok(accepted), true);
   assert.equal(
     ok(
-      await callTool(root, "academic_writer_render_outline", {
+      await callTool(root, "pi_academic_render_outline", {
         article: "articles/old-article.md",
       }),
     ),
     true,
   );
 
-  const conflict = await callTool(
-    root,
-    "academic_writer_migrate_article_outline",
-    { article: "articles/old-article.md" },
-  );
+  const conflict = await callTool(root, "pi_academic_migrate_article_outline", {
+    article: "articles/old-article.md",
+  });
 
   assert.equal(ok(conflict), false);
 });
@@ -648,18 +632,16 @@ test("[test_outline_unmapped_points_property_order_independent] writing outline 
   const articlePath = join(root, "articles", "order-test.md");
   writeFileSync(articlePath, "# Title\n\nMigrated paragraph text.\n");
 
-  const migrated = await callTool(
-    root,
-    "academic_writer_migrate_article_outline",
-    { article: "articles/order-test.md" },
-  );
+  const migrated = await callTool(root, "pi_academic_migrate_article_outline", {
+    article: "articles/order-test.md",
+  });
 
   assert.equal(ok(migrated), true);
 
   const outline = at(migrated, "value");
   assert.ok(isValid(JsonObjectSchema, outline));
 
-  const firstWrite = await callTool(root, "academic_writer_write_outline", {
+  const firstWrite = await callTool(root, "pi_academic_write_outline", {
     outlineJson: outline,
   });
 
@@ -677,7 +659,7 @@ test("[test_outline_unmapped_points_property_order_independent] writing outline 
 
   reorderedOutline.items = [reversedPoint];
 
-  const secondWrite = await callTool(root, "academic_writer_write_outline", {
+  const secondWrite = await callTool(root, "pi_academic_write_outline", {
     outlineJson: reorderedOutline,
   });
 
@@ -700,9 +682,9 @@ test("[test_health_includes_rumdl_field] health reports rumdl detection", async 
     }),
   );
 
-  await callTool(root, "academic_writer_migrate_profile", {});
+  await callTool(root, "pi_academic_migrate_profile", {});
 
-  const health = await callTool(root, "academic_writer_health", {});
+  const health = await callTool(root, "pi_academic_health", {});
 
   assert.ok("rumdl" in health.details);
   assert.ok(isValid(Type.Boolean(), health.details.rumdl));
@@ -740,15 +722,15 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
   const value = async (name: string, params: Record<string, string>) =>
     at(await callTool(root, name, params), "value");
 
-  const diagnosed = await value("academic_writer_diagnose_outline", {
+  const diagnosed = await value("pi_academic_diagnose_outline", {
     article: "articles/essay.md",
   });
 
-  const segmented = await value("academic_writer_reverse_outline", {
+  const segmented = await value("pi_academic_reverse_outline", {
     article: "articles/essay.md",
   });
 
-  const escaped = await value("academic_writer_reverse_outline", {
+  const escaped = await value("pi_academic_reverse_outline", {
     article: "../outside.md",
   });
 
@@ -800,7 +782,7 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
 
   writeFileSync(cleanOutline, JSON.stringify({ items: [] }));
 
-  const clean = await value("academic_writer_diagnose_outline", {
+  const clean = await value("pi_academic_diagnose_outline", {
     article: "articles/clean.md",
   });
 
@@ -811,7 +793,7 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
   });
 
   const diagnoseWith = (evidenceMap: JsonObject) =>
-    callTool(root, "academic_writer_diagnose_outline", {
+    callTool(root, "pi_academic_diagnose_outline", {
       article: "articles/clean.md",
       evidenceMapJson: JSON.stringify(evidenceMap),
     });
@@ -855,14 +837,14 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
 
   writeFileSync(join(articles, "broken.outline.json"), "{");
 
-  const broken = await value("academic_writer_diagnose_outline", {
+  const broken = await value("pi_academic_diagnose_outline", {
     article: "articles/broken.md",
   });
 
   assert.equal(get(broken, "status"), "error");
   assert.deepEqual(get(broken, "findings"), []);
 
-  const missing = await value("academic_writer_diagnose_outline", {
+  const missing = await value("pi_academic_diagnose_outline", {
     article: "articles/absent.md",
   });
 
@@ -873,7 +855,7 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
     Buffer.from("# Heading\r\nExact\r\nsecond line\r\n"),
   );
 
-  const exact = await value("academic_writer_reverse_outline", {
+  const exact = await value("pi_academic_reverse_outline", {
     article: "articles/crlf.md",
   });
 
@@ -883,7 +865,7 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
     [2, 3],
   );
 
-  const absent = await value("academic_writer_reverse_outline", {
+  const absent = await value("pi_academic_reverse_outline", {
     article: "articles/absent.md",
   });
 

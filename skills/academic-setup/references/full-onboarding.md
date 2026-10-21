@@ -22,7 +22,7 @@ Run silently before saying anything:
 
 ```bash
 mkdir -p past-articles .pi-academic .pi-academic/sources .pi-academic/voice
-# If .pi-academic/thresholds.json is missing: call academic_writer_read_resource
+# If .pi-academic/thresholds.json is missing: call pi_academic_read_resource
 # with name: thresholds, present the default quality gates to the researcher
 # (anti-AI ≥ 35/50, self-review ≥ 40/60, ≤ 3 rewrite cycles per paragraph,
 # 220-word paragraph ceiling +30 for intro/conclusion, style compliance ≥ 7/10,
@@ -31,14 +31,14 @@ mkdir -p past-articles .pi-academic .pi-academic/sources .pi-academic/voice
 # ≥ 800 words per article), and ask whether to keep the defaults or adjust
 # specific values. Write the final JSON — defaults or the researcher's adjusted
 # values — to .pi-academic/thresholds.json.
-# If .pi-academic/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .pi-academic/voice/profile.md.
+# If .pi-academic/voice/profile.md is missing, call pi_academic_read_resource with name: voice_profile_template, then write that content to .pi-academic/voice/profile.md.
 ```
 
 If `.pi-academic/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
 
 Profile schema and file format: see `references/profile-schema.md`.
 
-Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
+Call `pi_academic_migrate_profile`, then check for existing profile by calling `pi_academic_get_profile`.
 
 **If it returns `ok: true`**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 
@@ -233,7 +233,7 @@ Map selection:
 - Zotero/CSL repository style → `citationStyle: STYLE_ID` (e.g. `nature`) and store the same value under `outputFormatPreferences.csl`
 - Custom CSL file → `citationStyle: custom-csl` and store the path under `outputFormatPreferences.cslPath`
 
-For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving by calling `academic_writer_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
+For every citeproc selection (anything except `inline-parenthetical`), validate resolution before saving by calling `pi_academic_resolve_csl` with `style: STYLE_OR_PATH` and `download: true`.
 
 If validation fails, show the error and ask for a different alias, style id, URL, or `.csl` path. Do not continue with an unresolved CSL style.
 
@@ -325,11 +325,11 @@ Wait for their reply and match it against the options (accept the option number,
 
 **If "Yes, my papers are ready"**, run:
 
-Call `academic_writer_list_project_files` with `kind: "past_articles"` and use the returned file list.
+Call `pi_academic_list_project_files` with `kind: "past_articles"` and use the returned file list.
 
 **Step 1: Computational extraction** — Run the corpus fingerprint mode from the `academic-voice` skill's `references/profile-builder.md` inline on `past-articles/` with `.ctx/hebrew-linguistic-reference.md` as the baseline reference. Use its returned metrics directly in the confirmation step below; do not write `/tmp` metrics files.
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `pi_academic_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `pi_academic_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 First fetch the **shared Hebrew baseline** from Zotero (book _Hebrew Linguistic Reference_, mirrored on GitHub at [JackMatanky/hebrew-linguistics-data](https://github.com/JackMatanky/hebrew-linguistics-data); the same book is read by the `hebrew-book-producer` plugin so both share one source of truth):
 
@@ -343,7 +343,7 @@ The extractor reads the baseline JSON code block embedded in the `08-style-finge
 
 This gives you 30+ numerical metrics (sentence length, passive voice, transitions, etc.) and contrastive scores showing what's distinctive about this researcher vs. baseline academic Hebrew.
 
-**Step 2: Text extraction for qualitative analysis** — For each file, call `academic_writer_extract_document` with that file path and use the returned text.
+**Step 2: Text extraction for qualitative analysis** — For each file, call `pi_academic_extract_document` with that file path and use the returned text.
 
 **Step 3: Qualitative analysis** — Read the text and computational metrics. Analyze across the qualitative dimensions (C–I below) that the script cannot compute: paragraph formula, tone, rhetorical patterns, templates, representative excerpts.
 
@@ -365,7 +365,7 @@ Full rubric (all 30 dimensions across categories A–I): see `references/profile
 
 After the past articles are analyzed:
 
-1. Execute the corpus fingerprint mode from `references/profile-builder.md` (of the `academic-voice` skill) inline on `past-articles/`. It writes `.pi-academic/voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
+1. Execute the corpus fingerprint mode from `references/profile-builder.md` (of the `academic-voice` skill) inline on `past-articles/`. It writes `.pi-academic/voice/fingerprint.md` through `pi_academic_write_voice_fingerprint`.
 2. Execute the transcript distillation mode from that same reference inline with only that fingerprint as input, to seed the four-section `.pi-academic/voice/profile.md` at the project root.
 3. Say: "✓ Voice fingerprint created from N past articles. You can write articles now, or run `/skill:academic-voice` for a deeper profile (recommended)."
 
@@ -375,7 +375,7 @@ The researcher is not required to run the Stage 2 interview. They can start writ
 
 ## Phase 3: Research Sources
 
-**If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.pi-academic/sources/` with `academic_writer_ingest_sources`.**
+**If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.pi-academic/sources/` with `pi_academic_ingest_sources`.**
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 
@@ -415,7 +415,7 @@ Tell the researcher: "Enriching your sources — extracting titles, authors, and
 
 After enrichment, re-list and build the sources array (id + title + type only — never raw JSON).
 
-**If Zotero is NOT enabled**: set sources to `[]`, then call `academic_writer_ingest_sources` for any files under `.pi-academic/sources/`.
+**If Zotero is NOT enabled**: set sources to `[]`, then call `pi_academic_ingest_sources` for any files under `.pi-academic/sources/`.
 
 ---
 

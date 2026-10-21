@@ -3,7 +3,7 @@
 Before scoring Citation Completeness or allowing DOCX/export continuation, run the deterministic citation audit on the article markdown:
 
 ```text
-academic_writer_audit_citations(article: ARTICLE_MD_PATH, citationStyle: PROFILE_CITATION_STYLE)
+pi_academic_audit_citations(article: ARTICLE_MD_PATH, citationStyle: PROFILE_CITATION_STYLE)
 ```
 
 Interpretation:

@@ -13,7 +13,7 @@ const isFile = (rel: string): boolean => {
   return existsSync(path) && statSync(path).isFile();
 };
 
-test("[test_voice_artifacts_under_academic_writer] voice artifacts live under .pi-academic/voice/", () => {
+test("[test_voice_artifacts_under_pi_academic] voice artifacts live under .pi-academic/voice/", () => {
   const voiceTools = readRepo("extensions/pi-academic/tools/voice.ts");
 
   assert.ok(voiceTools.includes(".pi-academic/voice/profile.md"));

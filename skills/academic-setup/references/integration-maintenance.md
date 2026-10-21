@@ -6,7 +6,7 @@ Modify which integrations are enabled without re-running the full initialization
 
 ## Load Current Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell them:
 
@@ -20,7 +20,7 @@ Run detection for every tool in the registry, regardless of current status:
 
 **1. Zotero** (`zotero`)
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `pi_academic_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `pi_academic_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 Call `zotero_get_recent(limit=1)`; DETECTED if it returns without an error, NOT_DETECTED otherwise. Also check `command -v zotero-mcp` so you can distinguish "server binary missing" from "binary installed but no MCP config / Zotero desktop unavailable." Academic Writer reads Zotero through standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json` under pi; `.omp/mcp.json`, `~/.omp/agent/mcp.json` under omp) and expects the `zotero` server to expose bare direct tools (`settings.toolPrefix: "none"` and `mcpServers.zotero.directTools` listing the tools this package calls).
 
@@ -81,7 +81,7 @@ For each tool the user wants to **disable**:
 
 ## Save Updated Profile
 
-Call `academic_writer_update_profile` with a structured `fieldsJson` object (not a JSON string):
+Call `pi_academic_update_profile` with a structured `fieldsJson` object (not a JSON string):
 
 ```json
 {

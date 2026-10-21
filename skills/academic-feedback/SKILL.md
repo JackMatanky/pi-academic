@@ -1,7 +1,7 @@
 ---
 name: academic-feedback
 description: "Capture researcher feedback on a completed article and turn it into concrete improvements — article edits, profile updates, new anti-AI pattern entries, pattern-cap adjustments, and voice-overlay preferences. Use after the researcher reviews an article produced by /skill:academic-write or /skill:academic-edit."
-allowed-tools: bash read write edit find grep subagent academic_writer_read_resource academic_writer_get_profile academic_writer_list_project_files academic_writer_update_author_voice academic_writer_write_voice_fingerprint
+allowed-tools: bash read write edit find grep subagent pi_academic_read_resource pi_academic_get_profile pi_academic_list_project_files pi_academic_update_author_voice pi_academic_write_voice_fingerprint
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
@@ -25,7 +25,7 @@ Never summarize feedback without acting on it.
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | **A. Article edit**                  | The finished article file in `articles/`                                                                                                                                                                       | "Section III repeats Text 360 — consolidate"                                     |
 | **B. Profile update**                | `.pi-academic/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences                                                                       | "Use Chicago author-date for this project"                                       |
-| **C. Pattern reference update**      | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps                                                                            | "An opening phrase appeared too often — lower its cap to 2"                      |
+| **C. Pattern reference update**      | the `anti_ai_patterns` resource path returned by `pi_academic_read_resource` with `includePath: true` — add/adjust pattern caps                                                                            | "An opening phrase appeared too often — lower its cap to 2"                      |
 | **D. Source registry fix**           | `.pi-academic/sources.json` — correct a bibliographic metadata field                                                                                                                                       | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
 | **E. Preference / known-issue note** | Writes to `.pi-academic/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `.pi-academic/voice/profile.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing"                                              |
 
@@ -39,7 +39,7 @@ Every feedback item must land in exactly one category — if it's ambiguous, pic
 
 ## Load Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell the researcher: "Please run `/skill:academic-setup` first — there's no profile yet to update."
 
@@ -51,7 +51,7 @@ Ask:
 
 > "Which article would you like to give feedback on?"
 
-Present options from `academic_writer_list_project_files` with `kind: "articles"` (numbered list, most recent first).
+Present options from `pi_academic_list_project_files` with `kind: "articles"` (numbered list, most recent first).
 
 If multiple `.md` files exist, present the most recent ones as options plus an "Other path / paste a file path" option. If only one exists, confirm it's the one.
 
@@ -143,14 +143,14 @@ If the change touches the style fingerprint broadly, execute the corpus fingerpr
 
 > That mode re-scans `past-articles/` and recomputes the fingerprint. Use it when the feedback is "the voice was generically off" rather than a specific dimension.
 
-Run the mode inline per that reference (it writes the fingerprint itself with `academic_writer_write_voice_fingerprint`) if applicable.
+Run the mode inline per that reference (it writes the fingerprint itself with `pi_academic_write_voice_fingerprint`) if applicable.
 
 ### C. Pattern reference update
 
-Resolve the language-specific pattern reference with `academic_writer_read_resource`:
+Resolve the language-specific pattern reference with `pi_academic_read_resource`:
 
 ```text
-Call academic_writer_read_resource with name: anti_ai_patterns, language: LANG_LOWER, includePath: true.
+Call pi_academic_read_resource with name: anti_ai_patterns, language: LANG_LOWER, includePath: true.
 Use the returned RESOURCE_PATH as REF_FILE.
 ```
 
@@ -201,7 +201,7 @@ For a **persistent preference** (it should shape every future article, not fix o
 2. If the file is already larger than about 20,000 characters (≈5,000 tokens, the budget in the distillation mode of the `academic-voice` skill's `references/profile-builder.md`), do not add; tell the researcher to run `:voice recompress` first.
 3. Choose the existing section by the builder's assignment rules: applies regardless of project → `## Core voice (cross-project)`; term, transliteration or citation-format choice → `## Terminology`; citation density, hedging, abstract conventions, anti-AI thresholds → `## Academic-specific`. Never create a new section.
 4. Append one bullet of at most 120 characters, as an operational rule ("Never use em-dashes"), keeping Hebrew text Hebrew. If an existing bullet is contradicted, replace it and keep a one-line `> Was: <old>` note.
-5. Write the whole file back with `academic_writer_update_author_voice` and update the `> Updated` line to today's date.
+5. Write the whole file back with `pi_academic_update_author_voice` and update the `> Updated` line to today's date.
 
 Examples worth a bullet: "Never use em-dashes anywhere"; "Abstracts are always both Hebrew and English"; "For Bible articles cite the Hebrew chapter/verse first". One-off article edits and specific citation fixes belong only in the feedback log.
 

@@ -14,14 +14,14 @@ Wait for the reply; accept the option number, label, or a close paraphrase.
 
 ## Option 2: copy the starter
 
-Call `academic_writer_style_package` with `action: "install-starter"`. The tool copies the packaged starter (`design.json` plus any native starter assets) into `.pi-academic/styles/academic-default/`. It refuses to overwrite an existing package: if `.pi-academic/styles/academic-default/` already exists, report that and offer option 3 instead.
+Call `pi_academic_style_package` with `action: "install-starter"`. The tool copies the packaged starter (`design.json` plus any native starter assets) into `.pi-academic/styles/academic-default/`. It refuses to overwrite an existing package: if `.pi-academic/styles/academic-default/` already exists, report that and offer option 3 instead.
 
 ## Option 3: register an existing package
 
-Call `academic_writer_style_package` with `action: "list"` and ask which package to use. If none exist, say so and offer options 1 or 2.
+Call `pi_academic_style_package` with `action: "list"` and ask which package to use. If none exist, say so and offer options 1 or 2.
 
 ## Validate before saving (options 2 and 3)
 
-Call `academic_writer_style_package` with `action: "validate"` and `package: <name>`. It checks the version-1 `design.json`, a matching `name`, property values, and that every referenced native asset exists inside the package, for all of `docx`, `odt`, `latex`, and `pdf`. Show every returned error and warning verbatim. If validation fails, do not save `stylePackage`; ask the researcher to fix the package or pick another option. Never fall back silently.
+Call `pi_academic_style_package` with `action: "validate"` and `package: <name>`. It checks the version-1 `design.json`, a matching `name`, property values, and that every referenced native asset exists inside the package, for all of `docx`, `odt`, `latex`, and `pdf`. Show every returned error and warning verbatim. If validation fails, do not save `stylePackage`; ask the researcher to fix the package or pick another option. Never fall back silently.
 
 After validation succeeds, save `outputFormatPreferences.stylePackage: "<name>"` with the rest of the profile.

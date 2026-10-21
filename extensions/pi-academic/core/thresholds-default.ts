@@ -1,9 +1,9 @@
 /**
  * The shipped default quality gates, previously `thresholds.json` at the
- * package root. `academic_writer_read_resource(name: thresholds)` serves this
- * when the project has no `.pi-academic/thresholds.json` override; the setup
- * skills present these values to the researcher (who may adjust them) and write
- * the result as the project override.
+ * package root. `pi_academic_read_resource(name: thresholds)` serves this when
+ * the project has no `.pi-academic/thresholds.json` override; the setup skills
+ * present these values to the researcher (who may adjust them) and write the
+ * result as the project override.
  */
 
 /**
@@ -17,7 +17,7 @@ export interface ScoreThresholds {
 
 /**
  * All numeric quality gates in one place. Never inline these values in skills
- * or agents — read them via `academic_writer_read_resource(name: thresholds)`.
+ * or agents — read them via `pi_academic_read_resource(name: thresholds)`.
  */
 export interface Thresholds {
   /**

@@ -44,7 +44,7 @@ test("[test_thresholds_default_shape] the shipped default carries every gate", (
 test("[test_thresholds_read_serves_default_then_override] read_resource serves the typed default, then the project override", async (t) => {
   const root = scratch(t);
 
-  const packaged = await callTool(root, "academic_writer_read_resource", {
+  const packaged = await callTool(root, "pi_academic_read_resource", {
     name: "thresholds",
   });
 
@@ -57,7 +57,7 @@ test("[test_thresholds_read_serves_default_then_override] read_resource serves t
     `${JSON.stringify({ ...THRESHOLDS_DEFAULT, rewriteCycles: { max: 5 } }, null, 2)}\n`,
   );
 
-  const overridden = await callTool(root, "academic_writer_read_resource", {
+  const overridden = await callTool(root, "pi_academic_read_resource", {
     name: "thresholds",
   });
 
@@ -96,7 +96,7 @@ test("[test_load_resource_and_tool_missing_resource] missing or unknown resource
     /Unknown Academic Writer resource/,
   );
 
-  const unknownResult = await callTool(root, "academic_writer_read_resource", {
+  const unknownResult = await callTool(root, "pi_academic_read_resource", {
     name: "nonexistent_resource",
   });
 

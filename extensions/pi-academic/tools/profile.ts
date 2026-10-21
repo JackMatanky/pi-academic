@@ -19,7 +19,7 @@ const PROFILE_PATH = ".pi-academic/profile.md";
  */
 export function registerProfileTools(pi: ExtensionAPI): void {
   registerTool(pi, {
-    name: "academic_writer_migrate_profile",
+    name: "pi_academic_migrate_profile",
     effect: "write",
     label: "Academic Writer Migrate Profile",
     description:
@@ -42,7 +42,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_get_profile",
+    name: "pi_academic_get_profile",
     effect: "read",
     core: true,
     label: "Academic Writer Get Profile",
@@ -68,7 +68,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_update_profile",
+    name: "pi_academic_update_profile",
     effect: "write",
     label: "Academic Writer Update Profile",
     description:

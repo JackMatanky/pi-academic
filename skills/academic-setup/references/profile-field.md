@@ -6,7 +6,7 @@ Quick update to your research field without re-running the full initialization.
 
 ## Load Current Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell them:
 
@@ -26,7 +26,7 @@ Record their answer.
 
 ## Update Profile
 
-Call `academic_writer_update_profile` with a structured `fieldsJson` object (not a JSON string):
+Call `pi_academic_update_profile` with a structured `fieldsJson` object (not a JSON string):
 
 ```json
 {

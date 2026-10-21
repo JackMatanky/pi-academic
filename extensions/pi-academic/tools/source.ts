@@ -47,7 +47,7 @@ async function isNoteStyle(cwd: string, style: string): Promise<boolean> {
  */
 export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
-    name: "academic_writer_extract_document",
+    name: "pi_academic_extract_document",
     effect: "read",
     label: "Academic Writer Extract Document",
     description:
@@ -75,7 +75,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_ingest_sources",
+    name: "pi_academic_ingest_sources",
     effect: "write",
     label: "Academic Writer Ingest Sources",
     description:
@@ -112,7 +112,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_relink_citations",
+    name: "pi_academic_relink_citations",
     effect: "write",
     label: "Academic Writer Relink Citations",
     description:
@@ -210,11 +210,11 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_write_sources_cache",
+    name: "pi_academic_write_sources_cache",
     effect: "write",
     label: "Academic Writer Write Sources Cache",
     description:
-      "Write the current-run .pi-academic/sources.json and .pi-academic/bibliography.bib from the researcher's extracted records. Call before academic_writer_snapshot_citations.",
+      "Write the current-run .pi-academic/sources.json and .pi-academic/bibliography.bib from the researcher's extracted records. Call before pi_academic_snapshot_citations.",
     parameters: Type.Object({
       sourcesJson: Type.Array(SourceCacheRecordSchema, {
         description: "Structured source records from the researcher.",
@@ -236,7 +236,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_snapshot_citations",
+    name: "pi_academic_snapshot_citations",
     effect: "write",
     label: "Academic Writer Snapshot Citations",
     description:
@@ -266,7 +266,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_resolve_csl",
+    name: "pi_academic_resolve_csl",
     effect: "exec",
     label: "Academic Writer Resolve CSL",
     description:
@@ -293,7 +293,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_audit_citations",
+    name: "pi_academic_audit_citations",
     effect: "read",
     core: true,
     label: "Academic Writer Citation Audit",

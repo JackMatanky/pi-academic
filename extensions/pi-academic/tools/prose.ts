@@ -17,7 +17,7 @@ import { calculateArticleWordCount } from "../prose/word-count.js";
  */
 export function registerProseTools(pi: ExtensionAPI): void {
   registerTool(pi, {
-    name: "academic_writer_count_words",
+    name: "pi_academic_count_words",
     effect: "read",
     label: "Academic Writer Count Words",
     description:
@@ -59,7 +59,7 @@ export function registerProseTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_lint_prose",
+    name: "pi_academic_lint_prose",
     effect: "read",
     label: "Academic Writer Prose Lint",
     description:
@@ -96,12 +96,12 @@ export function registerProseTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_proofread",
+    name: "pi_academic_proofread",
     effect: "read",
     core: true,
     label: "Academic Writer Harper Proofread",
     description:
-      "Run the Harper English grammar/spelling linter on text. Findings are advisory; a match alone is never an error. English-only — Hebrew or other languages return zero findings by design (use the inline הגהה sweep and academic_writer_fix_typography for Hebrew).",
+      "Run the Harper English grammar/spelling linter on text. Findings are advisory; a match alone is never an error. English-only — Hebrew or other languages return zero findings by design (use the inline הגהה sweep and pi_academic_fix_typography for Hebrew).",
     parameters: Type.Object({
       text: Type.String({
         minLength: 1,
@@ -140,7 +140,7 @@ export function registerProseTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_fix_typography",
+    name: "pi_academic_fix_typography",
     effect: "read",
     label: "Academic Writer Fix Typography",
     description:

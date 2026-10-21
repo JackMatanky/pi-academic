@@ -32,7 +32,7 @@ interface DirectoryState extends FileState {
 }
 
 /**
- * Full status payload returned by `academic_writer_status`.
+ * Full status payload returned by `pi_academic_status`.
  */
 export interface AcademicWriterStatus {
   ok: boolean;

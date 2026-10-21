@@ -14,7 +14,7 @@ import { registerTool } from "../core/tool-kit.js";
  */
 export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
-    name: "academic_writer_write_voice_artifact",
+    name: "pi_academic_write_voice_artifact",
     effect: "write",
     label: "Academic Writer Write Voice Artifact",
     description:
@@ -55,7 +55,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_write_voice_audit",
+    name: "pi_academic_write_voice_audit",
     effect: "write",
     label: "Academic Writer Write Voice Audit",
     description:
@@ -77,7 +77,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_update_author_voice",
+    name: "pi_academic_update_author_voice",
     effect: "write",
     label: "Academic Writer Update Author Voice",
     description:
@@ -100,7 +100,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_write_interview_session",
+    name: "pi_academic_write_interview_session",
     effect: "write",
     label: "Academic Writer Write Interview Session",
     description:
@@ -130,7 +130,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_write_voice_fingerprint",
+    name: "pi_academic_write_voice_fingerprint",
     effect: "write",
     label: "Academic Writer Write Voice Fingerprint",
     description:

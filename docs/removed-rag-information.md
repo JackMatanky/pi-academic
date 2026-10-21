@@ -70,5 +70,5 @@ Original removed examples:
 
 - Zotero remains preferred when enabled.
 - `.pi-academic/sources/` supports local PDF/DOCX/MD/TXT source ingestion.
-- `academic_writer_ingest_sources` generates source records, citekeys, and BibTeX without Zotero.
+- `pi_academic_ingest_sources` generates source records, citekeys, and BibTeX without Zotero.
 - `docs/rag-todo.md` tracks future RAG integration before any active prompt claims are restored.

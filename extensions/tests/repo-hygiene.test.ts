@@ -25,7 +25,7 @@ const isDir = (rel: string): boolean => {
 const filesUnder = (dirs: string[], suffixes: string[]): string[] =>
   dirs.filter(isDir).flatMap((dir) => repoFiles(dir, suffixes));
 
-test("[test_no_academic_writer_root_env_contract] package assets are exposed through tools, not environment injection", () => {
+test("[test_no_pi_academic_root_env_contract] package assets are exposed through tools, not environment injection", () => {
   assert.ok(
     !existsSync(join(repoRoot, "extensions", ENV_INJECT, "index.ts")),
     `${ENV_INJECT} must not reintroduce global ${ROOT_ENV} mutation`,
@@ -38,40 +38,37 @@ test("[test_no_academic_writer_root_env_contract] package assets are exposed thr
   const { definitions } = createToolHarness();
 
   for (const name of [
-    "academic_writer_read_resource",
-    "academic_writer_resolve_csl",
-    "academic_writer_generate_docx",
-    "academic_writer_list_agents",
-    "academic_writer_fix_typography",
-    "academic_writer_status",
-    "academic_writer_lint_prose",
-    "academic_writer_migrate_profile",
-    "academic_writer_diagnose_outline",
-    "academic_writer_reverse_outline",
+    "pi_academic_read_resource",
+    "pi_academic_resolve_csl",
+    "pi_academic_generate_docx",
+    "pi_academic_list_agents",
+    "pi_academic_fix_typography",
+    "pi_academic_status",
+    "pi_academic_lint_prose",
+    "pi_academic_migrate_profile",
+    "pi_academic_diagnose_outline",
+    "pi_academic_reverse_outline",
   ]) {
     assert.ok(definitions.has(name), `${name} is not registered`);
   }
 
   assert.ok(
-    readRepo("agents/academic.md").includes("academic_writer_diagnose_outline"),
+    readRepo("agents/academic.md").includes("pi_academic_diagnose_outline"),
   );
 
   for (const path of [
     "skills/academic-write/SKILL.md",
     "skills/academic-edit/SKILL.md",
   ]) {
-    assert.ok(
-      readRepo(path).includes("academic_writer_diagnose_outline"),
-      path,
-    );
+    assert.ok(readRepo(path).includes("pi_academic_diagnose_outline"), path);
   }
 
   assert.ok(
-    readRepo("agents/editor.md").includes("academic_writer_reverse_outline"),
+    readRepo("agents/editor.md").includes("pi_academic_reverse_outline"),
   );
   assert.ok(
     readRepo("skills/academic-review/SKILL.md").includes(
-      "academic_writer_reverse_outline",
+      "pi_academic_reverse_outline",
     ),
   );
 

@@ -53,7 +53,7 @@ test.skipIf(!hasPandoc)(
   async (t) => {
     const root = project(t);
 
-    const result = await callTool(root, "academic_writer_import_docx", {
+    const result = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
     });
 
@@ -68,14 +68,14 @@ test.skipIf(!hasPandoc)(
     assert.match(markdown, /^ {4}With a second paragraph\.$/m);
     assert.ok(!existsSync(join(root, "articles/my-essay.media")));
 
-    const clash = await callTool(root, "academic_writer_import_docx", {
+    const clash = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
     });
 
     assert.equal(clash.details.ok, false);
     assert.match(clash.content[0]?.text ?? "", /already exists/);
 
-    const again = await callTool(root, "academic_writer_import_docx", {
+    const again = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
       output: "articles/my-essay.md",
       overwrite: true,
@@ -91,13 +91,13 @@ test.skipIf(!hasPandoc)(
     const root = project(t);
     const outside = project(t);
 
-    const escaped = await callTool(root, "academic_writer_import_docx", {
+    const escaped = await callTool(root, "pi_academic_import_docx", {
       input: join(outside, "drafts", "my essay.docx"),
     });
 
     assert.equal(escaped.details.ok, false);
 
-    const notDocx = await callTool(root, "academic_writer_import_docx", {
+    const notDocx = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.md",
     });
 
@@ -124,7 +124,7 @@ test.skipIf(!hasPandoc)(
 
     assert.equal(built.status, 0);
 
-    const result = await callTool(root, "academic_writer_import_docx", {
+    const result = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
       output: "articles/deep/essay.md",
     });
@@ -147,7 +147,7 @@ test.skipIf(!hasPandoc)(
       "See [[https://example.com/a]{.underline}](https://example.com/a) and [marked]{.underline}.\n",
     );
 
-    const result = await callTool(root, "academic_writer_import_docx", {
+    const result = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
     });
 
@@ -169,7 +169,7 @@ test.skipIf(!hasPandoc)(
       '---\ntitle: "A Title: With a Colon"\n---\n\n# Intro\n\nBody text.[^1]\n\n[^1]: A note.\n',
     );
 
-    const result = await callTool(root, "academic_writer_import_docx", {
+    const result = await callTool(root, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
     });
 
@@ -192,7 +192,7 @@ test.skipIf(!hasPandoc)(
   async (t) => {
     const english = project(t, "# Intro\n\nPlain English text.\n");
 
-    await callTool(english, "academic_writer_import_docx", {
+    await callTool(english, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
     });
 
@@ -207,7 +207,7 @@ test.skipIf(!hasPandoc)(
       "# מבוא\n\nזהו טקסט בעברית עם הערה.[^1]\n\n[^1]: הערה.\n",
     );
 
-    const result = await callTool(hebrew, "academic_writer_import_docx", {
+    const result = await callTool(hebrew, "pi_academic_import_docx", {
       input: "drafts/my essay.docx",
     });
 

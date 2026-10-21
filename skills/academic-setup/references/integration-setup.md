@@ -59,7 +59,7 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
 
    Only write `.mcp.json` after the researcher approves. If `.mcp.json` already exists, do not overwrite it; read it, show the researcher where the `zotero` server block should be merged, and prefer manual merge unless the file is a simple JSON object you can safely update. Never write API keys into `.mcp.json` for them. For web/API Zotero mode, instruct them to use user-global MCP config (`~/.config/mcp/mcp.json`) or command interpolation (e.g. macOS Keychain via `!security ...`); MCP config also supports `${ZOTERO_API_KEY}` / `${ZOTERO_LIBRARY_ID}` if they prefer shell env vars.
 
-   After config is written for the first time, call `academic_writer_status`: on `harness: pi`, restart pi (direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable for the rest of the current session); on `harness: omp`, run `/mcp reload` instead of restarting.
+   After config is written for the first time, call `pi_academic_status`: on `harness: pi`, restart pi (direct MCP tools are cached at startup, so `zotero_get_recent(limit=1)` stays unavailable for the rest of the current session); on `harness: omp`, run `/mcp reload` instead of restarting.
 
    If both the tool and binary are NOT_DETECTED: "✗ Not found — install with `pip install zotero-mcp-server`, then configure a `zotero` MCP server in `.mcp.json` or `~/.config/mcp/mcp.json` (see github.com/54yyyu/zotero-mcp)."
 

@@ -3,7 +3,7 @@
 ## Voice Source Hierarchy (Strict Priority)
 
 1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` JSON object). Loaded by all writing, editing, and auditing agents. All quantitative and qualitative style dimensions come from this fingerprint.
-2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root. Read at the start of every write/edit run via `academic_writer_read_resource` (`name: voice_profile_load`) and passed into `writer` system prompts. Provides human guidance. When `.pi-academic/voice/profile.md` conflicts with `styleFingerprint`, `styleFingerprint` rules take precedence unless explicitly overridden by researcher instructions.
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root. Read at the start of every write/edit run via `pi_academic_read_resource` (`name: voice_profile_load`) and passed into `writer` system prompts. Provides human guidance. When `.pi-academic/voice/profile.md` conflicts with `styleFingerprint`, `styleFingerprint` rules take precedence unless explicitly overridden by researcher instructions.
 3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is an intermediate output from past mining workflows. It is **NOT** a runtime source of truth. Agents MUST NOT read or use `.pi-academic/voice/fingerprint.md` for runtime style checks.
 
 ## Execution Rules

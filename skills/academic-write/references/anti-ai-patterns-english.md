@@ -4,7 +4,7 @@ Reference for English academic prose. These heuristics flag patterns that can ma
 
 ## Deterministic advisory lint
 
-The English-only `academic_writer_lint_prose` tool analyzes draft text in memory without storing or modifying it. It reports stable rule IDs and source line locations for a small set of surface patterns: `chatbot-residue`, `staged-opener`, `inflated-significance`, `meta-announcement`, and `repeated-paragraph-opening`. It excludes frontmatter, headings, fenced code, inline code, blockquotes, citation markers, and URLs where practical.
+The English-only `pi_academic_lint_prose` tool analyzes draft text in memory without storing or modifying it. It reports stable rule IDs and source line locations for a small set of surface patterns: `chatbot-residue`, `staged-opener`, `inflated-significance`, `meta-announcement`, and `repeated-paragraph-opening`. It excludes frontmatter, headings, fenced code, inline code, blockquotes, citation markers, and URLs where practical.
 
 Treat each result as an advisory prompt: inspect context and preserve intentional voice, academic qualifications, evidence, and quotations. The linter does not rewrite text, determine authorship, or measure writing quality. No findings do not establish quality. Its checks supplement, and do not replace, the contextual guidance below.
 
@@ -144,6 +144,6 @@ Rate the paragraph 1–10 on each dimension. **Threshold from `thresholds.json >
 
 ## Application Order
 
-1. **Typography Tier 1** (auto-fix em-dashes, straight quotes) via `academic_writer_fix_typography`.
+1. **Typography Tier 1** (auto-fix em-dashes, straight quotes) via `pi_academic_fix_typography`.
 2. **Per-paragraph scan** (writer Skill 6) — catch formulaic openers, inflated language, and structural tells in the paragraph in isolation.
 3. **Full-article sweep** (editor, review mode) — count every named pattern across the finished article. For each pattern exceeding its cap, rewrite the overflow instances.

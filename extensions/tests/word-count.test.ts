@@ -143,7 +143,7 @@ test("[test_count_words_tool] registered tool returns details and formatted text
     "# Heading\n\nBody paragraph.\n",
   );
 
-  const result = await callTool(root, "academic_writer_count_words", {
+  const result = await callTool(root, "pi_academic_count_words", {
     article: "articles/essay.md",
     citationStyle: "inline-parenthetical",
   });

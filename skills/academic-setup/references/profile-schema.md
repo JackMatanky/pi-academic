@@ -6,7 +6,7 @@
 
 ## JSON Profile Migration
 
-JSON profiles are migrated from `.pi-academic/profile.json` to `.pi-academic/profile.md` by the package tool `academic_writer_migrate_profile`.
+JSON profiles are migrated from `.pi-academic/profile.json` to `.pi-academic/profile.md` by the package tool `pi_academic_migrate_profile`.
 
 Run it in Phase 0 before checking for an existing profile. It is idempotent:
 

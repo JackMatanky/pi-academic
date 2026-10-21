@@ -48,7 +48,7 @@ Claim[]{#fn-logic} [@maimonides, p. 5].
 - **Anchor**: an empty span `[]{#fn-name}`, the id starting `fn-`. Inside an explicit note (`[^19]: []{#fn-name} text`) it names that note. Anywhere else it names the *next* note, which is how a note citeproc builds from `[@key]` is targeted. Glue it to the end of the word before the citation, with a space after it, or citeproc leaves a gap before the note.
 - **Reference**: a link to the anchor. Empty text gives the bare number (`note 19`); link text is kept in front of the number (`[note](#fn-name)` gives `note 19`).
 - **Export** resolves the numbers after citeproc, so notes citeproc builds are counted. A link without an anchor, an anchor defined twice, or an anchor with no note after it stops the export.
-- `academic_writer_import_docx` converts "note 19 above", "nn. 3 and 5 below" and "supra note 19" in a Word file this way. A bare "note 19" is left alone: it may mean a note in the cited work (for that, `n. 19` is Pandoc's locator inside a citation). `academic_writer_audit_citations` warns about any literal reference left.
+- `pi_academic_import_docx` converts "note 19 above", "nn. 3 and 5 below" and "supra note 19" in a Word file this way. A bare "note 19" is left alone: it may mean a note in the cited work (for that, `n. 19` is Pandoc's locator inside a citation). `pi_academic_audit_citations` warns about any literal reference left.
 
 ## Bibliography placement
 
@@ -63,6 +63,6 @@ Citeproc writes the bibliography into the Div `::: {#refs}` (at the end of the d
 
 ## Package rules
 
-- The `citeKey` comes from `sources.json`, never invented. `academic_writer_audit_citations` checks every `@key`, in any of the forms above.
-- Writers emit `[@key, p. N]` and `[@a; @b, p. N]`. The prefix and author-in-text forms come from `academic_writer_relink_citations`.
+- The `citeKey` comes from `sources.json`, never invented. `pi_academic_audit_citations` checks every `@key`, in any of the forms above.
+- Writers emit `[@key, p. N]` and `[@a; @b, p. N]`. The prefix and author-in-text forms come from `pi_academic_relink_citations`.
 - Do not write `bibliography` or `csl` into the article: export passes them to Pandoc, and a frozen article-local snapshot takes precedence.

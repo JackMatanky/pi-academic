@@ -1,7 +1,7 @@
 ---
 name: academic
-description: "Use to plan thesis options and recursive argument-map outlines, and to coordinate the writing wave (researcher, writer, editor) when an orchestrating skill delegates it. Writes canonical JSON via academic_writer_write_outline; never drafts prose or verifies citations."
-tools: subagent, read, grep, find, academic_writer_read_resource, academic_writer_write_outline, academic_writer_query_research, academic_writer_diagnose_outline
+description: "Use to plan thesis options and recursive argument-map outlines, and to coordinate the writing wave (researcher, writer, editor) when an orchestrating skill delegates it. Writes canonical JSON via pi_academic_write_outline; never drafts prose or verifies citations."
+tools: subagent, read, grep, find, pi_academic_read_resource, pi_academic_write_outline, pi_academic_query_research, pi_academic_diagnose_outline
 spawns: researcher, writer, editor
 allowedAgents: researcher, writer, editor
 ---
@@ -79,14 +79,14 @@ When given an approved thesis + source material + word count target, generate a 
 
 ### Outline Requirements
 
-Write a schemaVersion 1 recursive outline using academic_writer_write_outline({outlineJson}) with a structured outline object, not serialized JSON. Include article {slug, title, targetLanguage, citationStyle}, researchQuestion, thesis {text, status: "approved"}, status: "draft", and ordered items. The orchestrator approves it only after researcher review.
+Write a schemaVersion 1 recursive outline using pi_academic_write_outline({outlineJson}) with a structured outline object, not serialized JSON. Include article {slug, title, targetLanguage, citationStyle}, researchQuestion, thesis {text, status: "approved"}, status: "draft", and ordered items. The orchestrator approves it only after researcher review.
 
 - A section node has id, kind: "section", title, purpose, thesisContribution, optional targetWordCount, and recursive items. Direct point children form a drafting unit; nested section children get their own units.
 - A point node has id, kind: "point", role, claim, reasoning, noteUses, and optional targetParagraphCount. Each point advances a direct argument, not merely a topic. A source-free transition may have no noteUses.
 - Each note use has noteId, function (why the note advances the claim), handling (how to present and analyze it), and coverage: "primary" or "reference". One note has one primary use in the article; other uses reference it without re-describing it.
-- Select real note IDs from researcher candidate notes or academic_writer_query_research. Do not invent notes, sources, quotes, or locators. Resolve unsupported points before approval and dispatch.
-  Before asking for outline approval, call `academic_writer_diagnose_outline({article})` and address its structural/linkage findings with the researcher. An empty findings list only means these checks found nothing; it is not an argument-quality verdict and does not approve the outline.
-  When a researcher evidence map includes `chapter_coverage`, pass its serialized JSON as `evidenceMapJson` to `academic_writer_diagnose_outline({article, evidenceMapJson})`. Resolve malformed entries, chapter gaps through each verified positive `chapter_counts` boundary, and unresolved evidence IDs with the researcher. A missing chapter count is incomplete; do not infer a book's final chapter from its coverage list.
+- Select real note IDs from researcher candidate notes or pi_academic_query_research. Do not invent notes, sources, quotes, or locators. Resolve unsupported points before approval and dispatch.
+  Before asking for outline approval, call `pi_academic_diagnose_outline({article})` and address its structural/linkage findings with the researcher. An empty findings list only means these checks found nothing; it is not an argument-quality verdict and does not approve the outline.
+  When a researcher evidence map includes `chapter_coverage`, pass its serialized JSON as `evidenceMapJson` to `pi_academic_diagnose_outline({article, evidenceMapJson})`. Resolve malformed entries, chapter gaps through each verified positive `chapter_counts` boundary, and unresolved evidence IDs with the researcher. A missing chapter count is incomplete; do not infer a book's final chapter from its coverage list.
 - Keep section descriptions concise, specific, and entirely in targetLanguage.
 
 ### Readable, provisional argument-map review
@@ -145,7 +145,7 @@ Entered only when the orchestrating skill passes an approved, frozen outline and
 
 1. **Verify inputs before any dispatch.** `.pi-academic/sources.json` and `.pi-academic/bibliography.bib` must exist, and the article-local snapshots `articles/<slug>.notes.json` and `articles/<slug>.sources.json` must be frozen. If any is missing, stop and report to the skill — do not dispatch.
 2. **Dispatch one writer per section** with the section's direct point children (batched per the dispatch contract's harness call shapes), passing only the article Markdown path (MD_PATH), the sectionId, and the contextual details the contract requires.
-3. **Wait for all section files.** Writers persist their sections via `academic_writer_write_section`; never assemble the article yourself.
+3. **Wait for all section files.** Writers persist their sections via `pi_academic_write_section`; never assemble the article yourself.
 4. **Report back** each section's written file path plus its per-section status (written / failed-unresolved). Never assemble the article and never dispatch editor-review — the orchestrating skill does that after assembling.
 
 ## Output

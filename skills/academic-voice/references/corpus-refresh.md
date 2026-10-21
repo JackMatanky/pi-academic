@@ -6,7 +6,7 @@ Trigger the style miner to analyze new articles in `past-articles/` and update t
 
 ## Load Profile
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell the researcher to run `/skill:academic-setup` first.
 
@@ -20,7 +20,7 @@ Use the returned `styleFingerprint` and `analyzedArticles` list (if present).
 
 ## Step 1: Scan for New Articles
 
-Call `academic_writer_list_project_files` with `kind: "past_articles"` and compare the returned filenames against `profile.analyzedArticles` (array of filenames already analyzed). Identify new files not yet processed.
+Call `pi_academic_list_project_files` with `kind: "past_articles"` and compare the returned filenames against `profile.analyzedArticles` (array of filenames already analyzed). Identify new files not yet processed.
 
 If no new files found:
 
@@ -37,13 +37,13 @@ If new files found, show them:
 
 ## Step 2: Run the Corpus Fingerprint Mode
 
-Read the profile with `academic_writer_get_profile`, then execute the corpus fingerprint mode from `references/profile-builder.md` inline, feeding it:
+Read the profile with `pi_academic_get_profile`, then execute the corpus fingerprint mode from `references/profile-builder.md` inline, feeding it:
 
 - The new article filenames and current `.pi-academic/voice/fingerprint.md`
 - The existing full `styleFingerprint` object
 - `targetLanguage` and the current `analyzedArticles` list
 
-The mode writes only `.pi-academic/voice/fingerprint.md` (via `academic_writer_write_voice_fingerprint`). It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not a subagent—updates the runtime profile after researcher approval.
+The mode writes only `.pi-academic/voice/fingerprint.md` (via `pi_academic_write_voice_fingerprint`). It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not a subagent—updates the runtime profile after researcher approval.
 
 ## Step 3: Present Diff Report
 
@@ -72,7 +72,7 @@ Show the researcher what changed:
 
 Ask the researcher whether to save, review, or discard the changes. Wait for the answer and accept a number, label, or close paraphrase.
 
-If **Save**, call `academic_writer_update_profile` with a structured `fieldsJson` object containing the complete proposed `styleFingerprint` and the merged `analyzedArticles` list. Do not serialize it or use generic file-write tools for the profile.
+If **Save**, call `pi_academic_update_profile` with a structured `fieldsJson` object containing the complete proposed `styleFingerprint` and the merged `analyzedArticles` list. Do not serialize it or use generic file-write tools for the profile.
 
 If **Review details**, show the full before/after for each dimension, then ask again.
 

@@ -23,7 +23,7 @@ import { registerTool } from "../core/tool-kit.js";
  */
 export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {
-    name: "academic_writer_read_resource",
+    name: "pi_academic_read_resource",
     effect: "read",
     core: true,
     label: "Academic Writer Resource",
@@ -58,7 +58,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_list_agents",
+    name: "pi_academic_list_agents",
     effect: "read",
     label: "Academic Writer Agents",
     description: "List packaged Academic Writer agent definition files.",
@@ -73,7 +73,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_status",
+    name: "pi_academic_status",
     effect: "read",
     core: true,
     label: "Academic Writer Status",
@@ -124,7 +124,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_health",
+    name: "pi_academic_health",
     effect: "read",
     label: "Academic Writer Health",
     description:
@@ -151,7 +151,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_article_paths",
+    name: "pi_academic_article_paths",
     effect: "read",
     core: true,
     label: "Academic Writer Article Paths",
@@ -174,7 +174,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_list_project_files",
+    name: "pi_academic_list_project_files",
     effect: "read",
     label: "Academic Writer Project Files",
     description:
@@ -201,7 +201,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_resolve_mcp_tool",
+    name: "pi_academic_resolve_mcp_tool",
     effect: "read",
     label: "Academic Writer Resolve MCP Tool",
     description:

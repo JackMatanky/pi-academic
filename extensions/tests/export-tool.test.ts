@@ -179,7 +179,7 @@ test("without a style package no style flags are passed and the pdf engine is de
   const both = harness(t, { engines: ["xelatex", "tectonic"] });
 
   const result = await both.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["docx", "odt", "latex", "pdf"]),
   );
 
@@ -222,7 +222,7 @@ test("pdf engine precedence: explicit argument, then package engine, then detect
 
   const engineOf = async (extra: Params) => {
     const result = await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["pdf"], extra),
     );
 
@@ -253,7 +253,7 @@ test("pdf engine precedence: explicit argument, then package engine, then detect
   const none = harness(t);
 
   const result = await none.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["pdf"]),
   );
 
@@ -274,7 +274,7 @@ test(
     setProfileStylePackage(h.root, "from-profile");
 
     const profile = await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx", "odt", "latex", "pdf"]),
     );
 
@@ -285,7 +285,7 @@ test(
     );
 
     const call = await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx"], { stylePackage: "from-call" }),
     );
 
@@ -317,7 +317,7 @@ test(
     });
 
     const invalid = await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx", "odt", "latex"], { stylePackage: "odt-broken" }),
     );
 
@@ -332,7 +332,7 @@ test(
     const failing = harness(t, { failExt: ".odt" });
 
     const result = await failing.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx", "odt", "latex"]),
     );
 
@@ -355,7 +355,7 @@ test(
     const pdf = harness(t, { failExt: ".pdf" });
 
     const result = await pdf.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["pdf", "docx", "odt"]),
     );
 
@@ -399,7 +399,7 @@ test(
     const docx = harness(t, { failExt: ".docx", engines: ["xelatex"] });
 
     const swapped = await docx.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx", "pdf"]),
     );
 
@@ -418,7 +418,7 @@ test(
 test("aborting mid-export fails the tool and stops the remaining formats", async (t) => {
   const h = harness(t);
   const controller = new AbortController();
-  const tool = definitions.get("academic_writer_export_article");
+  const tool = definitions.get("pi_academic_export_article");
   assert.ok(tool, "the export tool is registered");
 
   let failure: ToolFailure | undefined;
@@ -485,7 +485,7 @@ test("a failed citation audit stops the export before Pandoc runs", async (t) =>
   );
 
   const result = await h.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["docx"]),
   );
 
@@ -495,7 +495,7 @@ test("a failed citation audit stops the export before Pandoc runs", async (t) =>
   assert.equal(h.invocations().length, 0);
 
   const missing = await h.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["docx"], { article: "articles/missing.md" }),
   );
 
@@ -511,11 +511,11 @@ test(
     writePackage(h.root, "ok", {});
     writePackage(h.root, "bad", { page: { size: "A3" } });
     await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx", "odt"], { stylePackage: "ok" }),
     );
     await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx"], { stylePackage: "bad" }),
     );
     const runs = join(h.root, ".pi-academic", "runs");
@@ -527,7 +527,7 @@ test("unsupported formats are rejected up front", async (t) => {
   const h = harness(t);
 
   const result = await h.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["html", "epub"]),
   );
 
@@ -571,7 +571,7 @@ test(
         ] ?? new Uint8Array(),
       ).match(/w:styleId="Heading1"[\s\S]*?<\/w:style>/)?.[0] ?? "";
 
-    const profile = await h.run("academic_writer_generate_docx", {
+    const profile = await h.run("pi_academic_generate_docx", {
       input: "a.json",
       output: "p.docx",
     });
@@ -579,14 +579,14 @@ test(
     assert.equal(profile.details.ok, true, profile.content[0]?.text ?? "");
     assert.equal(profile.details.footnotes, 1);
     assert.match(heading("p.docx"), /Georgia/);
-    await h.run("academic_writer_generate_docx", {
+    await h.run("pi_academic_generate_docx", {
       input: "a.json",
       output: "c.docx",
       stylePackage: "sans",
     });
     assert.match(heading("c.docx"), /Helvetica/);
 
-    const bad = await h.run("academic_writer_generate_docx", {
+    const bad = await h.run("pi_academic_generate_docx", {
       input: "a.json",
       output: "x.docx",
       stylePackage: "absent",
@@ -607,8 +607,7 @@ test(
   async (t) => {
     const h = harness(t, { passthrough: true });
 
-    const call = (params: Params) =>
-      h.run("academic_writer_style_package", params);
+    const call = (params: Params) => h.run("pi_academic_style_package", params);
 
     assert.deepEqual((await call({ action: "list" })).details.packages, []);
     const installed = await call({ action: "install-starter" });
@@ -632,7 +631,7 @@ test(
 test("fix_typography replaces em dashes and leaves ordinary hyphens alone", async (t) => {
   const h = harness(t);
 
-  const result = await h.run("academic_writer_fix_typography", {
+  const result = await h.run("pi_academic_fix_typography", {
     text: 'well-known \u2014 "ציטוט"',
   });
 
@@ -644,11 +643,11 @@ test(
   needsPandoc,
   async (t) => {
     const h = harness(t, { passthrough: true });
-    await h.run("academic_writer_style_package", { action: "install-starter" });
+    await h.run("pi_academic_style_package", { action: "install-starter" });
     setProfileStylePackage(h.root, "academic-default");
 
     const result = await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["docx", "odt", "latex"]),
     );
 
@@ -692,7 +691,7 @@ test(
     );
     chmodSync(join(engineDir, real.split("/").pop() ?? "tectonic"), 0o755);
     process.env.PATH = `${engineDir}:${process.env.PATH}`;
-    await h.run("academic_writer_style_package", { action: "install-starter" });
+    await h.run("pi_academic_style_package", { action: "install-starter" });
     setProfileStylePackage(h.root, "academic-default");
     writeFileSync(
       join(h.root, "articles", "essay.md"),
@@ -726,7 +725,7 @@ test(
     );
 
     const result = await h.run(
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       exportParams(["pdf"]),
     );
 
@@ -739,7 +738,7 @@ test(
 test("exporting without a style package creates no styles directory", async (t) => {
   const h = harness(t);
   rmSync(join(h.root, ".pi-academic"), { recursive: true, force: true });
-  await h.run("academic_writer_export_article", exportParams(["docx"]));
+  await h.run("pi_academic_export_article", exportParams(["docx"]));
   assert.ok(!existsSync(join(h.root, ".pi-academic", "styles")));
 });
 
@@ -750,14 +749,14 @@ test("every path-taking tool rejects paths outside the project", async (t) => {
 
   const attempts: Array<[string, Params]> = [
     [
-      "academic_writer_generate_docx",
+      "pi_academic_generate_docx",
       { input: "articles/essay.md", output: join(outside, "a.docx") },
     ],
-    ["academic_writer_extract_document", { path: join(outside, "a.md") }],
-    ["academic_writer_snapshot_citations", { article: `../${outside}/a.md` }],
-    ["academic_writer_migrate_article_outline", { article: "../x.md" }],
+    ["pi_academic_extract_document", { path: join(outside, "a.md") }],
+    ["pi_academic_snapshot_citations", { article: `../${outside}/a.md` }],
+    ["pi_academic_migrate_article_outline", { article: "../x.md" }],
     [
-      "academic_writer_export_article",
+      "pi_academic_export_article",
       { ...exportParams(["docx"]), article: "../essay.md" },
     ],
   ];
@@ -776,7 +775,7 @@ test("a failed export keeps the previous output and remote references are refuse
   writeFileSync(previous, "previous export");
 
   const failed = await h.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["docx", "odt"]),
   );
 
@@ -788,7 +787,7 @@ test("a failed export keeps the previous output and remote references are refuse
   );
 
   const remote = await h.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["docx"], { csl: "https://example.test/style.csl" }),
   );
 
@@ -800,7 +799,7 @@ test("a failed export keeps the previous output and remote references are refuse
 test("articles outside the project and unsupported formats never reach Pandoc", async (t) => {
   const h = harness(t);
 
-  const outside = await h.run("academic_writer_export_article", {
+  const outside = await h.run("pi_academic_export_article", {
     article: "../essay.md",
     citationStyle: "inline-parenthetical",
     formats: ["docx"],
@@ -809,7 +808,7 @@ test("articles outside the project and unsupported formats never reach Pandoc", 
   assert.equal(outside.isError, true);
 
   const mixed = await h.run(
-    "academic_writer_export_article",
+    "pi_academic_export_article",
     exportParams(["docx", "html"]),
   );
 

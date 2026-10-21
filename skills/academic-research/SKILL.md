@@ -1,7 +1,7 @@
 ---
 name: academic-research
 description: "Research a subject or answer questions using your indexed sources — Zotero, local source documents, and optional NotebookLM context. Use when investigating a topic or fact-checking before writing."
-allowed-tools: bash read write find grep subagent academic_writer_get_profile academic_writer_ingest_sources academic_writer_write_research_notes academic_writer_resolve_mcp_tool academic_writer_read_resource zotero_search_items zotero_semantic_search notebook_list notebook_query
+allowed-tools: bash read write find grep subagent pi_academic_get_profile pi_academic_ingest_sources pi_academic_write_research_notes pi_academic_resolve_mcp_tool pi_academic_read_resource zotero_search_items zotero_semantic_search notebook_list notebook_query
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
@@ -17,7 +17,7 @@ This skill uses whichever data tools are enabled in the profile. It spawns **par
 
 ## Load Profile & Tools
 
-Call `academic_writer_get_profile`.
+Call `pi_academic_get_profile`.
 
 If it returns `ok: false`: "Run `/skill:academic-setup` first to set up your profile and index your sources."
 
@@ -45,13 +45,13 @@ Accept any of these forms:
 
 **Speed is critical.** Search integrations in parallel where their work is independent; query sequentially only when the next step depends on results.
 
-**Harness-neutral MCP dispatch:** resolve every bare-named tool with `academic_writer_resolve_mcp_tool` once per distinct name before calling it. Use the returned `live_name`; if it is `null`, treat that integration as unavailable.
+**Harness-neutral MCP dispatch:** resolve every bare-named tool with `pi_academic_resolve_mcp_tool` once per distinct name before calling it. Use the returned `live_name`; if it is `null`, treat that integration as unavailable.
 
 ### Determine the research path
 
 Read `dispatch_contract` before spawning an agent. Under OMP, put independent agents in one `task` call; under pi, issue sibling `subagent` calls in one response.
 
-1. **Local sources:** call `academic_writer_ingest_sources` to index files under `.pi-academic/sources/`, then use the returned records and text for relevant evidence.
+1. **Local sources:** call `pi_academic_ingest_sources` to index files under `.pi-academic/sources/`, then use the returned records and text for relevant evidence.
 
 2. **Zotero:** if enabled, resolve and call `zotero_search_items` directly to find relevant records, scoping by `tools.zotero.collection.key` when configured. For optional semantic discovery, resolve `zotero_semantic_search` and use it only if available. If relevant source IDs are found, dispatch the `researcher` with `subject`, `selectedSourceIds`, `tools`, and `targetLanguage`; the agent reads those sources and records unchecked candidate notes. Do not dispatch it without the required inputs.
 
@@ -65,7 +65,7 @@ Pass the exact selected Zotero item keys, article subject, profile tools setting
 
 ### Local Folder Sources Instructions
 
-Call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD files from `.pi-academic/sources/`. Search and read extracted content to answer research queries.
+Call `pi_academic_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD files from `.pi-academic/sources/`. Search and read extracted content to answer research queries.
 
 ## Merge & Present Findings
 
@@ -123,7 +123,7 @@ Once independent tool calls and dispatched agents return, **merge results** by d
 
 ### Save Selected Findings as Candidate Notes
 
-Only after presenting findings, ask which source-backed quotations, paraphrases or syntheses the researcher wants to retain. For selected findings, call academic_writer_write_research_notes({notesJson}) with candidate records anchored to stable sourceRef entries in the current source registry. Quotations need an exact source quote and locator.display; paraphrases need researcher-authored researcherNote; summaries label researcherNote "Synthesis:" and cannot pretend to be verbatim. Include tags; for local-file sources copy the required sourceFingerprint from the registry into anchor.sourceFingerprint, while Zotero notes include it only when a stable digest was supplied. Include zero-based pdfPageIndex only if actually extracted. The tool assigns IDs and saves new or changed source-backed notes as unchecked. Return saved IDs and say that explicit researcher review is required before article evidence use.
+Only after presenting findings, ask which source-backed quotations, paraphrases or syntheses the researcher wants to retain. For selected findings, call pi_academic_write_research_notes({notesJson}) with candidate records anchored to stable sourceRef entries in the current source registry. Quotations need an exact source quote and locator.display; paraphrases need researcher-authored researcherNote; summaries label researcherNote "Synthesis:" and cannot pretend to be verbatim. Include tags; for local-file sources copy the required sourceFingerprint from the registry into anchor.sourceFingerprint, while Zotero notes include it only when a stable digest was supplied. Include zero-based pdfPageIndex only if actually extracted. The tool assigns IDs and saves new or changed source-backed notes as unchecked. Return saved IDs and say that explicit researcher review is required before article evidence use.
 Pass `notesJson` as a structured array of note objects, not a serialized JSON string.
 
 When reporting gaps, say what was not found in the material searched and state its scope; do not imply that a topic or perspective is absent from a source or literature solely because search returned no result. Label cross-source themes and proposed connections as provisional interpretations.

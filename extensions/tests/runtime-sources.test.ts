@@ -129,7 +129,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   const fingerprint = "sha256:fixture";
   const sourceId = writeLocalSourceRegistry(root, fingerprint);
 
-  const written = await callTool(root, "academic_writer_write_research_notes", {
+  const written = await callTool(root, "pi_academic_write_research_notes", {
     notesJson: [
       {
         kind: "quotation",
@@ -154,11 +154,10 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
 
   const noteId = str(get(note, "id"));
 
-  const reviewed = await callTool(
-    root,
-    "academic_writer_review_research_notes",
-    { noteIds: [noteId], state: "verified" },
-  );
+  const reviewed = await callTool(root, "pi_academic_review_research_notes", {
+    noteIds: [noteId],
+    state: "verified",
+  });
 
   assert.equal(reviewed.details.ok, true);
 
@@ -169,7 +168,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
     coverage: "primary",
   });
 
-  const savedOutline = await callTool(root, "academic_writer_write_outline", {
+  const savedOutline = await callTool(root, "pi_academic_write_outline", {
     outlineJson: outline,
   });
 
@@ -182,11 +181,9 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
     coverage: "reference",
   });
 
-  const rejectedReference = await callTool(
-    root,
-    "academic_writer_write_outline",
-    { outlineJson: referenceOnly },
-  );
+  const rejectedReference = await callTool(root, "pi_academic_write_outline", {
+    outlineJson: referenceOnly,
+  });
 
   assert.equal(rejectedReference.details.ok, false);
   assert.ok(
@@ -206,11 +203,9 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
     noteUses: structuredClone(firstSection.items[0]?.noteUses ?? []),
   });
 
-  const rejectedDuplicate = await callTool(
-    root,
-    "academic_writer_write_outline",
-    { outlineJson: duplicatePrimary },
-  );
+  const rejectedDuplicate = await callTool(root, "pi_academic_write_outline", {
+    outlineJson: duplicatePrimary,
+  });
 
   assert.equal(rejectedDuplicate.details.ok, false);
   assert.ok(str(rejectedDuplicate.details.error).includes("Duplicate primary"));
@@ -218,13 +213,11 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
   const article = { article: "articles/essay.md" };
 
   assert.equal(
-    (await callTool(root, "academic_writer_render_outline", article)).details
-      .ok,
+    (await callTool(root, "pi_academic_render_outline", article)).details.ok,
     true,
   );
   assert.equal(
-    (await callTool(root, "academic_writer_snapshot_notes", article)).details
-      .ok,
+    (await callTool(root, "pi_academic_snapshot_notes", article)).details.ok,
     true,
   );
 
@@ -233,11 +226,9 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
 
   assert.ok(isValid(JsonObjectSchema, note), "note is an object");
 
-  const unchanged = await callTool(
-    root,
-    "academic_writer_write_research_notes",
-    { notesJson: [note] },
-  );
+  const unchanged = await callTool(root, "pi_academic_write_research_notes", {
+    notesJson: [note],
+  });
 
   assert.equal(details(unchanged, "value", 0, "review", "state"), "verified");
 
@@ -246,7 +237,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
     coreStatement: "Changed in project library",
   };
 
-  const update = await callTool(root, "academic_writer_write_research_notes", {
+  const update = await callTool(root, "pi_academic_write_research_notes", {
     notesJson: [changed],
   });
 
@@ -254,7 +245,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
 
   const unverified = await callTool(
     root,
-    "academic_writer_diagnose_outline",
+    "pi_academic_diagnose_outline",
     article,
   );
 
@@ -271,15 +262,11 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
     JSON.stringify([{ ...first, sourceFingerprint: "sha256:changed" }]),
   );
 
-  const stale = await callTool(
-    root,
-    "academic_writer_diagnose_outline",
-    article,
-  );
+  const stale = await callTool(root, "pi_academic_diagnose_outline", article);
 
   assert.ok(findingCodes(details(stale, "value")).includes("stale-note-link"));
 
-  const bundle = await callTool(root, "academic_writer_query_research", {
+  const bundle = await callTool(root, "pi_academic_query_research", {
     operation: "section_bundle",
     article: "articles/essay.md",
     sectionId: "section-1",
@@ -293,7 +280,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
 
   const failedSnapshot = await callTool(
     root,
-    "academic_writer_snapshot_notes",
+    "pi_academic_snapshot_notes",
     article,
   );
 
@@ -312,7 +299,7 @@ test("[test_ingest_uses_content_identity_and_marks_changed_notes_stale] ingest i
   writeFileSync(source, "First version");
 
   const ingest = () =>
-    callTool(root, "academic_writer_ingest_sources", { paths: [source] });
+    callTool(root, "pi_academic_ingest_sources", { paths: [source] });
 
   const record = details(await ingest(), "sources", 0);
   const recordId = str(get(record, "sourceId"));
@@ -322,7 +309,7 @@ test("[test_ingest_uses_content_identity_and_marks_changed_notes_stale] ingest i
   assert.match(recordFingerprint, /^sha256:[0-9a-f]{64}$/);
 
   const note = details(
-    await callTool(root, "academic_writer_write_research_notes", {
+    await callTool(root, "pi_academic_write_research_notes", {
       notesJson: [
         {
           kind: "paraphrase",
@@ -401,7 +388,7 @@ test("[test_pdf_ingest_preserves_zero_based_page_boundaries] PDF ingest keeps ze
 
   const ingest = async () =>
     details(
-      await callTool(root, "academic_writer_ingest_sources", {
+      await callTool(root, "pi_academic_ingest_sources", {
         paths: [source],
       }),
       "sources",
@@ -445,7 +432,7 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
 
   const missingFingerprint = await callTool(
     root,
-    "academic_writer_write_research_notes",
+    "pi_academic_write_research_notes",
     {
       notesJson: [
         {
@@ -464,31 +451,26 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
     "stale",
   );
 
-  const verified = await callTool(
-    root,
-    "academic_writer_review_research_notes",
-    { noteIds: ["unbound-paraphrase"], state: "verified" },
-  );
+  const verified = await callTool(root, "pi_academic_review_research_notes", {
+    noteIds: ["unbound-paraphrase"],
+    state: "verified",
+  });
 
   assert.equal(details(verified, "value", 0, "review", "state"), "stale");
 
-  const analysis = await callTool(
-    root,
-    "academic_writer_write_research_notes",
-    {
-      notesJson: [
-        {
-          id: "analysis-only",
-          kind: "analysis",
-          coreStatement: "Researcher interpretation",
-        },
-      ],
-    },
-  );
+  const analysis = await callTool(root, "pi_academic_write_research_notes", {
+    notesJson: [
+      {
+        id: "analysis-only",
+        kind: "analysis",
+        coreStatement: "Researcher interpretation",
+      },
+    ],
+  });
 
   assert.equal(analysis.details.ok, true);
 
-  await callTool(root, "academic_writer_review_research_notes", {
+  await callTool(root, "pi_academic_review_research_notes", {
     noteIds: ["analysis-only"],
     state: "verified",
   });
@@ -500,7 +482,7 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
     coverage: "primary",
   });
 
-  const rejected = await callTool(root, "academic_writer_write_outline", {
+  const rejected = await callTool(root, "pi_academic_write_outline", {
     outlineJson: outline,
   });
 
@@ -523,7 +505,7 @@ test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] 
 
   const bibliography = "@book{new, title={New}}";
 
-  const failed = await callTool(root, "academic_writer_write_sources_cache", {
+  const failed = await callTool(root, "pi_academic_write_sources_cache", {
     sourcesJson: [
       {
         sourceType: "zotero",
@@ -543,7 +525,7 @@ test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] 
     "original bibliography\n",
   );
 
-  await callTool(root, "academic_writer_write_sources_cache", {
+  await callTool(root, "pi_academic_write_sources_cache", {
     sourcesJson: [
       {
         sourceType: "zotero",
@@ -570,8 +552,8 @@ test("concurrent ingestSources serialization", async (t) => {
   const fileB = join(sourcesDir, "doc-b.md");
 
   const [resA, resB] = await Promise.all([
-    callTool(root, "academic_writer_ingest_sources", { paths: [fileA] }),
-    callTool(root, "academic_writer_ingest_sources", { paths: [fileB] }),
+    callTool(root, "pi_academic_ingest_sources", { paths: [fileA] }),
+    callTool(root, "pi_academic_ingest_sources", { paths: [fileB] }),
   ]);
 
   assert.equal(resA.details.ok, true);

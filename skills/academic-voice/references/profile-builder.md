@@ -19,7 +19,7 @@ empirical signals of their voice. Do not interview; interview work belongs to th
 
 ### Outputs
 
-Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In the final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.pi-academic/voice/profile.md` in corpus mode; that belongs to the distillation mode.
+Call `pi_academic_write_voice_fingerprint` with the full markdown fingerprint content. In the final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.pi-academic/voice/profile.md` in corpus mode; that belongs to the distillation mode.
 
 ### Required sections in fingerprint.md
 
@@ -39,7 +39,7 @@ Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprin
 
 - Output is markdown, not JSON. The fingerprint is human-readable.
 - Quote real examples from the corpus inline (one sentence each, file:line citation).
-- If the corpus is below the "needs more data" threshold (call `academic_writer_read_resource` with `name: thresholds` and
+- If the corpus is below the "needs more data" threshold (call `pi_academic_read_resource` with `name: thresholds` and
   use `voice.corpus`: fewer than `voice.corpus.minArticles` articles, OR fewer than
   `voice.corpus.minTotalWords` total words, OR fewer than `voice.corpus.minWordsPerArticle`
   words/article avg), write a stub fingerprint flagged with `> NEEDS CORPUS`.
@@ -65,7 +65,7 @@ profile. Combine the compressor and merger roles.
 
 ### Outputs
 
-Call `academic_writer_update_author_voice` with the full rewritten content to replace root `.pi-academic/voice/profile.md`. Preserve the four-section structure exactly:
+Call `pi_academic_update_author_voice` with the full rewritten content to replace root `.pi-academic/voice/profile.md`. Preserve the four-section structure exactly:
 
 ```text
 # Voice Profile — <writer name>

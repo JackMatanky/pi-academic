@@ -1,6 +1,6 @@
 # Dispatch Contract
 
-Choose the form by harness: call `academic_writer_status`; its `harness` field is `omp` or `pi`.
+Choose the form by harness: call `pi_academic_status`; its `harness` field is `omp` or `pi`.
 
 ## Rules (both harnesses)
 

@@ -62,7 +62,7 @@ function registerResearchTool<S extends TSchema, Result>(
  */
 export function registerResearchTools(pi: ExtensionAPI): void {
   registerResearchTool(pi, {
-    name: "academic_writer_write_research_notes",
+    name: "pi_academic_write_research_notes",
     effect: "write",
     label: "Write Research Notes",
     description:
@@ -71,7 +71,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     run: ({ notesJson }, cwd) => writeResearchNotes(cwd, notesJson),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_review_research_notes",
+    name: "pi_academic_review_research_notes",
     effect: "write",
     label: "Review Research Notes",
     description:
@@ -83,7 +83,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     run: ({ noteIds, state }, cwd) => reviewResearchNotes(cwd, noteIds, state),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_write_outline",
+    name: "pi_academic_write_outline",
     effect: "write",
     label: "Write Article Outline",
     description: "Validate and save a canonical recursive article outline.",
@@ -91,7 +91,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     run: ({ outlineJson }, cwd) => writeOutline(cwd, outlineJson),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_render_outline",
+    name: "pi_academic_render_outline",
     effect: "write",
     label: "Render Article Outline",
     description: "Render generated Markdown from the canonical outline JSON.",
@@ -99,7 +99,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     run: ({ article }, cwd) => ({ path: renderOutline(cwd, article) }),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_snapshot_notes",
+    name: "pi_academic_snapshot_notes",
     effect: "write",
     label: "Snapshot Article Notes",
     description: "Freeze only outline-selected notes after outline approval.",
@@ -109,7 +109,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     }),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_query_research",
+    name: "pi_academic_query_research",
     effect: "read",
     core: true,
     label: "Query Research Notes",
@@ -118,7 +118,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     run: (params, cwd) => queryResearch(cwd, decodeResearchQuery(params)),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_diagnose_outline",
+    name: "pi_academic_diagnose_outline",
     effect: "read",
     label: "Diagnose Article Outline",
     description:
@@ -131,7 +131,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
       diagnoseOutline(cwd, article, evidenceMapJson),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_reverse_outline",
+    name: "pi_academic_reverse_outline",
     effect: "read",
     label: "Reverse Outline Article",
     description:
@@ -140,7 +140,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
     run: ({ article }, cwd) => reverseOutline(cwd, article),
   });
   registerResearchTool(pi, {
-    name: "academic_writer_migrate_article_outline",
+    name: "pi_academic_migrate_article_outline",
     effect: "write",
     label: "Migrate Article Outline",
     description:
@@ -160,17 +160,17 @@ export function registerResearchTools(pi: ExtensionAPI): void {
   });
 
   registerTool(pi, {
-    name: "academic_writer_write_section",
+    name: "pi_academic_write_section",
     effect: "write",
     label: "Academic Writer Write Section",
     description:
-      "Persist one approved article section to articles/<slug>/sections/<sectionId>.md. `article` is the article markdown path as returned by academic_writer_article_paths (must start with articles/). Overwrites are allowed — redrafts rewrite the same file. The orchestrating skill assembles these files into the article.",
+      "Persist one approved article section to articles/<slug>/sections/<sectionId>.md. `article` is the article markdown path as returned by pi_academic_article_paths (must start with articles/). Overwrites are allowed — redrafts rewrite the same file. The orchestrating skill assembles these files into the article.",
     parameters: Type.Object({
       article: Type.String({
         minLength: 1,
         pattern: "^articles/",
         description:
-          "Article markdown path, e.g. articles/<slug>.md, as returned by academic_writer_article_paths.",
+          "Article markdown path, e.g. articles/<slug>.md, as returned by pi_academic_article_paths.",
       }),
       sectionId: Type.String({
         minLength: 1,
@@ -190,7 +190,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
 
       if (!slug.trim())
         return fail(
-          `Invalid article path "${article}": it must name a markdown file under articles/ (as returned by academic_writer_article_paths).`,
+          `Invalid article path "${article}": it must name a markdown file under articles/ (as returned by pi_academic_article_paths).`,
         );
 
       if (!markdown.trim()) return fail("Markdown must not be empty.");

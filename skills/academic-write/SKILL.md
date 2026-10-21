@@ -1,7 +1,7 @@
 ---
 name: academic-write
 description: "Write a new academic article or frame an initial research question. Use when starting a new article, or when framing a research question before deciding whether to write."
-allowed-tools: bash read write find grep subagent academic_writer_read_resource academic_writer_status academic_writer_health academic_writer_get_profile academic_writer_article_paths academic_writer_list_project_files academic_writer_extract_document academic_writer_audit_citations academic_writer_count_words academic_writer_resolve_csl academic_writer_export_article academic_writer_generate_docx academic_writer_ingest_sources academic_writer_write_outline academic_writer_render_outline academic_writer_review_research_notes academic_writer_snapshot_notes academic_writer_query_research academic_writer_snapshot_citations academic_writer_migrate_article_outline academic_writer_diagnose_outline academic_writer_resolve_mcp_tool
+allowed-tools: bash read write find grep subagent pi_academic_read_resource pi_academic_status pi_academic_health pi_academic_get_profile pi_academic_article_paths pi_academic_list_project_files pi_academic_extract_document pi_academic_audit_citations pi_academic_count_words pi_academic_resolve_csl pi_academic_export_article pi_academic_generate_docx pi_academic_ingest_sources pi_academic_write_outline pi_academic_render_outline pi_academic_review_research_notes pi_academic_snapshot_notes pi_academic_query_research pi_academic_snapshot_citations pi_academic_migrate_article_outline pi_academic_diagnose_outline pi_academic_resolve_mcp_tool
 metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
@@ -23,7 +23,7 @@ You are an academic writing assistant for a Humanities researcher.
 
 ### Voice profile load (first step of every run)
 
-Call `academic_writer_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
+Call `pi_academic_read_resource` with `name: voice_profile_load`, then follow that contract exactly.
 
 **Voice Source Hierarchy:**
 
@@ -33,7 +33,7 @@ Call `academic_writer_read_resource` with `name: voice_profile_load`, then follo
 
 ## Load Profile
 
-Start by calling `academic_writer_get_profile`.
+Start by calling `pi_academic_get_profile`.
 
 If it returns `ok: false`, tell them: "Please run `/skill:academic-setup` first to set up your profile."
 
@@ -41,7 +41,7 @@ Store the returned profile values — you'll use them throughout.
 
 ### Run state (profile-scoped)
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create `.pi-academic/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.pi-academic/` here if the profile was missing — `init`/`setup` own first creation.
+Call `pi_academic_read_resource` with `name: run_state_contract`, then create `.pi-academic/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.pi-academic/` here if the profile was missing — `init`/`setup` own first creation.
 
 ### Style Fingerprint — Always Loaded
 
@@ -67,7 +67,7 @@ Pass the full `styleFingerprint` object to every agent that writes or reviews te
 Read the `tools` object from the profile. Throughout this workflow, **only use tools that are enabled**, and honor any configured scope:
 
 - **Zotero** (`tools.zotero.enabled`) — Zotero is preferred when enabled. If `tools.zotero.collection.key` is set, source listing/selection starts from that collection; otherwise use the library.
-- **Local Folder Sources** — Check `.pi-academic/sources/` for local PDFs, DOCX, TXT, or MD source files. Call `academic_writer_ingest_sources` to index local files into the source workflow.
+- **Local Folder Sources** — Check `.pi-academic/sources/` for local PDFs, DOCX, TXT, or MD source files. Call `pi_academic_ingest_sources` to index local files into the source workflow.
 - **Profile / Manual Sources** — If Zotero is disabled and no local files exist, use the profile `sources` array or manual researcher description.
 - **NotebookLM** (`tools.notebooklm.enabled`) — Supplementary context only; not a primary citation source.
   If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
@@ -76,7 +76,7 @@ Read the `tools` object from the profile. Throughout this workflow, **only use t
 
 ## Pre-flight: existing-article guard
 
-After the researcher gives the subject, call `academic_writer_article_paths` with `subject: SUBJECT` and use the returned `markdown` as `MD_PATH`.
+After the researcher gives the subject, call `pi_academic_article_paths` with `subject: SUBJECT` and use the returned `markdown` as `MD_PATH`.
 
 Check whether `MD_PATH` already exists. If it exists, the skill MUST stop the write pipeline and tell the user to use `/skill:academic-edit MD_PATH` (or `/skill:academic-edit` for a single section). Do NOT continue with researcher, academic, etc., because writing inline at that point produces ungated prose (the 2026-05-02 mikdashim post-compaction failure).
 
@@ -134,7 +134,7 @@ Store the draft text as userDraftText regardless of choice. If they chose expans
 
 ### Step 2: Source Selection
 
-**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `academic_writer_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `academic_writer_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
+**Harness-neutral MCP dispatch:** every bare-named tool call below (any tool name that is not prefixed `pi_academic_`, e.g. `zotero_get_item_fulltext`, `notebook_list`, `get_text`) must be resolved first: call `pi_academic_resolve_mcp_tool({logical_name: "<bare_name>"})` once per distinct bare name per run, then use the returned `live_name` for every subsequent call to that tool this run. If `live_name` is `null`, treat that integration as unavailable for this run (same as today's "if available" gating).
 
 **Source Selection Procedure:**
 
@@ -142,7 +142,7 @@ Store the draft text as userDraftText regardless of choice. If they chose expans
    - If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` to retrieve items from the specified collection.
    - Otherwise, call `zotero_get_collections()` first, then `zotero_get_collection_items(collection_key=KEY)` for the relevant collection(s) to list library items.
    - `zotero_get_collection_items` returns 50 items per call; when its response reports more items than were shown, follow the `Pass offset=N` hint until the full list is retrieved.
-2. **Local Folder Sources**: Call `academic_writer_ingest_sources` to discover and ingest local PDFs, DOCX, TXT, or MD files stored under `.pi-academic/sources/`.
+2. **Local Folder Sources**: Call `pi_academic_ingest_sources` to discover and ingest local PDFs, DOCX, TXT, or MD files stored under `.pi-academic/sources/`.
 3. **Fallback**: Use profile's `sources` array or manual user input if no Zotero/local sources exist.
 
 Present them clearly and ask:
@@ -177,9 +177,9 @@ Pass the NotebookLM summary as additional context to the researcher agent prompt
 
 **Use your subagent-dispatch tool to spawn the `researcher` subagent.** Pass as the prompt: the article subject, selectedSourceIds, tools configuration, AND `targetLanguage` (so the researcher emits its structured summary in the right language).
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness.
 
-The researcher reads original Zotero/local sources, writes current-run .pi-academic/sources.json and .pi-academic/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
+The researcher reads original Zotero/local sources, writes current-run .pi-academic/sources.json and .pi-academic/bibliography.bib caches, and persists unchecked candidate source-backed notes via pi_academic_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
 
 Wait for the researcher to return retrieved passages before continuing to Step 4. Confirm `.pi-academic/sources.json` exists.
 
@@ -191,7 +191,7 @@ Update the run state for this phase.
 
 **Use your subagent-dispatch tool to spawn the `academic` subagent.** Pass the subject, deep read results, and targetLanguage as the prompt.
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness.
 
 Update the run state for this phase.
 
@@ -211,17 +211,17 @@ Present the academic agent's output to researcher:
 
 For pasted drafts to expand, pass the text and structure to the academic agent with the approved thesis and deep-read note IDs; it maps arguments into a draft recursive outline. Do not treat pasted prose as an approved outline. Existing on-disk article Markdown routes to edit/migration.
 
-Otherwise spawn the academic agent in Mode B with approved thesis, deep read, note IDs, article slug/title from academic_writer_article_paths, targetWordCount, citationStyle and targetLanguage. It calls academic_writer_write_outline with schemaVersion 1, researchQuestion, thesis, status: "draft", ordered nested sections and direct points. Each point has a claim, reasoning and noteUses with function, handling and primary/reference coverage. Do not proceed on prose outline alone.
+Otherwise spawn the academic agent in Mode B with approved thesis, deep read, note IDs, article slug/title from pi_academic_article_paths, targetWordCount, citationStyle and targetLanguage. It calls pi_academic_write_outline with schemaVersion 1, researchQuestion, thesis, status: "draft", ordered nested sections and direct points. Each point has a claim, reasoning and noteUses with function, handling and primary/reference coverage. Do not proceed on prose outline alone.
 
-Call academic_writer_render_outline({article: MD_PATH}) to generate articles/<slug>.outline.md from canonical JSON. Present the generated Markdown with nested argument points, evidence handling and unresolved gaps. Iterate JSON through academic_writer_write_outline, rerender, and present the changed outline; never parse generated Markdown back into JSON.
-Call `academic_writer_diagnose_outline({article: MD_PATH})` after rendering each draft revision and before asking for outline approval. If the researcher agent supplied an evidence map containing `chapter_coverage`, pass its full JSON as `evidenceMapJson` too; coverage belongs to that separate map, not the canonical outline schema. Address findings with the researcher — re-dispatching the researcher agent when a re-read is needed. Findings are advisory: an empty list does not establish argument quality or approve the outline.
+Call pi_academic_render_outline({article: MD_PATH}) to generate articles/<slug>.outline.md from canonical JSON. Present the generated Markdown with nested argument points, evidence handling and unresolved gaps. Iterate JSON through pi_academic_write_outline, rerender, and present the changed outline; never parse generated Markdown back into JSON.
+Call `pi_academic_diagnose_outline({article: MD_PATH})` after rendering each draft revision and before asking for outline approval. If the researcher agent supplied an evidence map containing `chapter_coverage`, pass its full JSON as `evidenceMapJson` too; coverage belongs to that separate map, not the canonical outline schema. Address findings with the researcher — re-dispatching the researcher agent when a re-read is needed. Findings are advisory: an empty list does not establish argument quality or approve the outline.
 Present the canonical outline as one ordered, readable argument map, not only generated Markdown or internal fields. For each section show purpose and thesis contribution; for each point show claim, reasoning, chosen evidence, and analytical role. Call out unsupported claims and gaps. Separate source findings from provisional themes, groupings, counterpositions, missing-perspective questions, and other outline suggestions; do not infer absence from search silence. Review reasoning, evidence roles, transition-vs-factual points, repetition, uneven coverage, and possible alternative perspectives as discussion prompts, without a numerical score or auto-pass. Collect edits conversationally, persist them to the canonical outline, rerender, and show the changed map; never ask the researcher to edit JSON or generated Markdown.
 
 At approval, summarize what is ready, the specific unresolved issue(s), and the next action. Require explicit approval of the thesis and complete outline before approval state or either article-local snapshot is changed. Keep note verification separate from argument approval. Before approval, count the distinct source-backed note IDs mapped across the outline's noteUses (source-free transitions excluded); below `thresholds.json:sources.minPerArticle` (default 3), stop and resolve with the researcher — map more evidence or record an explicit waiver — before approval proceeds. If approval or snapshot creation fails, preserve prior valid snapshots and do not dispatch writers against mutable project data.
 
 Present each selected candidate as a compact evidence card showing its material kind, exact material, source title/identity, available locator, and optional researcher relevance note. Preserve quotations verbatim; label paraphrases and summaries; keep interpretation separate. Missing source or location is unresolved, not a field to infer. Before marking notes verified, show the exact selected source-backed material, source, and locator and obtain explicit confirmation for each card. The researcher must be able to correct or exclude each card; batch confirmation is acceptable only if every card is visible and independently selectable. Mark verified only the explicitly confirmed IDs. Generic outline approval, silence, NotebookLM output, or missing locators are not verification.
 
-After explicit approval of the thesis and complete rendered outline, call academic_writer_write_outline to set thesis.status and outline status to "approved", then rerender. Call academic_writer_snapshot_citations({article: MD_PATH}) and academic_writer_snapshot_notes({article: MD_PATH}) at this post-approval boundary. Both must succeed before dispatch; on failure stop and repair/seek approval rather than drafting from mutable caches. No subsequent current-run source addition may enter this article context. Use frozen article-local .sources.json, .bibliography.bib, and .notes.json for writing and audit; note anchors are retrieval leads, never proof. Record the approval and asset paths in the run state.
+After explicit approval of the thesis and complete rendered outline, call pi_academic_write_outline to set thesis.status and outline status to "approved", then rerender. Call pi_academic_snapshot_citations({article: MD_PATH}) and pi_academic_snapshot_notes({article: MD_PATH}) at this post-approval boundary. Both must succeed before dispatch; on failure stop and repair/seek approval rather than drafting from mutable caches. No subsequent current-run source addition may enter this article context. Use frozen article-local .sources.json, .bibliography.bib, and .notes.json for writing and audit; note anchors are retrieval leads, never proof. Record the approval and asset paths in the run state.
 
 ---
 
@@ -245,11 +245,11 @@ The 8-skill quality pipeline (style fingerprint compliance, grammar, anti-AI, ci
 
 ### Step 6: Recursive Section Writing + Auditing
 
-Traverse the approved JSON outline in ordered depth-first tree order. Spawn one writer task for each section with direct point children; nested child sections are separate drafting units; heading-only sections produce no task. Parallelize independent units through one batched task call (OMP) or sibling subagent calls (pi). Each writer persists its section with `academic_writer_write_section` to `articles/<slug>/sections/<sectionId>.md`; after all writers return, the skill assembles `MD_PATH` itself: the title line (`# <title>`), a blank line, then the section files joined in approved-outline order separated by a blank line.
+Traverse the approved JSON outline in ordered depth-first tree order. Spawn one writer task for each section with direct point children; nested child sections are separate drafting units; heading-only sections produce no task. Parallelize independent units through one batched task call (OMP) or sibling subagent calls (pi). Each writer persists its section with `pi_academic_write_section` to `articles/<slug>/sections/<sectionId>.md`; after all writers return, the skill assembles `MD_PATH` itself: the title line (`# <title>`), a blank line, then the section files joined in approved-outline order separated by a blank line.
 
-Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
+Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness.
 
-Pass only MD_PATH, sectionId, and contextual details: citationStyle, targetLanguage, articleStructure, enabled tools, targetWordCount and outlineOverview. The writer calls academic_writer_query_research({operation: "section_bundle", article: MD_PATH, sectionId}) for its approved subtree and selected frozen notes; it writes direct point children only. Do not pass mutable project notes, registry, or pasted section specs as substitutes.
+Pass only MD_PATH, sectionId, and contextual details: citationStyle, targetLanguage, articleStructure, enabled tools, targetWordCount and outlineOverview. The writer calls pi_academic_query_research({operation: "section_bundle", article: MD_PATH, sectionId}) for its approved subtree and selected frozen notes; it writes direct point children only. Do not pass mutable project notes, registry, or pasted section specs as substitutes.
 
 Each writer runs the eight-skill paragraph pipeline and the editor hard gate (audit mode). The editor independently verifies original sources using note IDs and locators only as leads. Stop on a missing/invalid bundle; never bypass the pipeline with inline body writing.
 
@@ -261,7 +261,7 @@ Update the run state for this phase.
 
 ### Step 8: Synthesis + Full-Article Repetition Check
 
-**Use your subagent-dispatch tool to spawn the `editor` subagent in review mode (`mode: "review"`).** Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness. Pass the following as the prompt:
+**Use your subagent-dispatch tool to spawn the `editor` subagent in review mode (`mode: "review"`).** Read the `dispatch_contract` resource (`pi_academic_read_resource`) for the exact call shape on this harness. Pass the following as the prompt:
 
 - MD_PATH — the assembled article Markdown path
 - The thesis statement
