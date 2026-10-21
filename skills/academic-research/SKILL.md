@@ -5,7 +5,7 @@ allowed-tools: bash read write find grep subagent pi_academic_get_profile pi_aca
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
-# Academic Writer — Research
+# Pi Academic — Research
 
 ## Researcher-facing presentation and recovery
 

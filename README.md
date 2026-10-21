@@ -1,4 +1,4 @@
-# Academic Writer — Pi and oh-my-pi Package
+# Pi Academic — Pi and oh-my-pi Package
 
 AI-first academic writing assistant for Humanities researchers. Writes rigorously cited, style-matched articles and exports them as DOCX, ODT, LaTeX, or PDF via Pandoc, with CSL-based citation rendering from a real Zotero- or local-source `bibliography.bib` (popular style aliases, Zotero/CSL repository styles, or custom `.csl` files).
 
@@ -21,7 +21,7 @@ AI-first academic writing assistant for Humanities researchers. Writes rigorousl
 
 ### 1. Install Required Companion Packages
 
-Academic Writer delegates subagent orchestration, MCP server wiring, and web search to three community Pi packages. Pi does not auto-load a dependency's own extensions just because it's listed in `package.json` — install these once, globally; every Pi project that uses them reuses the same install:
+Pi Academic delegates subagent orchestration, MCP server wiring, and web search to three community Pi packages. Pi does not auto-load a dependency's own extensions just because it's listed in `package.json` — install these once, globally; every Pi project that uses them reuses the same install:
 
 ```bash
 pi install npm:pi-subagents
@@ -177,7 +177,7 @@ All integrations are optional. Choose which to enable during `/skill:academic-se
 
 | Tool              | What it does                                                                         | Setup                                                                                                                                                                                                                                |
 | ----------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero                           | Put files in `.pi-academic/sources/`; Academic Writer ingests them with `pi_academic_ingest_sources` and generates citekeys/BibTeX.                                                                                          |
+| **Local sources** | Project-local PDFs, DOCX, Markdown, or text without Zotero                           | Put files in `.pi-academic/sources/`; Pi Academic ingests them with `pi_academic_ingest_sources` and generates citekeys/BibTeX.                                                                                          |
 | **Zotero**        | Preferred reference manager for source PDFs (local library or web API)               | [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — install `zotero-mcp-server`, then configure the `zotero` MCP server in standard MCP config (`.mcp.json` or `~/.config/mcp/mcp.json`)                          |
 | **NotebookLM**    | AI-powered source Q&A, audio overviews, study guides                                 | [github.com/jacob-bd/notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) — install `notebooklm-mcp-cli`, run `nlm login`, then configure the `notebooklm-mcp` MCP server in standard MCP config                      |
 | **Sefaria**       | Optional Judaic primary text lookup and verse context expansion                      | Configure a Sefaria MCP server with bare direct tools (`toolPrefix: "none"`, `directTools` listing `get_text` and `search`); no credentials go in `.pi-academic/profile.md`.                                                     |
@@ -187,9 +187,9 @@ This package doesn't hardcode a specific model provider for prose drafting — p
 
 **Citation styles:** Inline Parenthetical (Hebrew academic default) is written as literal styled text, unchanged regardless of export format. Every other citation style uses citeproc: the writer emits `[@citeKey]` references, Pandoc renders them with a CSL file, and article-local `articles/<slug>.bibliography.bib` is used first, falling back to `.pi-academic/bibliography.bib`. The resolver accepts popular aliases (`apa`, `mla`, `chicago`, `chicago-author-date`, `nature`, `ieee`, etc.), any style id from [Zotero](https://www.zotero.org/styles) / [citation-style-language/styles](https://github.com/citation-style-language/styles), direct `.csl` URLs, or a custom `.csl` file, then caches downloads in `.pi-academic/csl/`.
 
-**Scoped libraries:** During setup or `/skill:academic-setup`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Academic Writer stores only the collection/notebook id and display name in `.pi-academic/profile.md`; credentials stay in MCP config.
+**Scoped libraries:** During setup or `/skill:academic-setup`, you can set a default Zotero collection, NotebookLM notebook, and Sefaria enabled/disabled state for the project. Pi Academic stores only the collection/notebook id and display name in `.pi-academic/profile.md`; credentials stay in MCP config.
 
-**MCP configuration:** Academic Writer does not store MCP server credentials in `.pi-academic/profile.md` and does not require shell-exported environment variables. MCP servers are read from the harness's normal MCP config stack (pi: `.mcp.json`, `.pi/mcp.json`, `~/.config/mcp/mcp.json`; omp: `.omp/mcp.json`, `~/.omp/agent/mcp.json`, plus a root `.mcp.json`). Local Zotero, NotebookLM, and Sefaria setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
+**MCP configuration:** Pi Academic does not store MCP server credentials in `.pi-academic/profile.md` and does not require shell-exported environment variables. MCP servers are read from the harness's normal MCP config stack (pi: `.mcp.json`, `.pi/mcp.json`, `~/.config/mcp/mcp.json`; omp: `.omp/mcp.json`, `~/.omp/agent/mcp.json`, plus a root `.mcp.json`). Local Zotero, NotebookLM, and Sefaria setups can use this project-local `.mcp.json` (safe to commit only if it contains no secrets):
 
 ```json
 {

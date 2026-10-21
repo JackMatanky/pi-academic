@@ -33,7 +33,7 @@ function project(t: TestContext): string {
 function seedProfile(dir: string, tools: NonNullable<Profile["tools"]>): void {
   const profile = parseProfileMd(
     [
-      "# Academic Writer Profile",
+      "# Pi Academic Profile",
       "",
       "---",
       "createdAt: 2026-01-01T00:00:00.000Z",

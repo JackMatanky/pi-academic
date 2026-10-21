@@ -39,7 +39,7 @@ export const RESOURCE_NAMES = [
 ] as const;
 
 /**
- * Resolves a stable Academic Writer resource name to its package file path.
+ * Resolves a stable Pi Academic resource name to its package file path.
  * Thresholds are not resolved here — the read tool serves the project override
  * or the typed default directly.
  *
@@ -143,13 +143,13 @@ export function resolveResourcePath(
       );
     default:
       throw new Error(
-        `Unknown Academic Writer resource ${JSON.stringify(name)}. Supported resources: ${RESOURCE_NAMES.join(", ")}.`,
+        `Unknown Pi Academic resource ${JSON.stringify(name)}. Supported resources: ${RESOURCE_NAMES.join(", ")}.`,
       );
   }
 }
 
 /**
- * Result of loading an Academic Writer package or project resource.
+ * Result of loading an Pi Academic package or project resource.
  */
 export interface LoadedResource {
   content: string;
@@ -158,7 +158,7 @@ export interface LoadedResource {
 }
 
 /**
- * Loads an Academic Writer resource by name. Thresholds resolves the project
+ * Loads an Pi Academic resource by name. Thresholds resolves the project
  * override (.pi-academic/thresholds.json) when present, falling back to the
  * package default. All other resources resolve to their packaged files.
  *
@@ -192,7 +192,7 @@ export function loadResource(
   const path = resolveResourcePath(name, projectRoot, language);
 
   if (!existsSync(path)) {
-    fail(`Academic Writer resource not found: ${name}`, {
+    fail(`Pi Academic resource not found: ${name}`, {
       ok: false,
       name,
       path,

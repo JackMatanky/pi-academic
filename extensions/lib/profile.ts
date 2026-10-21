@@ -35,7 +35,7 @@ export function getProfileDirPath(projectDir: string): string {
 }
 
 /**
- * Returns the project-local Academic Writer profile markdown path.
+ * Returns the project-local Pi Academic profile markdown path.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  *
@@ -287,7 +287,7 @@ function formatScalar(text: string): string {
  * @returns Serialized Markdown text ready for disk storage.
  */
 export function serializeProfileMd(profile: Profile): string {
-  const lines = ["# Academic Writer Profile", "", "---"];
+  const lines = ["# Pi Academic Profile", "", "---"];
 
   const writeList = (key: string, items: string[]) => {
     if (items.length === 0) {

@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for ideation-mode.md. -->
 
-# Academic Writer — Research Ideation
+# Pi Academic — Research Ideation
 
 Guided ideation flow that helps researchers formulate strong research questions before writing.
 

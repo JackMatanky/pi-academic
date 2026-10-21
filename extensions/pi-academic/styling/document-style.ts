@@ -36,7 +36,7 @@ export interface RenderedStyle {
    */
   assets: NativeAssets;
   /**
-   * Assets Academic Writer produced from design.json rather than read from the
+   * Assets Pi Academic produced from design.json rather than read from the
    * package.
    */
   generated: ("referenceDocument" | "preamble")[];

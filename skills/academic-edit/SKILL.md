@@ -5,7 +5,7 @@ allowed-tools: bash read write find grep subagent pi_academic_read_resource pi_a
 metadata: { author: "Yotam Fromm", version: "0.2.21" }
 ---
 
-# Academic Writer — Edit Article
+# Pi Academic — Edit Article
 
 ## Single-section route
 

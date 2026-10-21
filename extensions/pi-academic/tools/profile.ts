@@ -21,7 +21,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_migrate_profile",
     effect: "write",
-    label: "Academic Writer Migrate Profile",
+    label: "Pi Academic Migrate Profile",
     description:
       "One-time migration from .pi-academic/profile.json to .pi-academic/profile.md. Use during init/setup preflight before checking for an existing profile.",
     parameters: Type.Object({}),
@@ -34,7 +34,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
 
       return {
         text: migration.migrated
-          ? "Migrated JSON Academic Writer profile"
+          ? "Migrated JSON Pi Academic profile"
           : `Profile migration skipped: ${migration.reason}`,
         details: migration,
       };
@@ -45,16 +45,16 @@ export function registerProfileTools(pi: ExtensionAPI): void {
     name: "pi_academic_get_profile",
     effect: "read",
     core: true,
-    label: "Academic Writer Get Profile",
+    label: "Pi Academic Get Profile",
     description:
       "Read and parse .pi-academic/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
     parameters: Type.Object({}),
-    failure: "Academic Writer profile is unreadable",
+    failure: "Pi Academic profile is unreadable",
     run: (_params, { cwd }) => {
       const profile = loadProfile(cwd);
 
       if (!profile) {
-        return fail("Academic Writer profile missing", {
+        return fail("Pi Academic profile missing", {
           ok: false,
           path: PROFILE_PATH,
         });
@@ -70,7 +70,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_update_profile",
     effect: "write",
-    label: "Academic Writer Update Profile",
+    label: "Pi Academic Update Profile",
     description:
       "Patch recognized .pi-academic/profile.md fields using a structured object. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
     parameters: Type.Object({ fieldsJson: ProfilePatchSchema }),

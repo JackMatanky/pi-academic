@@ -457,7 +457,7 @@ test(
     writeFileSync(
       join(root, ".pi-academic", "profile.md"),
       [
-        "# Academic Writer Profile",
+        "# Pi Academic Profile",
         "",
         "---",
         "targetLanguage: Hebrew",

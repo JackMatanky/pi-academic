@@ -5,7 +5,7 @@ allowed-tools: bash read write find grep pi_academic_get_profile pi_academic_lis
 metadata: { author: "Yotam Fromm", version: "0.2.23" }
 ---
 
-# Academic Writer — Post-Article Deliverables
+# Pi Academic — Post-Article Deliverables
 
 Generate presentation materials and submission documents from a completed article.
 

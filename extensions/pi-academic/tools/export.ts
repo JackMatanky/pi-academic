@@ -369,7 +369,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_export_article",
     effect: "exec",
-    label: "Academic Writer Export Article",
+    label: "Pi Academic Export Article",
     description:
       "Audit citations and export an article to DOCX, ODT, LaTeX, or PDF with Pandoc, applying the profile style package or an optional per-export override. Continues other formats when one fails; unsupported formats are rejected up front. Output replaces an earlier export only when Pandoc succeeds.",
     parameters: ExportArticleSchema,
@@ -380,9 +380,9 @@ export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_generate_docx",
     effect: "exec",
-    label: "Academic Writer Generate DOCX",
+    label: "Pi Academic Generate DOCX",
     description:
-      "Generate an Academic Writer .docx with real footnotes from the article markdown file, using Pandoc and the profile's style package when one is configured.",
+      "Generate an Pi Academic .docx with real footnotes from the article markdown file, using Pandoc and the profile's style package when one is configured.",
     parameters: Type.Object({
       input: Type.String({
         minLength: 1,
@@ -439,7 +439,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_import_docx",
     effect: "exec",
-    label: "Academic Writer Import DOCX",
+    label: "Pi Academic Import DOCX",
     description:
       'Convert a Word .docx inside the project to a Pandoc markdown article with its footnotes and endnotes as [^n] definitions. Default output is articles/<slug>.md; refuses to replace an existing file unless overwrite is true. Images are extracted beside the markdown. Word citation fields come through as plain text, never [@key]. Literal cross-references such as "note 19 above" become links to note anchors, so they stay right when notes move. Warns when the footnote count differs from the Word file.',
     parameters: Type.Object({
@@ -475,7 +475,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
     name: "pi_academic_style_package",
     effect: "write",
     effectFor: ({ action }) => (action === "list" ? "read" : "write"),
-    label: "Academic Writer Style Package",
+    label: "Pi Academic Style Package",
     description:
       "Manage document style packages under .pi-academic/styles/: list them, install the academic-default starter (design.json plus editable native Word/LibreOffice/LaTeX files), or validate a package for every export format and report what each format cannot express.",
     parameters: Type.Object({

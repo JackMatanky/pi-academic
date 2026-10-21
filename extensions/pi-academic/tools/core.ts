@@ -26,9 +26,9 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     name: "pi_academic_read_resource",
     effect: "read",
     core: true,
-    label: "Academic Writer Resource",
+    label: "Pi Academic Resource",
     description:
-      "Read a packaged Academic Writer resource by stable name. thresholds resolves .pi-academic/thresholds.json first (the project override that init/setup writes after asking the researcher) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
+      "Read a packaged Pi Academic resource by stable name. thresholds resolves .pi-academic/thresholds.json first (the project override that init/setup writes after asking the researcher) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
     parameters: Type.Object({
       name: stringEnum(RESOURCE_NAMES, {
         description:
@@ -60,8 +60,8 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {
     name: "pi_academic_list_agents",
     effect: "read",
-    label: "Academic Writer Agents",
-    description: "List packaged Academic Writer agent definition files.",
+    label: "Pi Academic Agents",
+    description: "List packaged Pi Academic agent definition files.",
     parameters: Type.Object({}),
     run: () => {
       const agents = readdirSync(join(PACKAGE_ROOT, "agents"))
@@ -76,9 +76,9 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     name: "pi_academic_status",
     effect: "read",
     core: true,
-    label: "Academic Writer Status",
+    label: "Pi Academic Status",
     description:
-      "Report project-local Academic Writer setup state, source/bibliography availability, run state, and packaged agents. Includes the active harness (pi or omp).",
+      "Report project-local Pi Academic setup state, source/bibliography availability, run state, and packaged agents. Includes the active harness (pi or omp).",
     parameters: Type.Object({}),
     run: (_params, { cwd }) => {
       const status = buildStatus(cwd);
@@ -101,7 +101,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
         : "disabled";
 
       const text = [
-        `Academic Writer status: ${status.ok ? "profile found" : "profile missing"}`,
+        `Pi Academic status: ${status.ok ? "profile found" : "profile missing"}`,
         ...(status.profileError
           ? [`Profile unreadable: ${status.profileError}`]
           : []),
@@ -126,7 +126,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {
     name: "pi_academic_health",
     effect: "read",
-    label: "Academic Writer Health",
+    label: "Pi Academic Health",
     description:
       "Return deterministic local health data: profile/source/run state, packaged agents, and local command availability. Live MCP probes still belong in the health skill.",
     parameters: Type.Object({}),
@@ -154,7 +154,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     name: "pi_academic_article_paths",
     effect: "read",
     core: true,
-    label: "Academic Writer Article Paths",
+    label: "Pi Academic Article Paths",
     description:
       "Build deterministic article slug, markdown, DOCX, and intermediate JSON paths from a subject. Supports non-English titles.",
     parameters: Type.Object({
@@ -176,7 +176,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {
     name: "pi_academic_list_project_files",
     effect: "read",
-    label: "Academic Writer Project Files",
+    label: "Pi Academic Project Files",
     description:
       "List project articles or past-article corpus files deterministically in newest-first order. Use instead of ls/find/head/wc in skills.",
     parameters: Type.Object({
@@ -203,7 +203,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
   registerTool(pi, {
     name: "pi_academic_resolve_mcp_tool",
     effect: "read",
-    label: "Academic Writer Resolve MCP Tool",
+    label: "Pi Academic Resolve MCP Tool",
     description:
       "Resolve the live callable name for a bare MCP tool (e.g. zotero_get_item_fulltext, notebook_list, get_text) across harnesses. Call once per logical tool name per agent run, cache the returned live_name, and call that tool with the arguments documented for the logical name elsewhere in this skill/agent. Returns live_name: null when no matching tool is connected.",
     parameters: Type.Object({

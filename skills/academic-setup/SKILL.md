@@ -1,13 +1,13 @@
 ---
 name: academic-setup
 description: >-
-  Set up or maintain the Academic Writer profile and integrations. Use when doing first-time onboarding,
+  Set up or maintain the Pi Academic profile and integrations. Use when doing first-time onboarding,
   quick or full setup, source indexing, changing the research field, or adding/removing integrations.
 allowed-tools: bash read write edit find grep subagent pi_academic_read_resource pi_academic_resolve_csl pi_academic_migrate_profile pi_academic_get_profile pi_academic_update_profile pi_academic_list_project_files pi_academic_extract_document pi_academic_ingest_sources pi_academic_resolve_mcp_tool pi_academic_write_voice_fingerprint pi_academic_update_author_voice
 metadata: { author: "Yotam Fromm", version: "0.3.1" }
 ---
 
-# Academic Writer setup and profile maintenance
+# Pi Academic setup and profile maintenance
 
 This is one entrypoint with four explicit modes. Before changing anything, call `pi_academic_get_profile` when available and determine whether a profile already exists. If the request does not identify a mode, ask one concise question rather than silently choosing the extent of setup.
 

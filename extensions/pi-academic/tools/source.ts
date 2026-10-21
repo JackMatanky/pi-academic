@@ -49,7 +49,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_extract_document",
     effect: "read",
-    label: "Academic Writer Extract Document",
+    label: "Pi Academic Extract Document",
     description:
       "Extract deterministic plain text from markdown, text, PDF, or DOCX files inside the project. Use instead of ad-hoc shell extraction snippets.",
     parameters: Type.Object({
@@ -77,7 +77,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_ingest_sources",
     effect: "write",
-    label: "Academic Writer Ingest Sources",
+    label: "Pi Academic Ingest Sources",
     description:
       "Ingest PDF, DOCX, Markdown, or text files inside the project (default: .pi-academic/sources/). Generates local source records, citekeys, sources.json, and bibliography.bib without requiring Zotero. Existing Zotero records and the citekeys of already-ingested files are preserved.",
     parameters: Type.Object({
@@ -114,7 +114,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_relink_citations",
     effect: "write",
-    label: "Academic Writer Relink Citations",
+    label: "Pi Academic Relink Citations",
     description:
       "Rewrite an article's footnotes that cite sources in .pi-academic/sources.json as Pandoc citations (citeproc mode only). A note made only of citations, with at most a 'see'/'cf.' lead-in, becomes an inline [@citeKey, p. N] at its reference (a note style turns it back into a footnote itself); a note with other text stays a note with its citations rewritten (author-in-text form in a note style, so they are not parenthesised); anything not matched unambiguously is left as written and reported. Matches by author surname plus title from sources.json; works on imported .docx articles. Without apply it only reports what would change.",
     parameters: Type.Object({
@@ -212,7 +212,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_write_sources_cache",
     effect: "write",
-    label: "Academic Writer Write Sources Cache",
+    label: "Pi Academic Write Sources Cache",
     description:
       "Write the current-run .pi-academic/sources.json and .pi-academic/bibliography.bib from the researcher's extracted records. Call before pi_academic_snapshot_citations.",
     parameters: Type.Object({
@@ -238,7 +238,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_snapshot_citations",
     effect: "write",
-    label: "Academic Writer Snapshot Citations",
+    label: "Pi Academic Snapshot Citations",
     description:
       "Freeze the current project citation cache beside an article as articles/<slug>.sources.json and articles/<slug>.bibliography.bib.",
     parameters: Type.Object({
@@ -268,7 +268,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_resolve_csl",
     effect: "exec",
-    label: "Academic Writer Resolve CSL",
+    label: "Pi Academic Resolve CSL",
     description:
       "Resolve a bundled alias, CSL repository id, cached style, or custom .csl path to a local CSL file for Pandoc.",
     parameters: Type.Object({
@@ -296,7 +296,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     name: "pi_academic_audit_citations",
     effect: "read",
     core: true,
-    label: "Academic Writer Citation Audit",
+    label: "Pi Academic Citation Audit",
     description:
       "Deterministically verify citation syntax and citeproc keys before DOCX/export/review. Code spans, fenced code, front matter and e-mail addresses are ignored; narrative @key citations are checked. Semantic claim verification still belongs to the editor agent in audit mode.",
     parameters: Type.Object({

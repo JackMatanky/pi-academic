@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for quick-onboarding.md. -->
 
-# Academic Writer Setup
+# Pi Academic Setup
 
 > **Do NOT use this skill** for source indexing or full style fingerprinting — use `/skill:academic-setup` instead. This is the _quick_ setup; init is the deep setup.
 
@@ -127,7 +127,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Example: (לוי, משנת הנפש, עמ' 42)
 >    ```
 >
-> 2. **Popular citeproc style** — Pick a common style; Academic Writer downloads/caches it from Zotero/CSL on first use.
+> 2. **Popular citeproc style** — Pick a common style; Pi Academic downloads/caches it from Zotero/CSL on first use.
 >
 >    ```text
 >      apa                  → APA 7th edition
@@ -216,7 +216,7 @@ If Zotero is selected but not detected:
 - First check whether the binary exists: `command -v zotero-mcp >/dev/null 2>&1 && echo "INSTALLED" || echo "NOT_FOUND"`.
 - If the binary is missing, show: `pip install zotero-mcp-server`, then continue after the researcher confirms installation.
 - Optional semantic search: `zotero_semantic_search` needs the extras build `pip install "zotero-mcp-server[semantic]"` plus an index build; `zotero_search_items` works without it. Mention this only if the researcher asks about topic/semantic search.
-- If the binary exists but `zotero_get_recent(limit=1)` is unavailable/failing because MCP is not configured, explain that Academic Writer uses standard MCP config instead of package-owned environment variables. Offer to scaffold this safe local-mode project `.mcp.json` only if the researcher approves and no `.mcp.json` exists:
+- If the binary exists but `zotero_get_recent(limit=1)` is unavailable/failing because MCP is not configured, explain that Pi Academic uses standard MCP config instead of package-owned environment variables. Offer to scaffold this safe local-mode project `.mcp.json` only if the researcher approves and no `.mcp.json` exists:
 
   ```json
   {
@@ -277,9 +277,9 @@ Under oh-my-pi the `settings`/`directTools` keys are ignored and tools appear as
 
 - If `.mcp.json` already exists, never overwrite it. Read it, show the snippet, and tell the researcher to merge the `notebooklm-mcp` block unless the JSON is simple enough to update safely.
 
-If Zotero is enabled and detected, call `zotero_get_collections()` and ask whether to use all library items or one default collection for Academic Writer. If they choose a collection, save `tools.zotero.collection` as `{ "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }`.
+If Zotero is enabled and detected, call `zotero_get_collections()` and ask whether to use all library items or one default collection for Pi Academic. If they choose a collection, save `tools.zotero.collection` as `{ "key": "COLLECTION_KEY", "name": "DISPLAY_NAME" }`.
 
-If NotebookLM is enabled and detected, call `notebook_list()` and ask whether to use all notebooks or one default notebook for Academic Writer. If they choose one, save `tools.notebooklm.notebook` as `{ "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" }`.
+If NotebookLM is enabled and detected, call `notebook_list()` and ask whether to use all notebooks or one default notebook for Pi Academic. If they choose one, save `tools.notebooklm.notebook` as `{ "id": "NOTEBOOK_ID", "name": "DISPLAY_NAME" }`.
 
 Store only collection/notebook identifiers and display names in the profile. Never store API keys, library credentials, or NotebookLM auth tokens.
 
@@ -336,7 +336,7 @@ If "Yes": analyze across all 25 dimensions (sentence level, vocabulary, paragrap
 Use the Write tool to create `.pi-academic/profile.md`:
 
 `````markdown
-# Academic Writer Profile
+# Pi Academic Profile
 
 ---
 

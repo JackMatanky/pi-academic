@@ -1,6 +1,6 @@
 # Removed RAG Information
 
-This file archives RAG-related instructions and promises removed from active Academic Writer prompts during the local-source/Sefaria implementation. It is not an active workflow contract; `docs/rag-todo.md` tracks future implementation work.
+This file archives RAG-related instructions and promises removed from active Pi Academic prompts during the local-source/Sefaria implementation. It is not an active workflow contract; `docs/rag-todo.md` tracks future implementation work.
 
 ## Removed active promises
 

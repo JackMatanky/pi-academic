@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for corpus-refresh.md. -->
 
-# Academic Writer — Learn from New Articles
+# Pi Academic — Learn from New Articles
 
 Trigger the style miner to analyze new articles in `past-articles/` and update the researcher's style fingerprint.
 

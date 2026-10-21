@@ -93,7 +93,7 @@ test("[test_load_resource_and_tool_missing_resource] missing or unknown resource
 
   assert.throws(
     () => loadResource("nonexistent_resource", root),
-    /Unknown Academic Writer resource/,
+    /Unknown Pi Academic resource/,
   );
 
   const unknownResult = await callTool(root, "pi_academic_read_resource", {

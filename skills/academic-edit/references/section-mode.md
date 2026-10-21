@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for section-mode.md. -->
 
-# Academic Writer — Edit Section
+# Pi Academic — Edit Section
 
 Ask only for the article/section and requested change if these are not already clear. If it's unclear whether the request is a local prose/citation/style change or an argument/evidence/structure change, ask one concise scope question before editing. State the proposed scope and preserved material before a structural rewrite; route all work through the full edit skill.
 

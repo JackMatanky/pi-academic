@@ -1,6 +1,6 @@
 # First-time flow
 
-Use this guide for the current Pi/oh-my-pi Academic Writer package. The package is installed through Pi or OMP; there is no separate `npx academic-setup` initializer. See [README.md](../README.md) for installation and companion-package prerequisites.
+Use this guide for the current Pi/oh-my-pi Pi Academic package. The package is installed through Pi or OMP; there is no separate `npx academic-setup` initializer. See [README.md](../README.md) for installation and companion-package prerequisites.
 
 ## Set up a project
 

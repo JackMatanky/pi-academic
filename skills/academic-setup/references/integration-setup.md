@@ -29,7 +29,7 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
    > Best for: Storing and searching your source PDFs
    > Status: ✓ Detected"
 
-   If NOT_DETECTED but `zotero-mcp` is installed: explain that Academic Writer now reads Zotero through standard MCP config. Offer to create a safe local-mode project `.mcp.json` if no project config exists, or to show the snippet if one already exists and should be merged manually:
+   If NOT_DETECTED but `zotero-mcp` is installed: explain that Pi Academic now reads Zotero through standard MCP config. Offer to create a safe local-mode project `.mcp.json` if no project config exists, or to show the snippet if one already exists and should be merged manually:
 
    ```json
    {

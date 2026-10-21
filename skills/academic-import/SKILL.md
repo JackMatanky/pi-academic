@@ -5,7 +5,7 @@ allowed-tools: read find pi_academic_read_resource pi_academic_get_profile pi_ac
 metadata: { author: "Yotam Fromm", version: "0.1.0" }
 ---
 
-# Academic Writer — Import DOCX
+# Pi Academic — Import DOCX
 
 Turn a Word manuscript into `articles/<slug>.md` so `/skill:academic-edit`, `/skill:academic-review`, and `/skill:academic-export` can work on it. Footnotes and endnotes become Pandoc `[^n]` definitions.
 

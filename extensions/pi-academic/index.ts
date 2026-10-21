@@ -10,7 +10,7 @@ import { registerSourceTools } from "./tools/source.js";
 import { registerVoiceTools } from "./tools/voice.js";
 
 /**
- * Registers the package-aware Academic Writer tools for Pi.
+ * Registers the package-aware Pi Academic tools for Pi.
  */
 export default function piAcademicWriter(pi: ExtensionAPI): void {
   const harness = detectHarness(pi);

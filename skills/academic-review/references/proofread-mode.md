@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for proofread-mode.md. -->
 
-# Academic Writer — Proofread (הגהה)
+# Pi Academic — Proofread (הגהה)
 
 A focused, **mechanical-only** proofreading pass over a finished article, run inline by this skill (no subagent). It catches the errors every writing pass misses — typos, punctuation, spacing, broken Hebrew typography, doubled words, clear grammar slips — proposes the safe ones as a suggestion list, and writes a report documenting **every suggestion and why**.
 

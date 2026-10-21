@@ -67,7 +67,7 @@ function readRun(
 }
 
 /**
- * Summarizes active and latest Academic Writer runs for a project.
+ * Summarizes active and latest Pi Academic runs for a project.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  *

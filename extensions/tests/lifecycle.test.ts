@@ -114,7 +114,7 @@ test("the dashboard shows on a start without a reason, on startup, and not on re
 
   await none.fire({ type: "session_start" }, root);
   assert.equal(none.notices.length, 1);
-  assert.ok(none.notices[0]?.text.includes("ACADEMIC WRITER"));
+  assert.ok(none.notices[0]?.text.includes("PI ACADEMIC"));
 
   const startup = setup({ tools: both });
 

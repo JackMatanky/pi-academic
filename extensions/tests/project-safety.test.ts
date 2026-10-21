@@ -395,7 +395,7 @@ test("updateProfile keeps unknown fields and sections, quotes awkward values and
     root,
     ".pi-academic/profile.md",
     [
-      "# Academic Writer Profile",
+      "# Pi Academic Profile",
       "",
       "---",
       "fieldOfStudy: History",
@@ -432,7 +432,7 @@ test("profile frontmatter parses as YAML with the string/list/null contract", (t
     root,
     ".pi-academic/profile.md",
     [
-      "# Academic Writer Profile",
+      "# Pi Academic Profile",
       "",
       "---",
       "fieldOfStudy: 'Ancient: History'",

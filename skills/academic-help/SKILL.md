@@ -1,13 +1,13 @@
 ---
 name: academic-help
-description: "Learn what the Academic Writer plugin does and how to use it. Use when you don't know which command to run."
+description: "Learn what the Pi Academic plugin does and how to use it. Use when you don't know which command to run."
 allowed-tools: read
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
-# Academic Writer — Help
+# Pi Academic — Help
 
-Display a friendly, comprehensive guide to the Academic Writer plugin. No profile or tools required — this is pure documentation.
+Display a friendly, comprehensive guide to the Pi Academic plugin. No profile or tools required — this is pure documentation.
 
 ---
 
@@ -15,9 +15,9 @@ Print the following (adapt formatting for readability):
 
 ---
 
-## What is Academic Writer?
+## What is Pi Academic?
 
-Academic Writer is an AI-powered writing assistant built for **Humanities researchers**. It helps you produce rigorously cited, style-matched academic articles as .docx files.
+Pi Academic is an AI-powered writing assistant built for **Humanities researchers**. It helps you produce rigorously cited, style-matched academic articles as .docx files.
 
 What makes it different:
 

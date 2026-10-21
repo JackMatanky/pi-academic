@@ -12,7 +12,7 @@ empirical signals of their voice. Do not interview; interview work belongs to th
 
 ### Inputs
 
-- `past-articles/**/*.{md,docx,pdf}` (Academic Writer) or `chapters/**/*.md`,
+- `past-articles/**/*.{md,docx,pdf}` (Pi Academic) or `chapters/**/*.md`,
   `manuscript.md` (hebrew-book-producer). Project layout determines path.
 - The previous `.pi-academic/voice/fingerprint.md` if present (so you can incrementally update rather than
   overwrite if the corpus has only grown by one or two articles).

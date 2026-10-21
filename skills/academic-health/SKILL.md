@@ -1,13 +1,13 @@
 ---
 name: academic-health
-description: "Check the health of all Academic Writer integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
+description: "Check the health of all Pi Academic integrations — profile, MCP config, Zotero, past articles, source index, and export tools. Use when something stops working, after install, or before a long write session."
 allowed-tools: bash read pi_academic_read_resource pi_academic_resolve_csl pi_academic_list_agents pi_academic_status pi_academic_health pi_academic_ingest_sources pi_academic_snapshot_citations pi_academic_resolve_mcp_tool
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
-# Academic Writer — Health Check
+# Pi Academic — Health Check
 
-Run a comprehensive health check on every component of the Academic Writer system. Report status clearly so the researcher knows what's working and what needs attention.
+Run a comprehensive health check on every component of the Pi Academic system. Report status clearly so the researcher knows what's working and what needs attention.
 
 ## 1. Local package status
 
@@ -222,7 +222,7 @@ Use `pi_academic_status` details for packaged agent filenames. Call `pi_academic
 
 Show a clean summary table:
 
-> **Academic Writer — Health Report**
+> **Pi Academic — Health Report**
 >
 > | Component         | Status                                     | Details                                                                                |
 > | ----------------- | ------------------------------------------ | -------------------------------------------------------------------------------------- |

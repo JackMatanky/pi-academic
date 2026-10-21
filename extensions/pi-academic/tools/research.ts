@@ -162,7 +162,7 @@ export function registerResearchTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_write_section",
     effect: "write",
-    label: "Academic Writer Write Section",
+    label: "Pi Academic Write Section",
     description:
       "Persist one approved article section to articles/<slug>/sections/<sectionId>.md. `article` is the article markdown path as returned by pi_academic_article_paths (must start with articles/). Overwrites are allowed — redrafts rewrite the same file. The orchestrating skill assembles these files into the article.",
     parameters: Type.Object({

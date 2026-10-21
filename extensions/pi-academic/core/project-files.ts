@@ -29,7 +29,7 @@ export interface ProjectFile {
 }
 
 /**
- * Newest-first file listing for an Academic Writer project directory.
+ * Newest-first file listing for an Pi Academic project directory.
  */
 export interface ProjectFileList {
   kind: "articles" | "past_articles";

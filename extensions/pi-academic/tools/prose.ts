@@ -19,7 +19,7 @@ export function registerProseTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_count_words",
     effect: "read",
-    label: "Academic Writer Count Words",
+    label: "Pi Academic Count Words",
     description:
       "Calculate markdown word count and estimated rendered document word count with citations, footnotes, and bibliography based on citationStyle.",
     parameters: Type.Object({
@@ -61,7 +61,7 @@ export function registerProseTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_lint_prose",
     effect: "read",
-    label: "Academic Writer Prose Lint",
+    label: "Pi Academic Prose Lint",
     description:
       "Run read-only, deterministic English prose-pattern checks. Findings are advisory prompts for contextual review, not violations or authorship judgments.",
     parameters: Type.Object({
@@ -99,7 +99,7 @@ export function registerProseTools(pi: ExtensionAPI): void {
     name: "pi_academic_proofread",
     effect: "read",
     core: true,
-    label: "Academic Writer Harper Proofread",
+    label: "Pi Academic Harper Proofread",
     description:
       "Run the Harper English grammar/spelling linter on text. Findings are advisory; a match alone is never an error. English-only — Hebrew or other languages return zero findings by design (use the inline הגהה sweep and pi_academic_fix_typography for Hebrew).",
     parameters: Type.Object({
@@ -142,7 +142,7 @@ export function registerProseTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_fix_typography",
     effect: "read",
-    label: "Academic Writer Fix Typography",
+    label: "Pi Academic Fix Typography",
     description:
       "Apply deterministic typography cleanup to a paragraph: em dashes become spaced hyphens, straight quotes around Hebrew text become gereshayim (English quotes are left alone), and stray directional marks and orphan leading punctuation are removed.",
     parameters: Type.Object({

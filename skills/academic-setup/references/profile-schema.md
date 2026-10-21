@@ -19,7 +19,7 @@ Run it in Phase 0 before checking for an existing profile. It is idempotent:
 `.pi-academic/profile.md` uses markdown with YAML frontmatter + JSON sections:
 
 ````markdown
-# Academic Writer Profile
+# Pi Academic Profile
 
 ---
 

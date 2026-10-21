@@ -16,7 +16,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_write_voice_artifact",
     effect: "write",
-    label: "Academic Writer Write Voice Artifact",
+    label: "Pi Academic Write Voice Artifact",
     description:
       "Persist voice calibration artifacts (audit, profile, fingerprint, interview). Destination is strictly bound to .pi-academic/voice/.",
     parameters: Type.Object({
@@ -57,7 +57,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_write_voice_audit",
     effect: "write",
-    label: "Academic Writer Write Voice Audit",
+    label: "Pi Academic Write Voice Audit",
     description:
       "Write .pi-academic/voice/audit.md. The academic-voice skill's path to persist its calibration report without a generic write grant.",
     parameters: Type.Object({
@@ -79,7 +79,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_update_author_voice",
     effect: "write",
-    label: "Academic Writer Update Author Voice",
+    label: "Pi Academic Update Author Voice",
     description:
       "Overwrite .pi-academic/voice/profile.md with the given content. Used by the academic-voice skill instead of a generic write/edit grant.",
     parameters: Type.Object({
@@ -102,7 +102,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_write_interview_session",
     effect: "write",
-    label: "Academic Writer Write Interview Session",
+    label: "Pi Academic Write Interview Session",
     description:
       "Write .pi-academic/voice/interview/<sessionId>.md. The academic-voice skill's path to persist a session transcript without a generic write grant. sessionId must match ^[a-zA-Z0-9_-]+$.",
     parameters: Type.Object({
@@ -132,7 +132,7 @@ export function registerVoiceTools(pi: ExtensionAPI): void {
   registerTool(pi, {
     name: "pi_academic_write_voice_fingerprint",
     effect: "write",
-    label: "Academic Writer Write Voice Fingerprint",
+    label: "Pi Academic Write Voice Fingerprint",
     description:
       "Write .pi-academic/voice/fingerprint.md. The academic-voice skill's only path to persist its style fingerprint without a generic write grant.",
     parameters: Type.Object({

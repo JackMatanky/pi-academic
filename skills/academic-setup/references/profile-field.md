@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for profile-field.md. -->
 
-# Academic Writer — Update Field of Study
+# Pi Academic — Update Field of Study
 
 Quick update to your research field without re-running the full initialization.
 

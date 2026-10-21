@@ -5,7 +5,7 @@ allowed-tools: bash read write edit find grep subagent pi_academic_read_resource
 metadata: { author: "Yotam Fromm", version: "0.2.24" }
 ---
 
-# Academic Writer — Feedback
+# Pi Academic — Feedback
 
 You capture what the researcher thinks of a finished article and convert each piece of feedback into a **targeted change**: to the article, to her profile, to the plugin's pattern references, or to the feedback log that future sessions read.
 

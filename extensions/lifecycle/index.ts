@@ -199,7 +199,7 @@ function buildDashboardLines(
   const lines: string[] = [
     "",
     border("╔", "╗"),
-    row("         ACADEMIC WRITER — SESSION START"),
+    row("         PI ACADEMIC — SESSION START"),
     border("╠", "╣"),
     row(`  Field: ${profile.fieldOfStudy ?? "Not set"}`),
     row(`  Language: ${profile.targetLanguage ?? "Not set"}`),
@@ -271,7 +271,7 @@ const COMPANIONS = [
 ] as const;
 
 /**
- * Registers the Academic Writer session dashboard (and, on pi, a warning about
+ * Registers the Pi Academic session dashboard (and, on pi, a warning about
  * missing companion packages).
  *
  * @param pi - Pi extension API used to register lifecycle hooks or tools.
@@ -290,7 +290,7 @@ export default function (pi: ExtensionAPI) {
       profile = loadProfile(projectDir);
     } catch (error) {
       ctx.ui.notify(
-        `Academic Writer profile is unreadable: ${errorMessage(error)}`,
+        `Pi Academic profile is unreadable: ${errorMessage(error)}`,
         "warning",
       );
 

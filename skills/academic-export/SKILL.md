@@ -5,7 +5,7 @@ allowed-tools: bash read write find pi_academic_read_resource pi_academic_get_pr
 metadata: { author: "Yotam Fromm", version: "0.2.25" }
 ---
 
-# Academic Writer — Export
+# Pi Academic — Export
 
 Export a finished `articles/<slug>.md` to DOCX, ODT, LaTeX (`.tex`), or PDF with Pandoc. Citation style and document appearance are independent: CSL controls citation formatting; a selected project style package controls appearance.
 

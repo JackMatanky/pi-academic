@@ -1,6 +1,6 @@
 <!-- Consolidated mode guidance for full-onboarding.md. -->
 
-# Academic Writer — Initialization Wizard
+# Pi Academic — Initialization Wizard
 
 Personalized onboarding that creates your researcher profile, detects available integrations, analyzes your writing style, and indexes your research sources.
 
@@ -42,7 +42,7 @@ Call `pi_academic_migrate_profile`, then check for existing profile by calling `
 
 **If it returns `ok: true`**: Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 
-> "You already have an Academic Writer profile. What would you like to do?"
+> "You already have an Pi Academic profile. What would you like to do?"
 >
 > 1. **Update my profile** — Keep existing data, modify selected fields only.
 >
@@ -72,7 +72,7 @@ If **Update**, ask which phases to re-run (multiSelect: true) with options: "Int
 
 Then greet the user:
 
-> "Welcome to Academic Writer! I'll walk you through setup in a few steps.
+> "Welcome to Pi Academic! I'll walk you through setup in a few steps.
 >
 > Your workspace folders are ready:
 >
@@ -176,7 +176,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      ✓ Dense citation density
 >    ```
 >
-> 2. **Popular citeproc style** — Pick a common style; Academic Writer downloads/caches it from Zotero/CSL on first use.
+> 2. **Popular citeproc style** — Pick a common style; Pi Academic downloads/caches it from Zotero/CSL on first use.
 >
 >    ```text
 >    Popular CSL aliases
@@ -209,7 +209,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      nature
 >      modern-humanities-research-association
 >
->    Academic Writer downloads/caches the .csl file to .pi-academic/csl/
+>    Pi Academic downloads/caches the .csl file to .pi-academic/csl/
 >    ```
 >
 > 4. **Custom CSL file** — Use a `.csl` file you provide.
@@ -424,7 +424,7 @@ After enrichment, re-list and build the sources array (id + title + type only �
 Use the Write tool to save `.pi-academic/profile.md`:
 
 `````markdown
-# Academic Writer Profile
+# Pi Academic Profile
 
 ---
 

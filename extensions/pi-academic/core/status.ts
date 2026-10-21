@@ -17,7 +17,7 @@ import { tryReadJsonFile } from "../../lib/schema.js";
 const SOURCE_EXTENSIONS = new Set([".pdf", ".docx", ".md", ".txt"]);
 
 /**
- * Existence metadata for project-local Academic Writer files.
+ * Existence metadata for project-local Pi Academic files.
  */
 interface FileState {
   exists: boolean;
