@@ -50,7 +50,7 @@ function style(path: string, content = xml): string {
 
 test("popular aliases and style IDs resolve cached files, without network access", async () => {
   const root = project();
-  const cache = join(root, ".academic-writer", "csl");
+  const cache = join(root, ".pi-academic", "csl");
   const apa = style(join(cache, "apa.csl"));
   const chicago = style(join(cache, "chicago-author-date.csl"));
   const journal = style(join(cache, "journal-of-example.csl"));
@@ -72,7 +72,7 @@ test("popular aliases and style IDs resolve cached files, without network access
 test("project, cache-relative, absolute and home paths validate CSL content", async () => {
   const root = project();
   const local = style(join(root, "my-style.csl"));
-  const relative = join(root, ".academic-writer", "csl", "relative.csl");
+  const relative = join(root, ".pi-academic", "csl", "relative.csl");
   const cached = style(relative);
   assert.equal(await resolveCslStyle("relative.csl", root), cached);
   assert.equal(await resolveCslStyle("relative.csl", root), cached);
@@ -104,7 +104,7 @@ test("direct URL downloads even without --download and reuses its cached basenam
   };
 
   const path = await resolveCslStyle(url, root);
-  assert.equal(path, join(root, ".academic-writer", "csl", "my-style.csl"));
+  assert.equal(path, join(root, ".pi-academic", "csl", "my-style.csl"));
   assert.equal(readFileSync(path, "utf8"), xml);
   assert.equal(await resolveCslStyle(url, root), path);
   assert.deepEqual(calls, [url]);
@@ -125,7 +125,7 @@ test("style IDs fall back from Zotero to the CSL repository and report both fail
   const path = await resolveCslStyle("mla", root, true);
   assert.equal(
     path,
-    join(root, ".academic-writer", "csl", "modern-language-association.csl"),
+    join(root, ".pi-academic", "csl", "modern-language-association.csl"),
   );
   assert.deepEqual(calls, [
     "https://www.zotero.org/styles/modern-language-association",
@@ -146,7 +146,7 @@ test("style IDs fall back from Zotero to the CSL repository and report both fail
   );
   assert.equal((failure.message.match(/\(404\)/g) ?? []).length, 2);
   assert.equal(
-    existsSync(join(other, ".academic-writer", "csl", "absent.csl")),
+    existsSync(join(other, ".pi-academic", "csl", "absent.csl")),
     false,
   );
 });
@@ -159,12 +159,12 @@ test("invalid download never poisons cache; symlinked cache cannot write outside
     /File does not look like a CSL style/,
   );
   assert.equal(
-    existsSync(join(root, ".academic-writer", "csl", "invalid.csl")),
+    existsSync(join(root, ".pi-academic", "csl", "invalid.csl")),
     false,
   );
   const outside = project();
-  mkdirSync(join(root, ".academic-writer"), { recursive: true });
-  symlinkSync(outside, join(root, ".academic-writer", "csl"));
+  mkdirSync(join(root, ".pi-academic"), { recursive: true });
+  symlinkSync(outside, join(root, ".pi-academic", "csl"));
   globalThis.fetch = async () => new Response(xml);
   await assert.rejects(
     resolveCslStyle("https://example.org/journal.csl", root),

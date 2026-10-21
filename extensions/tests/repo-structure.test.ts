@@ -13,20 +13,18 @@ const isFile = (rel: string): boolean => {
   return existsSync(path) && statSync(path).isFile();
 };
 
-test("[test_voice_artifacts_under_academic_writer] voice artifacts live under .academic-writer/voice/", () => {
+test("[test_voice_artifacts_under_academic_writer] voice artifacts live under .pi-academic/voice/", () => {
   const voiceTools = readRepo("extensions/pi-academic/tools/voice.ts");
 
-  assert.ok(voiceTools.includes(".academic-writer/voice/profile.md"));
+  assert.ok(voiceTools.includes(".pi-academic/voice/profile.md"));
   assert.ok(
     !voiceTools.includes(".voice/"),
     "voice paths must not use .voice/",
   );
 });
 
-test("[test_fixture_voice_profile_location] the e2e fixture voice profile sits in .academic-writer/voice/", () => {
-  assert.ok(
-    isFile("tests/e2e/fixture-project/.academic-writer/voice/profile.md"),
-  );
+test("[test_fixture_voice_profile_location] the e2e fixture voice profile sits in .pi-academic/voice/", () => {
+  assert.ok(isFile("tests/e2e/fixture-project/.pi-academic/voice/profile.md"));
 });
 
 test("[test_no_voice_state_in_package] the package repo keeps no voice state at its root", () => {
@@ -47,6 +45,6 @@ test("[test_csl_styles_are_downloaded_not_bundled] no CSL file is bundled in the
   assert.deepEqual(
     repoFiles(".", [".csl"]),
     [],
-    "CSL files should be downloaded into .academic-writer/csl/, not bundled in the package",
+    "CSL files should be downloaded into .pi-academic/csl/, not bundled in the package",
   );
 });

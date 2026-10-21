@@ -26,13 +26,13 @@ function project(t: TestContext, withState: boolean): string {
 
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
 
-  if (withState) mkdirSync(join(root, ".academic-writer"));
+  if (withState) mkdirSync(join(root, ".pi-academic"));
 
   return root;
 }
 
 const spillDir = (root: string) =>
-  join(root, ".academic-writer", "runs", "tool-output");
+  join(root, ".pi-academic", "runs", "tool-output");
 
 test("output at the line cap is returned unchanged", (t) => {
   const text = "x\n".repeat(MAX_OUTPUT_LINES - 1) + "x";
@@ -47,7 +47,7 @@ test("too many lines are cut with a notice and saved in full", (t) => {
 
   assert.match(
     out,
-    /\[output truncated: showing 2000 of 3001 lines, [\d]+ of 6000 bytes\. Full output: \.academic-writer\/runs\/tool-output\/tool-1000\.txt\./,
+    /\[output truncated: showing 2000 of 3001 lines, [\d]+ of 6000 bytes\. Full output: \.pi-academic\/runs\/tool-output\/tool-1000\.txt\./,
   );
   assert.equal(out.split("\n\n[output truncated")[0]?.split("\n").length, 2000);
   assert.equal(
@@ -85,7 +85,7 @@ test("spill files older than a day are removed on the next spill", (t) => {
   assert.equal(readdirSync(spillDir(root)).length, 1);
 });
 
-test("without .academic-writer nothing is created and the notice says the output was not saved", (t) => {
+test("without .pi-academic nothing is created and the notice says the output was not saved", (t) => {
   const root = project(t, false);
   const out = boundOutput(root, "tool", "x\n".repeat(3000));
 
@@ -98,7 +98,7 @@ test("output spills stay inside the project when the state directory is a symlin
   const outside = mkdtempSync(join(tmpdir(), "aw-outside-"));
 
   t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
-  symlinkSync(outside, join(root, ".academic-writer"));
+  symlinkSync(outside, join(root, ".pi-academic"));
 
   const out = boundOutput(root, "tool", "x\n".repeat(3000));
 
@@ -111,7 +111,7 @@ test("output spills stay inside the project when the spill directory is a symlin
   const outside = mkdtempSync(join(tmpdir(), "aw-outside-"));
 
   t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
-  mkdirSync(join(root, ".academic-writer", "runs"));
+  mkdirSync(join(root, ".pi-academic", "runs"));
   symlinkSync(outside, spillDir(root));
 
   const out = boundOutput(root, "tool", "x\n".repeat(3000));
@@ -127,7 +127,7 @@ test("a 1 MB payload with no newlines is truncated with metadata, not exploded",
 
   assert.match(
     out,
-    /\[output truncated: showing 1 of 1 lines, \d{1,6} of 1000000 bytes\. Full output: \.academic-writer\/runs\/tool-output\/tool-2000\.txt\./,
+    /\[output truncated: showing 1 of 1 lines, \d{1,6} of 1000000 bytes\. Full output: \.pi-academic\/runs\/tool-output\/tool-2000\.txt\./,
   );
   const head = out.split("\n\n[output truncated")[0] ?? "";
 

@@ -51,7 +51,7 @@ You will receive:
 - `paragraphIndex`: Paragraph number within the section
 - `paragraphId`: Identifier for this paragraph (format: `section_N_p_M`)
 - `tools`: Enabled tools from the profile
-- `citationStyle`: `inline-parenthetical` (literal mode) or any other CSL/citeproc style value (citeproc mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.academic-writer/profile.md` (see Check D, Step D0).
+- `citationStyle`: `inline-parenthetical` (literal mode) or any other CSL/citeproc style value (citeproc mode) — selects the Check D/E branch below. If the caller omits it, Check D derives it directly from `.pi-academic/profile.md` (see Check D, Step D0).
 - Article Markdown path, sectionId, relevant note IDs, sourceRefs, and locators/textQuote selectors from the frozen section bundle. These are retrieval leads only; they are not proof of the cited claim.
 
 ### Process (audit)
@@ -135,7 +135,7 @@ If Zotero is unavailable, read the original indexed local source at the relevant
 **Step D0 — Determine citation mode.** Metadata verification branches on the article's citation style. Read `citationStyle` from this agent's input; if the caller did not provide it, derive it directly:
 
 ```bash
-CITATION_STYLE=$(grep '^citationStyle:' .academic-writer/profile.md 2>/dev/null | sed -E 's/^citationStyle:[[:space:]]*"?([a-zA-Z-]+)"?.*/\1/')
+CITATION_STYLE=$(grep '^citationStyle:' .pi-academic/profile.md 2>/dev/null | sed -E 's/^citationStyle:[[:space:]]*"?([a-zA-Z-]+)"?.*/\1/')
 echo "${CITATION_STYLE:-inline-parenthetical}"
 ```
 
@@ -144,7 +144,7 @@ echo "${CITATION_STYLE:-inline-parenthetical}"
 
 **Literal mode (`inline-parenthetical`):**
 
-Load article-local articles/<slug>.sources.json first. When no article-local snapshot exists, use .academic-writer/sources.json for articles not yet migrated to per-article citation assets; never use mutable cache to override an existing article snapshot.
+Load article-local articles/<slug>.sources.json first. When no article-local snapshot exists, use .pi-academic/sources.json for articles not yet migrated to per-article citation assets; never use mutable cache to override an existing article snapshot.
 
 For each cited claim, match the citation's `author + workTitle` to a registry entry. Then cross-check every metadata field the citation asserts (year, journal, publisher, workTitle spelling, volume, issue) against the registry entry.
 
@@ -164,7 +164,7 @@ Citations in this mode are pandoc-markdown markers, not literal author/title tex
    - Strip the leading `[@` and trailing `]` from the whole span.
    - Split what remains on `;` — one segment per citation. Every segment except the first still starts with a stray `@` (e.g. `@cohen2019, p. 4`) — after trimming whitespace, strip that leading `@` from each segment before continuing.
    - For each segment, split on the first `,` and keep only the part before it (the locator, e.g. `p. 42`, is discarded here). Trim whitespace — the result is the bare `citeKey`.
-2. **Confirm the key resolves in the bibliography.** Load articles/<slug>.bibliography.bib first; use .academic-writer/bibliography.bib only when the article snapshot does not exist. Match the bare key against a BibTeX entry. A missing key is a fabricated or broken citation: REJECT with fabricated_citation. Never mix a present article-local registry with a current-run bibliography.
+2. **Confirm the key resolves in the bibliography.** Load articles/<slug>.bibliography.bib first; use .pi-academic/bibliography.bib only when the article snapshot does not exist. Match the bare key against a BibTeX entry. A missing key is a fabricated or broken citation: REJECT with fabricated_citation. Never mix a present article-local registry with a current-run bibliography.
 3. **Cross-check confidence against `sources.json`.** Load the registry (same command and "file missing" fallback as literal mode above) and find the record whose `citeKey` field equals the extracted key. For every field the surrounding claim relies on:
    - `extractionConfidence.<field>` is `"low"` OR the field is `null` → do **not** reject. A citeproc marker cannot carry an inline `[?]` — embedding one would break the `[@key]` syntax pandoc parses — so instead add a line to the audit report: `[NEEDS REVIEW: <citeKey> — <field> unverified]`. This is the exact citeproc-mode counterpart of literal mode's inline `[NEEDS REVIEW: <field>]` tag: same trigger, reported instead of embedded.
    - No `sources.json` record has that `citeKey` at all (should not happen — `bibliography.bib` and `sources.json` are written together by the researcher — but handle it defensively): treat every field as unverified, exactly as the literal-mode "registry missing" fallback, and add `[NEEDS REVIEW: <citeKey> — record not found in sources.json]` to the report.
@@ -215,7 +215,7 @@ Scan every **analytical / interpretive sentence** — any sentence that asserts 
 
 #### Check G — Zotero Source Title Integrity
 
-When a citation cites a Zotero source, verify that the `Title` field in the citation matches the `workTitle` in the applicable source registry record. For a frozen article, read `articles/<slug>.sources.json`; use `.academic-writer/sources.json` only when no article-local snapshot exists. Never let a mutable project cache override an existing article snapshot.
+When a citation cites a Zotero source, verify that the `Title` field in the citation matches the `workTitle` in the applicable source registry record. For a frozen article, read `articles/<slug>.sources.json`; use `.pi-academic/sources.json` only when no article-local snapshot exists. Never let a mutable project cache override an existing article snapshot.
 
 For each citation in the paragraph, cross-check: does the cited title string match (modulo minor punctuation) the `workTitle` in the registry? If not, emit `[NEEDS REVIEW: title mismatch — registry says "<workTitle>", citation says "<cited title>"]` and REJECT.
 
@@ -237,7 +237,7 @@ Your default verification is `zotero_read_pdf_pages` (Check A) plus web_search (
 - The cited passage contradicts or is irrelevant to the claim
 - (RAG path, only if a RAG tool is available) the retrieved passage contains no matching passage, or the RAG response has `"error"` in it (service issue — retry once, then reject)
 - Check D: a high-confidence registry field contradicts a citation field (`metadata_mismatch`) — this catches the "right author, wrong year" class of error
-- Check D, citeproc mode: a `[@key]` marker's key does not exist in `.academic-writer/bibliography.bib` (`fabricated_citation`) — the same severity as a literal-mode `metadata_mismatch`
+- Check D, citeproc mode: a `[@key]` marker's key does not exist in `.pi-academic/bibliography.bib` (`fabricated_citation`) — the same severity as a literal-mode `metadata_mismatch`
 
 ### Output (audit)
 
@@ -267,9 +267,9 @@ The structural review (intro/conclusion checks, gap flagging, citation locking) 
 
 ### Voice Source Hierarchy
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT a runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is NOT a runtime source of truth.
 
 ### Coordinator Role Separation
 
@@ -349,7 +349,7 @@ If linking words are missing, repeated, or misused, fix them.
 
 #### 7. Style Fingerprint Compliance (full-article)
 
-**Re-read the complete `styleFingerprint` from `.academic-writer/profile.md` (the canonical runtime source of truth).** Evaluate the entire article against every fingerprint dimension:
+**Re-read the complete `styleFingerprint` from `.pi-academic/profile.md` (the canonical runtime source of truth).** Evaluate the entire article against every fingerprint dimension:
 
 - **Sentence patterns**: length distribution, structure variety, openers
 - **Vocabulary & register**: complexity, consistency

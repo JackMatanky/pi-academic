@@ -99,7 +99,7 @@ Report:
 
 - Local source folder present? ✓/✗
 - Local source files count
-- Citation snapshot search priority: `articles/<slug>.sources.json` (Primary) -> `.academic-writer/sources.json` (Fallback)
+- Citation snapshot search priority: `articles/<slug>.sources.json` (Primary) -> `.pi-academic/sources.json` (Fallback)
 
 ---
 
@@ -230,7 +230,7 @@ Show a clean summary table:
 > | Style Fingerprint | ✓ Expanded / ⚠ Flat / ✗ Missing            | [N] dimensions                                                                         |
 > | Past Articles     | ✓ [N] files / ✗ Empty                      | PDF: [n], DOCX: [n]                                                                    |
 > | Zotero            | ✓ Connected / ✗ Error / — Disabled         | [N] items                                                                              |
-> | Local Sources     | ✓ Ready / — None                           | [N] local source files in `.academic-writer/sources/`                                  |
+> | Local Sources     | ✓ Ready / — None                           | [N] local source files in `.pi-academic/sources/`                                  |
 > | NotebookLM        | ✓ Connected / ✗ Not found / — Disabled     | [N] notebooks                                                                          |
 > | Sefaria           | ✓ Connected / ✗ Tools missing / — Disabled | Text & search tools                                                                    |
 > | Pandoc / Export   | ✓ Ready / ⚠ PDF unavailable / ✗ Not found  | Pandoc: [status], XeTeX: [status], Tectonic: [status], CSL: [resolved/missing/literal] |

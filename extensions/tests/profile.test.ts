@@ -25,7 +25,7 @@ function project(t: TestContext): string {
 
   t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
 
-  mkdirSync(join(dir, ".academic-writer"), { recursive: true });
+  mkdirSync(join(dir, ".pi-academic"), { recursive: true });
 
   return dir;
 }
@@ -44,7 +44,7 @@ function seedProfile(dir: string, tools: NonNullable<Profile["tools"]>): void {
 
   profile.tools = tools;
   writeFileSync(
-    join(dir, ".academic-writer", "profile.md"),
+    join(dir, ".pi-academic", "profile.md"),
     serializeProfileMd(profile),
   );
 }
@@ -73,7 +73,7 @@ test("updateProfile merges the tools section instead of replacing it", async (t)
   assert.equal(reread?.tools?.zotero?.enabled, false);
   assert.equal(reread?.tools?.sefaria?.enabled, true);
   assert.match(
-    readFileSync(join(dir, ".academic-writer", "profile.md"), "utf8"),
+    readFileSync(join(dir, ".pi-academic", "profile.md"), "utf8"),
     /sefaria/,
   );
 });
@@ -153,7 +153,7 @@ test("updateProfile still removes fields set to null", async (t) => {
 
 test("loadProfile automatically migrates profile.json when profile.md is missing", (t) => {
   const dir = project(t);
-  const jsonPath = join(dir, ".academic-writer", "profile.json");
+  const jsonPath = join(dir, ".pi-academic", "profile.json");
   writeFileSync(
     jsonPath,
     JSON.stringify({

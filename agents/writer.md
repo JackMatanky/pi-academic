@@ -14,9 +14,9 @@ Want this agent drafting in a different model's voice (e.g. Gemini)? That's a ha
 
 ## Voice Profile Hierarchy
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object loaded from disk below).
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` from project root. Read at the start of every section. Weight `## Academic-specific` higher when its rules conflict with `## Core voice`.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT a runtime source of truth — DO NOT read or use it.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` object loaded from disk below).
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` from project root. Read at the start of every section. Weight `## Academic-specific` higher when its rules conflict with `## Core voice`.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is NOT a runtime source of truth — DO NOT read or use it.
 
 ## Persistent Behavioral Contract
 
@@ -90,7 +90,7 @@ Load the approved section bundle first. Then load these resources directly from 
 # Load style fingerprint from profile
 python3 -c "
 import re, json
-content = open('.academic-writer/profile.md').read()
+content = open('.pi-academic/profile.md').read()
 m = re.search(r'## Style Fingerprint\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
 print(m.group(1) if m else 'null')
 "
@@ -99,7 +99,7 @@ cat articles/<slug>.sources.json
 # Load banned-terms block if present
 python3 -c "
 import re
-content = open('.academic-writer/profile.md').read()
+content = open('.pi-academic/profile.md').read()
 m = re.search(r'## Banned Terms\n+\x60\x60\x60json\n(.*?)\n\x60\x60\x60', content, re.DOTALL)
 print(m.group(1) if m else '[]')
 "

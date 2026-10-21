@@ -35,10 +35,10 @@ const outline = {
 test("structured write tools validate nested parameters before changing files", async (t) => {
   const root = mkdtempSync(join(tmpdir(), "aw-structured-"));
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   mkdirSync(join(root, "articles"));
   writeFileSync(
-    join(root, ".academic-writer/profile.md"),
+    join(root, ".pi-academic/profile.md"),
     "---\nfieldOfStudy: History\n---\n",
   );
   writeFileSync(
@@ -59,7 +59,7 @@ test("structured write tools validate nested parameters before changing files", 
       valid: {
         notesJson: [{ id: "idea", kind: "idea", coreStatement: "An idea" }],
       },
-      path: ".academic-writer/research-notes.json",
+      path: ".pi-academic/research-notes.json",
       invalid: [
         { notesJson: [{ kind: "idea" }] },
         {
@@ -105,7 +105,7 @@ test("structured write tools validate nested parameters before changing files", 
         ],
         bibliography: "@book{item, title={Book}}",
       },
-      path: ".academic-writer/sources.json",
+      path: ".pi-academic/sources.json",
       invalid: [
         { sourcesJson: [{ libraryId: "lib" }], bibliography: "different" },
         {
@@ -121,7 +121,7 @@ test("structured write tools validate nested parameters before changing files", 
     {
       name: "academic_writer_update_profile",
       valid: { fieldsJson: { tools: { zotero: { enabled: true } } } },
-      path: ".academic-writer/profile.md",
+      path: ".pi-academic/profile.md",
       invalid: [
         { fieldsJson: { tools: { zotero: {} } } },
         { fieldsJson: { tools: { zotero: { enabled: "yes" } } } },
@@ -159,7 +159,7 @@ test("structured write tools validate nested parameters before changing files", 
   }
 
   assert.equal(
-    readFileSync(join(root, ".academic-writer/bibliography.bib"), "utf8"),
+    readFileSync(join(root, ".pi-academic/bibliography.bib"), "utf8"),
     "@book{item, title={Book}}",
   );
 });

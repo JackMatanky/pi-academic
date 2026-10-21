@@ -160,7 +160,7 @@ export interface LoadedResource {
 
 /**
  * Loads an Academic Writer resource by name. Thresholds resolves the project
- * override (.academic-writer/thresholds.json) when present, falling back to the
+ * override (.pi-academic/thresholds.json) when present, falling back to the
  * package default. All other resources resolve to their packaged files.
  *
  * @param name - Stable resource name.
@@ -173,7 +173,7 @@ export function loadResource(
   language?: string,
 ): LoadedResource {
   if (name === "thresholds") {
-    const override = join(projectRoot, ".academic-writer", "thresholds.json");
+    const override = join(projectRoot, ".pi-academic", "thresholds.json");
 
     if (existsSync(override)) {
       return {

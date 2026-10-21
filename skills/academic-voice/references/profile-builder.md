@@ -2,7 +2,7 @@
 
 # Voice Profile Builder (inline procedure)
 
-Executed inline by the `academic-voice` skill (and its callers: `academic-setup`, `academic-feedback`). No subagent: the skill itself runs the mode below and calls the two scoped write tools directly. Corpus mode writes only `.academic-writer/voice/fingerprint.md`; transcript distillation writes only `.academic-writer/voice/profile.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the researcher, preserving existing fields and updating evidence from the analyzed corpus. The skill applies it to `.academic-writer/profile.md` only after researcher approval. Never write the profile directly.
+Executed inline by the `academic-voice` skill (and its callers: `academic-setup`, `academic-feedback`). No subagent: the skill itself runs the mode below and calls the two scoped write tools directly. Corpus mode writes only `.pi-academic/voice/fingerprint.md`; transcript distillation writes only `.pi-academic/voice/profile.md`. In corpus mode, also return a proposed complete `styleFingerprint` JSON object to the researcher, preserving existing fields and updating evidence from the analyzed corpus. The skill applies it to `.pi-academic/profile.md` only after researcher approval. Never write the profile directly.
 
 ## Corpus fingerprint mode
 
@@ -14,12 +14,12 @@ empirical signals of their voice. Do not interview; interview work belongs to th
 
 - `past-articles/**/*.{md,docx,pdf}` (Academic Writer) or `chapters/**/*.md`,
   `manuscript.md` (hebrew-book-producer). Project layout determines path.
-- The previous `.academic-writer/voice/fingerprint.md` if present (so you can incrementally update rather than
+- The previous `.pi-academic/voice/fingerprint.md` if present (so you can incrementally update rather than
   overwrite if the corpus has only grown by one or two articles).
 
 ### Outputs
 
-Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In the final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.academic-writer/voice/profile.md` in corpus mode; that belongs to the distillation mode.
+Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprint content. In the final response, include the proposed complete `styleFingerprint` object as valid JSON and a concise before/after summary. Do not write to the runtime profile. Never write `.pi-academic/voice/profile.md` in corpus mode; that belongs to the distillation mode.
 
 ### Required sections in fingerprint.md
 
@@ -52,20 +52,20 @@ Call `academic_writer_write_voice_fingerprint` with the full markdown fingerprin
 
 ## Transcript distillation mode
 
-Compress raw signal (fingerprint + interview transcripts) into the writer's `.academic-writer/voice/profile.md`
+Compress raw signal (fingerprint + interview transcripts) into the writer's `.pi-academic/voice/profile.md`
 profile. Combine the compressor and merger roles.
 
 ### Inputs
 
-- `.academic-writer/voice/fingerprint.md`
-- `.academic-writer/voice/interview/*.md` (whichever sessions are complete)
-- The current `.academic-writer/voice/profile.md` (may be empty template, may be partial profile)
+- `.pi-academic/voice/fingerprint.md`
+- `.pi-academic/voice/interview/*.md` (whichever sessions are complete)
+- The current `.pi-academic/voice/profile.md` (may be empty template, may be partial profile)
 - Optional: a single `--session N` flag, in which case only that session's transcript is folded in
   and other sections are preserved verbatim.
 
 ### Outputs
 
-Call `academic_writer_update_author_voice` with the full rewritten content to replace root `.academic-writer/voice/profile.md`. Preserve the four-section structure exactly:
+Call `academic_writer_update_author_voice` with the full rewritten content to replace root `.pi-academic/voice/profile.md`. Preserve the four-section structure exactly:
 
 ```text
 # Voice Profile — <writer name>

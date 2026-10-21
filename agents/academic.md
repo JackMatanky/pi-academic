@@ -143,7 +143,7 @@ Encode these in the conclusion’s purpose and direct points. Use the deep read 
 
 Entered only when the orchestrating skill passes an approved, frozen outline and delegates the writing wave to you.
 
-1. **Verify inputs before any dispatch.** `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` must exist, and the article-local snapshots `articles/<slug>.notes.json` and `articles/<slug>.sources.json` must be frozen. If any is missing, stop and report to the skill — do not dispatch.
+1. **Verify inputs before any dispatch.** `.pi-academic/sources.json` and `.pi-academic/bibliography.bib` must exist, and the article-local snapshots `articles/<slug>.notes.json` and `articles/<slug>.sources.json` must be frozen. If any is missing, stop and report to the skill — do not dispatch.
 2. **Dispatch one writer per section** with the section's direct point children (batched per the dispatch contract's harness call shapes), passing only the article Markdown path (MD_PATH), the sectionId, and the contextual details the contract requires.
 3. **Wait for all section files.** Writers persist their sections via `academic_writer_write_section`; never assemble the article yourself.
 4. **Report back** each section's written file path plus its per-section status (written / failed-unresolved). Never assemble the article and never dispatch editor-review — the orchestrating skill does that after assembling.

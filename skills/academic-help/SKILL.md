@@ -45,7 +45,7 @@ This walks you through:
 | Tool              | What it does                                                                                                            |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **Zotero**        | Reference manager — preferred source for PDFs and research materials; can be scoped to one collection                   |
-| **Local Sources** | `.academic-writer/sources/` folder for local PDFs, DOCX, TXT, or MD files ingested via `academic_writer_ingest_sources` |
+| **Local Sources** | `.pi-academic/sources/` folder for local PDFs, DOCX, TXT, or MD files ingested via `academic_writer_ingest_sources` |
 | **NotebookLM**    | AI source Q&A / audio / study guides; can be scoped to one notebook                                                     |
 | **Sefaria**       | Primary Judaic text reference and chapter/verse context expansion (`get_text`, `search`)                                |
 
@@ -92,7 +92,7 @@ When you run `/skill:academic-write`, you go through a conversational pipeline:
    - **Repetition Check** — No repeated words, phrases, or arguments
    - **Citation Audit** — Every footnote verified against sources (hard gate)
 8. **Synthesis** — Final coherence review + full-article style compliance
-9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.academic-writer/bibliography.bib` (popular alias, Zotero/CSL style id, URL, or custom `.csl`) — export DOCX, ODT, LaTeX (`.tex`), or PDF; PDF supports `xelatex` or `tectonic`
+9. **Output** — `.docx` with footnotes and bibliography (Inline Parenthetical), or via Pandoc + a resolved CSL file against `.pi-academic/bibliography.bib` (popular alias, Zotero/CSL style id, URL, or custom `.csl`) — export DOCX, ODT, LaTeX (`.tex`), or PDF; PDF supports `xelatex` or `tectonic`
 
 ---
 
@@ -132,9 +132,9 @@ This is independent of the article pipeline — use it anytime you want to query
 
 The voice system follows a clear 3-tier hierarchy:
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint`). The fingerprint is extracted from your past articles during `/skill:academic-setup` and captures 25 dimensions across 8 categories.
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as high-level human guidelines.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is an intermediate output from mining tools and is **NOT** a runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint`). The fingerprint is extracted from your past articles during `/skill:academic-setup` and captures 25 dimensions across 8 categories.
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root. Loaded via `voice_profile_load` as high-level human guidelines.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is an intermediate output from mining tools and is **NOT** a runtime source of truth.
 
 | Category                    | What it tracks                                               |
 | --------------------------- | ------------------------------------------------------------ |
@@ -165,9 +165,9 @@ The plugin is designed for speed. Wherever possible, work is parallelized:
 
 | Path                                | Purpose                                                                                                  |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `.academic-writer/profile.md`       | Your researcher profile (field, style, tools, optional Zotero collection / NotebookLM notebook, sources) |
-| `.academic-writer/sources/`         | Local folder for PDFs, DOCX, TXT, MD source documents                                                    |
-| `.academic-writer/bibliography.bib` | BibTeX export of your sources for citeproc articles                                                      |
+| `.pi-academic/profile.md`       | Your researcher profile (field, style, tools, optional Zotero collection / NotebookLM notebook, sources) |
+| `.pi-academic/sources/`         | Local folder for PDFs, DOCX, TXT, MD source documents                                                    |
+| `.pi-academic/bibliography.bib` | BibTeX export of your sources for citeproc articles                                                      |
 | `articles/<slug>.sources.json`      | Article-local citation registry snapshot                                                                 |
 | `articles/<slug>.bibliography.bib`  | Article-local BibTeX bibliography snapshot                                                               |
 | `past-articles/`                    | Your published papers for style analysis (never uploaded)                                                |

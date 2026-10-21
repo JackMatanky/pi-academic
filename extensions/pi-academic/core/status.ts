@@ -108,20 +108,17 @@ function directoryState(
  *   files.
  */
 export function buildStatus(projectRoot: string): AcademicWriterStatus {
-  const profile = fileState(projectRoot, ".academic-writer/profile.md");
-  const voice = fileState(projectRoot, ".academic-writer/voice/profile.md");
-  const sourcesPath = join(projectRoot, ".academic-writer", "sources.json");
+  const profile = fileState(projectRoot, ".pi-academic/profile.md");
+  const voice = fileState(projectRoot, ".pi-academic/voice/profile.md");
+  const sourcesPath = join(projectRoot, ".pi-academic", "sources.json");
 
   const sources = {
     exists: existsSync(sourcesPath),
     count: countSources(sourcesPath),
-    path: ".academic-writer/sources.json",
+    path: ".pi-academic/sources.json",
   };
 
-  const bibliography = fileState(
-    projectRoot,
-    ".academic-writer/bibliography.bib",
-  );
+  const bibliography = fileState(projectRoot, ".pi-academic/bibliography.bib");
 
   const agentsDir = join(PACKAGE_ROOT, "agents");
 
@@ -145,7 +142,7 @@ export function buildStatus(projectRoot: string): AcademicWriterStatus {
     sources,
     sourceDocuments: directoryState(
       projectRoot,
-      ".academic-writer/sources",
+      ".pi-academic/sources",
       (entry) => SOURCE_EXTENSIONS.has(extname(entry).toLowerCase()),
     ),
     bibliography,

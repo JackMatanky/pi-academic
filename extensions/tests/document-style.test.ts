@@ -56,7 +56,7 @@ function writePackage(
   design: JsonObject,
   files: Record<string, string> = {},
 ): string {
-  const dir = join(root, ".academic-writer", "styles", name);
+  const dir = join(root, ".pi-academic", "styles", name);
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "design.json"),
@@ -136,7 +136,7 @@ test("invalid designs name the field and the correction", (t) => {
   );
   assert.throws(
     () => loadStylePackage(root, "absent", []),
-    /create \.academic-writer\/styles/,
+    /create \.pi-academic\/styles/,
   );
 });
 

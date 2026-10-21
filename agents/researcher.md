@@ -38,7 +38,7 @@ Read each selected source deeply and query it for the article subject. The goal 
 ### Step 1: Get Source Content from Zotero / Local Folder Sources
 
 **If Zotero is enabled**: read full content from selected Zotero items.
-**If local folder sources exist in `.academic-writer/sources/`**: call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD source files.
+**If local folder sources exist in `.pi-academic/sources/`**: call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD source files.
 
 **Run all reads in parallel:**
 
@@ -123,7 +123,7 @@ For each returned BibTeX string, parse the citekey from its opening line with th
 
 Keep every successfully-fetched BibTeX entry string in memory; concatenate them into a single `bibliography.bib` string before the write below.
 
-Call `academic_writer_write_sources_cache` with `sourcesJson` set to an array of structured records — now including `citeKey` — and `bibliography` set to the concatenated BibTeX string. Do not serialize the array. This writes `.academic-writer/sources.json` and `.academic-writer/bibliography.bib` as the current-run cache in one call.
+Call `academic_writer_write_sources_cache` with `sourcesJson` set to an array of structured records — now including `citeKey` — and `bibliography` set to the concatenated BibTeX string. Do not serialize the array. This writes `.pi-academic/sources.json` and `.pi-academic/bibliography.bib` as the current-run cache in one call.
 
 #### Candidate source notes
 

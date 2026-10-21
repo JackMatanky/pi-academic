@@ -49,7 +49,7 @@ export interface RenderedStyle {
 }
 
 /**
- * Runs `work` in a fresh scratch directory under `.academic-writer/runs/`.
+ * Runs `work` in a fresh scratch directory under `.pi-academic/runs/`.
  *
  * @param projectRoot - Root directory of the project.
  * @param prefix - Prefix for the temporary directory name.
@@ -62,7 +62,7 @@ export async function withScratchDir<T>(
   prefix: string,
   work: (dir: string) => Promise<T>,
 ): Promise<T> {
-  const runs = join(projectRoot, ".academic-writer", "runs");
+  const runs = join(projectRoot, ".pi-academic", "runs");
   mkdirSync(runs, { recursive: true });
   const dir = mkdtempSync(join(runs, `${prefix}-`));
 
@@ -246,7 +246,7 @@ export async function checkStylePackage(
 }
 
 /**
- * Lists names of the packages under `.academic-writer/styles/` that contain a
+ * Lists names of the packages under `.pi-academic/styles/` that contain a
  * design.json.
  *
  * @param projectRoot - Root directory of the project.
@@ -254,7 +254,7 @@ export async function checkStylePackage(
  * @returns Sorted list of available style package names.
  */
 export function listStylePackages(projectRoot: string): string[] {
-  const root = join(projectRoot, ".academic-writer", "styles");
+  const root = join(projectRoot, ".pi-academic", "styles");
 
   if (!existsSync(root)) return [];
 
@@ -278,7 +278,7 @@ export interface InstalledStarter {
 }
 
 /**
- * Generates the starter into `.academic-writer/styles/<name>/`: its design.json
+ * Generates the starter into `.pi-academic/styles/<name>/`: its design.json
  * (serialized from the typed definition in `starters.ts`) plus editable native
  * starting points under `native/`. The native files are not referenced from
  * design.json; the researcher opts in by adding `formats` entries.
@@ -299,7 +299,7 @@ export async function installStarterPackage(
     );
   }
 
-  const directory = join(projectRoot, ".academic-writer", "styles", name);
+  const directory = join(projectRoot, ".pi-academic", "styles", name);
 
   if (existsSync(directory)) {
     throw new Error(

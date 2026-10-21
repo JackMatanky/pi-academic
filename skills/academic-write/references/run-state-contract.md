@@ -1,10 +1,10 @@
 # Run State Contract
 
-Use this only after `.academic-writer/profile.md` exists. `init`/`setup` remain the only workflows that create `.academic-writer/` from scratch.
+Use this only after `.pi-academic/profile.md` exists. `init`/`setup` remain the only workflows that create `.pi-academic/` from scratch.
 
 ## File
 
-`.academic-writer/runs/<run-id>.json`
+`.pi-academic/runs/<run-id>.json`
 
 `run-id` should be timestamp-based and filesystem-safe, for example `2026-07-28T10-15-30-write-article-slug`.
 

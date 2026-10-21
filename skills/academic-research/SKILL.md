@@ -51,7 +51,7 @@ Accept any of these forms:
 
 Read `dispatch_contract` before spawning an agent. Under OMP, put independent agents in one `task` call; under pi, issue sibling `subagent` calls in one response.
 
-1. **Local sources:** call `academic_writer_ingest_sources` to index files under `.academic-writer/sources/`, then use the returned records and text for relevant evidence.
+1. **Local sources:** call `academic_writer_ingest_sources` to index files under `.pi-academic/sources/`, then use the returned records and text for relevant evidence.
 
 2. **Zotero:** if enabled, resolve and call `zotero_search_items` directly to find relevant records, scoping by `tools.zotero.collection.key` when configured. For optional semantic discovery, resolve `zotero_semantic_search` and use it only if available. If relevant source IDs are found, dispatch the `researcher` with `subject`, `selectedSourceIds`, `tools`, and `targetLanguage`; the agent reads those sources and records unchecked candidate notes. Do not dispatch it without the required inputs.
 
@@ -65,7 +65,7 @@ Pass the exact selected Zotero item keys, article subject, profile tools setting
 
 ### Local Folder Sources Instructions
 
-Call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD files from `.academic-writer/sources/`. Search and read extracted content to answer research queries.
+Call `academic_writer_ingest_sources` to ingest local PDFs, DOCX, TXT, or MD files from `.pi-academic/sources/`. Search and read extracted content to answer research queries.
 
 ## Merge & Present Findings
 
@@ -149,5 +149,5 @@ After presenting findings, ask:
 
 - **NEVER fabricate citations.** Only cite what Zotero or ingested local sources return.
 - **NEVER invent page numbers.**
-- If a question can't be answered from available sources, say so clearly: "Your indexed sources don't contain information about this. You may need to add more sources to `.academic-writer/sources/` or via Zotero."
+- If a question can't be answered from available sources, say so clearly: "Your indexed sources don't contain information about this. You may need to add more sources to `.pi-academic/sources/` or via Zotero."
 - If a tool is disabled, skip it and note: "I searched [available tools]. Enable [disabled tool] with `/skill:academic-setup` for broader coverage."

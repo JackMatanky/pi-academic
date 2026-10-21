@@ -28,7 +28,7 @@ export function registerCoreTools(pi: ExtensionAPI, harness: Harness): void {
     core: true,
     label: "Academic Writer Resource",
     description:
-      "Read a packaged Academic Writer resource by stable name. thresholds resolves .academic-writer/thresholds.json first (the project override that init/setup writes after asking the researcher) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
+      "Read a packaged Academic Writer resource by stable name. thresholds resolves .pi-academic/thresholds.json first (the project override that init/setup writes after asking the researcher) and falls back to the packaged default. Use instead of shelling out to package-root paths.",
     parameters: Type.Object({
       name: stringEnum(RESOURCE_NAMES, {
         description:

@@ -42,7 +42,7 @@ const OutputFormatPreferencesSchema = Type.Object({
 });
 
 /**
- * Schema for a parsed `.academic-writer/profile.md`.
+ * Schema for a parsed `.pi-academic/profile.md`.
  *
  * The style fingerprint and article structure are produced by agents and read
  * back verbatim, so they are kept as JSON objects rather than a fixed shape.
@@ -109,6 +109,6 @@ export const ProfilePatchSchema = Type.Object({
 });
 
 /**
- * Parsed `.academic-writer/profile.md` data used by extensions and hooks.
+ * Parsed `.pi-academic/profile.md` data used by extensions and hooks.
  */
 export type ProfileData = Static<typeof ProfileDataSchema>;

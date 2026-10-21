@@ -297,12 +297,12 @@ export function auditCitations(
     const sources =
       scope === "article"
         ? localSources
-        : join(root, ".academic-writer", "sources.json");
+        : join(root, ".pi-academic", "sources.json");
 
     const bibliography =
       scope === "article"
         ? localBibliography
-        : join(root, ".academic-writer", "bibliography.bib");
+        : join(root, ".pi-academic", "bibliography.bib");
 
     result.assetScope = scope;
     result.sourcesPath = relative(root, sources);

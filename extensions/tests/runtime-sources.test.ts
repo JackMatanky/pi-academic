@@ -106,7 +106,7 @@ function writeLocalSourceRegistry(root: string, fingerprint: string): string {
   const sourceId = `local:${fingerprint}`;
 
   writeFileSync(
-    join(root, ".academic-writer", "sources.json"),
+    join(root, ".pi-academic", "sources.json"),
     JSON.stringify([
       {
         sourceId,
@@ -121,7 +121,7 @@ function writeLocalSourceRegistry(root: string, fingerprint: string): string {
 
 test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, frozen snapshot and bundle", async (t) => {
   const root = scratch(t);
-  const state = join(root, ".academic-writer");
+  const state = join(root, ".pi-academic");
 
   mkdirSync(state);
   mkdirSync(join(root, "articles"));
@@ -303,7 +303,7 @@ test("[test_research_notes_outline_and_frozen_bundle] notes, outline guards, fro
 
 test("[test_ingest_uses_content_identity_and_marks_changed_notes_stale] ingest identity follows content and stales notes", async (t) => {
   const root = scratch(t);
-  const sourceDir = join(root, ".academic-writer", "sources");
+  const sourceDir = join(root, ".pi-academic", "sources");
 
   mkdirSync(sourceDir, { recursive: true });
 
@@ -338,7 +338,7 @@ test("[test_ingest_uses_content_identity_and_marks_changed_notes_stale] ingest i
 
   await ingest();
 
-  const unchanged = readJson(join(root, ".academic-writer", "sources.json"));
+  const unchanged = readJson(join(root, ".pi-academic", "sources.json"));
 
   assert.equal(get(unchanged, 0, "sourceId"), recordId);
 
@@ -348,7 +348,7 @@ test("[test_ingest_uses_content_identity_and_marks_changed_notes_stale] ingest i
 
   assert.notEqual(get(changed, "sourceId"), recordId);
 
-  const saved = readJson(join(root, ".academic-writer", "research-notes.json"));
+  const saved = readJson(join(root, ".pi-academic", "research-notes.json"));
 
   assert.equal(get(saved, "notes", 0, "id"), get(note, "id"));
   assert.equal(get(saved, "notes", 0, "review", "state"), "stale");
@@ -439,7 +439,7 @@ test("[test_pdf_ingest_preserves_zero_based_page_boundaries] PDF ingest keeps ze
 test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphrases stay stale and analysis notes are not citable", async (t) => {
   const root = scratch(t);
 
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
 
   const sourceId = writeLocalSourceRegistry(root, "sha256:current");
 
@@ -511,7 +511,7 @@ test("[test_local_source_version_and_non_citable_outline_guards] unbound paraphr
 
 test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] unconfirmed Zotero identity is rejected without overwriting", async (t) => {
   const root = scratch(t);
-  const state = join(root, ".academic-writer");
+  const state = join(root, ".pi-academic");
 
   mkdirSync(state);
 
@@ -561,7 +561,7 @@ test("[test_source_cache_rejects_unconfirmed_zotero_identity_without_overwrite] 
 
 test("concurrent ingestSources serialization", async (t) => {
   const root = scratch(t);
-  const sourcesDir = join(root, ".academic-writer", "sources");
+  const sourcesDir = join(root, ".pi-academic", "sources");
   mkdirSync(sourcesDir, { recursive: true });
   writeFileSync(join(sourcesDir, "doc-a.md"), "# Document A\n\nContent A\n");
   writeFileSync(join(sourcesDir, "doc-b.md"), "# Document B\n\nContent B\n");
@@ -576,7 +576,7 @@ test("concurrent ingestSources serialization", async (t) => {
 
   assert.equal(resA.details.ok, true);
   assert.equal(resB.details.ok, true);
-  const sourcesFile = join(root, ".academic-writer", "sources.json");
+  const sourcesFile = join(root, ".pi-academic", "sources.json");
   assert.ok(existsSync(sourcesFile));
   const parsed = readJson(sourcesFile);
   assert.ok(Array.isArray(parsed));

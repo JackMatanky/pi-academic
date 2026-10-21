@@ -7,14 +7,14 @@ Ask the researcher (numbered list):
 > "How should exported documents look?"
 >
 > 1. **Shipped default** — No style package; exports keep the built-in appearance. Leave `stylePackage` unset.
-> 2. **Start from the academic-default starter** — Copy the starter into `.academic-writer/styles/academic-default/` and edit it later.
-> 3. **Register an existing package** — Use a package already under `.academic-writer/styles/<name>/`.
+> 2. **Start from the academic-default starter** — Copy the starter into `.pi-academic/styles/academic-default/` and edit it later.
+> 3. **Register an existing package** — Use a package already under `.pi-academic/styles/<name>/`.
 
 Wait for the reply; accept the option number, label, or a close paraphrase.
 
 ## Option 2: copy the starter
 
-Call `academic_writer_style_package` with `action: "install-starter"`. The tool copies the packaged starter (`design.json` plus any native starter assets) into `.academic-writer/styles/academic-default/`. It refuses to overwrite an existing package: if `.academic-writer/styles/academic-default/` already exists, report that and offer option 3 instead.
+Call `academic_writer_style_package` with `action: "install-starter"`. The tool copies the packaged starter (`design.json` plus any native starter assets) into `.pi-academic/styles/academic-default/`. It refuses to overwrite an existing package: if `.pi-academic/styles/academic-default/` already exists, report that and offer option 3 instead.
 
 ## Option 3: register an existing package
 

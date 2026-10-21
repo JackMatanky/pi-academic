@@ -38,7 +38,7 @@ export default defineConfig({
       ".windsurf/**",
       "tools/oxlint/anti-slop/**",
       ".aw-runtime-*/**",
-      ".academic-writer/**",
+      ".pi-academic/**",
       "past-articles/**",
       "logs/**",
       "package-lock.json",

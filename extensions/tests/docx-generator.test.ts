@@ -435,7 +435,7 @@ test(
     assert.equal(res.ok, true);
     assert.equal(existsSync(join(root, "article.docx")), true);
     assert.equal(
-      existsSync(join(root, ".academic-writer/runs/article.docx.json")),
+      existsSync(join(root, ".pi-academic/runs/article.docx.json")),
       false,
     );
 
@@ -453,9 +453,9 @@ test(
   needsPandoc,
   async (t) => {
     const root = project(t);
-    mkdirSync(join(root, ".academic-writer"), { recursive: true });
+    mkdirSync(join(root, ".pi-academic"), { recursive: true });
     writeFileSync(
-      join(root, ".academic-writer", "profile.md"),
+      join(root, ".pi-academic", "profile.md"),
       [
         "# Academic Writer Profile",
         "",

@@ -17,18 +17,18 @@ import {
 } from "./schema.js";
 import { ProfileDataSchema } from "./types.js";
 
-const PROFILE_DIR = ".academic-writer";
+const PROFILE_DIR = ".pi-academic";
 
-const PROFILE_RELATIVE_PATH = ".academic-writer/profile.md";
+const PROFILE_RELATIVE_PATH = ".pi-academic/profile.md";
 
-const JSON_PROFILE_RELATIVE_PATH = ".academic-writer/profile.json";
+const JSON_PROFILE_RELATIVE_PATH = ".pi-academic/profile.json";
 
 /**
- * Returns the project-local `.academic-writer` directory path.
+ * Returns the project-local `.pi-academic` directory path.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  *
- * @returns Absolute path to `.academic-writer` directory.
+ * @returns Absolute path to `.pi-academic` directory.
  */
 export function getProfileDirPath(projectDir: string): string {
   return join(projectDir, PROFILE_DIR);
@@ -39,7 +39,7 @@ export function getProfileDirPath(projectDir: string): string {
  *
  * @param projectDir - Absolute project directory used for project-local state.
  *
- * @returns Absolute path to `.academic-writer/profile.md`.
+ * @returns Absolute path to `.pi-academic/profile.md`.
  */
 export function getProfilePath(projectDir: string): string {
   return join(projectDir, PROFILE_RELATIVE_PATH);
@@ -490,7 +490,7 @@ export async function updateProfile(
 }
 
 /**
- * Loads the project profile if `.academic-writer/profile.md` exists.
+ * Loads the project profile if `.pi-academic/profile.md` exists.
  *
  * @param projectDir - Absolute project directory used for project-local state.
  *

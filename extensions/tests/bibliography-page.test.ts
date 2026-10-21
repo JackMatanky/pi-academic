@@ -46,12 +46,12 @@ async function exportEssay(
 ): Promise<string> {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "bib-page-")));
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   mkdirSync(join(root, "articles"));
   writeFileSync(join(root, "style.csl"), CSL);
-  writeFileSync(join(root, ".academic-writer", "bibliography.bib"), BIB);
+  writeFileSync(join(root, ".pi-academic", "bibliography.bib"), BIB);
   writeFileSync(
-    join(root, ".academic-writer", "sources.json"),
+    join(root, ".pi-academic", "sources.json"),
     JSON.stringify([{ citeKey: "mm" }]),
   );
   writeFileSync(join(root, "articles", "essay.md"), markdown);

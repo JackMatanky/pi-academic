@@ -87,7 +87,7 @@ test("a YAML metadata block is left out of the body words but not the file's raw
 test("[test_calculate_article_word_count_citeproc] estimates citation words and parses cited bibliography entries", (t) => {
   const root = scratch(t);
   mkdirSync(join(root, "articles"));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
 
   const md = `# Title
 
@@ -117,7 +117,7 @@ Claim supported by [@smith2020, p. 12] and [@cohen2019].
 }
 `;
 
-  writeFileSync(join(root, ".academic-writer", "bibliography.bib"), bib);
+  writeFileSync(join(root, ".pi-academic", "bibliography.bib"), bib);
 
   const counts = calculateArticleWordCount(root, "articles/citeproc.md", "apa");
 
@@ -158,7 +158,7 @@ test("[test_count_words_tool] registered tool returns details and formatted text
 test("[test_parse_bib_entries_multiline_at_symbol] does not truncate entry when abstract has newline starting with @online", (t) => {
   const root = scratch(t);
   mkdirSync(join(root, "articles"));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
 
   const md = `# Title
 
@@ -181,7 +181,7 @@ Claim supported by [@smith2020].
 }
 `;
 
-  writeFileSync(join(root, ".academic-writer", "bibliography.bib"), bib);
+  writeFileSync(join(root, ".pi-academic", "bibliography.bib"), bib);
 
   const counts = calculateArticleWordCount(root, "articles/test.md", "apa");
 
@@ -193,7 +193,7 @@ Claim supported by [@smith2020].
 test("[test_parse_bib_entries_unbalanced_braces_recovery] recovers when an entry has unclosed braces and preserves following entries", (t) => {
   const root = scratch(t);
   mkdirSync(join(root, "articles"));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
 
   const md = `# Title
 
@@ -212,7 +212,7 @@ Claim one [@broken2019] and claim two [@smith2020].
 }
 `;
 
-  writeFileSync(join(root, ".academic-writer", "bibliography.bib"), bib);
+  writeFileSync(join(root, ".pi-academic", "bibliography.bib"), bib);
 
   const counts = calculateArticleWordCount(root, "articles/test.md", "apa");
 

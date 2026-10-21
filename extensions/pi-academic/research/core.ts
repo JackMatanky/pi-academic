@@ -292,15 +292,14 @@ export function articleSlug(article: string): string {
 }
 
 /**
- * Reads `.academic-writer/sources.json`, or returns an empty registry when
- * absent.
+ * Reads `.pi-academic/sources.json`, or returns an empty registry when absent.
  *
  * @param projectRoot - Root directory of the project.
  *
  * @returns Array of source reference records.
  */
 export function readSourceRefs(projectRoot: string): SourceRef[] {
-  const path = join(projectRoot, ".academic-writer", "sources.json");
+  const path = join(projectRoot, ".pi-academic", "sources.json");
 
   if (!existsSync(path)) return [];
 

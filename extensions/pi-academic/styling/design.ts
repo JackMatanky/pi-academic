@@ -763,8 +763,8 @@ function mergePage(page: PageInput, base: PageStyle): PageStyle {
 }
 
 /**
- * Validates `.academic-writer/styles/<name>/design.json` for the requested
- * formats and merges omitted properties from the shipped starter.
+ * Validates `.pi-academic/styles/<name>/design.json` for the requested formats
+ * and merges omitted properties from the shipped starter.
  *
  * @param projectRoot - Root directory of the project.
  * @param name - Style package name (kebab-case).
@@ -782,18 +782,14 @@ export function loadStylePackage(
     fail(name, "name", "use lowercase letters, digits, and hyphens");
   }
 
-  const stylesRoot = resolve(projectRoot, ".academic-writer", "styles");
+  const stylesRoot = resolve(projectRoot, ".pi-academic", "styles");
   let dir: string;
 
   try {
     dir = realpathSync(join(stylesRoot, name));
 
     if (!isInside(realpathSync(stylesRoot), dir)) {
-      fail(
-        name,
-        "name",
-        "package path must remain inside .academic-writer/styles",
-      );
+      fail(name, "name", "package path must remain inside .pi-academic/styles");
     }
   } catch (cause) {
     if (cause instanceof Error && cause.message.startsWith("Style package")) {
@@ -803,7 +799,7 @@ export function loadStylePackage(
     return fail(
       name,
       "package",
-      "create .academic-writer/styles/<name>/design.json",
+      "create .pi-academic/styles/<name>/design.json",
     );
   }
 

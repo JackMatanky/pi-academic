@@ -121,7 +121,7 @@ async function runTools(root: string) {
   });
 
   const ingested = await callTool(root, "academic_writer_ingest_sources", {
-    paths: [".academic-writer/sources/local.md"],
+    paths: [".pi-academic/sources/local.md"],
   });
 
   return {
@@ -197,7 +197,7 @@ test("[test_prose_lint_tool_returns_advisory_findings_and_skips_hebrew] lint too
 });
 
 function seedProject(root: string): void {
-  const helper = join(root, ".academic-writer");
+  const helper = join(root, ".pi-academic");
 
   mkdirSync(join(helper, "runs"), { recursive: true });
   mkdirSync(join(helper, "sources"));
@@ -340,7 +340,7 @@ const EXPORT_STUB =
 
 test("[test_export_passes_citeproc_options_to_pandoc] export passes citeproc options to pandoc", async (t) => {
   const root = scratch(t);
-  const helper = join(root, ".academic-writer");
+  const helper = join(root, ".pi-academic");
 
   mkdirSync(helper);
   mkdirSync(join(root, "articles"));
@@ -369,7 +369,7 @@ test("[test_export_passes_citeproc_options_to_pandoc] export passes citeproc opt
     citationStyle: "chicago",
     formats: ["docx"],
     csl: "style.csl",
-    bibliography: ".academic-writer/bibliography.bib",
+    bibliography: ".pi-academic/bibliography.bib",
   };
 
   const data = await callTool(root, "academic_writer_export_article", params);
@@ -428,7 +428,7 @@ test("[test_docx_extraction_prefers_pandoc_citations] docx extraction prefers pa
 
 test("[test_migrates_json_profile] migrates a JSON profile", async (t) => {
   const root = scratch(t);
-  const profileDir = join(root, ".academic-writer");
+  const profileDir = join(root, ".pi-academic");
 
   mkdirSync(profileDir);
   mkdirSync(join(root, "articles"));
@@ -549,7 +549,7 @@ test("academic_writer_write_voice_artifact persists artifacts and alias works", 
   });
 
   assert.equal(result.isError, false);
-  const auditPath = join(root, ".academic-writer", "voice", "audit.md");
+  const auditPath = join(root, ".pi-academic", "voice", "audit.md");
   assert.ok(existsSync(auditPath));
   assert.equal(readFileSync(auditPath, "utf8"), "# Voice Audit\nCalibrated.");
 

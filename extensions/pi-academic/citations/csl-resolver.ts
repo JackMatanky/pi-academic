@@ -222,7 +222,7 @@ function writeCache(
   projectRoot: string,
   linker: (from: string, to: string) => void = linkSync,
 ): string {
-  const dir = join(projectRoot, ".academic-writer", "csl");
+  const dir = join(projectRoot, ".pi-academic", "csl");
   mkdirSync(dir, { recursive: true });
   const root = realpathSync(projectRoot);
   const cache = realpathSync(dir);
@@ -311,7 +311,7 @@ export async function resolveCslStyle(
   const raw = style.trim();
 
   if (!raw) throw new Error("CSL style is empty");
-  const cacheDir = join(projectRoot, ".academic-writer", "csl");
+  const cacheDir = join(projectRoot, ".pi-academic", "csl");
 
   if (raw.startsWith("https://") || raw.startsWith("http://")) {
     const target = cacheTarget(raw, cacheDir);

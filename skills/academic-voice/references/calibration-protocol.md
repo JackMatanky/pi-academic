@@ -4,13 +4,13 @@ You (the skill) run the human-in-the-loop calibration check after session 3 (mid
 
 ## Inputs
 
-- Current `.academic-writer/voice/profile.md`
+- Current `.pi-academic/voice/profile.md`
 - The just-completed session transcript
 - A sample of the writer's past corpus (3 paragraphs from different past articles, picked at random)
 
 ## Procedure
 
-1. **Generate a sample paragraph.** Pick a topic from one of the past-corpus paragraphs. Write a single paragraph yourself, using the _current_ `.academic-writer/voice/profile.md` as guidance. Keep length within 1 sentence of the original paragraph's length.
+1. **Generate a sample paragraph.** Pick a topic from one of the past-corpus paragraphs. Write a single paragraph yourself, using the _current_ `.pi-academic/voice/profile.md` as guidance. Keep length within 1 sentence of the original paragraph's length.
 
 2. **Show the diff.** Print the new sample alongside the previous-version sample (or the original past paragraph if this is the first calibration). Highlight changes.
 
@@ -19,7 +19,7 @@ You (the skill) run the human-in-the-loop calibration check after session 3 (mid
    - "Did any banned phrase or AI-tell sneak in? Quote it."
    - "Is any rule in the profile wrong, or is one missing?"
 
-4. **Patch the profile** based on answers. Call `academic_writer_update_author_voice` with the full updated `.academic-writer/voice/profile.md` content (read the current file first, apply minimal, targeted changes, then write the whole file back). Document each change with a one-line `> Was: <old>` note for one cycle.
+4. **Patch the profile** based on answers. Call `academic_writer_update_author_voice` with the full updated `.pi-academic/voice/profile.md` content (read the current file first, apply minimal, targeted changes, then write the whole file back). Document each change with a one-line `> Was: <old>` note for one cycle.
 
 5. **Inline rule-coverage check.** For every rule in the profile, scan the past corpus for evidence. Rules with zero hits get flagged. Call `academic_writer_write_voice_audit` with `content` set to:
 

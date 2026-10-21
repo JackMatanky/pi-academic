@@ -51,9 +51,9 @@ test("[test_thresholds_read_serves_default_then_override] read_resource serves t
   assert.equal(packaged.details.source, "package");
   assert.equal(packaged.content[0]?.text, thresholdsDefaultJson());
 
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   writeFileSync(
-    join(root, ".academic-writer", "thresholds.json"),
+    join(root, ".pi-academic", "thresholds.json"),
     `${JSON.stringify({ ...THRESHOLDS_DEFAULT, rewriteCycles: { max: 5 } }, null, 2)}\n`,
   );
 
@@ -76,18 +76,15 @@ test("[test_load_resource_override_and_fallback] loadResource serves default, th
   assert.equal(fallback.content, thresholdsDefaultJson());
   assert.match(fallback.path, /thresholds-default\.ts/);
 
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   writeFileSync(
-    join(root, ".academic-writer", "thresholds.json"),
+    join(root, ".pi-academic", "thresholds.json"),
     '{"antiAi": {"passThreshold": 42}}\n',
   );
 
   const overridden = loadResource("thresholds", root);
   assert.equal(overridden.source, "project");
-  assert.equal(
-    overridden.path,
-    join(root, ".academic-writer", "thresholds.json"),
-  );
+  assert.equal(overridden.path, join(root, ".pi-academic", "thresholds.json"));
   assert.ok(overridden.content.includes('"passThreshold": 42'));
 });
 

@@ -19,7 +19,7 @@ logs/
 *.html
 
 # Runtime state, not part of package distribution
-/.academic-writer/
+/.pi-academic/
 
 # Bundled Gemini MCP server build artifacts
 mcp/gemini-server/dist/

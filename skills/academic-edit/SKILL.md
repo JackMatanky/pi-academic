@@ -27,15 +27,15 @@ If it returns `ok: false`: "Run `/skill:academic-setup` first."
 
 **Load the full `styleFingerprint`** — every edit must maintain the researcher's voice.
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.academic-writer/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-writer/` here if the profile was missing — `init`/`setup` own first creation.
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create or update `.pi-academic/runs/<run-id>.json` for this edit run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.pi-academic/` here if the profile was missing — `init`/`setup` own first creation.
 
 Print fingerprint summary to confirm it's loaded.
 
 ### Voice Source Hierarchy
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is NOT runtime source of truth.
 
 ---
 
@@ -92,11 +92,11 @@ Citation verification checks bibliographic metadata against the article's source
 **Search Order for Source Snapshots:**
 
 1. **Article-local snapshot (Primary)**: `articles/<slug>.sources.json` and `articles/<slug>.bibliography.bib` (via `academic_writer_snapshot_citations`).
-2. **Current-run cache (Fallback)**: `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
-3. **Local Sources Ingest**: For unindexed local files, call `academic_writer_ingest_sources` to index `.academic-writer/sources/`.
+2. **Current-run cache (Fallback)**: `.pi-academic/sources.json` and `.pi-academic/bibliography.bib`.
+3. **Local Sources Ingest**: For unindexed local files, call `academic_writer_ingest_sources` to index `.pi-academic/sources/`.
 
 ```bash
-cat articles/<slug>.sources.json 2>/dev/null || cat .academic-writer/sources.json 2>/dev/null || echo "MISSING"
+cat articles/<slug>.sources.json 2>/dev/null || cat .pi-academic/sources.json 2>/dev/null || echo "MISSING"
 ```
 
 - **If no snapshot is found**, tell the researcher:

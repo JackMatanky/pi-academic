@@ -11,8 +11,8 @@ Quick onboarding wizard. Creates the researcher profile, detects integrations, a
 Run silently before anything else:
 
 ```bash
-mkdir -p past-articles .academic-writer .academic-writer/voice
-# If .academic-writer/thresholds.json is missing: call academic_writer_read_resource
+mkdir -p past-articles .pi-academic .pi-academic/voice
+# If .pi-academic/thresholds.json is missing: call academic_writer_read_resource
 # with name: thresholds, present the default quality gates to the researcher
 # (anti-AI ≥ 35/50, self-review ≥ 40/60, ≤ 3 rewrite cycles per paragraph,
 # 220-word paragraph ceiling +30 for intro/conclusion, style compliance ≥ 7/10,
@@ -20,8 +20,8 @@ mkdir -p past-articles .academic-writer .academic-writer/voice
 # or ±15% of targetWordCount, voice corpus ≥ 3 articles / ≥ 1500 total words /
 # ≥ 800 words per article), and ask whether to keep the defaults or adjust
 # specific values. Write the final JSON — defaults or the researcher's adjusted
-# values — to .academic-writer/thresholds.json.
-# If .academic-writer/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .academic-writer/voice/profile.md.
+# values — to .pi-academic/thresholds.json.
+# If .pi-academic/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .pi-academic/voice/profile.md.
 ```
 
 Call `academic_writer_migrate_profile`, then check for existing profile by calling `academic_writer_get_profile`.
@@ -157,7 +157,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 > 4. **Custom CSL file or URL** — path/URL to a `.csl` file you provide.
 >
 >    ```text
->    Examples: .academic-writer/csl/my-journal.csl, https://www.zotero.org/styles/apa
+>    Examples: .pi-academic/csl/my-journal.csl, https://www.zotero.org/styles/apa
 >    ```
 >
 > Wait for their reply and match it against the options (accept the option number, the label text, or a close paraphrase).
@@ -333,7 +333,7 @@ If "Yes": analyze across all 25 dimensions (sentence level, vocabulary, paragrap
 
 ## Phase 4: Save Profile
 
-Use the Write tool to create `.academic-writer/profile.md`:
+Use the Write tool to create `.pi-academic/profile.md`:
 
 `````markdown
 # Academic Writer Profile

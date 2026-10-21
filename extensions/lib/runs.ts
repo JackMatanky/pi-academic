@@ -8,7 +8,7 @@ import { tryReadJsonFile } from "./schema.js";
 /**
  * Project-relative directory containing persisted run-state JSON files.
  */
-const RUNS_RELATIVE_DIR = ".academic-writer/runs";
+const RUNS_RELATIVE_DIR = ".pi-academic/runs";
 
 /**
  * Run statuses considered active in dashboards and status tools.
@@ -16,7 +16,7 @@ const RUNS_RELATIVE_DIR = ".academic-writer/runs";
 const ACTIVE_STATUSES = new Set(["planned", "running", "blocked"]);
 
 /**
- * Project run metadata stored in `.academic-writer/runs/<run-id>.json`.
+ * Project run metadata stored in `.pi-academic/runs/<run-id>.json`.
  */
 export interface RunInfo {
   runId: string;

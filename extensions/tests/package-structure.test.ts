@@ -180,9 +180,9 @@ test("[test_thresholds_resource_honors_project_override] read_resource prefers t
 
   assert.ok(packaged.content[0]?.text.includes("antiAi"));
 
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   writeFileSync(
-    join(root, ".academic-writer", "thresholds.json"),
+    join(root, ".pi-academic", "thresholds.json"),
     '{"marker": true}\n',
   );
 

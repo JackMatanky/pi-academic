@@ -142,7 +142,7 @@ const ExportArticleSchema = Type.Object({
     Type.String({
       minLength: 1,
       description:
-        "Style package under .academic-writer/styles/ for this export; overrides the profile's stylePackage.",
+        "Style package under .pi-academic/styles/ for this export; overrides the profile's stylePackage.",
     }),
   ),
 });
@@ -221,7 +221,7 @@ async function runExport(
 
   const bibliography = hasArticleBibliography
     ? localAssets.bibliography
-    : (params.bibliography ?? ".academic-writer/bibliography.bib");
+    : (params.bibliography ?? ".pi-academic/bibliography.bib");
 
   const results: ExportResult[] = [];
 
@@ -477,7 +477,7 @@ export function registerExportTools(pi: ExtensionAPI): void {
     effectFor: ({ action }) => (action === "list" ? "read" : "write"),
     label: "Academic Writer Style Package",
     description:
-      "Manage document style packages under .academic-writer/styles/: list them, install the academic-default starter (design.json plus editable native Word/LibreOffice/LaTeX files), or validate a package for every export format and report what each format cannot express.",
+      "Manage document style packages under .pi-academic/styles/: list them, install the academic-default starter (design.json plus editable native Word/LibreOffice/LaTeX files), or validate a package for every export format and report what each format cannot express.",
     parameters: Type.Object({
       action: stringEnum(["list", "install-starter", "validate"] as const, {
         description: "list, install-starter, or validate.",

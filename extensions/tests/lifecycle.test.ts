@@ -94,8 +94,8 @@ function project(t: TestContext): string {
 
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   cpSync(
-    join(repoRoot, "tests", "e2e", "fixture-project", ".academic-writer"),
-    join(root, ".academic-writer"),
+    join(repoRoot, "tests", "e2e", "fixture-project", ".pi-academic"),
+    join(root, ".pi-academic"),
     { recursive: true },
   );
 
@@ -175,12 +175,12 @@ test("dashboard rows keep the border aligned for Hebrew, CJK, and emoji content"
   const root = project(t);
 
   const profile = parseProfileMd(
-    readFileSync(join(root, ".academic-writer", "profile.md"), "utf8"),
+    readFileSync(join(root, ".pi-academic", "profile.md"), "utf8"),
   );
 
   profile.fieldOfStudy = "הַמַּדָּע הַקָּרְנִי שֶׁל תוֹרָה שֶׁבְּעַל־פֶה וְהַמַּחְשָׁבָה 📚👨‍👩‍👧 学問";
   writeFileSync(
-    join(root, ".academic-writer", "profile.md"),
+    join(root, ".pi-academic", "profile.md"),
     serializeProfileMd(profile),
   );
 

@@ -7,10 +7,10 @@ Pinned inputs for a deterministic smoke test of the write pipeline.
 - **Subject:** תפיסת הזמן אצל אוגוסטינוס וההד שלה אצל ריקר
 - **Target language:** Hebrew
 - **Citation style:** inline-parenthetical
-- **Sources:** pre-seeded in `.academic-writer/sources.json`; skip
+- **Sources:** pre-seeded in `.pi-academic/sources.json`; skip
   the researcher because the sources are already mapped.
 - **Research notes:** verified, source-anchored notes in
-  `.academic-writer/research-notes.json`.
+  `.pi-academic/research-notes.json`.
 - **Canonical outline:** approved argument map in
   `articles/augustine-time.outline.json`; selected evidence is frozen in
   `articles/augustine-time.notes.json`.

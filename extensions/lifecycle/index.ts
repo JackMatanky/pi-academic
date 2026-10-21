@@ -237,7 +237,7 @@ function buildDashboardLines(
 
   if (runs.last) lines.push(row(`  Last run: ${runs.last}`));
 
-  if (existsSync(join(projectDir, ".academic-writer", "research-brief.md")))
+  if (existsSync(join(projectDir, ".pi-academic", "research-brief.md")))
     lines.push(row("  Research brief: Available"));
 
   const unanalyzed = unanalyzedPastArticleCount(

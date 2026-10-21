@@ -3,7 +3,7 @@
 # Integration Setup (Zotero, NotebookLM, Sefaria)
 
 > Loaded on demand by `init` Phase 1. Each tool has detection command, configuration block, and registration steps.
-> MCP server credentials/configuration belong in standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json` under pi; `.omp/mcp.json`, `~/.omp/agent/mcp.json` under omp), not in `.academic-writer/profile.md`.
+> MCP server credentials/configuration belong in standard MCP config (`.mcp.json`, `~/.config/mcp/mcp.json`, `.pi/mcp.json` under pi; `.omp/mcp.json`, `~/.omp/agent/mcp.json` under omp), not in `.pi-academic/profile.md`.
 
 ## Detection Commands
 
@@ -106,7 +106,7 @@ Ask the researcher directly in chat (present as a numbered/lettered list):
    > What: Biblical/rabbinic text context for source exploration
    > Status: ✓ Detected"
 
-   If selected but unavailable, show the Sefaria MCP server setup guidance for the researcher's chosen server. Require standard MCP config with `settings.toolPrefix: "none"` and `directTools: ["get_text", "search"]`; do not store Sefaria credentials in `.academic-writer/profile.md`.
+   If selected but unavailable, show the Sefaria MCP server setup guidance for the researcher's chosen server. Require standard MCP config with `settings.toolPrefix: "none"` and `directTools: ["get_text", "search"]`; do not store Sefaria credentials in `.pi-academic/profile.md`.
 
 Wait for the researcher's reply and match it against the option number, label text, or a close paraphrase (multiple selections allowed).
 

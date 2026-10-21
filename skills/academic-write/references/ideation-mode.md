@@ -177,10 +177,10 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 Write a `research-brief.md` file that feeds directly into `/skill:academic-write`:
 
 ```bash
-mkdir -p .academic-writer
+mkdir -p .pi-academic
 ```
 
-Use the `Write` tool to create `.academic-writer/research-brief.md`:
+Use the `Write` tool to create `.pi-academic/research-brief.md`:
 
 ```markdown
 # Research Brief
@@ -230,7 +230,7 @@ _Feed this into /skill:academic-write to start writing._
 
 ## Completion
 
-> "Your research brief has been saved to `.academic-writer/research-brief.md`.
+> "Your research brief has been saved to `.pi-academic/research-brief.md`.
 >
 > **Research question:** [question]
 > **Approach:** [approach]

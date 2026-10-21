@@ -34,10 +34,10 @@ const NoteLibrarySchema = Type.Object(
  *
  * @param projectRoot - Root directory of the project.
  *
- * @returns Absolute path to `.academic-writer/research-notes.json`.
+ * @returns Absolute path to `.pi-academic/research-notes.json`.
  */
 export function noteFile(projectRoot: string): string {
-  return join(projectRoot, ".academic-writer", "research-notes.json");
+  return join(projectRoot, ".pi-academic", "research-notes.json");
 }
 
 /**

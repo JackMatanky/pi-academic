@@ -92,9 +92,9 @@ test("the write skill and its references keep Steps 8.5 through 9b", () => {
 
 test("no skill or agent mentions removed memory, logs or removed agents", () => {
   const removedSubstrings = [
-    ".academic-writer/logs",
+    ".pi-academic/logs",
     "agent-memory",
-    ".academic-writer/memory",
+    ".pi-academic/memory",
     "voice-" + "facilitator",
     "deep-" + "reader",
     "section-" + "writer",

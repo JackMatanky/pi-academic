@@ -27,9 +27,9 @@ Call `academic_writer_read_resource` with `name: voice_profile_load`, then follo
 
 **Voice Source Hierarchy:**
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is NOT runtime source of truth.
 
 ## Load Profile
 
@@ -41,7 +41,7 @@ Store the returned profile values — you'll use them throughout.
 
 ### Run state (profile-scoped)
 
-Call `academic_writer_read_resource` with `name: run_state_contract`, then create `.academic-writer/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.academic-writer/` here if the profile was missing — `init`/`setup` own first creation.
+Call `academic_writer_read_resource` with `name: run_state_contract`, then create `.pi-academic/runs/<run-id>.json` for this write run. Update it after every major phase and before any blocked/failed/complete stop. Never create `.pi-academic/` here if the profile was missing — `init`/`setup` own first creation.
 
 ### Style Fingerprint — Always Loaded
 
@@ -67,7 +67,7 @@ Pass the full `styleFingerprint` object to every agent that writes or reviews te
 Read the `tools` object from the profile. Throughout this workflow, **only use tools that are enabled**, and honor any configured scope:
 
 - **Zotero** (`tools.zotero.enabled`) — Zotero is preferred when enabled. If `tools.zotero.collection.key` is set, source listing/selection starts from that collection; otherwise use the library.
-- **Local Folder Sources** — Check `.academic-writer/sources/` for local PDFs, DOCX, TXT, or MD source files. Call `academic_writer_ingest_sources` to index local files into the source workflow.
+- **Local Folder Sources** — Check `.pi-academic/sources/` for local PDFs, DOCX, TXT, or MD source files. Call `academic_writer_ingest_sources` to index local files into the source workflow.
 - **Profile / Manual Sources** — If Zotero is disabled and no local files exist, use the profile `sources` array or manual researcher description.
 - **NotebookLM** (`tools.notebooklm.enabled`) — Supplementary context only; not a primary citation source.
   If the profile has no `tools` key (JSON profile), assume all tools are enabled for backward compatibility.
@@ -142,7 +142,7 @@ Store the draft text as userDraftText regardless of choice. If they chose expans
    - If `tools.zotero.collection.key` is set, call `zotero_get_collection_items(collection_key=COLLECTION_KEY)` to retrieve items from the specified collection.
    - Otherwise, call `zotero_get_collections()` first, then `zotero_get_collection_items(collection_key=KEY)` for the relevant collection(s) to list library items.
    - `zotero_get_collection_items` returns 50 items per call; when its response reports more items than were shown, follow the `Pass offset=N` hint until the full list is retrieved.
-2. **Local Folder Sources**: Call `academic_writer_ingest_sources` to discover and ingest local PDFs, DOCX, TXT, or MD files stored under `.academic-writer/sources/`.
+2. **Local Folder Sources**: Call `academic_writer_ingest_sources` to discover and ingest local PDFs, DOCX, TXT, or MD files stored under `.pi-academic/sources/`.
 3. **Fallback**: Use profile's `sources` array or manual user input if no Zotero/local sources exist.
 
 Present them clearly and ask:
@@ -179,9 +179,9 @@ Pass the NotebookLM summary as additional context to the researcher agent prompt
 
 Read the `dispatch_contract` resource (`academic_writer_read_resource`) for the exact call shape on this harness.
 
-The researcher reads original Zotero/local sources, writes current-run .academic-writer/sources.json and .academic-writer/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
+The researcher reads original Zotero/local sources, writes current-run .pi-academic/sources.json and .pi-academic/bibliography.bib caches, and persists unchecked candidate source-backed notes via academic_writer_write_research_notes. It returns note IDs and a thematic map. It does not freeze article citations; the orchestrator snapshots them only after approval.
 
-Wait for the researcher to return retrieved passages before continuing to Step 4. Confirm `.academic-writer/sources.json` exists.
+Wait for the researcher to return retrieved passages before continuing to Step 4. Confirm `.pi-academic/sources.json` exists.
 
 Update the run state for this phase.
 

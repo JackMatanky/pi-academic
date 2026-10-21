@@ -24,18 +24,18 @@ Never summarize feedback without acting on it.
 | Category                             | What it touches                                                                                                                                                                                                | Example                                                                          |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | **A. Article edit**                  | The finished article file in `articles/`                                                                                                                                                                       | "Section III repeats Text 360 — consolidate"                                     |
-| **B. Profile update**                | `.academic-writer/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences                                                                       | "Use Chicago author-date for this project"                                       |
+| **B. Profile update**                | `.pi-academic/profile.md` — typed settings such as article structure, targetLanguage, abstractLanguages, and outputFormatPreferences                                                                       | "Use Chicago author-date for this project"                                       |
 | **C. Pattern reference update**      | the `anti_ai_patterns` resource path returned by `academic_writer_read_resource` with `includePath: true` — add/adjust pattern caps                                                                            | "An opening phrase appeared too often — lower its cap to 2"                      |
-| **D. Source registry fix**           | `.academic-writer/sources.json` — correct a bibliographic metadata field                                                                                                                                       | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
-| **E. Preference / known-issue note** | Writes to `.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `.academic-writer/voice/profile.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing"                                              |
+| **D. Source registry fix**           | `.pi-academic/sources.json` — correct a bibliographic metadata field                                                                                                                                       | "Cohen 2019 should be 2018 — fix the registry so future runs use the right year" |
+| **E. Preference / known-issue note** | Writes to `.pi-academic/feedback/YYYY-MM-DD-<article-slug>.md`; persistent writing preferences also go into `.pi-academic/voice/profile.md` (see Phase 4.E). Use for observations that do not fit A–D. | "I dislike em-dashes in my writing"                                              |
 
 Every feedback item must land in exactly one category — if it's ambiguous, pick the most specific applicable one.
 
 ### Voice Source Hierarchy
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object).
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` object).
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is NOT runtime source of truth.
 
 ## Load Profile
 
@@ -57,7 +57,7 @@ If multiple `.md` files exist, present the most recent ones as options plus an "
 
 Once chosen, load the artifacts:
 
-Read the chosen article with the Read tool. Read `articles/<slug>.outline.json` for its canonical thesis and argument map when present. For evidence context, prefer the frozen `articles/<slug>.sources.json` citation registry and `articles/<slug>.notes.json` note snapshot; use `.academic-writer/sources.json` and `.academic-writer/research-notes.json` only when no article-local asset exists. Treat a present article snapshot as authoritative; do not use mutable project data to rewrite the article's evidence record.
+Read the chosen article with the Read tool. Read `articles/<slug>.outline.json` for its canonical thesis and argument map when present. For evidence context, prefer the frozen `articles/<slug>.sources.json` citation registry and `articles/<slug>.notes.json` note snapshot; use `.pi-academic/sources.json` and `.pi-academic/research-notes.json` only when no article-local asset exists. Treat a present article snapshot as authoritative; do not use mutable project data to rewrite the article's evidence record.
 
 ## Phase 2 — Structured Interview
 
@@ -113,7 +113,7 @@ For every feedback item gathered, draft a table showing:
 | 1   | "'I suggest that' appears 12 times"         | C — Pattern cap              | Lower cap in anti-ai-patterns-english.md from 3 to 2                |
 | 2   | "Cohen 2019 should be 2018"                 | D — Source registry          | Update sources.json entry for Cohen to year=2018, confidence=high   |
 | 3   | "Paragraph 4 of Section II is way too long" | A — Article edit             | Split the paragraph at the second sentence break                    |
-| 4   | "I never want em-dashes"                    | E — Preference / known issue | Add to the .academic-writer/voice/profile.md overlay + feedback log |
+| 4   | "I never want em-dashes"                    | E — Preference / known issue | Add to the .pi-academic/voice/profile.md overlay + feedback log |
 
 Show this table to the researcher and ask, allowing multiple selections:
 
@@ -131,7 +131,7 @@ Use `Edit` on `articles/<slug>.md`. Prefer the narrowest surgical edit. For larg
 
 ### B. Profile update
 
-Use `Edit` on `.academic-writer/profile.md`. Common fields:
+Use `Edit` on `.pi-academic/profile.md`. Common fields:
 
 - `paragraphStructure.length.mean` / `.stdev` — paragraph length preferences
 - `toneAndVoice.descriptors` — voice adjustments
@@ -166,7 +166,7 @@ If the reference file doesn't exist for this language, create it by mirroring th
 
 ### D. Source registry fix
 
-Read `.academic-writer/sources.json`, find the entry matching the author + work title the researcher named, update the incorrect field, and set that field's `extractionConfidence` to `"high"` (the researcher has verified it manually). Write back with the Write tool.
+Read `.pi-academic/sources.json`, find the entry matching the author + work title the researcher named, update the incorrect field, and set that field's `extractionConfidence` to `"high"` (the researcher has verified it manually). Write back with the Write tool.
 
 Example:
 
@@ -185,19 +185,19 @@ Also: if the article text itself contains the wrong year inline, fix it with `Ed
 
 ### E. Preference / known-issue note
 
-For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log; persistent preferences also go into `.academic-writer/voice/profile.md` (below).
+For items that don't fit A–D (general preferences, process observations, things to watch for next time), write to the feedback log; persistent preferences also go into `.pi-academic/voice/profile.md` (below).
 
 Feedback log path:
 
 ```text
-.academic-writer/feedback/YYYY-MM-DD-<article-slug>.md
+.pi-academic/feedback/YYYY-MM-DD-<article-slug>.md
 ```
 
 Create the directory if needed. Append an entry with the date, the item, and the category. If a feedback file for this article already exists, append to it rather than overwriting.
 
-For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `.academic-writer/voice/profile.md` — the file the `writer` already loads at the start of every run. Never put preferences in `.academic-writer/profile.md`.
+For a **persistent preference** (it should shape every future article, not fix one passage), also add one bullet to `.pi-academic/voice/profile.md` — the file the `writer` already loads at the start of every run. Never put preferences in `.pi-academic/profile.md`.
 
-1. Read `.academic-writer/voice/profile.md`. If it is missing or empty, skip this step and tell the researcher: "No voice overlay yet — run `/skill:academic-voice` to create one; this preference is saved in the feedback log."
+1. Read `.pi-academic/voice/profile.md`. If it is missing or empty, skip this step and tell the researcher: "No voice overlay yet — run `/skill:academic-voice` to create one; this preference is saved in the feedback log."
 2. If the file is already larger than about 20,000 characters (≈5,000 tokens, the budget in the distillation mode of the `academic-voice` skill's `references/profile-builder.md`), do not add; tell the researcher to run `:voice recompress` first.
 3. Choose the existing section by the builder's assignment rules: applies regardless of project → `## Core voice (cross-project)`; term, transliteration or citation-format choice → `## Terminology`; citation density, hedging, abstract conventions, anti-AI thresholds → `## Academic-specific`. Never create a new section.
 4. Append one bullet of at most 120 characters, as an operational rule ("Never use em-dashes"), keeping Hebrew text Hebrew. If an existing bullet is contradicted, replace it and keep a one-line `> Was: <old>` note.
@@ -231,7 +231,7 @@ Then show a summary to the researcher:
 > "Feedback processed.
 >
 > - Applied: N items (A: N, B: N, C: N, D: N, E: N)
-> - Deferred: N items (logged to `.academic-writer/feedback/<file>.md`)
+> - Deferred: N items (logged to `.pi-academic/feedback/<file>.md`)
 > - Voice-overlay preferences added: N
 >
 > Next runs of `/skill:academic-write` will pick up all profile and pattern changes automatically. For the article itself, the edits have been written to `articles/<slug>.md` — you may want to regenerate the .docx by running the last step of `/skill:academic-write` or edit and re-export manually."

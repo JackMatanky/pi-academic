@@ -279,19 +279,19 @@ test("withFileLock respects AbortSignal and safely preserves lock directory on f
 
 test("re-ingesting keeps Zotero records, existing citekeys and foreign BibTeX entries", async (t) => {
   const root = project(t);
-  write(root, ".academic-writer/sources/n.md", "# Notes 2020\n\nBody.\n");
+  write(root, ".pi-academic/sources/n.md", "# Notes 2020\n\nBody.\n");
   const first = await ingestSources(root);
   const original = first.sources[0]?.citeKey;
   assert.equal(original, "notes_2020", "the year is not doubled");
 
   const registry = parseWith(
     Type.Array(JsonObjectSchema),
-    readJson(root, ".academic-writer/sources.json"),
+    readJson(root, ".pi-academic/sources.json"),
     "registry",
   );
 
   writeFileSync(
-    join(root, ".academic-writer/sources.json"),
+    join(root, ".pi-academic/sources.json"),
     JSON.stringify([
       ...registry,
       {
@@ -301,18 +301,18 @@ test("re-ingesting keeps Zotero records, existing citekeys and foreign BibTeX en
       },
     ]),
   );
-  const bibliography = join(root, ".academic-writer/bibliography.bib");
+  const bibliography = join(root, ".pi-academic/bibliography.bib");
   writeFileSync(
     bibliography,
     `${readFileSync(bibliography, "utf8")}\n@book{smith2020, title={Zotero Book}}\n`,
   );
 
-  write(root, ".academic-writer/sources/a.md", "# Another Note 2020\n");
+  write(root, ".pi-academic/sources/a.md", "# Another Note 2020\n");
   const second = await ingestSources(root);
 
   const merged = parseWith(
     CiteKeyRecords,
-    readJson(root, ".academic-writer/sources.json"),
+    readJson(root, ".pi-academic/sources.json"),
     "registry",
   );
 
@@ -339,19 +339,19 @@ test("ingest rejects paths outside the project and refuses to overwrite a corrup
   assert.equal(result.count, 0);
   assert.match(result.errors[0]?.error ?? "", /inside the project/);
 
-  write(root, ".academic-writer/sources.json", "{not json");
-  write(root, ".academic-writer/sources/a.md", "# A\n");
+  write(root, ".pi-academic/sources.json", "{not json");
+  write(root, ".pi-academic/sources/a.md", "# A\n");
   await assert.rejects(ingestSources(root));
   assert.equal(
-    readFileSync(join(root, ".academic-writer/sources.json"), "utf8"),
+    readFileSync(join(root, ".pi-academic/sources.json"), "utf8"),
     "{not json",
   );
 });
 
 test("snapshotCitationAssets refuses paths outside the project", (t) => {
   const root = project(t);
-  write(root, ".academic-writer/sources.json", "[]");
-  write(root, ".academic-writer/bibliography.bib", "");
+  write(root, ".pi-academic/sources.json", "[]");
+  write(root, ".pi-academic/bibliography.bib", "");
   write(root, "articles/a.md", "# T\n\nBody.\n");
   assert.throws(
     () => snapshotCitationAssets(root, "../outside/x.md"),
@@ -380,12 +380,8 @@ test("the citation audit ignores e-mail, code and trailing punctuation but check
       "",
     ].join("\n"),
   );
-  write(root, ".academic-writer/sources.json", '[{"citeKey":"smith2020"}]');
-  write(
-    root,
-    ".academic-writer/bibliography.bib",
-    "@book{smith2020, title={B}}\n",
-  );
+  write(root, ".pi-academic/sources.json", '[{"citeKey":"smith2020"}]');
+  write(root, ".pi-academic/bibliography.bib", "@book{smith2020, title={B}}\n");
   const audit = auditCitations("articles/a.md", "chicago", root);
   assert.equal(audit.status, "failed");
   assert.deepEqual(audit.citationKeys.sort(), ["ghost", "smith2020"]);
@@ -397,7 +393,7 @@ test("updateProfile keeps unknown fields and sections, quotes awkward values and
   const root = project(t);
   write(
     root,
-    ".academic-writer/profile.md",
+    ".pi-academic/profile.md",
     [
       "# Academic Writer Profile",
       "",
@@ -434,7 +430,7 @@ test("profile frontmatter parses as YAML with the string/list/null contract", (t
   const root = project(t);
   write(
     root,
-    ".academic-writer/profile.md",
+    ".pi-academic/profile.md",
     [
       "# Academic Writer Profile",
       "",
@@ -471,7 +467,7 @@ test("profile frontmatter parses as YAML with the string/list/null contract", (t
     profile?.extraFrontmatter,
   );
 
-  write(root, ".academic-writer/profile.md", "---\nbroken: a: b\n---\n");
+  write(root, ".pi-academic/profile.md", "---\nbroken: a: b\n---\n");
   assert.throws(() => loadProfile(root), /Malformed profile frontmatter/);
 });
 
@@ -479,7 +475,7 @@ test("a malformed profile section is an error, not a missing profile", (t) => {
   const root = project(t);
   write(
     root,
-    ".academic-writer/profile.md",
+    ".pi-academic/profile.md",
     "---\nfieldOfStudy: X\n---\n\n## Tools\n\n```json\n{oops\n```\n",
   );
   assert.throws(

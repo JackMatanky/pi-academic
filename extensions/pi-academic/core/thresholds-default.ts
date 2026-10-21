@@ -1,9 +1,9 @@
 /**
  * The shipped default quality gates, previously `thresholds.json` at the
  * package root. `academic_writer_read_resource(name: thresholds)` serves this
- * when the project has no `.academic-writer/thresholds.json` override; the
- * setup skills present these values to the researcher (who may adjust them) and
- * write the result as the project override.
+ * when the project has no `.pi-academic/thresholds.json` override; the setup
+ * skills present these values to the researcher (who may adjust them) and write
+ * the result as the project override.
  */
 
 /**

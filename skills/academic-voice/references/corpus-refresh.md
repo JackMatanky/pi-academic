@@ -14,9 +14,9 @@ Use the returned `styleFingerprint` and `analyzedArticles` list (if present).
 
 ### Voice Source Hierarchy
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` object, updated by this skill).
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is NOT runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` object, updated by this skill).
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is NOT runtime source of truth.
 
 ## Step 1: Scan for New Articles
 
@@ -39,11 +39,11 @@ If new files found, show them:
 
 Read the profile with `academic_writer_get_profile`, then execute the corpus fingerprint mode from `references/profile-builder.md` inline, feeding it:
 
-- The new article filenames and current `.academic-writer/voice/fingerprint.md`
+- The new article filenames and current `.pi-academic/voice/fingerprint.md`
 - The existing full `styleFingerprint` object
 - `targetLanguage` and the current `analyzedArticles` list
 
-The mode writes only `.academic-writer/voice/fingerprint.md` (via `academic_writer_write_voice_fingerprint`). It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not a subagent—updates the runtime profile after researcher approval.
+The mode writes only `.pi-academic/voice/fingerprint.md` (via `academic_writer_write_voice_fingerprint`). It also returns a proposed complete `styleFingerprint` JSON object that preserves existing keys and updates corpus-derived evidence, plus a diff report. The skill—not a subagent—updates the runtime profile after researcher approval.
 
 ## Step 3: Present Diff Report
 

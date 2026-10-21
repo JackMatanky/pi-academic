@@ -1,22 +1,22 @@
 <!-- Consolidated mode guidance for profile-schema.md. -->
 
-# Profile Schema (`.academic-writer/profile.md`)
+# Profile Schema (`.pi-academic/profile.md`)
 
 > Loaded on demand by the `init` and `setup` skills. Do not duplicate this content in SKILL.md.
 
 ## JSON Profile Migration
 
-JSON profiles are migrated from `.academic-writer/profile.json` to `.academic-writer/profile.md` by the package tool `academic_writer_migrate_profile`.
+JSON profiles are migrated from `.pi-academic/profile.json` to `.pi-academic/profile.md` by the package tool `academic_writer_migrate_profile`.
 
 Run it in Phase 0 before checking for an existing profile. It is idempotent:
 
-- If `.academic-writer/profile.md` already exists, it skips.
+- If `.pi-academic/profile.md` already exists, it skips.
 - If no JSON profile exists, it skips.
 - If a JSON profile exists and no markdown profile exists, it writes the markdown profile using the package serializer.
 
 ## Profile File Format
 
-`.academic-writer/profile.md` uses markdown with YAML frontmatter + JSON sections:
+`.pi-academic/profile.md` uses markdown with YAML frontmatter + JSON sections:
 
 ````markdown
 # Academic Writer Profile
@@ -67,8 +67,8 @@ abstractLanguages:
 ```json
 {
   "csl": "optional citeproc style id or popular alias, e.g. nature/chicago-author-date/apa",
-  "cslPath": "optional local .csl path or URL, e.g. .academic-writer/csl/my-journal.csl",
-  "stylePackage": "optional name of a package under .academic-writer/styles/"
+  "cslPath": "optional local .csl path or URL, e.g. .pi-academic/csl/my-journal.csl",
+  "stylePackage": "optional name of a package under .pi-academic/styles/"
 }
 ```
 
@@ -154,6 +154,6 @@ Run via the corpus fingerprint mode in `references/profile-builder.md` (academic
 
 ## Voice Source Hierarchy
 
-1. **Canonical Runtime Source of Truth**: `.academic-writer/profile.md` (`styleFingerprint` JSON object). Extracted by `/skill:academic-setup` or `/skill:academic-voice` and stored in the profile.
-2. **Optional Prose Overlay**: `.academic-writer/voice/profile.md` in project root. Loaded via `voice_profile_load` as human prose instructions for the `writer`.
-3. **Intermediate Mining Artifact**: `.academic-writer/voice/fingerprint.md` is a temporary mining output and is **NOT** a runtime source of truth.
+1. **Canonical Runtime Source of Truth**: `.pi-academic/profile.md` (`styleFingerprint` JSON object). Extracted by `/skill:academic-setup` or `/skill:academic-voice` and stored in the profile.
+2. **Optional Prose Overlay**: `.pi-academic/voice/profile.md` in project root. Loaded via `voice_profile_load` as human prose instructions for the `writer`.
+3. **Intermediate Mining Artifact**: `.pi-academic/voice/fingerprint.md` is a temporary mining output and is **NOT** a runtime source of truth.

@@ -10,7 +10,7 @@ import {
 import { ProfilePatchSchema } from "../../lib/types.js";
 import { fail, registerTool } from "../core/tool-kit.js";
 
-const PROFILE_PATH = ".academic-writer/profile.md";
+const PROFILE_PATH = ".pi-academic/profile.md";
 
 /**
  * Registers profile migration, read, and patch tools.
@@ -23,7 +23,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Migrate Profile",
     description:
-      "One-time migration from .academic-writer/profile.json to .academic-writer/profile.md. Use during init/setup preflight before checking for an existing profile.",
+      "One-time migration from .pi-academic/profile.json to .pi-academic/profile.md. Use during init/setup preflight before checking for an existing profile.",
     parameters: Type.Object({}),
     run: (_params, { cwd }) => {
       const migration = migrateJsonProfile(cwd);
@@ -47,7 +47,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
     core: true,
     label: "Academic Writer Get Profile",
     description:
-      "Read and parse .academic-writer/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
+      "Read and parse .pi-academic/profile.md into deterministic JSON for skills and agents. Use instead of regex or Python profile parsing.",
     parameters: Type.Object({}),
     failure: "Academic Writer profile is unreadable",
     run: (_params, { cwd }) => {
@@ -72,7 +72,7 @@ export function registerProfileTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Update Profile",
     description:
-      "Patch recognized .academic-writer/profile.md fields using a structured object. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
+      "Patch recognized .pi-academic/profile.md fields using a structured object. Preserves the existing markdown profile shape and updates updatedAt when omitted.",
     parameters: Type.Object({ fieldsJson: ProfilePatchSchema }),
     failure: "Profile update failed",
     run: async ({ fieldsJson }, { cwd }) => {

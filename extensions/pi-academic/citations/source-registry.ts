@@ -222,7 +222,7 @@ function sourceBibtex(
  */
 function sourceInputs(projectRoot: string, paths?: string[]): string[] {
   if (paths && paths.length > 0) return paths;
-  const sourceDir = join(projectRoot, ".academic-writer", "sources");
+  const sourceDir = join(projectRoot, ".pi-academic", "sources");
 
   if (!existsSync(sourceDir)) return [];
 
@@ -231,11 +231,11 @@ function sourceInputs(projectRoot: string, paths?: string[]): string[] {
       SUPPORTED_SOURCE_EXTENSIONS.has(extname(entry).toLowerCase()),
     )
     .sort()
-    .map((entry) => join(".academic-writer", "sources", entry));
+    .map((entry) => join(".pi-academic", "sources", entry));
 }
 
 /**
- * Ingests local source files into `.academic-writer` source and bibliography
+ * Ingests local source files into `.pi-academic` source and bibliography
  * caches.
  *
  * @param projectRoot - Absolute project root used to resolve project-relative
@@ -248,9 +248,9 @@ export async function ingestSources(
   paths?: string[],
   signal?: AbortSignal,
 ): Promise<SourceIngestionResult> {
-  const sourceDirectory = ".academic-writer/sources";
-  const sourcesPath = ".academic-writer/sources.json";
-  const bibliographyPath = ".academic-writer/bibliography.bib";
+  const sourceDirectory = ".pi-academic/sources";
+  const sourcesPath = ".pi-academic/sources.json";
+  const bibliographyPath = ".pi-academic/bibliography.bib";
   mkdirSync(join(projectRoot, sourceDirectory), { recursive: true });
   const errors: Array<{ path: string; error: string }> = [];
 
@@ -420,8 +420,8 @@ export function snapshotCitationAssets(
   const local = citationAssetPaths(article);
 
   const pairs = [
-    [".academic-writer/sources.json", local.sources],
-    [".academic-writer/bibliography.bib", local.bibliography],
+    [".pi-academic/sources.json", local.sources],
+    [".pi-academic/bibliography.bib", local.bibliography],
   ] as const;
 
   const copied: string[] = [];
@@ -466,12 +466,12 @@ export async function persistSourceRegistry(
   sources: JsonValue[],
   bibliography: string,
 ): Promise<SourcesCacheWrite> {
-  const sourcesPath = join(projectRoot, ".academic-writer", "sources.json");
+  const sourcesPath = join(projectRoot, ".pi-academic", "sources.json");
 
   return withFileLock(sourcesPath, () => {
     const normalizedSources = sources.map(normalizeSourceCacheRecord);
-    const relSourcesPath = ".academic-writer/sources.json";
-    const relBibPath = ".academic-writer/bibliography.bib";
+    const relSourcesPath = ".pi-academic/sources.json";
+    const relBibPath = ".pi-academic/bibliography.bib";
 
     writeProjectTextFile(
       projectRoot,

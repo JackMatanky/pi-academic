@@ -12,6 +12,6 @@ Interpretation:
 - `status: failed` is a hard gate for final output. Report missing keys, missing assets or wrong-mode markers and do not continue to DOCX/export until fixed.
 - `status: error` means the audit could not run. Report the error and do not continue to DOCX/export.
 - In `inline-parenthetical` mode, any Pandoc marker (`[@key]`) is a wrong-mode failure.
-- In citeproc mode, every `[@citeKey]` marker must exist in `.academic-writer/sources.json` and `.academic-writer/bibliography.bib`.
+- In citeproc mode, every `[@citeKey]` marker must exist in `.pi-academic/sources.json` and `.pi-academic/bibliography.bib`.
 
 This gate does not replace the editor agent's (audit mode) semantic source/claim verification. It only catches broken syntax, invented cite keys, and bibliography drift.

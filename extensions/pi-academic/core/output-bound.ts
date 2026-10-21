@@ -14,7 +14,7 @@ export const MAX_OUTPUT_BYTES = 50_000;
  */
 export const MAX_OUTPUT_LINES = 2_000;
 
-const SPILL_DIR = ".academic-writer/runs/tool-output";
+const SPILL_DIR = ".pi-academic/runs/tool-output";
 
 const SPILL_MAX_AGE_MS = 86_400_000;
 
@@ -85,7 +85,7 @@ function headOf(text: string): Head {
 /**
  * Writes the full output under the project's run directory and drops spill
  * files older than a day. Returns the project-relative path, or null when the
- * project has no `.academic-writer/` (it is created only by setup) or the write
+ * project has no `.pi-academic/` (it is created only by setup) or the write
  * fails.
  */
 function spill(
@@ -95,8 +95,7 @@ function spill(
   now: number,
 ): string | null {
   try {
-    if (!existsSync(resolveInside(projectRoot, ".academic-writer")))
-      return null;
+    if (!existsSync(resolveInside(projectRoot, ".pi-academic"))) return null;
 
     const dir = resolveInside(projectRoot, SPILL_DIR);
 
@@ -122,8 +121,8 @@ function spill(
 
 /**
  * Keeps tool output within what a model can read in one go. Longer output is
- * cut and, when the project has an `.academic-writer/` directory, saved in full
- * so the agent can page through it.
+ * cut and, when the project has an `.pi-academic/` directory, saved in full so
+ * the agent can page through it.
  *
  * @param projectRoot - Root directory of the project.
  * @param toolName - Name of the calling tool.

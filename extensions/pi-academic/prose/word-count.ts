@@ -192,7 +192,7 @@ export function calculateArticleWordCount(
   if (isCiteproc) {
     const local = citationAssetPaths(articlePath);
     const localBib = join(projectRoot, local.bibliography);
-    const globalBib = join(projectRoot, ".academic-writer", "bibliography.bib");
+    const globalBib = join(projectRoot, ".pi-academic", "bibliography.bib");
 
     const bibFile = existsSync(localBib)
       ? localBib

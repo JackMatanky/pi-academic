@@ -131,7 +131,7 @@ function writePackage(
   design: JsonObject,
   files: Record<string, string> = {},
 ) {
-  const dir = join(root, ".academic-writer", "styles", name);
+  const dir = join(root, ".pi-academic", "styles", name);
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "design.json"),
@@ -143,9 +143,9 @@ function writePackage(
 }
 
 function setProfileStylePackage(root: string, name: string) {
-  mkdirSync(join(root, ".academic-writer"), { recursive: true });
+  mkdirSync(join(root, ".pi-academic"), { recursive: true });
   writeFileSync(
-    join(root, ".academic-writer", "profile.md"),
+    join(root, ".pi-academic", "profile.md"),
     `---\nfieldOfStudy: "Test"\ncitationStyle: "inline-parenthetical"\ntargetLanguage: "English"\n---\n\n## Output Format Preferences\n\n\`\`\`json\n${JSON.stringify({ stylePackage: name })}\n\`\`\`\n`,
   );
 }
@@ -518,7 +518,7 @@ test(
       "academic_writer_export_article",
       exportParams(["docx"], { stylePackage: "bad" }),
     );
-    const runs = join(h.root, ".academic-writer", "runs");
+    const runs = join(h.root, ".pi-academic", "runs");
     assert.deepEqual(existsSync(runs) ? readdirSync(runs) : [], []);
   },
 );
@@ -738,9 +738,9 @@ test(
 
 test("exporting without a style package creates no styles directory", async (t) => {
   const h = harness(t);
-  rmSync(join(h.root, ".academic-writer"), { recursive: true, force: true });
+  rmSync(join(h.root, ".pi-academic"), { recursive: true, force: true });
   await h.run("academic_writer_export_article", exportParams(["docx"]));
-  assert.ok(!existsSync(join(h.root, ".academic-writer", "styles")));
+  assert.ok(!existsSync(join(h.root, ".pi-academic", "styles")));
 });
 
 test("every path-taking tool rejects paths outside the project", async (t) => {

@@ -209,17 +209,17 @@ test("pages the pattern cannot read keep the note instead of dropping them", () 
 test("the relink tool rewrites an imported DOCX so citeproc resolves every key", async (t) => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "relink-tool-")));
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   mkdirSync(join(root, "drafts"));
 
   const writeProject = (style: string) =>
     writeFileSync(
-      join(root, ".academic-writer", "profile.md"),
+      join(root, ".pi-academic", "profile.md"),
       `---\nfieldOfStudy: "Test"\ncitationStyle: "${style}"\ntargetLanguage: "English"\n---\n`,
     );
 
   writeFileSync(
-    join(root, ".academic-writer", "sources.json"),
+    join(root, ".pi-academic", "sources.json"),
     JSON.stringify([
       {
         citeKey: "stern2013",
@@ -232,7 +232,7 @@ test("the relink tool rewrites an imported DOCX so citeproc resolves every key",
   );
 
   writeFileSync(
-    join(root, ".academic-writer", "bibliography.bib"),
+    join(root, ".pi-academic", "bibliography.bib"),
     "@book{stern2013, author={Stern, Josef}, title={The Matter and Form of Maimonides' Guide}, year={2013}, publisher={Harvard University Press}}\n",
   );
 
@@ -304,7 +304,7 @@ test("the relink tool rewrites an imported DOCX so citeproc resolves every key",
   const rendered = spawnSync("pandoc", [
     join(root, "articles/a.md"),
     "--citeproc",
-    `--bibliography=${join(root, ".academic-writer", "bibliography.bib")}`,
+    `--bibliography=${join(root, ".pi-academic", "bibliography.bib")}`,
     "-t",
     "plain",
   ]);

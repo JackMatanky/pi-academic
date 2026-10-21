@@ -29,14 +29,14 @@ function fixture(t: TestContext, article = "Text [@smith2020, p. 4].") {
   const root = mkdtempSync(join(tmpdir(), "citation-audit-"));
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "articles"));
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   writeFileSync(join(root, "articles", "essay.md"), article);
   writeFileSync(
-    join(root, ".academic-writer", "sources.json"),
+    join(root, ".pi-academic", "sources.json"),
     JSON.stringify([{ citeKey: "smith2020" }]),
   );
   writeFileSync(
-    join(root, ".academic-writer", "bibliography.bib"),
+    join(root, ".pi-academic", "bibliography.bib"),
     "@book{smith2020, title={Book}}\n",
   );
 
@@ -51,8 +51,8 @@ test("citeproc returns the complete stable result shape", (t) => {
     citationStyle: "chicago",
     mode: "citeproc",
     assetScope: "global",
-    sourcesPath: ".academic-writer/sources.json",
-    bibliographyPath: ".academic-writer/bibliography.bib",
+    sourcesPath: ".pi-academic/sources.json",
+    bibliographyPath: ".pi-academic/bibliography.bib",
     markers: ["[@smith2020, p. 4]"],
     citationKeys: ["smith2020"],
     missingFromSources: [],
@@ -106,11 +106,11 @@ test("complete article-local assets override conflicting global assets", (t) => 
 test("nested cite keys, bibliography keys and ordered missing keys", (t) => {
   const root = fixture(t, "[@a; @b] [@a] [@c] [@]");
   writeFileSync(
-    join(root, ".academic-writer", "sources.json"),
+    join(root, ".pi-academic", "sources.json"),
     JSON.stringify({ nested: [{ citeKey: " a " }, { citeKey: "b" }] }),
   );
   writeFileSync(
-    join(root, ".academic-writer", "bibliography.bib"),
+    join(root, ".pi-academic", "bibliography.bib"),
     "@book{a, title={A}}\n@article{c, title={C}}\n",
   );
   const result = details(auditCitations("articles/essay.md", "mla", root));
@@ -127,7 +127,7 @@ test("citeproc warns without markers and inline mode skips assets", (t) => {
   const result = details(auditCitations("articles/essay.md", "chicago", root));
   assert.equal(result.status, "passed");
   assert.deepEqual(result.warnings, ["No Pandoc citeproc markers found"]);
-  rmSync(join(root, ".academic-writer"), { recursive: true });
+  rmSync(join(root, ".pi-academic"), { recursive: true });
   assert.deepEqual(
     auditCitations("articles/essay.md", "inline-parenthetical", root),
     {
@@ -171,15 +171,12 @@ test("citeproc warns without markers and inline mode skips assets", (t) => {
 
 test("invalid JSON and missing articles report operational errors", (t) => {
   const root = fixture(t);
-  writeFileSync(join(root, ".academic-writer", "sources.json"), "{");
+  writeFileSync(join(root, ".pi-academic", "sources.json"), "{");
   const invalid = auditCitations("articles/essay.md", "chicago", root);
   assert.equal(invalid.status, "error");
 
   if (invalid.status !== "error") throw new Error("expected parse error");
-  assert.match(
-    invalid.error,
-    /^Could not read \.academic-writer\/sources\.json:/,
-  );
+  assert.match(invalid.error, /^Could not read \.pi-academic\/sources\.json:/);
   const absent = auditCitations("articles/missing.md", "chicago", root);
   assert.deepEqual(absent, {
     status: "error",
@@ -284,7 +281,7 @@ test("key resolution handles nested metadata objects without citeKey without thr
 test("auditCitations processes source registries containing nested metadata objects without citeKey fields", (t) => {
   const root = fixture(t);
   writeFileSync(
-    join(root, ".academic-writer", "sources.json"),
+    join(root, ".pi-academic", "sources.json"),
     JSON.stringify([
       {
         citeKey: "smith2020",

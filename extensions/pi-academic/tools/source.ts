@@ -79,12 +79,12 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Ingest Sources",
     description:
-      "Ingest PDF, DOCX, Markdown, or text files inside the project (default: .academic-writer/sources/). Generates local source records, citekeys, sources.json, and bibliography.bib without requiring Zotero. Existing Zotero records and the citekeys of already-ingested files are preserved.",
+      "Ingest PDF, DOCX, Markdown, or text files inside the project (default: .pi-academic/sources/). Generates local source records, citekeys, sources.json, and bibliography.bib without requiring Zotero. Existing Zotero records and the citekeys of already-ingested files are preserved.",
     parameters: Type.Object({
       paths: Type.Optional(
         Type.Array(Type.String({ minLength: 1 }), {
           description:
-            "Optional project-relative source files. If omitted, ingests supported files in .academic-writer/sources/.",
+            "Optional project-relative source files. If omitted, ingests supported files in .pi-academic/sources/.",
         }),
       ),
     }),
@@ -116,7 +116,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Relink Citations",
     description:
-      "Rewrite an article's footnotes that cite sources in .academic-writer/sources.json as Pandoc citations (citeproc mode only). A note made only of citations, with at most a 'see'/'cf.' lead-in, becomes an inline [@citeKey, p. N] at its reference (a note style turns it back into a footnote itself); a note with other text stays a note with its citations rewritten (author-in-text form in a note style, so they are not parenthesised); anything not matched unambiguously is left as written and reported. Matches by author surname plus title from sources.json; works on imported .docx articles. Without apply it only reports what would change.",
+      "Rewrite an article's footnotes that cite sources in .pi-academic/sources.json as Pandoc citations (citeproc mode only). A note made only of citations, with at most a 'see'/'cf.' lead-in, becomes an inline [@citeKey, p. N] at its reference (a note style turns it back into a footnote itself); a note with other text stays a note with its citations rewritten (author-in-text form in a note style, so they are not parenthesised); anything not matched unambiguously is left as written and reported. Matches by author surname plus title from sources.json; works on imported .docx articles. Without apply it only reports what would change.",
     parameters: Type.Object({
       article: Type.String({
         minLength: 1,
@@ -152,7 +152,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
       }
 
       const refs = sourceRefs(
-        readSourceRegistry(join(cwd, ".academic-writer", "sources.json")),
+        readSourceRegistry(join(cwd, ".pi-academic", "sources.json")),
       );
 
       if (refs.length === 0) {
@@ -214,7 +214,7 @@ export function registerSourceTools(pi: ExtensionAPI): void {
     effect: "write",
     label: "Academic Writer Write Sources Cache",
     description:
-      "Write the current-run .academic-writer/sources.json and .academic-writer/bibliography.bib from the researcher's extracted records. Call before academic_writer_snapshot_citations.",
+      "Write the current-run .pi-academic/sources.json and .pi-academic/bibliography.bib from the researcher's extracted records. Call before academic_writer_snapshot_citations.",
     parameters: Type.Object({
       sourcesJson: Type.Array(SourceCacheRecordSchema, {
         description: "Structured source records from the researcher.",
@@ -275,12 +275,12 @@ export function registerSourceTools(pi: ExtensionAPI): void {
       style: Type.String({
         minLength: 1,
         description:
-          "CSL alias/id/path, e.g. apa, mla, chicago, nature, or .academic-writer/csl/custom.csl.",
+          "CSL alias/id/path, e.g. apa, mla, chicago, nature, or .pi-academic/csl/custom.csl.",
       }),
       download: Type.Optional(
         Type.Boolean({
           description:
-            "Download missing repository style ids into .academic-writer/csl/.",
+            "Download missing repository style ids into .pi-academic/csl/.",
         }),
       ),
     }),

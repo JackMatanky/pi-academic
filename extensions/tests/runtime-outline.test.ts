@@ -136,7 +136,7 @@ for (const [style, citation] of [
 ] as const) {
   test(`[test_approved_snapshots_preserve_both_citation_modes] ${style} snapshots freeze sources, bibliography and notes`, async (t) => {
     const root = scratch(t);
-    const state = join(root, ".academic-writer");
+    const state = join(root, ".pi-academic");
     const articles = join(root, "articles");
 
     mkdirSync(state);
@@ -292,7 +292,7 @@ for (const [style, citation] of [
 
 test("[test_query_operations_caps_and_recursive_render_order] query operations, caps and recursive render order", async (t) => {
   const root = scratch(t);
-  const state = join(root, ".academic-writer");
+  const state = join(root, ".pi-academic");
 
   mkdirSync(state);
   writeFileSync(
@@ -687,11 +687,11 @@ test("[test_outline_unmapped_points_property_order_independent] writing outline 
 test("[test_health_includes_rumdl_field] health reports rumdl detection", async (t) => {
   const root = scratch(t);
 
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
   mkdirSync(join(root, "articles"));
   writeFileSync(join(root, "articles", "ok.md"), "Text [@smith2020].");
   writeFileSync(
-    join(root, ".academic-writer", "profile.json"),
+    join(root, ".pi-academic", "profile.json"),
     JSON.stringify({
       fieldOfStudy: "Literature",
       citationStyle: "apa",
@@ -713,7 +713,7 @@ test("[test_outline_diagnostics_and_reverse_outline_are_read_only] outline diagn
   const articles = join(root, "articles");
 
   mkdirSync(articles);
-  mkdirSync(join(root, ".academic-writer"));
+  mkdirSync(join(root, ".pi-academic"));
 
   const article =
     "# Intro\nFirst [@citeKey]\ncontinued.\n\n> quoted\n> passage\n\n```python\nnot prose\n```\n\n## Child\nLast paragraph.\n";

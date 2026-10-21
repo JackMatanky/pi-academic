@@ -21,8 +21,8 @@ Personalized onboarding that creates your researcher profile, detects available 
 Run silently before saying anything:
 
 ```bash
-mkdir -p past-articles .academic-writer .academic-writer/sources .academic-writer/voice
-# If .academic-writer/thresholds.json is missing: call academic_writer_read_resource
+mkdir -p past-articles .pi-academic .pi-academic/sources .pi-academic/voice
+# If .pi-academic/thresholds.json is missing: call academic_writer_read_resource
 # with name: thresholds, present the default quality gates to the researcher
 # (anti-AI ≥ 35/50, self-review ≥ 40/60, ≤ 3 rewrite cycles per paragraph,
 # 220-word paragraph ceiling +30 for intro/conclusion, style compliance ≥ 7/10,
@@ -30,11 +30,11 @@ mkdir -p past-articles .academic-writer .academic-writer/sources .academic-write
 # or ±15% of targetWordCount, voice corpus ≥ 3 articles / ≥ 1500 total words /
 # ≥ 800 words per article), and ask whether to keep the defaults or adjust
 # specific values. Write the final JSON — defaults or the researcher's adjusted
-# values — to .academic-writer/thresholds.json.
-# If .academic-writer/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .academic-writer/voice/profile.md.
+# values — to .pi-academic/thresholds.json.
+# If .pi-academic/voice/profile.md is missing, call academic_writer_read_resource with name: voice_profile_template, then write that content to .pi-academic/voice/profile.md.
 ```
 
-If `.academic-writer/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
+If `.pi-academic/profile.md` exists and its `## Tools` JSON block contains a `candlekeep` key but no `zotero` key, perform a one-time migration: rewrite the JSON block in-place to drop `candlekeep` and add `"zotero": {"enabled": <value of old candlekeep.enabled>, "mode": "local"}` before proceeding.
 
 Profile schema and file format: see `references/profile-schema.md`.
 
@@ -77,7 +77,7 @@ Then greet the user:
 > Your workspace folders are ready:
 >
 > - **`past-articles/`** — drop 5–10 of your published papers here (PDF or DOCX) so I can learn your writing style
-> - `.academic-writer/` — your profile (auto-managed)
+> - `.pi-academic/` — your profile (auto-managed)
 >
 > Let's start."
 
@@ -209,7 +209,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >      nature
 >      modern-humanities-research-association
 >
->    Academic Writer downloads/caches the .csl file to .academic-writer/csl/
+>    Academic Writer downloads/caches the .csl file to .pi-academic/csl/
 >    ```
 >
 > 4. **Custom CSL file** — Use a `.csl` file you provide.
@@ -218,7 +218,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >    Custom CSL
 >    ──────────
 >    Example paths:
->      .academic-writer/csl/my-journal.csl
+>      .pi-academic/csl/my-journal.csl
 >      /Users/me/styles/my-journal.csl
 >
 >    Best for: journal-specific or edited CSL files.
@@ -365,8 +365,8 @@ Full rubric (all 30 dimensions across categories A–I): see `references/profile
 
 After the past articles are analyzed:
 
-1. Execute the corpus fingerprint mode from `references/profile-builder.md` (of the `academic-voice` skill) inline on `past-articles/`. It writes `.academic-writer/voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
-2. Execute the transcript distillation mode from that same reference inline with only that fingerprint as input, to seed the four-section `.academic-writer/voice/profile.md` at the project root.
+1. Execute the corpus fingerprint mode from `references/profile-builder.md` (of the `academic-voice` skill) inline on `past-articles/`. It writes `.pi-academic/voice/fingerprint.md` through `academic_writer_write_voice_fingerprint`.
+2. Execute the transcript distillation mode from that same reference inline with only that fingerprint as input, to seed the four-section `.pi-academic/voice/profile.md` at the project root.
 3. Say: "✓ Voice fingerprint created from N past articles. You can write articles now, or run `/skill:academic-voice` for a deeper profile (recommended)."
 
 The researcher is not required to run the Stage 2 interview. They can start writing immediately with the fingerprint.
@@ -375,7 +375,7 @@ The researcher is not required to run the Stage 2 interview. They can start writ
 
 ## Phase 3: Research Sources
 
-**If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.academic-writer/sources/` with `academic_writer_ingest_sources`.**
+**If Zotero is enabled, prefer Zotero indexing. If Zotero is disabled or no items are selected, ingest local files from `.pi-academic/sources/` with `academic_writer_ingest_sources`.**
 
 Ask the researcher (present as a numbered list, keep the explanatory blurb under each option):
 
@@ -415,13 +415,13 @@ Tell the researcher: "Enriching your sources — extracting titles, authors, and
 
 After enrichment, re-list and build the sources array (id + title + type only — never raw JSON).
 
-**If Zotero is NOT enabled**: set sources to `[]`, then call `academic_writer_ingest_sources` for any files under `.academic-writer/sources/`.
+**If Zotero is NOT enabled**: set sources to `[]`, then call `academic_writer_ingest_sources` for any files under `.pi-academic/sources/`.
 
 ---
 
 ## Phase 4: Save Profile
 
-Use the Write tool to save `.academic-writer/profile.md`:
+Use the Write tool to save `.pi-academic/profile.md`:
 
 `````markdown
 # Academic Writer Profile
@@ -453,7 +453,7 @@ abstractLanguages:
 ## Output Format Preferences
 
 ```json
-{ "csl": "optional CSL style id or popular alias", "cslPath": "optional custom .csl path or URL", "stylePackage": "optional name of a package under .academic-writer/styles/" }
+{ "csl": "optional CSL style id or popular alias", "cslPath": "optional custom .csl path or URL", "stylePackage": "optional name of a package under .pi-academic/styles/" }
 ` ` `
 
 ## Style Fingerprint
@@ -502,7 +502,7 @@ Ask the researcher (present as a numbered list, keep the explanatory blurb under
 >
 >    ```text
 >    Profile saved to:
->      .academic-writer/profile.md
+>      .pi-academic/profile.md
 >
 >    Key commands:
 >      /skill:academic-write   ← write an article
