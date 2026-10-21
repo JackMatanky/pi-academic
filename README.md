@@ -45,7 +45,7 @@ Pi prompts you to trust the project on first run — see [Project Trust](https:/
 omp plugin install github:JackMatanky/pi-academic
 ```
 
-To work on the package locally, clone it and run `omp install ./academic-writer`.
+To work on the package locally, clone it and run `omp install ./pi-academic`.
 
 The package depends on `typebox` and `harper.js` at runtime. Three of the four companion peers
 (`pi-subagents`, `pi-mcp-adapter`, `pi-web-access`) are unnecessary under OMP —

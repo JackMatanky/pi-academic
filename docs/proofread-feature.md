@@ -8,7 +8,7 @@
 
 ## What this adds
 
-A `/academic-writer:proofread` command that runs a **mechanical-only** proofreading pass over a finished article: it fixes typos, punctuation, spacing, Hebrew typography, and clear grammar errors, writes the corrected text to a new file, and produces a markdown report documenting **every change and why**. It never rewrites prose for style, tone, register, or voice — that stays with `/academic-writer:edit`.
+A `/pi-academic:proofread` command that runs a **mechanical-only** proofreading pass over a finished article: it fixes typos, punctuation, spacing, Hebrew typography, and clear grammar errors, writes the corrected text to a new file, and produces a markdown report documenting **every change and why**. It never rewrites prose for style, tone, register, or voice — that stays with `/pi-academic:edit`.
 
 ## Design decisions (what transferred, what didn't)
 
@@ -19,7 +19,7 @@ A `/academic-writer:proofread` command that runs a **mechanical-only** proofread
 | Idea-flags never auto-fixed             | **Kept**                                                                         | Idea-level issues need a human; auto-fixing them would change meaning.                                                                              |
 | Citation verification inline            | **Replaced with a deterministic differential guard** (see Code-review revisions) | The proofreader is forbidden from touching citation tokens; the guard verifies that invariant directly rather than re-auditing.                     |
 | Report at the end                       | **Kept (markdown, not DOCX)**                                                    | Option A. Markdown report = no new Python; upgradeable to DOCX/`/apply` later with no rework to the agent.                                          |
-| Two-pass (pre/post-typeset)             | **Dropped**                                                                      | academic-writer has no typesetting stage that induces layout errors — no concrete pass-2 trigger.                                                   |
+| Two-pass (pre/post-typeset)             | **Dropped**                                                                      | pi-academic has no typesetting stage that induces layout errors — no concrete pass-2 trigger.                                                   |
 | Chunk-parallel by chapter               | **Dropped as default**                                                           | An article is not book-scale. One spawn over the whole article by default; per-section parallel is an optional optimization for long articles only. |
 | `section-writer` for fixes              | **Explicitly avoided**                                                           | section-writer rewrites prose — the opposite of proofreading.                                                                                       |
 
@@ -61,7 +61,7 @@ Refinements applied to `proofreader.md` as a result:
 - **Added mechanical categories** a מגיה owns: NBSP between number+unit; comma-not-colon in Hebrew source refs; en-dash ranges + decimal/thousands; gershayim in Talmud folio markers; 2017 כתיב מלא spelling reform (guarded: proper names exempt, no retro-fix, enforce internal consistency, ambiguous → idea-flag).
 - **Explicitly excluded** register-consistency and connective-frequency caps — the reviewer flagged these as valuable, but they are עריכה לשונית (language editor), not הגהה. Excluding them keeps the mechanical-only boundary the books endorse.
 
-**Deliberately not adopted from the books:** the _two-pass (pre/post-typeset)_ standard and the post-typeset layout checks (RTL/LTR drift, broken running headers). Those presuppose a typesetting (עימוד) stage that academic-writer does not have — there is no concrete pass-2 trigger here. Documented as a known divergence; revisit if a typesetting/DOCX-layout stage is ever added.
+**Deliberately not adopted from the books:** the _two-pass (pre/post-typeset)_ standard and the post-typeset layout checks (RTL/LTR drift, broken running headers). Those presuppose a typesetting (עימוד) stage that pi-academic does not have — there is no concrete pass-2 trigger here. Documented as a known divergence; revisit if a typesetting/DOCX-layout stage is ever added.
 
 ## Code-review revisions (2026-06-07) — skill v0.1.0 → v0.2.0
 
