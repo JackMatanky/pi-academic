@@ -12,7 +12,7 @@ const STALE = "leg" + "acy";
 
 const HELPER = "academic" + "-helper";
 
-const ROOT_ENV = "ACADEMIC_WRITER" + "_ROOT";
+const ROOT_ENV = "PI_ACADEMIC" + "_ROOT";
 
 const ENV_INJECT = "env" + "-inject";
 
