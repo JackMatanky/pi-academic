@@ -26,6 +26,7 @@ Rename the package identity from `academic-writer` to `pi-academic`, fully and w
 - **Agent names**: the planner agent stays `academic`; `writer`, `editor`, `researcher` are untouched.
 - **Upstream attribution**: `yodem/academic-writer` in README Acknowledgements must survive every replacement pass.
 - **Historical specs**: files under `docs/superpowers/specs/` are point-in-time records and are excluded from the rename and the straggler gate.
+- **Pitch documents**: the root-level `pitch-*.md` files describe the original upstream Claude Code plugin; they are excluded from every replacement pass and from the straggler gate.
 
 ## Fresh start (no shims)
 
@@ -54,7 +55,7 @@ Docs (`README.md`, `AGENTS.md`, skills prose where it names tools or paths) are 
 ## Verification
 
 1. `mise run ci` runs formatting, Vite+ lint, strict TypeScript, and the Vitest suite (docs-contracts, package-structure, repo-hygiene, tool tests).
-2. Straggler gate: `rg -i 'academic[-_ ]writer'` returns only (a) `yodem/academic-writer`, (b) the intentional former-name note in README Troubleshooting, and (c) hits under `docs/superpowers/specs/`.
+2. Straggler gate: `rg --hidden -i 'academic[-_ ]writer' -g '!.git/**'` excluding `docs/superpowers/specs/**` and `pitch-*.md` returns only (a) `yodem/academic-writer`, and (b) the intentional former-name note in README Troubleshooting.
 
 ## Repository side (manual)
 
