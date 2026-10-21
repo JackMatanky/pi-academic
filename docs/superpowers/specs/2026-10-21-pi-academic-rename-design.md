@@ -55,7 +55,7 @@ Docs (`README.md`, `AGENTS.md`, skills prose where it names tools or paths) are 
 ## Verification
 
 1. `mise run ci` runs formatting, Vite+ lint, strict TypeScript, and the Vitest suite (docs-contracts, package-structure, repo-hygiene, tool tests).
-2. Straggler gate: `rg --hidden -i 'academic[-_ ]writer' -g '!.git/**'` excluding `docs/superpowers/specs/**` and `pitch-*.md` returns only (a) `yodem/academic-writer`, and (b) the intentional former-name note in README Troubleshooting.
+2. Straggler gate: `rg --hidden -i 'academic[-_ ]writer' -g '!.git/**'` excluding `docs/superpowers/**` and `pitch-*.md` returns only (a) `yodem/academic-writer`, (b) the intentional former-name note in README Troubleshooting, and (c) the intentional `/academic-writer:` detector string in `extensions/tests/repo-hygiene.test.ts`.
 
 ## Repository side (manual)
 

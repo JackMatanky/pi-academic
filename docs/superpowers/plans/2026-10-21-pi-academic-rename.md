@@ -1,5 +1,7 @@
 # Pi Academic Rename Implementation Plan
 
+> **Executed 2026-10-21** (8 commits, all tasks complete). Note: Task 1's own replacement pass rewrote the old-name literals inside this document before the `docs/superpowers/**` exclusion was added; commit `4a38504` holds the original text.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rename the package from `academic-writer` to `pi-academic` end to end (npm name, repo URLs, data dir, tool prefix, display name), fresh start with no migration shims.
