@@ -1,4 +1,4 @@
-# academic-writer — dev toolchain, managed by mise (https://mise.jdx.dev)
+# pi-academic — dev toolchain, managed by mise (https://mise.jdx.dev)
 #
 # `mise install` provisions Node/hk/taplo/vp; the postinstall hook then
 # bootstraps the npm trees (root + extensions/), so a fresh clone is ready for

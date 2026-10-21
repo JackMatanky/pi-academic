@@ -34,7 +34,7 @@ pi install npm:pi-web-access
 From the folder where you do your research:
 
 ```bash
-pi install git:github.com/JackMatanky/academic-writer
+pi install git:github.com/JackMatanky/pi-academic
 ```
 
 Pi prompts you to trust the project on first run — see [Project Trust](https://pi.dev/docs/latest/settings#project-trust).
@@ -42,7 +42,7 @@ Pi prompts you to trust the project on first run — see [Project Trust](https:/
 **Under oh-my-pi (OMP):**
 
 ```bash
-omp plugin install github:JackMatanky/academic-writer
+omp plugin install github:JackMatanky/pi-academic
 ```
 
 To work on the package locally, clone it and run `omp install ./academic-writer`.
@@ -284,8 +284,8 @@ ODT/LaTeX export via `/skill:academic-export` needs Pandoc; PDF also needs a Uni
 **Package behaves strangely after an update** — reinstall it:
 
 ```bash
-pi remove git:github.com/JackMatanky/academic-writer
-pi install git:github.com/JackMatanky/academic-writer
+pi remove git:github.com/JackMatanky/pi-academic
+pi install git:github.com/JackMatanky/pi-academic
 ```
 
 ---
@@ -344,5 +344,5 @@ MIT
 
 ## Support
 
-- Package issues: [github.com/JackMatanky/academic-writer](https://github.com/JackMatanky/academic-writer)
+- Package issues: [github.com/JackMatanky/pi-academic](https://github.com/JackMatanky/pi-academic)
 - Zotero MCP: [github.com/54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp)

@@ -1,5 +1,5 @@
 {
-  "name": "academic-writer",
+  "name": "pi-academic",
   "version": "0.1.0",
   "description": "AI-first academic writing assistant for Humanities researchers — works with pi and oh-my-pi",
   "keywords": [
@@ -12,7 +12,7 @@
   "author": "Yotam Fromm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JackMatanky/academic-writer"
+    "url": "https://github.com/JackMatanky/pi-academic"
   },
   "type": "module",
   "scripts": {

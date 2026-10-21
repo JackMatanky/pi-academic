@@ -1,4 +1,4 @@
-# academic-writer: pandoc-flavored markdown lint config
+# pi-academic: pandoc-flavored markdown lint config
 # Only articles/ contains pandoc-processed markdown.
 # Docs: https://rumdl.dev/flavors/
 
