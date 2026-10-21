@@ -11,6 +11,22 @@ import { PACKAGE_ROOT } from "../../lib/paths.js";
 export const NOTE_REFS_FILTER = `--lua-filter=${join(PACKAGE_ROOT, "extensions", "pandoc", "note-refs.lua")}`;
 
 /**
+ * Pandoc argument that starts the citeproc bibliography on a new page. Pass it
+ * after `--citeproc`, which creates the bibliography it looks for. ODT output
+ * also needs `addBibliographyPageStyles` on the finished file.
+ */
+export const BIBLIOGRAPHY_PAGE_FILTER = `--lua-filter=${join(PACKAGE_ROOT, "extensions", "pandoc", "bibliography-page.lua")}`;
+
+/**
+ * Pandoc arguments that give the bibliography the heading `title` unless the
+ * article already has one. Pass them before `--citeproc`.
+ */
+export const bibliographyTitleArgs = (title: string): string[] => [
+  `--lua-filter=${join(PACKAGE_ROOT, "extensions", "pandoc", "bibliography-title.lua")}`,
+  `--metadata=bibliography-default-title:${title}`,
+];
+
+/**
  * Options for spawning the Pandoc executable.
  */
 export interface PandocOptions {

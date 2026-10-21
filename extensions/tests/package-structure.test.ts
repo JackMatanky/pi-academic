@@ -225,6 +225,8 @@ test("[test_pandoc_filters_exist] every shipped Lua filter is passed to Pandoc b
   const shipped = readdirSync(join(repoRoot, "extensions", "pandoc")).sort();
 
   assert.deepEqual(shipped, [
+    "bibliography-page.lua",
+    "bibliography-title.lua",
     "note-refs.lua",
     "strip-highlight.lua",
     "unwrap-link-underline.lua",

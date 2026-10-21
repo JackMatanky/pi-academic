@@ -50,6 +50,13 @@ Claim[]{#fn-logic} [@maimonides, p. 5].
 - **Export** resolves the numbers after citeproc, so notes citeproc builds are counted. A link without an anchor, an anchor defined twice, or an anchor with no note after it stops the export.
 - `academic_writer_import_docx` converts "note 19 above", "nn. 3 and 5 below" and "supra note 19" in a Word file this way. A bare "note 19" is left alone: it may mean a note in the cited work (for that, `n. 19` is Pandoc's locator inside a citation). `academic_writer_audit_citations` warns about any literal reference left.
 
+## Bibliography placement
+
+Citeproc writes the bibliography into the Div `::: {#refs}` (at the end of the document when there is none). Export, in citeproc mode, does two things; neither needs anything in the article:
+
+- **Heading**: citeproc adds none and CSL files define none, so export supplies the one the style's manual prescribes (`apa` References, `mla` Works Cited, `chicago` and `turabian` Bibliography, and so on; the table is `BIBLIOGRAPHY_TITLES` in `csl-resolver.ts`). It is skipped when the article sets `reference-section-title`, when a heading already sits before the bibliography or ends the article, when `lang` is not English, or when the style has no entry.
+- **New page**: the bibliography, with its heading, starts on a new page in DOCX, ODT and LaTeX/PDF (`bibliography-page.lua`; ODT also gets the page-break styles added to the finished file). Other output formats get no break.
+
 ## Metadata fields that touch citations
 
 `bibliography`, `csl`, `lang`, `nocite`, `link-citations`, `suppress-bibliography`, `reference-section-title`, `notes-after-punctuation`, `citation-abbreviations`. A YAML block starts with `---` not followed by a blank line and ends with `---` or `...`. Quote titles containing a colon.

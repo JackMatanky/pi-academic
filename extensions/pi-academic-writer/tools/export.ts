@@ -15,8 +15,14 @@ import { stringEnum } from "../../lib/schema.js";
 import { generateDocx } from "../article/docx-generator.js";
 import { importDocx } from "../article/docx-import.js";
 import { auditCitations } from "../citations/audit.js";
+import { bibliographyTitle } from "../citations/csl-resolver.js";
 import { selectPdfEngine } from "../core/commands.js";
-import { NOTE_REFS_FILTER, runPandoc } from "../core/pandoc.js";
+import {
+  BIBLIOGRAPHY_PAGE_FILTER,
+  bibliographyTitleArgs,
+  NOTE_REFS_FILTER,
+  runPandoc,
+} from "../core/pandoc.js";
 import { citationAssetPaths } from "../core/project-files.js";
 import {
   fail,
@@ -33,6 +39,7 @@ import {
   withScratchDir,
   type RenderedStyle,
 } from "../styling/document-style.js";
+import { addBibliographyPageStyles } from "../styling/odt.js";
 
 /**
  * Per-format style details returned by `academic_writer_export_article`.
@@ -236,6 +243,10 @@ async function runExport(
     const args = ["--from", "markdown", input];
 
     if (citeproc) {
+      const title = bibliographyTitle(citationStyle);
+
+      if (title) args.push(...bibliographyTitleArgs(title));
+
       args.push(
         "--citeproc",
         "--fail-if-warnings",
@@ -246,6 +257,9 @@ async function runExport(
     }
 
     args.push(NOTE_REFS_FILTER);
+
+    if (citeproc) args.push(BIBLIOGRAPHY_PAGE_FILTER);
+
     results.push(
       await withScratchDir(cwd, "style-export", async (dir) => {
         let style: RenderedStyle | undefined;
@@ -299,7 +313,12 @@ async function runExport(
             );
           }
 
-          writeFileAtomic(outputPath, readFileSync(scratchOutput));
+          let bytes = readFileSync(scratchOutput);
+
+          if (citeproc && format === "odt")
+            bytes = Buffer.from(addBibliographyPageStyles(bytes));
+
+          writeFileAtomic(outputPath, bytes);
 
           return { format, output, ok: true, ...detail() };
         } catch (error) {

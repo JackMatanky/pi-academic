@@ -394,7 +394,14 @@ export function buildOdtReference(
 
   patchPage(doc, design);
   entries["styles.xml"] = strToU8(new XMLSerializer().serializeToString(doc));
-  // ODF requires the mimetype entry first and stored uncompressed.
+
+  return { bytes: zipOdt(entries), warnings };
+}
+
+/**
+ * Packs ODF parts; the mimetype entry must come first and stay uncompressed.
+ */
+function zipOdt(entries: Record<string, Uint8Array>): Uint8Array {
   const ordered: Record<string, [Uint8Array, { level: 0 | 6 }]> = {};
 
   if (entries.mimetype) ordered.mimetype = [entries.mimetype, { level: 0 }];
@@ -403,5 +410,44 @@ export function buildOdtReference(
     if (path !== "mimetype") ordered[path] = [data, { level: 6 }];
   }
 
-  return { bytes: zipSync(ordered), warnings };
+  return zipSync(ordered);
+}
+
+/**
+ * Adds the paragraph styles `bibliography-page.lua` refers to. Raw ODT content
+ * cannot carry a page break by itself: it needs a named style with
+ * `fo:break-before`. The heading styles inherit from `Heading_20_N`, so the
+ * bibliography heading looks like any other heading of its level.
+ *
+ * @param odt - A finished `.odt` written by Pandoc.
+ *
+ * @returns The same document with the page-break styles added.
+ * @throws When the archive has no `styles.xml` with an `office:styles` section.
+ */
+export function addBibliographyPageStyles(odt: Uint8Array): Uint8Array {
+  const entries: Record<string, Uint8Array> = unzipSync(odt);
+  const stylesXml = entries["styles.xml"];
+
+  if (!stylesXml) throw new Error("ODT is missing styles.xml");
+
+  const styles = strFromU8(stylesXml);
+
+  if (!styles.includes("</office:styles>"))
+    throw new Error("ODT has no office:styles section");
+
+  const style = (name: string, parent: string) =>
+    `<style:style style:name="${name}" style:family="paragraph" style:parent-style-name="${parent}"><style:paragraph-properties fo:break-before="page"/></style:style>`;
+
+  const added = [
+    style("Bibliography_20_Page_20_Break", "Standard"),
+    ...[1, 2, 3, 4, 5, 6].map((level) =>
+      style(`Bibliography_20_Heading_20_${level}`, `Heading_20_${level}`),
+    ),
+  ].join("");
+
+  entries["styles.xml"] = strToU8(
+    styles.replace("</office:styles>", `${added}</office:styles>`),
+  );
+
+  return zipOdt(entries);
 }

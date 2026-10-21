@@ -119,6 +119,8 @@ For English prose, the `academic_writer_lint_prose` tool reports deterministic, 
 
 Cross-references between notes ("See note 19 above") use a Pandoc-syntax anchor and link (`[]{#fn-name}` and `[](#fn-name)`) that export resolves to the note's final number, counting notes citeproc builds. The Word import converts the literal form, relink carries anchors through, and the citation audit fails on a link without an anchor or a duplicate anchor and warns about literal note numbers left in the text.
 
+In citeproc mode, export starts the bibliography on a new page (DOCX, ODT, PDF) and gives it the heading its citation style prescribes (References, Works Cited, Bibliography). CSL files carry no such title, so the package supplies it from a small table; an article's own `reference-section-title`, an existing heading, or a non-English `lang` takes precedence.
+
 `academic_writer_diagnose_outline` adds read-only advisory checks for required argument fields and note-link resolution/freshness at outline review; it never approves an outline or judges argument quality.
 
 `academic_writer_reverse_outline({article})` returns exact heading/paragraph units with source line ranges and mechanically detected Pandoc citation markers. Use it as an index for substantive review, not as an automated assessment; the reviewer supplies all role, support, and progression judgments. It ignores fenced code and does not modify the article.

@@ -58,6 +58,47 @@ const POPULAR_STYLES = new Map(
   }),
 );
 
+/**
+ * The bibliography heading each popular style's manual of style prescribes. CSL
+ * files carry no such title and citeproc adds none, so the package supplies it;
+ * the keys are the style ids above.
+ */
+const BIBLIOGRAPHY_TITLES = new Map(
+  Object.entries({
+    apa: "References",
+    "modern-language-association": "Works Cited",
+    "chicago-notes-bibliography": "Bibliography",
+    "chicago-fullnote-bibliography": "Bibliography",
+    "chicago-author-date": "References",
+    "turabian-fullnote-bibliography": "Bibliography",
+    "harvard-cite-them-right": "Reference list",
+    "modern-humanities-research-association": "Bibliography",
+    "american-political-science-association": "References",
+    "american-sociological-association": "References",
+    "elsevier-harvard": "References",
+    "american-medical-association": "References",
+    ieee: "References",
+    nature: "References",
+    vancouver: "References",
+    cell: "References",
+    science: "References",
+  }),
+);
+
+/**
+ * Looks up the English bibliography heading for a citation style.
+ *
+ * @param style - Profile `citationStyle`: an alias or a style id.
+ *
+ * @returns The heading, or `undefined` for a style the package knows no title
+ *   for (a custom `.csl`, an unlisted style id).
+ */
+export function bibliographyTitle(style: string): string | undefined {
+  const key = style.trim().toLowerCase();
+
+  return BIBLIOGRAPHY_TITLES.get(POPULAR_STYLES.get(key) ?? key);
+}
+
 const ZOTERO_STYLE_BASE = "https://www.zotero.org/styles";
 
 const RAW_CSL_BASE =
