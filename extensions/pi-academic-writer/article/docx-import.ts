@@ -229,10 +229,10 @@ export async function importDocx(
         "--markdown-headings=atx",
         `--track-changes=${options.trackChanges ?? "accept"}`,
         `--extract-media=${mediaName}`,
-        `--lua-filter=${join(PACKAGE_ROOT, "templates", "pandoc", "unwrap-link-underline.lua")}`,
+        `--lua-filter=${join(PACKAGE_ROOT, "extensions", "pandoc", "unwrap-link-underline.lua")}`,
         ...(options.stripHighlights
           ? [
-              `--lua-filter=${join(PACKAGE_ROOT, "templates", "pandoc", "strip-highlight.lua")}`,
+              `--lua-filter=${join(PACKAGE_ROOT, "extensions", "pandoc", "strip-highlight.lua")}`,
             ]
           : []),
         source,

@@ -221,6 +221,23 @@ test("[test_packaged_prompt_resources_exist] packaged prompt resources resolve t
   }
 });
 
+test("[test_pandoc_filters_exist] the shipped Lua filters are exactly the ones the import passes to Pandoc", () => {
+  const shipped = readdirSync(join(repoRoot, "extensions", "pandoc")).sort();
+
+  assert.deepEqual(shipped, [
+    "strip-highlight.lua",
+    "unwrap-link-underline.lua",
+  ]);
+
+  const importer = readRepo(
+    "extensions/pi-academic-writer/article/docx-import.ts",
+  );
+
+  for (const name of shipped) {
+    assert.ok(importer.includes(`"${name}"`), `${name} is not used`);
+  }
+});
+
 test("[test_no_bundled_mcp_json] no .mcp.json ships with the package", () => {
   assert.ok(
     !isFile(".mcp.json"),
