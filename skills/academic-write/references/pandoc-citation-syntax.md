@@ -46,7 +46,8 @@ Claim[]{#fn-logic} [@maimonides, p. 5].
 ```
 
 - **Anchor**: an empty span `[]{#fn-name}`, the id starting `fn-`. Inside an explicit note (`[^19]: []{#fn-name} text`) it names that note. Anywhere else it names the *next* note, which is how a note citeproc builds from `[@key]` is targeted. Glue it to the end of the word before the citation, with a space after it, or citeproc leaves a gap before the note.
-- **Reference**: a link to the anchor. Empty text gives the bare number (`note 19`); link text is kept in front of the number (`[note](#fn-name)` gives `note 19`).
+- **Reference**: a link to the anchor with *empty* text, written `note [](#fn-name) above`. The export replaces it with the bare number, so the words around it ("note", "above", "nn.") stay yours. Link text is an error (`[note](#fn-name)` fails the export and the audit): never write a label or alias.
+- **When to use it**: whenever a note refers to another note ("see note 19 above", "supra note 19", "nn. 3 and 5 below"), in any drafting or editing. Never type the number: it goes stale when notes move, and notes citeproc builds are not countable by hand. The audit warns about any literal reference left.
 - **Export** resolves the numbers after citeproc, so notes citeproc builds are counted. A link without an anchor, an anchor defined twice, or an anchor with no note after it stops the export.
 - `pi_academic_import_docx` converts "note 19 above", "nn. 3 and 5 below" and "supra note 19" in a Word file this way. A bare "note 19" is left alone: it may mean a note in the cited work (for that, `n. 19` is Pandoc's locator inside a citation). `pi_academic_audit_citations` warns about any literal reference left.
 

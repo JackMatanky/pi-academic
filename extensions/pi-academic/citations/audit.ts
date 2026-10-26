@@ -269,6 +269,9 @@ export function auditCitations(
       ...noteRefs.danglingLinks.map(
         (id) => `link to #${id} has no matching note anchor`,
       ),
+      ...noteRefs.labelledLinks.map(
+        (id) => `link to #${id} has text; write it as [](#${id})`,
+      ),
     ];
 
     if (noteDefects.length) {

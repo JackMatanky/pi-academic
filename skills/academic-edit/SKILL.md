@@ -130,6 +130,7 @@ When auditing or revising an existing draft:
 2. **Spawn Editor per Paragraph**: Run an `editor` subagent in audit mode (`mode: "audit"`) on each paragraph to verify citations and anti-AI/quality guidelines.
 3. **Selective Rewriting**: Keep original paragraph text intact if the editor returns `verdict: PASS`. Rewrite ONLY paragraphs that return `FAIL`/`PARTIAL` or passages the researcher explicitly requested to rewrite.
    For an English prose-style cleanup request, call `pi_academic_lint_prose({text: SELECTED_TEXT, language: targetLanguage})` on the selected writing units, then review matches in context. Preserve scope, evidence, citations, qualifications, and the researcher's voice; a match alone never authorizes a rewrite. Do not invoke this style check as part of mechanical proofreading.
+4. **Note cross-references**: notes that refer to other notes ("see note 19 above") use anchors and empty-text links (`[]{#fn-name}`, `note [](#fn-name) above`), so they stay right when notes move. When restructuring or adding notes, keep every anchor and link intact, never type a note number, and convert any literal reference you find. Pass this to writers and editors; syntax is in `pi_academic_read_resource` with `name: pandoc_citation_syntax` ("Note cross-references"). `pi_academic_audit_citations` fails on a labelled link, a link without an anchor, or a duplicate anchor.
 
 ---
 

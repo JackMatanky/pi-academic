@@ -182,13 +182,14 @@ test("analysis finds duplicate anchors, dangling links and literal references", 
       "",
       "[^1]: []{#fn-a} One.",
       "",
-      "[^2]: []{#fn-a} Two, see note [](#fn-b) and note 4 above, nn. 3 and 5 below, supra note 2.",
+      "[^2]: []{#fn-a} Two, see note [](#fn-b) and [here](#fn-a) and note 4 above, nn. 3 and 5 below, supra note 2.",
       "",
     ].join("\n"),
   );
 
   assert.deepEqual(found.duplicateAnchors, ["fn-a"]);
   assert.deepEqual(found.danglingLinks, ["fn-b"]);
+  assert.deepEqual(found.labelledLinks, ["fn-a"]);
   assert.deepEqual(found.hardCoded, [
     "note 4 above",
     "nn. 3 and 5 below",
@@ -272,12 +273,12 @@ test(
         "",
         "[^a]: []{#fn-first} First.",
         "",
-        "[^b]: See note [](#fn-logic) above and [note](#fn-first).",
+        "[^b]: See note [](#fn-logic) above and note [](#fn-first).",
         "",
       ].join("\n"),
     );
 
-    assert.match(out, /See note 2 above and note.1/);
+    assert.match(out, /See note 2 above and note 1\./);
     assert.doesNotMatch(out, /fn-/);
     assert.match(out, /Two\.\[2\]/);
   },
@@ -296,5 +297,9 @@ test(
       /defined more than once/,
     );
     await assert.rejects(render(t, "A.[]{#fn-x}\n"), /has no note after it/);
+    await assert.rejects(
+      render(t, "A.[^a]\n\n[^a]: []{#fn-x} See [note](#fn-x).\n"),
+      /must have empty text/,
+    );
   },
 );

@@ -7,7 +7,7 @@ import { fenceAfter, stripCodeSpans } from "../../lib/markdown.js";
  */
 const ANCHOR_ID = /\]\{#(fn-[^\s{}]+)[^{}]*\}/gu;
 
-const LINK_ID = /\]\(#(fn-[^\s)]+)[^)]*\)/gu;
+const LINK_ID = /\[([^\]]*)\]\(#(fn-[^\s)]+)[^)]*\)/gu;
 
 /**
  * An empty anchor span, as written at the start of a note or glued to the end
@@ -42,6 +42,11 @@ export interface NoteRefAnalysis {
    */
   danglingLinks: string[];
   /**
+   * Link ids written with text. The export number replaces nothing, so the text
+   * is an alias that the export rejects.
+   */
+  labelledLinks: string[];
+  /**
    * Cross-references written as literal note numbers, which go stale when a
    * note is added, removed or moved.
    */
@@ -62,13 +67,21 @@ export function analyzeNoteRefs(markdown: string): NoteRefAnalysis {
   const anchors = Array.from(text.matchAll(ANCHOR_ID), (m) => m[1] ?? "");
   const defined = new Set(anchors);
 
-  const links = Array.from(text.matchAll(LINK_ID), (m) => m[1] ?? "");
+  const links = Array.from(text.matchAll(LINK_ID), (m) => ({
+    label: m[1] ?? "",
+    id: m[2] ?? "",
+  }));
 
   return {
     duplicateAnchors: [
       ...new Set(anchors.filter((id, i) => anchors.indexOf(id) !== i)),
     ],
-    danglingLinks: [...new Set(links.filter((id) => !defined.has(id)))],
+    danglingLinks: [
+      ...new Set(links.map((l) => l.id).filter((id) => !defined.has(id))),
+    ],
+    labelledLinks: [
+      ...new Set(links.filter((l) => l.label !== "").map((l) => l.id)),
+    ],
     hardCoded: [...new Set(text.match(CROSS_REF) ?? [])],
   };
 }

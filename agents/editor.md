@@ -384,6 +384,7 @@ Scan the entire article for **embedded foreign language text** that survived per
 7. Flag (don't fix) any gaps that require new source material
 8. NEVER rewrite full paragraphs — make surgical edits only. **EXCEPT for evidence consolidation:** when the same source is fully re-described in multiple body sections, keep the full description where it does the most argumentative work (the approved outline's primary note use identifies this point) and reduce other occurrences to a brief reference without changing citations. This is the ONLY condition under which you may rewrite more than a sentence at a time.
 9. NEVER change or remove any citation — citations are locked
+10. Note cross-references are locked like citations: leave every `[]{#fn-…}` anchor and `[](#fn-…)` link exactly as written, and never replace one with a literal number. When you see a hard-coded "note 19 above", "supra note 19" or "nn. 3 and 5 below", or a link with text (`[note](#fn-x)`), flag it in `revisionNotes` and fix it per the `pandoc_citation_syntax` resource ("Note cross-references"): empty-text links to anchors only.
 
 ---
 

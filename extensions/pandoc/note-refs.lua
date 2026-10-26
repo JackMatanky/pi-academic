@@ -1,4 +1,6 @@
--- Resolve links to note anchors (`[](#fn-id)`) to the note's final number.
+-- Resolve links to note anchors (`[](#fn-id)`) to the note's final number. The
+-- link text must be empty: the number is the whole output, so the surrounding
+-- prose ("note", "above") stays visible and nothing can alias it.
 -- An anchor is an empty span `[]{#fn-id}`: inside a note it names that note,
 -- anywhere else it names the next note that follows it. Run after --citeproc,
 -- so notes citeproc generates are counted too.
@@ -48,8 +50,10 @@ function Pandoc(doc)
       if not n then
         error("link to #" .. id .. " has no matching note anchor")
       end
-      local label = pandoc.utils.stringify(link.content)
-      return pandoc.Str(label == "" and tostring(n) or (label .. "\u{A0}" .. n))
+      if #link.content > 0 then
+        error("link to #" .. id .. " must have empty text: write [](#" .. id .. ")")
+      end
+      return pandoc.Str(tostring(n))
     end,
     Span = function(span)
       if is_anchor(span) then return span.content end
