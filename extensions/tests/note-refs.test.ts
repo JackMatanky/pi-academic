@@ -205,6 +205,14 @@ test("a bare note number, a locator and code are not literal references", () => 
   assert.deepEqual(found.hardCoded, []);
 });
 
+test("a cross-reference inside an inline note is not a labelled link", () => {
+  const found = analyzeNoteRefs(
+    "Claim.^[See note [](#fn-a) above on the *Treatise*; not [8](#fn-b).]\n\n[^1]: []{#fn-a} One.\n\n[^2]: []{#fn-b} Two.\n",
+  );
+
+  assert.deepEqual(found.labelledLinks, ["fn-b"]);
+});
+
 test("literal references become links and the named notes get anchors", () => {
   const { markdown, linked, unresolved } = linkNoteRefs(
     [

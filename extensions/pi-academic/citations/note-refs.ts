@@ -7,7 +7,7 @@ import { fenceAfter, stripCodeSpans } from "../../lib/markdown.js";
  */
 const ANCHOR_ID = /\]\{#(fn-[^\s{}]+)[^{}]*\}/gu;
 
-const LINK_ID = /\[([^\]]*)\]\(#(fn-[^\s)]+)[^)]*\)/gu;
+const LINK_ID = /\[([^[\]]*)\]\(#(fn-[^\s)]+)[^)]*\)/gu;
 
 /**
  * An empty anchor span, as written at the start of a note or glued to the end
